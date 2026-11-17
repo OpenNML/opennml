@@ -139,6 +139,7 @@ mod tests {
         ((h * y + 512) / 1024) as i32
     }
 
+    // QUIRK O-57: kept
     #[test]
     fn coordinates_follow_the_original() {
         // videooptions.dlg, ZIELPOSITION 710 212 at 1024 x 768.
@@ -173,6 +174,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-57: kept
     #[test]
     fn coordinates_follow_the_original_at_extreme_sizes() {
         for (b, h) in [(640, 480), (3840, 2160)] {
@@ -194,6 +196,7 @@ mod tests {
         assert_eq!(to_screen_y(s, i32::MIN), i32::MIN);
     }
 
+    // QUIRK O-57: kept
     #[test]
     fn screen_to_virtual_is_the_c_division_inverse() {
         // FUN_00459570/FUN_00459610: x = (xs*1280 + B/2) / B, likewise y.
@@ -212,6 +215,7 @@ mod tests {
         assert_eq!(to_virtual_y(screen(0, 0), 10), 0);
     }
 
+    // QUIRK O-57: kept
     #[test]
     fn normalize_rect_swaps_corners() {
         assert_eq!(normalize_rect([10, 20, 30, 40]), [10, 20, 30, 40]);
@@ -221,6 +225,7 @@ mod tests {
         assert_eq!(normalize_rect([5, 5, 5, 5]), [5, 5, 5, 5]);
     }
 
+    // QUIRK O-34: kept
     #[test]
     fn game_coords_truncate_toward_zero() {
         // 0x00452830: (H*y) >> 10 with sign correction, not the rounding widget conversion.
@@ -245,6 +250,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-34: kept
     #[test]
     fn game_rects_at_1024x768() {
         let s = screen(1024, 768);

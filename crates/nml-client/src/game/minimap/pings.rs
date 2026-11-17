@@ -200,6 +200,7 @@ mod tests {
     }
 
     /// Map 128 (k = 4): t = 500 -> 10 px, alpha 128; t = 1000 -> 20 px, alpha 0; map 96 -> k = 1.
+    // QUIRK O-289: kept
     #[test]
     fn ping_radius_and_alpha_m7() {
         assert_eq!([64, 96, 100, 128, 256].map(radius_factor), [2, 1, 1, 4, 8]);
@@ -230,6 +231,7 @@ mod tests {
 
     /// O-41, O-219: the location always goes to the front of the stack, a second ping at the same tile (whatever the
     /// color) is dropped as long as the first one is in the list; afterwards it works again.
+    // QUIRK O-41, O-219: kept
     #[test]
     fn second_ping_same_tile_only_stacks() {
         let mut pings = MinimapPings::default();
@@ -263,6 +265,7 @@ mod tests {
     /// O-289: the clock counts the game time between two drawn frames. Without drawing (cinemascope, hidden map) the
     /// ping stands still; the first frame afterwards brings the whole time at once and consumes a repeat without a
     /// ring.
+    // QUIRK O-289: kept
     #[test]
     fn pings_freeze_when_minimap_hidden() {
         let mut pings = MinimapPings::default();

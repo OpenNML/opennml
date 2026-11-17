@@ -230,6 +230,7 @@ mod tests {
         ((c[0] + c[2]) / 2, c[1] + 15 * row + 7)
     }
 
+    // QUIRK O-16, O-104: kept
     #[test]
     fn combo_click_opens_a_popup_under_a_blocker_in_frame_coordinates() {
         // O-104: list at LISTBOXEXTENT + client origin of the frame, AUTOYSIZE, blocker at the desktop.
@@ -283,6 +284,7 @@ mod tests {
         assert_eq!(h.tree.abs_rect(list), [165, 980, 365, 1154]);
     }
 
+    // QUIRK O-18: kept
     #[test]
     fn combo_is_invisible_while_open() {
         // O-18: `Draw` skips the button as long as the list is open.

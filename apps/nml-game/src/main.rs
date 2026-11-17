@@ -396,6 +396,7 @@ mod tests {
     }
 
     /// `--host` and `--join` exclude each other, as do `--screenshot` and `--paused`.
+    // QUIRK E-288: deviation
     #[test]
     fn cli_rejects_host_with_join() {
         assert!(parse(&["--host", "--net-map", "m.lvl", "--join", "127.0.0.1"]).is_err());
@@ -462,6 +463,7 @@ mod tests {
     }
 
     /// `--turn-raster T/V`: parser, limits, exclusion of `--turn-steps`, assembly in `NetArgs`.
+    // QUIRK E-298: deviation
     #[test]
     fn cli_turn_raster_parses_and_excludes_turn_steps() {
         let base = ["--host", "--net-map", "m.lvl"];
@@ -495,6 +497,7 @@ mod tests {
     }
 
     /// `--net-map` is mandatory with `--host`; values and defaults of the host switches.
+    // QUIRK E-288, E-298: deviation
     #[test]
     fn cli_requires_net_map_with_host() {
         assert!(parse(&["--host"]).is_err());

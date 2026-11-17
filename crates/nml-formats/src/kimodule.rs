@@ -397,6 +397,7 @@ mod tests {
         assert!(err.contains("AI module without block VARIABLE"), "{err}");
     }
 
+    // QUIRK E-15: deviation
     #[test]
     fn truncated_and_oversized_inputs_fail_in_german() {
         let full = full_module();

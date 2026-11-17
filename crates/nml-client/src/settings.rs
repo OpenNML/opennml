@@ -277,6 +277,7 @@ pub(crate) mod tests {
         assert_eq!(default_from(None, Some(OsString::new())), None);
     }
 
+    // QUIRK D-245: deviation
     #[test]
     fn missing_settings_use_defaults_and_default_keys() {
         let (_dir, vfs) = keys_vfs();
@@ -353,6 +354,7 @@ pub(crate) mod tests {
         assert_eq!(profiles_path(Path::new("x.ini")), Path::new("profiles.ini"));
     }
 
+    // QUIRK O-126: deviation
     #[test]
     fn profiles_round_trip_and_bad_files_start_empty() {
         let home = tempfile::tempdir().unwrap();

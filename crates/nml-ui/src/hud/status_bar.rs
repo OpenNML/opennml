@@ -251,6 +251,7 @@ PLAYERNAME 480 1 480 5\r\n";
             .collect()
     }
 
+    // QUIRK O-221: kept
     #[test]
     fn population_turns_red_only_above_living_space() {
         let bar = bar();
@@ -286,6 +287,7 @@ PLAYERNAME 480 1 480 5\r\n";
         assert!(!no_population.shows_overfull(&values([0, 0, 0, 11, 10], "")));
     }
 
+    // QUIRK O-221: kept
     #[test]
     fn status_bar_formats_any_value() {
         // `%d` without a limit: negative and above 10^6.
@@ -304,6 +306,7 @@ PLAYERNAME 480 1 480 5\r\n";
         assert_eq!((t[0].0, t[0].1.as_str()), (7, "0"));
     }
 
+    // QUIRK O-221: kept
     #[test]
     fn empty_name_draws_no_text() {
         let bar = bar();
@@ -331,6 +334,7 @@ PLAYERNAME 480 1 480 5\r\n";
         assert_eq!(at_name, 4);
     }
 
+    // QUIRK O-221: kept
     #[test]
     fn event_1c_hides_and_shows() {
         let mut bar = bar();
@@ -353,6 +357,7 @@ PLAYERNAME 480 1 480 5\r\n";
         }
     }
 
+    // QUIRK O-221: kept
     #[test]
     fn status_bar_has_no_shadow_and_no_tags() {
         // The name passes through literally: no text layout, so no `[COLOR ...]` tag and no shadow.
@@ -386,6 +391,7 @@ PLAYERNAME 480 1 480 5\r\n";
         assert!(bar.texts(&values([0; 5], name)).last().unwrap().1 == name);
     }
 
+    // QUIRK O-221: kept
     #[test]
     fn status_layout_at_1024x768() {
         let bar = bar();

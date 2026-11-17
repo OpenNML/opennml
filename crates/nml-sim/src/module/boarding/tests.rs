@@ -189,6 +189,7 @@ fn meeting_point(state: &mut SimState, rules: &Rules, ship: ObjectId) -> (i32, i
     (r, m.arg(0), m.arg(1))
 }
 
+// QUIRK W-200: kept
 #[test]
 fn boarding_runs_meeting_point_parking_and_arrival() {
     // re/ships 3.1/3.3, 9.2: the command posts 0x1E17 {a, ids} (with abort) and FINDTO(b) with
@@ -266,6 +267,7 @@ fn boarding_runs_meeting_point_parking_and_arrival() {
     );
 }
 
+// QUIRK W-200: kept
 #[test]
 fn units_arriving_after_the_ship_board_at_once() {
     // re/ships 3.3 (status 2): if the unit is still on its way when the ship arrives, it is
@@ -289,6 +291,7 @@ fn units_arriving_after_the_ship_board_at_once() {
     assert_eq!(sim.object(k1).unwrap().carrier, ship);
 }
 
+// QUIRK W-199: kept
 #[test]
 fn a_second_order_during_the_trip_leaves_units_parked() {
     // W-199: at status 1, 0x2017 delivers the meeting point; the second command sends k2 there, but
@@ -342,6 +345,7 @@ fn a_second_order_during_the_trip_leaves_units_parked() {
     assert_eq!(quarter(&sim, ship).unwrap().occupants, [k1]);
 }
 
+// QUIRK W-198: kept
 #[test]
 fn a_full_ship_leaves_units_parked() {
     // W-198: the Mayflower (capacity 0) accepts the command; the unit parks at the shore, the ship
@@ -370,6 +374,7 @@ fn a_full_ship_leaves_units_parked() {
     assert!(parked(&mut state, &rules, k1) && !is_quartered(&mut state, &rules, k1));
 }
 
+// QUIRK W-201: kept
 #[test]
 fn touching_the_ship_boards_and_an_empty_list_aborts() {
     // W-201: 0x2317 {u} with the only waiting unit: pickup, removed from the list, the list is empty
@@ -392,6 +397,7 @@ fn touching_the_ship_boards_and_an_empty_list_aborts() {
     assert_eq!(meeting_point(&mut state, &rules, ship).0, 0);
 }
 
+// QUIRK W-202: kept
 #[test]
 fn a_failed_trip_keeps_status_and_meeting_point() {
     // W-202: if the path of the ship is blocked after the command (column x = 12 in the water layer),
@@ -507,6 +513,7 @@ fn load(state: &mut SimState, rules: &Rules, ship: ObjectId, units: &[ObjectId])
     }
 }
 
+// QUIRK W-203: kept
 #[test]
 fn unloading_puts_units_on_the_shore() {
     // re/ships 9.3: ship at b with two occupants, `UnquarterAll` -> (39936, 53248) and (39936, 55296);
@@ -579,6 +586,7 @@ fn a_sinking_transport_kills_its_passengers_and_frees_the_waiting() {
     assert!(parked(&mut state, &rules, w) && !is_quartered(&mut state, &rules, w));
 }
 
+// QUIRK W-207: deviation
 #[test]
 fn the_waiting_list_holds_only_own_quartering_units_once() {
     // Deviation W-207: `0x1E17` gets the filtered list (own, `CANQUARTER`, without duplicates). An
@@ -647,6 +655,7 @@ fn a_running_unit_of_a_second_order_boards_when_it_touches_the_ship() {
     assert!(!is_quartered(&mut state, &rules, k3));
 }
 
+// QUIRK K-274: kept
 #[test]
 fn a_unit_waiting_for_one_ship_is_collected_when_that_ship_arrives_elsewhere() {
     // W-200 with two ships (K-274): k1 is in the waiting list of A but is commanded to B and
@@ -826,6 +835,7 @@ fn ship_busy(sim: &Sim, id: ObjectId) -> bool {
     crate::module::is_busy(sim, id, shoot::INDEX)
 }
 
+// QUIRK W-209: kept
 #[test]
 fn the_ship_scene_shows_every_state() {
     // Counter-check before entering the golden: transport status 1 -> 2 -> 0 (the move command aborts),

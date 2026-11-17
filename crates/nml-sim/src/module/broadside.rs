@@ -310,6 +310,7 @@ mod tests {
         balls[tick].iter().map(String::as_str).collect()
     }
 
+    // QUIRK C-94, C-215: kept
     #[test]
     fn spa_warship_fires_six_balls_at_marks_i_plus_2() {
         // re/ships 9.1: balls in ticks 2 (02, then 01), 4 (03), 6 (04), 7 (05), 9 (06); finish (standing animation
@@ -336,6 +337,7 @@ mod tests {
         }
     }
 
+    // QUIRK C-94, C-215: kept
     #[test]
     fn eng_warship_fires_four_balls() {
         // 2010: ticks 2 (02, 01), 4, 6; finish 21.
@@ -353,6 +355,7 @@ mod tests {
         }
     }
 
+    // QUIRK C-216: deviation
     #[test]
     fn balls_start_at_the_rest_muzzle_turned_by_the_ship() {
         // BallLaunch.start = world position + rotate_y_by_direction(node, direction); damage -attribute 20 (50 per
@@ -429,6 +432,7 @@ mod tests {
         }
     }
 
+    // QUIRK C-213: kept
     #[test]
     fn a_new_target_takes_the_remaining_cannons_from_its_side() {
         // C-213: after ball 03 a new 0x10A with a target on the other side while can_shoot == false -> is_steuerboard
@@ -461,6 +465,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-213: kept
     #[test]
     fn a_vanished_target_finishes_on_every_pending_cannon() {
         // Remove the target after ball 01 -> every further 0xD0A: no ball, is_busy false, standing animation, Finish.
@@ -526,6 +531,7 @@ mod tests {
         assert!(!busy && anim == 0 && finished(&sim, s), "Finish in tick 4");
     }
 
+    // QUIRK C-214: kept
     #[test]
     fn a_busy_ship_defers_new_orders() {
         // C-214: move command to the ship in tick 3 stays in the FIFO until the final message (tick 21).
@@ -566,6 +572,7 @@ mod tests {
         }
     }
 
+    // QUIRK C-86: kept
     #[test]
     fn an_aborted_broadside_keeps_firing() {
         // C-86 (ship part): abort in tick 3 clears no timers; balls 03...06 are still fired.
@@ -601,6 +608,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-86: kept
     #[test]
     fn a_sunk_shooter_fires_no_more() {
         // Ship dies in tick 3 (DIED) -> pending 0xD0A return -1, no balls.
@@ -627,6 +635,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-216: deviation
     #[test]
     fn broadsides_at_buildings_pick_the_zone_from_the_rest_muzzle() {
         // C-216: target HOUSE; per ball zone = pick_hit_zone_towards(start of the cannon).
@@ -663,6 +672,7 @@ mod tests {
         assert_eq!(distinct.len(), 2, "the zones alternate in turn (C-91)");
     }
 
+    // QUIRK C-94: kept
     #[test]
     fn a_ship_without_cannon_nodes_only_waits_for_the_final_mark() {
         // Empty node table: counter 1, no ball, final message at marker 1, SHIPDELAY as usual.

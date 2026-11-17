@@ -459,6 +459,7 @@ mod tests {
     /// `Camera_Yaw`) and tilts by dy * pi/300 * MouseSpeed (steeper downward); at `LockCamera 1` it moves by
     /// delta * 0.5 (mouse right moves right, up moves forward), distance and pitch stay. Also while paused, not with
     /// the left button held.
+    // QUIRK O-331: kept
     #[test]
     fn freehand_turns_and_tilts_unlocked_and_moves_locked() {
         let (mut camera, terrain) = setup();

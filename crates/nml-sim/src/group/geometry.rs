@@ -347,6 +347,7 @@ mod tests {
         p.places.iter().map(|e| (e.2.0, e.2.1)).collect()
     }
 
+    // QUIRK K-211: kept
     #[test]
     fn line_matches_the_vectors() {
         // re/groups-formations 9 "Line".
@@ -437,6 +438,7 @@ mod tests {
         assert_eq!(p.places[1].1, (-1024, 1024));
     }
 
+    // QUIRK K-214: kept
     #[test]
     fn column_pairs_up_behind_the_click() {
         let p = place(3, 5, 0);
@@ -473,6 +475,7 @@ mod tests {
         assert!(matches!(p.ends, Ends::FindByRanks));
     }
 
+    // QUIRK K-217: kept
     #[test]
     fn pincer_opens_two_wings_with_an_offset_gap() {
         // K-217: center gap q + s, offset by -s/2.
@@ -562,6 +565,7 @@ mod tests {
         assert_eq!(xz(&p)[0], (0, -4000));
     }
 
+    // QUIRK K-210: kept
     #[test]
     fn type_6_places_nothing_and_fails() {
         // K-210: type 6 always fails for n >= 2.

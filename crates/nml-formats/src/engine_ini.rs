@@ -563,6 +563,7 @@ engine_config! {
     texture_array_preload: Vec<String> = Vec::new() => "TextureArrayPreLoad",
     // O-375: `IsShowInfo` is read and written but evaluated nowhere - as in the original
     // (no reader in the tip, area and setup functions, re/campaign-ui D6.8); the tips stay on.
+    // QUIRK O-375: kept
     is_show_info: i32 = 0 => "IsShowInfo",
     is_map: i32 = 1 => "IsMap",
     is_status_bar: i32 = 1 => "IsStatusBar",
@@ -957,6 +958,7 @@ mod tests {
         assert_eq!(warnings.len(), 1, "{warnings:?}");
     }
 
+    // QUIRK D-245, D-247: deviation
     #[test]
     fn broken_archive_keeps_defaults() {
         for bad in [
@@ -1028,6 +1030,7 @@ mod tests {
         list.iter().map(|(id, k)| (*id, k.to_string())).collect()
     }
 
+    // QUIRK D-246: deviation
     #[test]
     fn keyboard_block_is_inserted_into_the_base_map() {
         // 0x0049DCE0: no clearing; a known ID gets the new key (place stays), a new ID goes at the end.

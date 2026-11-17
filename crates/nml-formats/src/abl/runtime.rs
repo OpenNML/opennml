@@ -224,6 +224,7 @@ mod tests {
         format!("{{\r\n\t[BESCHREIBUNG={name}]\r\n{body}}}\r\n")
     }
 
+    // QUIRK E-119: kept
     #[test]
     fn prefix_is_always_cut_even_a_digit() {
         let file = rt(&block(
@@ -240,6 +241,7 @@ mod tests {
         assert_eq!(b.conditions[0].params, ["50"]);
     }
 
+    // QUIRK E-121: kept
     #[test]
     fn brace_line_drops_its_action_and_ends_deactivation() {
         // A `{` line is dropped together with its action (E-121) and ends the deactivation.
@@ -252,6 +254,7 @@ mod tests {
         assert_eq!(numbers, [1, 3]);
     }
 
+    // QUIRK E-122: kept
     #[test]
     fn section_sign_anywhere_drops_the_line() {
         // `§` anywhere (E-122), even without ':' - then no abort.
@@ -265,6 +268,7 @@ mod tests {
         assert_eq!(numbers, [4]);
     }
 
+    // QUIRK E-123: kept
     #[test]
     fn params_are_trimmed_lowered_and_stripped() {
         assert_eq!(normalize_param(" Player 6 "), "6");
@@ -295,6 +299,7 @@ mod tests {
         assert_eq!(a[2].params, ["fehlerhafte_parameterliste"]);
     }
 
+    // QUIRK E-177: kept
     #[test]
     fn empty_rest_after_semicolon_becomes_the_placeholder_parameter() {
         let file = rt(&block(
@@ -310,6 +315,7 @@ mod tests {
         assert!(b.actions[2].params.is_empty());
     }
 
+    // QUIRK E-175: kept
     #[test]
     fn block_name_is_mid15_of_the_whole_line() {
         let text = "{\r\n\t[BESCHREIBUNG=Drake Final]\r\n{\r\n[BESCHREIBUNG=x]\r\n{\r\n[BESCHREIBUNG\r\n{\r\n  [BESCHREIBUNG= ä ]\r\n";
@@ -322,6 +328,7 @@ mod tests {
         assert_eq!(names, ["Drake Final]", "]", "", "= ä ]"]);
     }
 
+    // QUIRK E-176: kept
     #[test]
     fn lone_cr_is_dropped_and_joins_the_lines_like_read_line() {
         // Only '\n' ends a line, every '\r' is dropped (GameFile_ReadLine).
@@ -341,6 +348,7 @@ mod tests {
         assert_eq!(parse(b"a\rb\n").lines.len(), 2);
     }
 
+    // QUIRK E-178: kept
     #[test]
     fn only_ascii_white_space_is_trimmed_like_c_isspace() {
         assert_eq!(normalize_param("\u{a0}Player 6"), "\u{a0}player 6");
@@ -358,6 +366,7 @@ mod tests {
         assert_eq!(a[2].number, 0);
     }
 
+    // QUIRK E-123: kept
     #[test]
     fn mid5_cuts_five_characters() {
         assert_eq!(mid5("area gate"), "gate");
@@ -366,6 +375,7 @@ mod tests {
         assert_eq!(mid5("äöüßx!"), "!");
     }
 
+    // QUIRK E-120: deviation
     #[test]
     fn missing_colon_aborts_the_whole_file() {
         let text = format!(
@@ -381,12 +391,14 @@ mod tests {
         assert_eq!(err.to_string(), format!("line 8: {}", err.message));
     }
 
+    // QUIRK E-120: deviation
     #[test]
     fn empty_head_aborts_the_whole_file() {
         let err = rt(&block("a", "\t[AKTION=:x]\r\n")).unwrap_err();
         assert_eq!(err.line, 3);
     }
 
+    // QUIRK E-121: kept
     #[test]
     fn deactivated_block_and_lines_without_block_are_ignored() {
         let text = "[AKTION=n1:before the first block]\r\n{\r\n\t[DEACTIVATE]\r\n\t[BESCHREIBUNG=off]\r\n\t[BEDINGUNG=&1:x]\r\n\t[AKTION=n2:x]\r\n}\r\n[AKTION=n3:after the block]\r\n";

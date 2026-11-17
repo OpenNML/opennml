@@ -262,6 +262,7 @@ fn rules() -> Option<(Rules, String)> {
     Some((rules, format!("{version:?}")))
 }
 
+// QUIRK E-161: kept
 #[test]
 fn kamp1_1_ends_in_defeat() {
     let Some((rules, version)) = rules() else {
@@ -300,6 +301,8 @@ fn kamp1_1_ends_in_defeat() {
     assert!(run.command_steps(13).is_empty());
 }
 
+// QUIRK E-161: kept
+// QUIRK E-227: deviation
 #[test]
 fn kamp1_1_ends_in_victory() {
     let Some((rules, version)) = rules() else {

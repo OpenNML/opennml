@@ -496,6 +496,7 @@ mod tests {
         }
     }
 
+    // QUIRK K-254: kept
     #[test]
     fn corner_adjustment_moves_away_from_the_single_blocked_diagonal() {
         // re/groups-formations 12.2, m = Mul(corner_margin, spacing) = 1000, Q = 0x400.
@@ -536,6 +537,7 @@ mod tests {
         );
     }
 
+    // QUIRK K-254: kept
     #[test]
     fn corner_adjustment_at_the_map_edge() {
         // Outside = 0x3FFFFFFF != 0: no panic, no shift.
@@ -652,6 +654,7 @@ mod tests {
         assert_eq!(g.anchor.0 >> 12, 40);
     }
 
+    // QUIRK K-257: kept
     #[test]
     fn rear_group_members_run_through_the_main_find_to_hook() {
         // K-257 (re/groups-formations 12.9): during the march, the FINDTO (flag 8) of the rear group leader
@@ -712,6 +715,7 @@ mod tests {
         assert!(u[4..].contains(&w));
     }
 
+    // QUIRK K-262: kept
     #[test]
     fn a_leader_whose_find_to_ends_without_a_path_stays_on_the_march_reference() {
         // K-262 (re/groups-formations 12.9): `PropertyWalk_OnMsgFindTo` (`0x00538590`) calls vf14 before
@@ -788,6 +792,7 @@ mod tests {
         })
     }
 
+    // QUIRK K-261: kept
     #[test]
     fn the_leader_path_posts_0x2a00_to_every_living_member_and_resets_the_counts() {
         // re/groups-formations 3.5 step 2, 12.3: `0x2A00` posted with abort to every existing member
@@ -895,6 +900,7 @@ mod tests {
         assert_eq!(spots[3], end, "path end without shift");
     }
 
+    // QUIRK K-180: kept
     #[test]
     fn arriving_on_the_spot_waits_and_the_last_one_advances_the_frame() {
         // re/groups-formations 3.5 step 4, 12.7: exactly on the place in the front frame -> state 10, `arrived`;
@@ -1005,6 +1011,7 @@ mod tests {
         assert_eq!(chase_slot(&mut sim, gid, a, 1), Some(pa));
     }
 
+    // QUIRK K-219: kept
     #[test]
     fn the_distribution_reuses_one_buffer_and_stops_at_the_first_member_without_an_end() {
         // K-219, re/groups-formations 12.7 `OnMemberReport`: F = 3 -> two waypoints, path end from frame 2. b is

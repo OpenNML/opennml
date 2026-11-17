@@ -535,6 +535,7 @@ pub(crate) mod tests {
         assert_eq!(clipped.len(), 700 - 615);
     }
 
+    // QUIRK O-39: kept
     #[test]
     fn layout_follows_m1() {
         let cam = start_camera(Vec3::new(8192.0, 0.0, 8192.0));
@@ -556,6 +557,7 @@ pub(crate) mod tests {
         );
     }
 
+    // QUIRK O-39: kept
     #[test]
     fn rotation_matches_m2() {
         // Preliminary check: theta = -0.76800 rad, corners to 0.1 px; for map 64 the same screen points.
@@ -599,6 +601,7 @@ pub(crate) mod tests {
     /// `0x004E4840`: theta = 0, map 128 at 1024 x 768 - screen point (871 + mx, 743 - mz). The edges count, 0.5 px
     /// beside them do not. Exactly on a corner of the diamond the angle sum reports NaN and thus "outside" (O-387):
     /// (871, 743) is tile (0, 0) of the formula, but the click goes to the world.
+    // QUIRK O-387: kept
     #[test]
     fn click_maps_to_tile_m3() {
         let l = layout((1024, 768), &north_camera(), (128, 128));
@@ -636,6 +639,7 @@ pub(crate) mod tests {
     /// that lies in the diamond yields a tile of the map that, calculated back, falls on it again; every tile center
     /// returns to itself via the screen. Plus the ping factor `k` (1 for 96 and 100) and the fog rows per idle tick
     /// `(dimZ / 10) * 2`.
+    // QUIRK O-387: kept
     #[test]
     fn minimap_roundtrip_on_odd_and_non_square_maps() {
         let dims = [
@@ -717,6 +721,7 @@ pub(crate) mod tests {
     /// Screen corners of the camera frame without half pixels at 1024 x 768.
     const CORNERS: [(f64, f64); 4] = [(0.0, 0.0), (1023.0, 0.0), (1023.0, 767.0), (0.0, 767.0)];
 
+    // QUIRK O-39: kept
     #[test]
     fn camera_frame_cuts_y0_and_keeps_the_previous_corner() {
         let l = layout((1024, 768), &north_camera(), (128, 128));
@@ -841,6 +846,7 @@ pub(crate) mod tests {
     /// bits alone. In the reference run, quartering therefore made only the old dot disappear: the dot of the
     /// occupant now lies exactly on that of the building (same color, same 2 x 2 pixels), so none "was added". The
     /// reimplementation behaves the same (O-288).
+    // QUIRK O-288: kept
     #[test]
     fn quartered_units_sit_exactly_on_the_container_dot() {
         let mut host = host();
@@ -864,6 +870,7 @@ pub(crate) mod tests {
         assert_eq!(after[0], dot_of(&host, tower, (10, 10)));
     }
 
+    // QUIRK O-288: kept
     #[test]
     fn dots_are_2x2_and_filtered_by_mode() {
         let mut host = host();
@@ -966,6 +973,7 @@ pub(crate) mod tests {
         );
     }
 
+    // QUIRK O-288: kept
     #[test]
     fn memory_dots_only_in_mode_0_and_gold_only_while_alive() {
         let mut host = host();
@@ -1062,6 +1070,7 @@ pub(crate) mod tests {
         })
     }
 
+    // QUIRK O-39, O-289: kept
     #[test]
     fn draw_order_frame_terrain_border_dots_pings_camera_frame() {
         let (_dir, vfs) = ui_install();

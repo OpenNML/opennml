@@ -734,6 +734,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-59: deviation
     #[test]
     fn texture_size_is_capped_at_2048() {
         // FUN_00579DD0 (re/ui-rendering 3.8.7): smallest power of two >= value, upper limit 2048, <= 2 unchanged.
@@ -805,6 +806,7 @@ mod tests {
         assert_eq!(table.uv[17], [0.0625, 0.125, 0.0625, 0.125]);
     }
 
+    // QUIRK O-84: kept
     #[test]
     fn tga_alpha_is_the_rgb_mean() {
         // FUN_0057A960 (O-84): type 2, 32 bit, descriptor 0; BGR unchanged from the DIB, A = floor((R+G+B)/3), also
@@ -850,6 +852,7 @@ mod tests {
         assert_eq!(image.get_pixel(0, 0).0, [0, 255, 0, 85]);
     }
 
+    // QUIRK O-59: deviation
     #[test]
     fn cache_never_points_into_the_game_dir() {
         // Default: NML_FONT_CACHE, otherwise %LOCALAPPDATA%\nml-rust\fonts; empty values do not count.
@@ -934,6 +937,8 @@ mod tests {
             }
         }
 
+        // QUIRK O-84: kept
+        // QUIRK O-59: deviation
         #[test]
         fn generated_atlas_matches_the_shipped_layout() {
             if !gdi::installed("Garamond") {
@@ -1037,6 +1042,7 @@ mod tests {
             );
         }
 
+        // QUIRK O-59: deviation
         #[test]
         fn cache_is_reused() {
             let dir = tempfile::tempdir().unwrap();
@@ -1077,6 +1083,7 @@ mod tests {
             assert_eq!(names, ["Arial_12_0_0_0_0.fnt", "Arial_12_0_0_0_0.tga"]);
         }
 
+        // QUIRK O-59: deviation
         #[test]
         fn non_positive_sizes_are_rejected() {
             // FontBook also calls the generator with 0 px (width 0) or negative sizes.
@@ -1091,6 +1098,7 @@ mod tests {
             assert!(!dir.path().join("fonts").exists());
         }
 
+        // QUIRK O-22, O-59: deviation
         #[test]
         fn replacement_font_is_generated_ms_sans_serif() {
             // Unknown names get "MS Sans Serif" 10 px from the generator (a deviation from the original).

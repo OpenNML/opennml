@@ -233,6 +233,7 @@ fn pointer_seven_outline_at_250_ms() {
 /// perspective shifts the parts with their own depth (z -62 ... +44 units) against each other - with the mouse
 /// at (300, 300) and 1920 x 1080 by up to 0.8 px (pointer 7, right edge 334.7 instead of 335.5;
 /// the original shows it the same way, to the right of the center up to mx + 35, re/pointer-3d MZ.13).
+// QUIRK O-458: kept
 #[test]
 fn pointer_outlines_match_the_extent_table() {
     let Some(mut bench) = Bench::new() else {
@@ -268,6 +269,7 @@ fn pointer_outlines_match_the_extent_table() {
 
 /// re/pointer-3d MZ.6: the valid build cursor (0, 1, 0, 1) replaces the material color; only the
 /// green channel of the texture remains, opaque.
+// QUIRK O-454: kept
 #[test]
 fn build_tint_keeps_only_green() {
     let Some(mut bench) = Bench::new() else {
@@ -287,6 +289,7 @@ fn build_tint_keeps_only_green() {
 /// Z writing; the same pointer on magenta and on black differs per drawn
 /// pixel by 0.2 * magenta = (51, 0, 51). Where front faces of the pointer overlap, it blends
 /// twice (O-456): there 0.2^2 * magenta = (10, 0, 10) remains.
+// QUIRK O-455, O-456: kept
 #[test]
 fn target_tint_blends_with_alpha_0_8() {
     let Some(mut bench) = Bench::new() else {
@@ -354,6 +357,7 @@ fn in_square(x: u32, y: u32, mouse: (i32, i32)) -> bool {
 /// only the cleared 64 x 64 square around the mouse remains of the pointer; inside it it is unchanged.
 /// Arrow 7 at 1920 x 1080 reaches mx + 35 without clipping and ends at mx + 31 with clipping
 /// (reference run re/pointer-3d MZ.13). Rectangles over the image edge are clamped, empty ones skipped.
+// QUIRK O-457: kept
 #[test]
 fn minimap_clips_outside_the_square() {
     let Some(mut bench) = Bench::new() else {
@@ -401,6 +405,7 @@ fn minimap_clips_outside_the_square() {
 
 /// re/pointer-3d MZ.7: without `depth_zero` (or with depth 0 only away from the pointer) nothing is cut off: arrow 7
 /// reaches beyond mx + 32 at 1920 x 1080, the image is the same with and without a distant rectangle.
+// QUIRK O-457: kept
 #[test]
 fn no_depth_zero_means_no_clipping() {
     let Some(mut bench) = Bench::new() else {

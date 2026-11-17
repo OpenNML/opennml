@@ -644,6 +644,7 @@ mod tests {
         part(sim, tail).unwrap().centre
     }
 
+    // QUIRK K-249, K-279: kept
     #[test]
     fn the_head_creates_its_tail_after_100_ms_and_grows_its_radii() {
         // Create the stagecoach 2611 directly: no rear part before the first tick; the 0x40B
@@ -710,6 +711,7 @@ mod tests {
         );
     }
 
+    // QUIRK E-146: kept
     #[test]
     fn multipart_tail_gets_name_tail() {
         // Named stagecoach (like `.wld` `OBJ_NAME`, entered on creation): the rear part
@@ -737,6 +739,7 @@ mod tests {
         );
     }
 
+    // QUIRK K-247: deviation
     #[test]
     fn the_tail_follows_straight_and_bends_at_most_90_degrees() {
         let (rules, mut state, cart, tail) = with_tail(CART);
@@ -805,6 +808,7 @@ mod tests {
         );
     }
 
+    // QUIRK K-247: deviation
     #[test]
     fn follow_angle_clamps_the_bend_at_90_degrees() {
         // Pure function (the host uses it for the frame display): angle centre -> head,
@@ -844,6 +848,7 @@ mod tests {
         );
     }
 
+    // QUIRK K-248: kept
     #[test]
     fn turning_on_the_spot_is_not_reported() {
         // K-248: only changing the direction -> 0x333 (idle animation), centre unchanged.
@@ -875,6 +880,7 @@ mod tests {
         assert_eq!(sim.object(tail).unwrap().anim.wanted, 0, "idle animation");
     }
 
+    // QUIRK K-248: kept
     #[test]
     fn the_tail_dies_with_its_head_and_survives_its_removal() {
         // Death of the front part -> 0x30B -> 0x110 to the rear part (dies with animation 2).
@@ -918,6 +924,8 @@ mod tests {
         assert_eq!(head(&sim, cart).unwrap().linked, tail, "stays standing");
     }
 
+    // QUIRK K-249: kept
+    // QUIRK K-278: deviation
     #[test]
     fn an_owner_change_keeps_head_and_tail_together() {
         // Change of owner of the front part: 0x733 {new} to the rear part and its change of owner;
@@ -1050,6 +1058,7 @@ mod tests {
         assert_eq!(part(&sim, tail).unwrap().prev, cart);
     }
 
+    // QUIRK K-280: deviation
     #[test]
     fn a_chain_of_parts_is_created_forwarded_and_survives_a_loop() {
         // 520001 > 0 (never in the shipped data): the further link arises in ReadParams, 0x133 is

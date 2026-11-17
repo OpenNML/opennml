@@ -425,6 +425,7 @@ mod tests {
         (grid, area, rng.counts().terrain_areas)
     }
 
+    // QUIRK D-334: kept
     #[test]
     fn clump_hit_at_try_99_is_discarded() {
         // D-334: `alt = tries; tries += 1; if alt > 100 break; if Test break;` and afterwards grow only
@@ -460,6 +461,7 @@ mod tests {
         assert_eq!(area.cursor, None);
     }
 
+    // QUIRK D-334: kept
     #[test]
     fn block_without_replace_or_putonto_only_draws() {
         // After the base texture no tile carries -1: every test fails, 102 * 2 + 101 draws per clump,
@@ -525,6 +527,7 @@ mod tests {
         assert_eq!(rng.counts().terrain_areas, 2);
     }
 
+    // QUIRK D-352: deviation
     #[test]
     fn candidate_square_needs_the_target_texture() {
         // A (1) everywhere, B (2) at (4, 4).
@@ -572,6 +575,7 @@ mod tests {
         assert!(format!("{error:#}").contains("AvoidRoughness"), "{error:#}");
     }
 
+    // QUIRK D-335: deviation
     #[test]
     fn player_distance_division_by_zero_is_an_error() {
         // `Fixed_Hypot` divides by zero for distances whose fixed-point value `·1024` comes to zero in
@@ -624,6 +628,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-335: deviation
     #[test]
     fn empty_frame_is_an_error() {
         let grid = filled(4, 4, 1);

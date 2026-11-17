@@ -154,6 +154,7 @@ mod tests {
     };
 
     /// D6.9: 65 s -> `1:05` in white `0xC8FFFFFF`; minutes without a limit (`61:01`).
+    // QUIRK O-367: kept
     #[test]
     fn countdown_65_is_1_05_white() {
         assert_eq!(countdown_text(65), "1:05");
@@ -171,6 +172,7 @@ mod tests {
     }
 
     /// D6.9: below 10 s red `0xC8FF0000`, two-digit seconds; negative values as in C (`%d:%02d`).
+    // QUIRK O-367: kept
     #[test]
     fn countdown_9_is_0_09_red() {
         assert_eq!(countdown_text(9), "0:09");
@@ -183,6 +185,7 @@ mod tests {
 
     /// D6.9: `x = W - text width` (sum of the advances), `y = 20` pixels without conversion, also at another screen
     /// size.
+    // QUIRK O-367: kept
     #[test]
     fn countdown_right_aligned_at_y_20() {
         let xs = |seconds, screen| -> Vec<(i32, i32)> {

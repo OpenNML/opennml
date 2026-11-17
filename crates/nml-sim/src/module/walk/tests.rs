@@ -543,6 +543,7 @@ fn idle_bit(state: &SimState, id: ObjectId) -> bool {
     state.object_event_bits.get(&id).is_some_and(|w| w & 2 != 0)
 }
 
+// QUIRK E-148: kept
 #[test]
 fn a_move_command_sets_bit_1_on_arrival_and_on_abort() {
     // The walk command `0x04` (`move_unit`, FINDTO with `0x97F` as success and fault like
@@ -865,6 +866,7 @@ fn the_constructor_applies_the_player_behaviour_at_the_placement_position() {
     assert_eq!(walk(&sim, c).unwrap().tether, 8 << 12);
 }
 
+// QUIRK K-201, C-202: kept
 #[test]
 fn behaviour_messages_apply_back_up_and_restore() {
     let rules = ck::rules();
@@ -1019,6 +1021,7 @@ fn find_to_unit_in_range_and_facing_succeeds_at_once() {
     assert!(w.attack, "attack flag stays from SetSeekTarget");
 }
 
+// QUIRK C-189: kept
 #[test]
 fn find_to_unit_turns_first_when_not_facing_and_then_catches() {
     let rules = ck::rules();
@@ -1053,6 +1056,7 @@ fn find_to_unit_turns_first_when_not_facing_and_then_catches() {
     );
 }
 
+// QUIRK C-193: kept
 #[test]
 fn find_to_unit_out_of_range_walks_up_and_catches() {
     let rules = ck::rules();
@@ -1082,6 +1086,7 @@ fn find_to_unit_out_of_range_walks_up_and_catches() {
     assert!((0..=2048).contains(&d), "edge distance {d}");
 }
 
+// QUIRK C-15: kept
 #[test]
 fn seeking_a_vanished_quarry_aborts_with_0x311() {
     let rules = ck::rules();
@@ -1127,6 +1132,7 @@ fn the_tether_rejects_targets_too_far_from_home() {
     assert_eq!(reply(sim.state, obs), 222);
 }
 
+// QUIRK C-185: kept
 #[test]
 fn a_target_in_fog_and_in_range_is_not_attacked() {
     // C-185: position search with CHECKFOG fails in range -> abort.
@@ -1139,6 +1145,7 @@ fn a_target_in_fog_and_in_range_is_not_attacked() {
     assert_eq!(reply(&state, obs), 222);
 }
 
+// QUIRK C-191, C-197: kept
 #[test]
 fn the_attack_filter_widens_narrow_bands_and_push_out_uses_one_and_a_half() {
     // re/combat-attack 7a.14.
@@ -1216,6 +1223,7 @@ fn find_to_unit_and_the_attack_filter_wrap_extreme_radii_like_the_original() {
     );
 }
 
+// QUIRK C-198: kept
 #[test]
 fn the_surround_check_answers_free_and_state_0xc_ticks_every_17() {
     let rules = ck::rules();
@@ -1256,6 +1264,7 @@ fn the_surround_check_answers_free_and_state_0xc_ticks_every_17() {
     );
 }
 
+// QUIRK K-200: kept
 #[test]
 fn a_quarry_in_water_disables_swimming_and_stop_moving_restores_the_layer() {
     // re/combat-attack 7a.2, re/walk 16.1: land-and-water layer (0x29), target swims -> swimming

@@ -460,6 +460,7 @@ mod tests {
 
     /// The script path comes only from the simulation: `submit` rejects `Origin::Script` without executing anything
     /// or changing the origin.
+    // QUIRK E-152: kept
     #[test]
     fn submit_rejects_the_script_origin_from_outside() {
         let rules = crate::command::testkit::rules();
@@ -537,6 +538,7 @@ END
         Message::new(0x1400, &[])
     }
 
+    // QUIRK E-25: kept
     #[test]
     fn omniscient_view_sees_foreign_objects_and_accounts() {
         let (rules, mut state, own, foreign) = world();
@@ -579,6 +581,7 @@ END
         assert!(v.players(8).is_none() && v.players(-1).is_none());
     }
 
+    // QUIRK E-25: kept
     #[test]
     fn fog_view_hides_unseen_foreign_objects_everywhere() {
         let (rules, mut state, own, foreign) = world();

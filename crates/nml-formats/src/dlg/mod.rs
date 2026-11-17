@@ -723,6 +723,7 @@ mod tests {
         assert_eq!(write_dlg(&parse_dlg(b"  \r\n").0), b"  \r\n");
     }
 
+    // QUIRK O-5: kept
     #[test]
     fn elements_nest_and_keep_order() {
         let input = b"FRAME F\r\nFLAGS A B /FLAGS\r\nEXTENT 1 2 3 4\r\nVAR YPOS 10\r\n\
@@ -771,6 +772,7 @@ mod tests {
         assert!(end.is_some());
     }
 
+    // QUIRK O-3: deviation
     #[test]
     fn malformed_dlg_never_hangs() {
         let cases: [(&str, &[u8]); 8] = [
@@ -813,6 +815,7 @@ mod tests {
         assert_eq!(diags[0].line, 3, "{diags:?}");
     }
 
+    // QUIRK O-3: deviation
     #[test]
     fn deep_nesting_is_bounded() {
         let input = "LOOP 1 ".repeat(100_000);
@@ -824,6 +827,7 @@ mod tests {
         assert_eq!(write_dlg(&doc), frames.as_bytes());
     }
 
+    // QUIRK O-1: kept
     #[test]
     fn upper_word_follows_the_original() {
         assert_eq!(upper_word("daten/menü/straße"), "DATEN/MENÜ/STRAßE");
@@ -865,6 +869,7 @@ mod tests {
         assert_eq!(ElementKind::from_keyword("frame"), None);
     }
 
+    // QUIRK O-1: kept
     #[test]
     fn keywords_are_matched_case_insensitively() {
         let (doc, diags) = parse_dlg(b"frame f extent 1 2 3 4 /frame");

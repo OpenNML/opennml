@@ -1183,6 +1183,7 @@ mod tests {
         assert_eq!(cannon_node_name(false, 12), "backcannon12");
     }
 
+    // QUIRK W-273: kept
     #[test]
     fn hero_index_is_the_first_position_or_minus_one() {
         // re/heroes-resources 1.3: first index for duplicates, unknown -1; synthetic is empty.
@@ -1217,6 +1218,7 @@ mod tests {
         assert!(t.heights.iter().all(|&h| h == 2048));
     }
 
+    // QUIRK K-36: kept
     #[test]
     fn config_values_fall_through_slot_and_zero_to_the_defaults() {
         let mut rules = Rules::synthetic("", 16);

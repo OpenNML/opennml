@@ -223,12 +223,14 @@ mod tests {
     use super::*;
     use crate::{BackendChoice, CAPTURE_FORMAT, headless_device, render_to_image};
 
+    // QUIRK D-368: kept
     #[test]
     fn constants_are_the_floats_of_the_original() {
         assert_eq!(RAMP_SCALE.to_bits(), 0x477F_FF00);
         assert_eq!(INV_255.to_bits(), 0x3B80_8081);
     }
 
+    // QUIRK D-368: kept
     #[test]
     fn neutral_gamma_keeps_eight_bit_values() {
         let ramp = gamma_ramp(1.0);
@@ -241,6 +243,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-368: kept
     #[test]
     fn ramp_is_linear_and_clipped_like_the_original() {
         // Slider 50 -> G = 1.5 (O-99): factor 1.5, clipped at the top from input 170.
@@ -263,6 +266,7 @@ mod tests {
         assert!(dark.windows(2).all(|w| w[0] <= w[1]));
     }
 
+    // QUIRK D-368: kept
     #[test]
     fn clamping_follows_the_comparisons_of_the_original() {
         // Negative (e.g. `Gamma -1` in Engine.ini): everything 0, black.
@@ -273,6 +277,7 @@ mod tests {
         assert!(gamma_ramp(f32::INFINITY).iter().all(|&e| e == 65535));
     }
 
+    // QUIRK D-368: kept
     #[test]
     fn pass_applies_the_ramp_per_channel() {
         // Skip if there is no graphics card.

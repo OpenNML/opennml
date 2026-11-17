@@ -158,6 +158,7 @@ mod tests {
         panic!("pass never ends");
     }
 
+    // QUIRK O-287: kept
     #[test]
     fn rows_per_idle_tick_24_20_50() {
         assert_eq!(rows_per_idle_tick(128), 24);
@@ -169,6 +170,7 @@ mod tests {
         assert_eq!(ticks_until_swap(256), 6);
     }
 
+    // QUIRK O-287: kept
     #[test]
     fn explored_is_half_and_unexplored_black() {
         // `#715922` (tile (10, 10) in Tinteba River) is halved per channel to `#382C11`.

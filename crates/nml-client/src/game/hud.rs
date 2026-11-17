@@ -1288,6 +1288,7 @@ TEXT 17110
         }
     }
 
+    // QUIRK C-208, O-42: kept
     #[test]
     fn three_hits_in_a_row_show_one_attack_line_with_one_sound() {
         let mut hud = synthetic_hud();
@@ -1337,6 +1338,7 @@ TEXT 17110
         }
     }
 
+    // QUIRK O-219: kept
     #[test]
     fn pings_put_their_tile_on_the_action_stack() {
         // Message 4 (PING) with location: location onto the action stack (O-219), without location not; only on
@@ -1364,6 +1366,7 @@ TEXT 17110
 
     /// Script action 7: `SFX_SIGNAL` 2D, ping with `0x006189D0[player]` and 10 repetitions, the location in front on
     /// the stack; a second one at the same tile only puts down the location (O-41).
+    // QUIRK E-244: deviation
     #[test]
     fn script_ping_plays_the_signal_and_pings_ten_times() {
         let mut hud = synthetic_hud();
@@ -1404,6 +1407,7 @@ TEXT 17110
 
     /// (`0x0048D4D6`): bit of the local slot in the mask -> `SFX_SIGNAL` 2D and a ping with one repetition in the
     /// color of the slot field, the location in front on the stack.
+    // QUIRK O-321: kept
     #[test]
     fn signal_for_me_plays_the_sound_and_pings_once() {
         let mut hud = synthetic_hud();
@@ -1427,6 +1431,7 @@ TEXT 17110
 
     /// Without the bit of the local slot in the mask nothing happens (no stack either); a slot beyond the mask width
     /// is not one of the recipients either.
+    // QUIRK O-321: kept
     #[test]
     fn signal_not_for_me_does_nothing() {
         let mut hud = synthetic_hud();
@@ -1440,6 +1445,7 @@ TEXT 17110
 
     /// If a ping is already running at the tile, the second signal brings only sound and stack (O-41); the color
     /// stays that of the first.
+    // QUIRK O-321: kept
     #[test]
     fn second_signal_during_ring_only_sound_and_stack() {
         let mut hud = synthetic_hud();
@@ -1527,6 +1533,7 @@ TEXT 17110
         assert!(sounds.is_empty(), "230 without sound for recipient 3");
     }
 
+    // QUIRK O-213: kept
     #[test]
     fn game_speed_scales_the_bar() {
         // "WIR HABEN NICHT GENUG NAHRUNG!" = 30 characters: 1650 ms display + 1500 ms fade-out game time. Frames of
@@ -1559,6 +1566,7 @@ TEXT 17110
         Some((hud, Texts::load(&vfs, &loc)))
     }
 
+    // QUIRK O-216: kept
     #[test]
     fn tribute_to_slot_4_plays_the_inherited_sound() {
         // O-216: byte 1 of the flag word lies on 0x400 (SOUND) ... 0x1000 (SOUNDONCE): recipients 4-7 set SOUND, and
@@ -1605,6 +1613,7 @@ TEXT 17110
         assert!(missing.is_empty(), "without text: {missing:?}");
     }
 
+    // QUIRK O-209: kept
     #[test]
     fn defeat_message_names_the_slot() {
         // O-209: 200 + p (`GameEngine_SetPlayerResult` to everyone except p, flag `0x04010000`) names slot p via
@@ -1671,6 +1680,7 @@ TEXT 17110
         ])
     }
 
+    // QUIRK O-280: kept
     #[test]
     fn status_bar_first_gives_the_toolbar_its_32_grid() {
         // O-280: the status bar (`0x004492BC`) loads `resourcen_icons.tga` before the command bar (`0x00449342`) with
@@ -1698,6 +1708,7 @@ TEXT 17110
         hud
     }
 
+    // QUIRK O-214: kept
     #[test]
     fn hud_draws_messages_before_windows() {
         // As in the original: the messages in the world pass (`0x00438F2A`), then the windows of the tree
@@ -1897,6 +1908,7 @@ TEXT 17110
         );
     }
 
+    // QUIRK O-221: kept
     #[test]
     fn hud_respects_engine_ini_switches() {
         // `IsStatusBar`, `IsMap`, `IsToolBar` from the `Engine.ini` (`0x004491F0`): only enabled windows, the status
@@ -2024,6 +2036,7 @@ TEXT 17110
     /// New window size - 1024 x 768, 800 x 600, 1280 x 1024. Node and diamond keep their fixed pixel layout
     /// (`(W − 176, H − 176, W, H)`, center `(W − 89, H − 89)`); terrain and fog buffer are kept, the map is not rebuilt
     /// from the level.
+    // QUIRK O-39: kept
     #[test]
     fn minimap_survives_resize_and_follows_m1() {
         use crate::game::minimap::draw::tests::{minimap, ui_install};
@@ -2069,6 +2082,7 @@ TEXT 17110
     /// The corner buttons come as children of the minimap after the camera frame, per button base tile 15 and icon
     /// from `map_icons.tga` (30 x 30); the icon at (left + 2, top - 3) in the color of the constructor (normal
     /// `B4B4B4`). `{0x1D, 0}` removes them together with the map.
+    // QUIRK O-292, O-388: kept
     #[test]
     fn corner_buttons_draw_after_the_camera_frame() {
         use crate::game::minimap::draw::tests::{minimap, ui_install};
@@ -2148,6 +2162,7 @@ TEXT 17110
     /// Without a node (`IsMap 0`) and hidden (`{0x1D, 0}`, cinemascope) the minimap draws nothing, even if the host
     /// supplies data; `{0x1D, 1}` shows it again. Cinemascope itself additionally blocks it in the host
     /// (`GameSession::minimap_frame`, test `the_session_draws_the_minimap_except_in_cinemascope`).
+    // QUIRK O-39: kept
     #[test]
     fn minimap_not_drawn_in_cinemascope_or_without_ismap() {
         use crate::game::minimap::draw::tests::{minimap, ui_install};
@@ -2196,6 +2211,7 @@ TEXT 17110
         assert!(draw_with_minimap(&hud, &vfs, SCREEN).0.is_empty());
     }
 
+    // QUIRK O-213, O-221: kept
     #[test]
     fn ui_state_reports_heads_with_remaining_times() {
         // `ui_state.game.hud`: per kind with messages the head with remaining times in game time and the MSGIDs behind

@@ -849,6 +849,7 @@ fn evoke_checksums_match_the_golden_sequence() {
     assert_eq!(h.0, EVOKE_GOLDEN, "{:#018x}", h.0);
 }
 
+// QUIRK E-146: kept
 #[test]
 fn evoke_names_count_from_00() {
     // Named evokers: every evocation enters `<name>NN` with the module counter before counting

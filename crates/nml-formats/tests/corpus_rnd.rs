@@ -92,6 +92,7 @@ fn all_scripts_parse_for_every_combination() {
     assert_eq!(runs, 6 * 5 * 3 * 4 * 2);
 }
 
+// QUIRK D-322: kept
 #[test]
 fn preprocessor_draws_per_script() {
     let Some((vfs, types)) = open() else { return };
@@ -156,6 +157,7 @@ fn flag_land_area_exists_without_koth() {
     }
 }
 
+// QUIRK D-323: kept
 #[test]
 fn continental_tree_block_follows_the_preprocessor() {
     let Some((vfs, types)) = open() else { return };

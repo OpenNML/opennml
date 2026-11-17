@@ -138,6 +138,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-184: kept
     #[test]
     fn campaign_parser_quirks() {
         // Line ending as in the original: CR LF.
@@ -186,6 +187,7 @@ mod tests {
         assert!(table.campaigns[0].is_empty() && table.campaigns[2].is_empty());
     }
 
+    // QUIRK O-182: kept
     #[test]
     fn path_lines_set_the_entry_kind() {
         // `LEVELPATH` sets type 0, `VIDEOPATH` type 1 - independent of the name line.
@@ -212,6 +214,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-183: deviation
     #[test]
     fn invalid_campaign_numbers_drop_their_entries() {
         // The original writes past its list here; the reimplementation discards the entries.

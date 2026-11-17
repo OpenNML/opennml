@@ -155,6 +155,7 @@ mod tests {
         state(rules)
     }
 
+    // QUIRK W-206: kept
     #[test]
     fn a_finished_rail_order_places_a_site_after_the_last_own_segment() {
         let rules = rules();
@@ -185,6 +186,7 @@ mod tests {
         assert_eq!(last_track(&sim, station), new2[0]);
     }
 
+    // QUIRK W-206: kept
     #[test]
     fn a_removed_last_segment_falls_back_to_the_nearest_own_segment() {
         let rules = rules();
@@ -222,6 +224,7 @@ mod tests {
         assert_eq!(pose(&sim, new[0]).0, (40, 21));
     }
 
+    // QUIRK W-206: kept
     #[test]
     fn rail_orders_without_own_track_or_at_the_map_edge_are_lost() {
         let rules = rules();
@@ -243,6 +246,7 @@ mod tests {
         assert_eq!(last_track(&sim, station), ObjectId::NONE);
     }
 
+    // QUIRK W-206: kept
     #[test]
     fn the_chain_ends_at_every_map_edge() {
         let rules = rules();
@@ -273,6 +277,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-206: kept
     #[test]
     fn the_production_places_the_site_and_loses_the_payment_without_track() {
         let mut rules = rules();
@@ -304,6 +309,7 @@ mod tests {
         assert_eq!(pending_guid_count(&sim, 0, TRACK), 1);
     }
 
+    // QUIRK W-208: kept
     #[test]
     fn the_chain_keeps_the_direction_of_its_start_segment() {
         // W-208: the step comes once from the start segment (Ghidra `0x0050A880`). Four
@@ -326,6 +332,7 @@ mod tests {
         assert_eq!(pose(&sim, new[0]), ((42, 40), 90, rot));
     }
 
+    // QUIRK W-208: kept
     #[test]
     fn the_site_takes_the_player_colour_of_the_station_slot() {
         // `GameWorld_GetPlayerColor(slot of the station)` (`0x0050AA14`), not the color of the

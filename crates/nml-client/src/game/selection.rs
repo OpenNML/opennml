@@ -1103,6 +1103,7 @@ mod tests {
 
     /// E-339: the lock of the replay (`+0x2420`, read only in `0x00488F60`)
     /// lets nothing into the selection on any path - click, box, double click, group; clearing continues.
+    // QUIRK E-339: deviation
     #[test]
     fn a_locked_selection_takes_nothing() {
         let (rules, state, ids) = scene();
@@ -1248,6 +1249,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-223, D-225, D-226: kept
     #[test]
     fn a_click_on_a_carrier_selects_its_rider_and_free_mounts_are_never_selected() {
         let b = boats();
@@ -1302,6 +1304,7 @@ mod tests {
         assert!(horse_only.ids.is_empty());
     }
 
+    // QUIRK D-223: kept
     #[test]
     fn a_carrier_without_a_target_is_never_selected() {
         // Orphaned compound: `0x00476010` finds no target and leaves the carrier standing; there
@@ -1314,6 +1317,7 @@ mod tests {
         assert!(sel.ids.is_empty());
     }
 
+    // QUIRK D-223: kept
     #[test]
     fn a_double_click_on_a_loaded_canoe_selects_its_passenger_and_alike() {
         let b = boats();
@@ -1345,6 +1349,7 @@ mod tests {
         assert_eq!(again.ids, [b.free, b.passenger]);
     }
 
+    // QUIRK D-223: kept
     #[test]
     fn the_double_clicked_object_is_selected_even_if_the_visible_list_misses_it() {
         // The visible list is an approximation in the viewer (center point in the window): a large model
@@ -1371,6 +1376,7 @@ mod tests {
         assert_eq!(once.ids, [b.passenger]);
     }
 
+    // QUIRK D-223: kept
     #[test]
     fn a_double_click_on_a_rider_selects_only_riders_in_the_same_state() {
         let b = boats();
@@ -1405,6 +1411,7 @@ mod tests {
         assert_eq!(free.ids, [b.free_riders[0], b.free_riders[1]]);
     }
 
+    // QUIRK D-223: kept
     #[test]
     fn a_double_click_selects_all_visible_own_units_of_the_same_kind() {
         let (rules, mut state, ids) = scene();
@@ -1441,6 +1448,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-223: kept
     #[test]
     fn two_releases_count_as_a_double_click_only_below_the_timeout() {
         let mut timer = DoubleClickTimer::default();
@@ -1458,6 +1466,7 @@ mod tests {
         assert!(!timer.release(100.0, 200));
     }
 
+    // QUIRK D-227: kept
     #[test]
     fn left_and_right_double_clicks_have_separate_clocks() {
         // Separate timestamps per button (`+0x4C` left, `+0x54` right in `FUN_004145B0`).
@@ -1572,6 +1581,7 @@ mod tests {
     /// re/heroes-resources 3.1, 9.2: click sequence (Shift click) -> selection. Heroes come to the
     /// front in the order of the hero list, non-heroes at the end; if the selection consists only of
     /// heroes with a smaller index, the new one lands before the last (D-231).
+    // QUIRK D-231: kept
     #[test]
     fn selection_sorts_heroes_like_the_original() {
         use crate::game::testworld::{

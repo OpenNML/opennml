@@ -679,6 +679,7 @@ mod tests {
         panic!("chopping does not end");
     }
 
+    // QUIRK W-20: kept
     #[test]
     fn timers_fire_delay_over_100_plus_one_ticks_after_the_posting_tick() {
         for (d, want) in [(0, 1), (100, 2), (700, 8), (800, 9), (1000, 11), (1900, 20)] {
@@ -700,6 +701,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-22: kept
     #[test]
     fn a_colonist_gets_a_unit_every_eleven_ticks_and_sees_full_one_step_later() {
         let rules = rules();
@@ -722,6 +724,7 @@ mod tests {
         assert_eq!(lumber(&sim, unit).unwrap().last_time_leak, 0);
     }
 
+    // QUIRK W-20: kept
     #[test]
     fn a_wid_warrior_alternates_eight_and_nine_ticks_with_a_leak() {
         let rules = rules();
@@ -738,6 +741,7 @@ mod tests {
         assert_eq!(lumber(&sim, unit).unwrap().last_time_leak, 50);
     }
 
+    // QUIRK W-34: kept
     #[test]
     fn a_tree_with_seven_wood_gives_seven_units_then_the_lumberjack_searches_anew() {
         let rules = rules();
@@ -759,6 +763,7 @@ mod tests {
         assert_eq!(load_of(&sim, unit), (7, load::WOOD));
     }
 
+    // QUIRK W-24: kept
     #[test]
     fn a_foreign_load_counts_as_zero_and_is_replaced_by_one_wood() {
         let rules = rules();
@@ -824,6 +829,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-37: kept
     #[test]
     fn chopping_lumberjack_keeps_the_exempt_zone_when_all_modules_abort() {
         // re/gathering 2.12: if the lumberjack is chopping (walk without fault message), slot 7
@@ -902,6 +908,7 @@ mod tests {
         assert_eq!(reg_pos(&sim, t), [ObjectId::NONE; 2]);
     }
 
+    // QUIRK W-38: kept
     #[test]
     fn stopping_while_delivering_keeps_the_dock_claimed() {
         // State 2 releases the docking place, state 3 (delivery running) does not (quirk).
@@ -932,6 +939,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-40: kept
     #[test]
     fn delivering_takes_two_ticks_without_an_animation() {
         let rules = rules();
@@ -965,6 +973,7 @@ mod tests {
         assert_eq!(load_of(&sim, unit), (0, load::NONE));
     }
 
+    // QUIRK W-25: kept
     #[test]
     fn starting_searches_around_the_clicked_tree_registers_and_walks_to_the_corner() {
         let rules = rules();
@@ -1017,6 +1026,7 @@ mod tests {
         assert_ne!(resource(&sim, unit), far);
     }
 
+    // QUIRK W-62: kept
     #[test]
     fn resuming_work_starts_lumbering_at_an_adjacent_tree_when_a_lumberyard_exists() {
         // (tree tile, lumberyard present) -> posted work.
@@ -1088,6 +1098,7 @@ mod tests {
         )
     }
 
+    // QUIRK W-26: kept
     #[test]
     fn a_lumberjack_fells_delivers_to_the_lumberyard_and_returns() {
         let rules = rules();
@@ -1154,6 +1165,7 @@ mod tests {
         let _ = yard;
     }
 
+    // QUIRK W-43: kept
     #[test]
     fn without_a_lumberyard_the_lumberjack_stops_with_a_full_load() {
         let rules = rules();

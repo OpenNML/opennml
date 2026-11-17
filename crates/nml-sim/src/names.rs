@@ -226,6 +226,7 @@ mod tests {
         assert_eq!(first_id(&names, "missing"), None);
     }
 
+    // QUIRK E-145: kept
     #[test]
     fn register_lowers_and_overwrites() {
         let mut names = ObjectNames::default();
@@ -238,6 +239,7 @@ mod tests {
         assert_eq!(ids(&names, "Bogenschütze ÄÖÜ É "), [id(-3)]);
     }
 
+    // QUIRK E-145: kept
     #[test]
     fn owner_change_and_transfer_follow_the_reverse_search() {
         let mut names = ObjectNames::default();

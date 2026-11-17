@@ -162,6 +162,7 @@ fn message(line: usize, rest: &str) -> Result<RecordMessage, FormatError> {
 mod tests {
     use super::*;
 
+    // QUIRK K-286: kept
     #[test]
     fn reads_records_like_the_game() {
         let t = "TEMPUPGRADE 4450\nTEMPHANDLELISTUPGRADE\nEFFECT 0 data/effects/x.pef\nMSGTICK 57F 2 0 1000\nEND\n\
@@ -189,6 +190,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-18: deviation
     #[test]
     fn more_than_nine_numbers_in_a_message_line_are_a_load_error() {
         // A7: "MSGSTART 601 9 1 2 3 4 5 6 7 8 9" (10 numbers) -> Err with line number; argc > 8 likewise.
@@ -208,6 +210,7 @@ mod tests {
         assert!(parse_temp_upgrades(negative).is_err());
     }
 
+    // QUIRK W-18: kept
     #[test]
     fn temp_upgrade_time_from_the_header_is_not_recognised() {
         // W-18: the line "TEMPUPGRADETIME 60" changes neither flags nor time_ms.
@@ -228,6 +231,7 @@ mod tests {
         assert_eq!((r[1].flags, r[1].msg_start.code), (0, 0x601));
     }
 
+    // QUIRK W-18: kept
     #[test]
     fn the_later_of_msgtick_and_msgend_wins_the_shared_slot() {
         let t = "TEMPUPGRADE 5\nMSGTICK 57F 1 9\nMSGEND 601 1 100\nEND\n";

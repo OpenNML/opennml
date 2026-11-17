@@ -87,6 +87,7 @@ fn move_to(camera: &str, ms: i32) -> Presentation {
     }
 }
 
+// QUIRK E-232, E-235: kept
 #[test]
 fn cut_141_applies_on_the_next_frame_and_keeps_a_running_move() {
     // E-232 (`FUN_0042EB50`, `0x00432590` step 1): 141 remembers the cut; the next frame applies only it (move,
@@ -127,6 +128,7 @@ fn cut_141_applies_on_the_next_frame_and_keeps_a_running_move() {
     );
 }
 
+// QUIRK E-233: kept
 #[test]
 fn moves_chain_and_pass_the_rest_on() {
     // E-233: moves are appended; the rest time of a frame passes exactly to the next.
@@ -164,6 +166,7 @@ fn moves_chain_and_pass_the_rest_on() {
     assert_eq!(w.pose(), pose);
 }
 
+// QUIRK E-233: kept
 #[test]
 fn a_chained_move_keeps_the_target_rest_of_the_previous_one() {
     // E-233 (`0x00432590` steps 5/6): if a move ends in the middle of a frame, step 5 shifts the target by its rest,
@@ -190,6 +193,7 @@ fn a_chained_move_keeps_the_target_rest_of_the_previous_one() {
     assert_close(w.camera.target, w.ground(start.at), "target at the target");
 }
 
+// QUIRK E-233: kept
 #[test]
 fn a_move_shorter_than_a_frame_is_dropped() {
     // E-233: a move with time <= frame time (also 0 and negative) lapses without effect; only one move is taken per
@@ -214,6 +218,7 @@ fn a_move_shorter_than_a_frame_is_dropped() {
     assert!(!w.script.running());
 }
 
+// QUIRK E-233: kept
 #[test]
 fn to_game_172_freezes_the_target_at_the_event() {
     // E-233 (`FUN_00433FC0`): 172 takes the camera target at the call, not at the start of the move, and resets
@@ -253,6 +258,8 @@ fn to_game_172_freezes_the_target_at_the_event() {
     );
 }
 
+// QUIRK E-233: kept
+// QUIRK E-250: deviation
 #[test]
 fn move_to_backup_216_uses_the_backup_at_the_event() {
     // E-233 (`FUN_004310E0`, `FUN_0042DB70`, `FUN_00430B20`): 143 remembers eye and target, 216 copies them into the
@@ -290,6 +297,7 @@ fn move_to_backup_216_uses_the_backup_at_the_event() {
     assert_eq!(w.camera.target, w.ground(b_target));
 }
 
+// QUIRK E-234: kept
 #[test]
 fn bind_175_moves_the_target_not_the_eye_and_ends_when_the_object_is_gone() {
     // E-234 (`FUN_0042DDA0`, `0x00432590` step 3): the target follows the object each frame, the eye stays; if the
@@ -323,6 +331,7 @@ fn bind_175_moves_the_target_not_the_eye_and_ends_when_the_object_is_gone() {
     assert_eq!(w.script.bind, None);
 }
 
+// QUIRK E-233: kept
 #[test]
 fn rotate_212_is_relative_in_degrees_and_may_overshoot_one_frame() {
     // E-233 (`FUN_0042DEE0`): rate (degrees * pi_f) / (ms * 180) per game ms, rotation of the offset eye - target
@@ -380,6 +389,7 @@ fn rotate_212_is_relative_in_degrees_and_may_overshoot_one_frame() {
     assert!(w.script.rotation.is_none());
 }
 
+// QUIRK E-234: kept
 #[test]
 fn center_2_and_170_jump_at_once() {
     // Actions 2 and 170 (re/script-actions, E-234): target (x, 0, z) at ground height, eye =
@@ -408,6 +418,8 @@ fn center_2_and_170_jump_at_once() {
     assert_eq!(w.script.bind, Some(id), "the binding stays");
 }
 
+// QUIRK E-232, E-235: kept
+// QUIRK E-250: deviation
 #[test]
 fn script_camera_handles_unknown_cameras() {
     // E-232: an unknown camera cuts or moves to the origin (eye (0, 0, 0), target map corner at height 0, D-254);
@@ -481,6 +493,7 @@ fn appending_stops_at_max_moves() {
     assert_eq!(w.script.moves.len(), MAX_MOVES);
 }
 
+// QUIRK E-232: kept
 #[test]
 fn camera_rests_in_pause() {
     // Time basis is the game time of the frame; in the pause (`GameSession::advance` without `running`) no frame
@@ -547,6 +560,7 @@ fn camera_rests_in_pause() {
     assert_eq!(session.presentation.camera.rest_ms, 1950.0);
 }
 
+// QUIRK O-447: kept
 #[test]
 fn held_time_turns_the_script_camera_at_once() {
     // O-447 (re/menu-level ML.15 no. 4): after the stopped menu level (`GameSession::hold`) the camera of the scripts

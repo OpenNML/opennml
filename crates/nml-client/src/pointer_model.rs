@@ -238,6 +238,8 @@ mod tests {
 
     /// re/pointer-3d MZ.11 "Phase": the loop begins in the first drawn frame (not when loading), e = 1250 ms -> 250 ms,
     /// tick 1200.
+    // QUIRK O-459: kept
+    // QUIRK O-460: deviation
     #[test]
     fn first_drawn_frame_starts_the_loop() {
         let Some(mut m) = model() else { return };
@@ -253,6 +255,8 @@ mod tests {
 
     /// `nml-game` sets the pointer in every frame; the same ID never restarts, not even with a different variant or
     /// tint.
+    // QUIRK O-459: kept
+    // QUIRK O-460: deviation
     #[test]
     fn same_choice_every_frame_keeps_the_loop() {
         let Some(mut m) = model() else { return };
@@ -281,6 +285,7 @@ mod tests {
     }
 
     /// O-459: every new ID begins hard at 0 in its first frame, also the return to 7.
+    // QUIRK O-459: kept
     #[test]
     fn new_id_restarts_hard() {
         let Some(mut m) = model() else { return };
@@ -301,6 +306,7 @@ mod tests {
     }
 
     /// re/pointer-3d MZ.11 "2 s invisible": the phase keeps running without a drawn frame (O-459).
+    // QUIRK O-459: kept
     #[test]
     fn hidden_pointer_keeps_running() {
         let Some(mut m) = model() else { return };
@@ -314,6 +320,8 @@ mod tests {
 
     /// re/pointer-3d MZ.11: pointer 10 (`ausnehmen`, `zeitfaktor` 1.2) loops in 1200 ms; at 600 ms the scaled tick
     /// is 2880 (= 2400 file ticks).
+    // QUIRK O-459: kept
+    // QUIRK O-461: deviation
     #[test]
     fn cutting_runs_1200_ms() {
         let Some(mut m) = model() else { return };
@@ -329,6 +337,7 @@ mod tests {
 
     /// O-462: the hardware branch sets only the ID; back with software the old animation keeps running until the ID
     /// changes.
+    // QUIRK O-462: kept
     #[test]
     fn hardware_sets_the_id_without_animation() {
         let Some(mut m) = model() else { return };
@@ -352,6 +361,7 @@ mod tests {
     }
 
     /// Only the software branch takes over the tint.
+    // QUIRK O-462: kept
     #[test]
     fn tint_follows_the_choice_only_with_software() {
         let Some(mut m) = model() else { return };
@@ -373,6 +383,7 @@ mod tests {
 
     /// A query before the first frame shows phase 0 of the new ID but does not start the loop; the following frame
     /// begins at 0.
+    // QUIRK O-459: kept
     #[test]
     fn preview_does_not_start_the_loop() {
         let Some(mut m) = model() else { return };
@@ -398,6 +409,7 @@ mod tests {
 
     /// End of a video: `SetPointer(0)`, `SetPointer(7)` - the loop of 7 restarts even if 7 was already running; in the
     /// hardware branch only the ID.
+    // QUIRK O-459: kept
     #[test]
     fn video_end_restarts_seven() {
         let Some(mut m) = model() else { return };
@@ -421,6 +433,7 @@ mod tests {
 
     /// re/pointer-3d MZ.11 "position": origin from `pointer_origin`, pieces = carrier and the sub-object of animation
     /// 7.
+    // QUIRK O-461: deviation
     #[test]
     fn scene_origin_and_pieces() {
         let Some(mut m) = model() else { return };

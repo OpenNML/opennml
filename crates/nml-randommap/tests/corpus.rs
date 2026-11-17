@@ -121,6 +121,7 @@ fn ac_and_ea_give_the_same_map() {
     assert_eq!(ac.player_areas, ea.player_areas);
 }
 
+// QUIRK D-320: kept
 #[test]
 fn centre_tile_is_flag_without_koth() {
     let Some((vfs, types)) = open() else { return };
@@ -202,6 +203,7 @@ fn every_size_and_player_count_generates() {
     }
 }
 
+// QUIRK D-336: kept
 #[test]
 fn generation_has_no_hidden_state() {
     let Some((vfs, types)) = open() else { return };
@@ -408,6 +410,8 @@ const GERMAN: [Expected; 6] = [
 
 // Confirmed by the comparison with the original (reference run, load path bit-identical: heights, GUIDs,
 // steepness, vertex color, water alpha). Runs via the load path without the object step (D-341).
+// QUIRK D-342: kept
+// QUIRK D-341: deviation
 #[test]
 fn digests_per_script() {
     let Some((vfs, types)) = open() else { return };
@@ -453,6 +457,7 @@ const WITHOUT_BLOCKING01: &[u32] = &[
     3411, 3500, 3503, 3505, 3908, 3909, 3916, 3917, 4000, 4001, 4002, 4011, 4012, 4013, 4200,
 ];
 
+// QUIRK D-355, D-356: kept
 #[test]
 fn placed_object_models_load() {
     use nml_formats::prj::parse_project;
@@ -812,6 +817,8 @@ const GERMAN_WITH_OBJECTS: [ExpectedWithObjects; 6] = [
 
 /// Checksums with the object step per map type (meadow), confirmed by the comparison with the original
 /// (reference run, see [`GERMAN_WITH_OBJECTS`]).
+// QUIRK D-365: kept
+// QUIRK D-341: deviation
 #[test]
 fn digests_with_objects_per_script() {
     let Some((vfs, types)) = open() else { return };
@@ -913,6 +920,7 @@ const GERMAN_CARIBBEAN_PER_GUID: [(u32, usize); 35] = [
 /// `object_block` come from the counter-check of the debug copy with node scale, whose objects (slot
 /// 8/9/10 = 8/719/305, all rotations) and byte field (with the `OBJ_BLOCK_PATH` rectangles at 0)
 /// equal the memory of the original.
+// QUIRK D-365: kept
 #[test]
 fn caribbean_matches_the_reference_run() {
     let Some((vfs, types)) = open() else { return };
@@ -944,6 +952,7 @@ fn caribbean_matches_the_reference_run() {
     );
 }
 
+// QUIRK D-323: kept
 #[test]
 fn continental_tree_block_per_landscape() {
     let Some((vfs, types)) = open() else { return };
@@ -1070,6 +1079,8 @@ fn koth_places_one_flag_on_the_centre() {
 /// without level `[RESOURCES]` and slot configs (time-of-day stage 0 even for winter and night),
 /// world objects = placed objects, no level script, no fog, no start environment; checksum
 /// repeatable and dependent on the seed.
+// QUIRK D-364: kept
+// QUIRK D-363: deviation
 #[test]
 fn random_rules_load_without_lvl() {
     use nml_randommap::{build_level, rules_input};
@@ -1152,6 +1163,7 @@ fn random_rules_load_without_lvl() {
 
 /// E-82: the island flag follows the map script - only `Islands.rnd` yields 1, the other five 0;
 /// the AI query `0x5130` returns it.
+// QUIRK E-82: kept
 #[test]
 fn island_query_follows_the_script() {
     use nml_randommap::build_level;
@@ -1233,6 +1245,7 @@ fn table_objects(
 /// O-432 (reference run): lobby human, AI, open, open on continental with 4 players -
 /// slots 0 ... 3 active, 0 human and 1 AI with HQ 1300 on the `TOWN_CENTER` tile and workers, 2
 /// and 3 active without a player and without start objects; the deposits stand on all four start areas.
+// QUIRK O-432: kept
 #[test]
 fn lobby_human_ai_open_open() {
     use nml_sim::state::Control;
@@ -1300,6 +1313,7 @@ fn tree_rot_counts(state: &nml_sim::state::SimState) -> Vec<i32> {
 /// D-342: `SimState.crt` starts at the final state of the generator, every created tree draws
 /// one value in order of success (`PropertyTree_Construct` `0x00531BCF`); the other objects and the
 /// start objects draw nothing.
+// QUIRK D-342: kept
 #[test]
 fn crt_starts_at_the_generator_end_plus_one_per_tree() {
     use nml_sim::module::tree::rot_count;
@@ -1319,6 +1333,8 @@ fn crt_starts_at_the_generator_end_plus_one_per_tree() {
 
 /// W-61 (deviation): the fishing baskets `FISHING` 3505 draw nothing from `crt` in the reimplementation -
 /// in the original 10 draws per basket (`FishEffect_Construct`, reference run). continental has baskets.
+// QUIRK D-342: kept
+// QUIRK W-61: deviation
 #[test]
 fn fishing_baskets_draw_nothing() {
     use nml_sim::rng::CrtRand;
@@ -1338,6 +1354,7 @@ fn fishing_baskets_draw_nothing() {
 
 /// W-6: on the random map even stage 0 sets the starting resources (`values[0]` of all
 /// start records) and the deposits (gold 3500: `CONFIG_GUID 26`, `values[stage]`).
+// QUIRK W-6: kept
 #[test]
 fn deposits_use_resource_level_zero() {
     let Some((vfs, types)) = open() else { return };
@@ -1539,6 +1556,7 @@ fn load_random_save(
 /// generator checksums and the rules checksum equal), objects from the savegame (state equal), and the checksum
 /// of every following step equal to the unsaved match. The original generates without the object step when loading
 /// (different ground) and saves the rotation Y lossily; the reimplementation reproduces neither.
+// QUIRK D-341: deviation
 #[test]
 fn save_and_load_continue_bitwise() {
     use nml_sim::save::{SaveGame, checksum};
@@ -1575,6 +1593,7 @@ fn save_and_load_continue_bitwise() {
 
 /// D-348 (deviation): a King-of-the-Hill savegame loads the KotH map - the game mode comes from the map
 /// description of the savegame, not from the session (the original built the NORMAL map from the main menu).
+// QUIRK D-348: deviation
 #[test]
 fn koth_save_loads_the_koth_map() {
     use nml_sim::save::{SaveGame, checksum};

@@ -155,6 +155,7 @@ fn start_sends_0x14() {
     }
 }
 
+// QUIRK E-326: deviation
 #[test]
 fn exit_branch_is_dead() {
     // `0x004CF7C0`: `exit` code 5 and 8 return 1 and do nothing (`lan4.dlg` has no such button, E-326).
@@ -197,6 +198,7 @@ fn leave_lobby() -> UiEffect {
     UiEffect::Net(AppCmd::LeaveLobby)
 }
 
+// QUIRK E-326: deviation
 #[test]
 fn escape_in_lan4_queues_leave_lobby() {
     // (Deviation from E-326) ESC that no element takes queues `{0x2D}` while `LAN4` is open (like `EXIT` of the lobby)

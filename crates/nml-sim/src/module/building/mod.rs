@@ -1267,6 +1267,7 @@ mod tests {
         create_object(sim, &mut desc).unwrap()
     }
 
+    // QUIRK W-73: kept
     #[test]
     fn build_time_costs_and_hitpoints_per_step_follow_the_config() {
         let rules = economy_rules();
@@ -1327,6 +1328,7 @@ mod tests {
         assert_eq!(timers[0].b, 100);
     }
 
+    // QUIRK W-78: kept
     #[test]
     fn read_params_draws_a_table_random_only_for_finished_animated_buildings() {
         let rules = economy_rules();

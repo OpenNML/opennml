@@ -175,6 +175,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-372: deviation
     #[test]
     fn select_takes_the_entry_and_falls_back_to_the_default_device() {
         let drivers = vec![

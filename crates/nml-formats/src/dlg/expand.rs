@@ -734,6 +734,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-2: kept
     #[test]
     fn numbers_add_variables_and_ignore_minus() {
         let out = run(
@@ -791,6 +792,7 @@ mod tests {
         assert_eq!(b.pressed_text_color, None);
     }
 
+    // QUIRK O-6: kept
     #[test]
     fn loop_repeats_and_appends_counters() {
         let src = "FRAME F\r\n\
@@ -851,6 +853,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-6: kept
     #[test]
     fn loop_jumps_back_by_line() {
         // The rest of the /LOOP line is still in the line buffer and is read first after every jump back
@@ -874,6 +877,7 @@ mod tests {
         assert_eq!(names(&out.widgets), ["F", "FY0", "FB0", "FB1"]);
     }
 
+    // QUIRK O-6: kept
     #[test]
     fn frame_clears_variables_and_loops() {
         let src = "FRAME F VAR A 5 LABEL L EXTENT A 0 0 0 /LABEL /FRAME\r\n\
@@ -907,6 +911,7 @@ mod tests {
         assert_eq!(shape(&out.widgets), "A(AX,B,BL)");
     }
 
+    // QUIRK O-5: kept
     #[test]
     fn head_keys_after_the_first_child_abort_the_file() {
         // After the first child, the child area (FUN_004E1E50) keeps reading; a head key there is an unknown word
@@ -950,6 +955,7 @@ mod tests {
         assert_eq!(out.diagnostics.len(), 1);
     }
 
+    // QUIRK O-7: kept
     #[test]
     fn background_keys_depend_on_order_and_menu_level() {
         const LVL: &str = "DATA/LEVELS/MENÜLEVEL/MENÜ2.LVL";
@@ -1029,6 +1035,8 @@ mod tests {
         assert_eq!(frame_desc(&out).duration_ms, 7);
     }
 
+    // QUIRK O-10: kept
+    // QUIRK O-9: deviation
     #[test]
     fn defaults_follow_the_original() {
         let src = "FRAME F\r\nBUTTON B /BUTTON\r\nCOMBOBOX C /COMBOBOX\r\nLISTBOX L /LISTBOX\r\n\
@@ -1188,6 +1196,7 @@ mod tests {
         assert_eq!(out.diagnostics.len(), 1);
     }
 
+    // QUIRK O-11: kept
     #[test]
     fn element_keys_fill_the_descriptors() {
         let src = "FRAME F\r\n\
@@ -1284,6 +1293,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-2, O-3: deviation
     #[test]
     fn expand_stops_like_the_original() {
         // (case, source text, expected tree, line of the diagnostic)
@@ -1377,6 +1387,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-3: deviation
     #[test]
     fn huge_or_deep_files_terminate() {
         // A huge loop ends with a diagnostic at the word limit instead of filling up memory.

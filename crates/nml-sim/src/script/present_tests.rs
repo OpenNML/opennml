@@ -370,6 +370,7 @@ fn camera_actions_with_timer_percent_use_the_timer() {
     );
 }
 
+// QUIRK E-167: kept
 #[test]
 fn camera_center_2_uses_the_c_division_and_ignores_the_player() {
     // Area (3, 4)-(6, 9): ((3+6)/2, (4+9)/2) = (4, 6); the player (7) is not read.
@@ -459,6 +460,7 @@ fn actions_177_178_unbind_like_176() {
     assert_eq!(got, vec![Presentation::CameraBind { id: None }; 3]);
 }
 
+// QUIRK E-236: kept
 #[test]
 fn light_restore_381_sets_the_memory() {
     let rules = camera_rules(&script(&[(&[], &["n381"])]), &[], &[]);
@@ -786,6 +788,7 @@ fn ui_lock_inside_cinemascope_keeps_the_selection() {
     );
 }
 
+// QUIRK E-169: kept
 #[test]
 fn cinemascope_clears_selection_portraits_and_highlight() {
     for (action, on) in [("n147", true), ("n148", false)] {
@@ -823,6 +826,7 @@ fn cinemascope_clears_selection_portraits_and_highlight() {
     assert!(state.script.mission.cinemascope);
 }
 
+// QUIRK E-247: deviation
 #[test]
 fn fade_145_146_sets_faded_out() {
     let (state, _, got) = scene_run(&["n146;1200"], 1);
@@ -915,6 +919,7 @@ fn portrait_149_ignores_slots_outside_0_to_3_but_emits() {
     );
 }
 
+// QUIRK E-228: kept
 #[test]
 fn highlight_152_takes_the_last_present_id_and_155_clears() {
     let rules = scene_rules(&script(&[(
@@ -963,6 +968,7 @@ fn highlight_152_takes_the_last_present_id_and_155_clears() {
     assert_eq!(state.script.mission.selection, vec![b]);
 }
 
+// QUIRK E-240: kept
 #[test]
 fn speech_150_emits_speech_and_no_end_for_the_interrupted_line() {
     // E-240: the new line 301 interrupts 300; there is no end for 300.
@@ -991,6 +997,7 @@ fn speech_150_emits_speech_and_no_end_for_the_interrupted_line() {
     assert!(run_present(&mut state, &rules, 100).is_empty());
 }
 
+// QUIRK E-240, E-248: kept
 #[test]
 fn speech_end_after_the_length_and_213_closes_its_window_at_the_end() {
     // Line 302 (200 ms) on slot 1: exactly in the fourth step.
@@ -1067,6 +1074,7 @@ fn speech_end_after_the_length_and_213_closes_its_window_at_the_end() {
     assert!(memory(&state).info_frames.is_empty());
 }
 
+// QUIRK E-249: kept
 #[test]
 fn info_window_213_closes_the_windows_of_its_own_and_the_running_text() {
     // If line 303 runs with a 168 window 303 and 213 arrives with text 301: first the windows of 301 and 303
@@ -1112,6 +1120,7 @@ fn info_window_213_closes_the_windows_of_its_own_and_the_running_text() {
     );
 }
 
+// QUIRK E-241: deviation
 #[test]
 fn tip_183_slot_2_does_nothing() {
     // E-241: only slot 0 and 1; otherwise no event, no history, no state.
@@ -1149,6 +1158,7 @@ fn tip_183_slot_2_does_nothing() {
     assert!(run_present(&mut state, &rules, 10).is_empty());
 }
 
+// QUIRK E-242: kept
 #[test]
 fn second_tip_in_a_slot_never_reports_the_first() {
     // E-242: the second tip in slot 0 overwrites time and text; the first never reports "ended". Slot 1
@@ -1178,6 +1188,7 @@ fn second_tip_in_a_slot_never_reports_the_first() {
     assert!(ends.contains(&Presentation::TipEnd { text: 302, slot: 1 }));
 }
 
+// QUIRK E-249: kept
 #[test]
 fn info_frames_168_169_one_per_text_id() {
     // E-249: one per text ID. 168 replaces the same ID, other windows stay, 169 closes exactly this ID.
@@ -1232,6 +1243,7 @@ fn info_frames_168_169_one_per_text_id() {
     assert_eq!(keys, vec![6]);
 }
 
+// QUIRK E-249: kept
 #[test]
 fn info_frame_table_full_reports_limit_and_still_emits() {
     // With a full table the new window is not taken in (the savegame stays loadable), `Limit` is reported and
@@ -1274,6 +1286,7 @@ fn info_frame_table_full_reports_limit_and_still_emits() {
     assert_eq!(loaded.script.mission, state.script.mission);
 }
 
+// QUIRK E-244: deviation
 #[test]
 fn ping_7_uses_the_area_center_and_unknown_area_sends_nothing() {
     // Area (3, 4)-(6, 9): center (4, 6); the player goes along unchanged (no filter).
@@ -1490,6 +1503,7 @@ fn silent_presentation_actions_are_handled_not_pending() {
 /// always writes `{370, 1, Z0}` for 370 (`0x0056C526`), so from a script exactly one value always arrives -
 /// even with further parameters; a message with a different word count is done without effect. 371
 /// does not check the word count.
+// QUIRK E-251: kept
 #[test]
 fn attack_music_370_needs_exactly_one_value() {
     use super::actions::{Dispatched, MsgValue, ScriptMsg, dispatch};
@@ -1626,6 +1640,7 @@ fn weather_209_210() {
     assert_eq!(memory(&state).weather, 0);
 }
 
+// QUIRK E-237: kept
 #[test]
 fn fog_505_is_immediate_and_506_swaps_red_and_blue() {
     // 505 `color; start; end`: immediately, color unchanged (E-237).
@@ -1747,6 +1762,7 @@ fn quick_save_508_only_in_the_campaign() {
     }
 }
 
+// QUIRK E-166: deviation
 #[test]
 fn profile_382_writes_mirror_and_event_383_reads_it() {
     let rules = scene_rules(&script(&[(
@@ -1798,6 +1814,7 @@ fn profile_382_writes_mirror_and_event_383_reads_it() {
     assert_eq!(loaded.script.mission, state.script.mission);
 }
 
+// QUIRK E-166: deviation
 #[test]
 fn profile_383_overwrites_the_variable_with_the_mirror() {
     // An already set variable is overwritten too (`Var[p0] = msg[2]`).

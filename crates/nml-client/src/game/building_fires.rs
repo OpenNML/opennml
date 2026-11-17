@@ -427,6 +427,7 @@ mod tests {
         )
     }
 
+    // QUIRK C-117: kept
     #[test]
     fn a_house_at_30_percent_burns_with_its_zones_and_one_at_60_does_not() {
         let mut f = Fixture::new();
@@ -815,6 +816,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-216: kept
     #[test]
     fn trains_never_burn_without_hit_zones_and_slaves_never_call() {
         let mut f = ShipFixture::new();

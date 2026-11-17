@@ -44,6 +44,7 @@ fn sources_of(sim: &Sim, id: ObjectId) -> Vec<VisionSource> {
         .collect()
 }
 
+// QUIRK C-310: kept
 #[test]
 fn init_registers_the_hunter_and_its_vision() {
     // C-310 (simulation part): the headhunter on slot 8 reads the price from the value set of slot
@@ -79,6 +80,7 @@ fn init_registers_the_hunter_and_its_vision() {
     );
 }
 
+// QUIRK C-310: kept
 #[test]
 fn a_foreign_type_with_module_34_sees_but_is_not_registered() {
     // `SetVisionSource` sits behind the branch "type 0x1004-6 / no valid headhunter", so it
@@ -105,6 +107,7 @@ fn a_foreign_type_with_module_34_sees_but_is_not_registered() {
     assert!(sources_of(&sim, id).is_empty());
 }
 
+// QUIRK C-310: kept
 #[test]
 fn destroying_the_hunter_clears_table_and_vision() {
     // Destructor `0x00517B80`: `FUN_0047B5B0(kind)` (entry empty), `0x0047E0F0(-1, hid)`.
@@ -175,6 +178,7 @@ fn a_second_hunter_overwrites_and_its_destructor_clears() {
     assert_eq!(sources_of(&sim, second), [bound_source(second)]);
 }
 
+// QUIRK C-310: kept
 #[test]
 fn the_building_spawns_units_and_the_hunter_with_0x2d03() {
     // `0x2D03 {guid, slot}` (`0x0050BA00` -> `!PropertyBuilding_SpawnProducedUnit`, 2.3):
@@ -218,6 +222,7 @@ fn the_building_spawns_units_and_the_hunter_with_0x2d03() {
     assert_eq!(count(&sim), before + 2);
 }
 
+// QUIRK C-309: kept
 #[test]
 fn the_price_query_answers_in_the_arguments() {
     // `0x222` (inline in `0x00519210`, 2.1): `[2..6] = price, target player, target GUID, customer`.
@@ -239,6 +244,7 @@ fn the_price_query_answers_in_the_arguments() {
     assert_eq!(send(&mut sim, hh, &Message::new(0x1022, &[])), -1);
 }
 
+// QUIRK C-309: kept
 #[test]
 fn the_hire_message_refunds_and_restarts_the_search() {
     // `0x122` (`0x00517FB0`, 3.2): refund to the old customer, then customer, paid price,
@@ -373,6 +379,7 @@ fn walk_of<'s>(sim: &'s Sim, id: ObjectId) -> &'s crate::module::walk::Walk {
     crate::module::walk::walk(sim, id).expect("walk")
 }
 
+// QUIRK C-312, C-324: kept
 #[test]
 fn the_hunter_searches_one_second_after_hiring() {
     // 9.2: measured T = N1 = step 1 (command); `0x322` in object tick
@@ -414,6 +421,7 @@ fn the_hunter_searches_one_second_after_hiring() {
     );
 }
 
+// QUIRK C-312: kept
 #[test]
 fn the_hunter_takes_the_next_object_of_the_guid() {
     // C-312: the search takes the **nearest** object with target GUID and target owner (MYLIST
@@ -438,6 +446,7 @@ fn the_hunter_takes_the_next_object_of_the_guid() {
     assert_eq!(walk_of(&sim, hh).quarry, far);
 }
 
+// QUIRK C-312: kept
 #[test]
 fn the_search_ignores_distance_and_fog() {
     // C-312: whole map (radius -1), filter without `MM_CHECKFOG`: the target at the other end of
@@ -463,6 +472,7 @@ fn the_search_ignores_distance_and_fog() {
     assert_eq!(walk_of(&sim, hh).quarry, sheriff);
 }
 
+// QUIRK C-312: kept
 #[test]
 fn a_quartered_target_makes_the_building_the_target() {
     // C-312: the sheriff is in the HQ 2500 of B via `quarter::accept_unit` (modules 3 + 23). The
@@ -488,6 +498,7 @@ fn a_quartered_target_makes_the_building_the_target() {
     );
 }
 
+// QUIRK C-316: kept
 #[test]
 fn no_target_sends_the_hunter_home() {
     // C-316: without an object of the GUID at the target player -> FINDTO `{building, -1, 1}` to
@@ -546,6 +557,7 @@ fn no_target_sends_the_hunter_home() {
     assert_eq!(sim.state.resource(0, 0), 700, "no refund");
 }
 
+// QUIRK C-316: kept
 #[test]
 fn without_buildings_the_hunter_vanishes_at_once() {
     // C-316: hire, then remove HQ and target (phase 0) before `0x322`. Without a
@@ -588,6 +600,7 @@ fn without_buildings_the_hunter_vanishes_at_once() {
     assert_eq!(sim.state.resource(0, 0), 700, "no refund");
 }
 
+// QUIRK C-324: kept
 #[test]
 fn an_idle_hunter_goes_home() {
     // C-324 (3.10): after `update_events` without `MOVE`, without `ANIM_LOCKED` and without
@@ -626,6 +639,7 @@ fn an_idle_hunter_goes_home() {
     assert_eq!(hunt_state(&sim, hh), (0, ObjectId::NONE, ObjectId::NONE));
 }
 
+// QUIRK C-317: kept
 #[test]
 fn think_resets_a_busy_state() {
     // C-317 (search part): `0x322` with state 1 (or 2) -> `retry` (`0x00517F60`): state 0 and
@@ -674,6 +688,7 @@ fn think_resets_a_busy_state() {
     assert!(pending(&sim, hh, msg::THINK));
 }
 
+// QUIRK C-324: kept
 #[test]
 fn rehiring_on_the_way_home_cancels_the_vanish() {
     // Hypothesis (3.6): rehiring on the way home -> `0x122` with refund to the
@@ -816,6 +831,7 @@ fn explosions(events: &[SimEvent]) -> Vec<[f32; 3]> {
         .collect()
 }
 
+// QUIRK C-314, C-315: kept
 #[test]
 fn the_near_kill_follows_its_timeline() {
     // 9.2, C-314, C-315: walk success in state 1 in object tick N -> `m_KillAnimNear` (lock on),
@@ -887,6 +903,7 @@ fn the_near_kill_follows_its_timeline() {
     }
 }
 
+// QUIRK E-189: kept
 #[test]
 fn headhunter_success_counts_for_the_customer() {
     // `FUN_00519000` `0x0051901C`: first the kill counter of the customer with the target GUID. The
@@ -921,6 +938,7 @@ fn headhunter_success_counts_for_the_customer() {
     assert_eq!(counted, 1, "only the customer counts");
 }
 
+// QUIRK C-315, C-319: kept
 #[test]
 fn a_swimming_hunter_kills_at_once() {
     // C-319: if the headhunter is swimming at the walk success, `0x00517CE0` calls the query with
@@ -991,6 +1009,7 @@ fn building_scene(sim: &mut Sim) -> BuildingScene {
     }
 }
 
+// QUIRK C-312, C-314, C-317: kept
 #[test]
 fn a_building_gets_dynamite() {
     // 9.2, 3.5, C-314, C-317: walk success in state 2 (object tick N) -> `m_KillAnimFar` 5, lock;
@@ -1095,6 +1114,7 @@ fn a_building_gets_dynamite() {
     );
 }
 
+// QUIRK C-313, C-314: kept
 #[test]
 fn an_unreachable_target_gets_dynamite_from_afar() {
     // C-313: the sheriff stands on an island (inner area of `wall_ring`). The
@@ -1145,6 +1165,7 @@ fn an_unreachable_target_gets_dynamite_from_afar() {
     assert_eq!((p.flight_ms, impact), (1462, 22), "measured");
 }
 
+// QUIRK C-317: kept
 #[test]
 fn a_vanished_target_is_retried() {
     // Hypothesis (11): the target dies during the approach through third parties. The walk aborts
@@ -1189,6 +1210,7 @@ fn a_vanished_target_is_retried() {
     assert_eq!(hunt_state(&sim, hh).0, 0, "N + 39: reset");
 }
 
+// QUIRK C-318: kept
 #[test]
 fn a_takeover_mid_throw_keeps_the_flying_dynamite() {
     // C-318 (3.2): B takes over the headhunter in the object tick after the throw (N + 9) with
@@ -1509,6 +1531,7 @@ fn a_locked_hunter_corpse_survives_saving_and_loading() {
 
 // --- Hiring in the vanish step (C-340) ---
 
+// QUIRK C-340: kept
 #[test]
 fn hiring_in_the_vanish_step_pays_and_loses_the_order() {
     // C-340 (Ghidra read): `GameWorld_CmdHireHeadhunter` `0x0048A8F0` only queries

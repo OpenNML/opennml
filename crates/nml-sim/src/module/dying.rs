@@ -88,6 +88,8 @@ pub struct Dying {
     /// `m_Listeners`: death callbacks.
     pub listeners: Listeners,
     /// `m_RobEffectID`: stored (savegame/fidelity to the original), never used in the original (C-151).
+    ///
+    /// QUIRK C-151: kept
     pub rob_effect_id: i32,
     /// `m_RobGold`: gold when robbing (25 or 0).
     pub rob_gold: i32,
@@ -765,6 +767,7 @@ mod tests {
         (t.expect("died"), new_id.expect("owner changed"), events)
     }
 
+    // QUIRK C-140, C-142, C-144, C-147, C-149: kept
     #[test]
     fn a_sabre_becomes_a_neutral_corpse_and_is_removed_after_332_ticks() {
         let rules = rules();
@@ -883,6 +886,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-143: kept
     #[test]
     fn the_corpse_still_takes_damage_and_gives_experience() {
         let rules = rules();
@@ -910,6 +914,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-150: kept
     #[test]
     fn dying_aborts_all_modules_and_disables_most_after_the_next_tick() {
         let rules = rules();
@@ -926,6 +931,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-145, C-149: kept
     #[test]
     fn rob_and_ghost_flags_follow_the_original() {
         let rules = rules();
@@ -1003,6 +1009,7 @@ mod tests {
         );
     }
 
+    // QUIRK E-148: kept
     #[test]
     fn dying_sets_bit_2_on_the_old_id_before_the_owner_change() {
         // `PropertyDying_StartDying` `0x0050EE73`: bit 2 directly after the `DIED` check on the
@@ -1034,6 +1041,7 @@ mod tests {
         assert_eq!(crate::world::object_event_bits(&sim, corpse), 1 << 4);
     }
 
+    // QUIRK E-137, E-189: kept
     #[test]
     fn kill_counter_counts_for_the_last_attacker_slot() {
         // `0x0050F606`: slot = `(last attacker >> 11) & 0x1F`, GUID of the victim; before the
@@ -1060,6 +1068,7 @@ mod tests {
         assert_eq!(crate::world::kill_count(&sim, 2, PIKEMAN), 1);
     }
 
+    // QUIRK E-189: kept
     #[test]
     fn ghost_kill_counts_without_owner_change() {
         // Ghost branch `0x0050F2FE`: counted after `0x21B`, no owner change.

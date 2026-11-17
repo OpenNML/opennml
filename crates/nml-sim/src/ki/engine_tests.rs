@@ -97,6 +97,7 @@ impl Bench {
     }
 }
 
+// QUIRK E-9: kept
 #[test]
 fn twenty_threads_run_in_cmap_order() {
     let code = [callb(MARK), callb(MARK), callb(MARK), word(op::JMP, 0)];
@@ -112,6 +113,7 @@ fn twenty_threads_run_in_cmap_order() {
     assert_eq!(b.take_marks(), expected);
 }
 
+// QUIRK E-9: kept
 #[test]
 fn a_spawn_runs_in_the_same_slice_only_behind_the_position() {
     let marks = [callb(MARK); 6];
@@ -147,6 +149,7 @@ fn a_spawn_runs_in_the_same_slice_only_behind_the_position() {
     assert_eq!(b.engine.next_thread_id, 49);
 }
 
+// QUIRK E-9: kept
 #[test]
 fn a_spawn_into_the_bucket_of_the_position_waits() {
     // Thread 33 goes to the front of the bucket of position 32 - before it - and waits.
@@ -166,6 +169,7 @@ fn a_spawn_into_the_bucket_of_the_position_waits() {
     assert_eq!(b.keys(), [0, 33, 32]);
 }
 
+// QUIRK E-8: kept
 #[test]
 fn one_tick_runs_three_slices_of_three_steps() {
     let code = [word(op::PUSHA, 1); 12];
@@ -182,6 +186,7 @@ fn one_tick_runs_three_slices_of_three_steps() {
     assert_eq!(b.get(0).pc, 9);
 }
 
+// QUIRK E-8: kept
 #[test]
 fn pause_of_1000_ms_ends_after_167_slots() {
     // c1000 = int(0). After the call of MARK, `PUSHA 1` runs in the 9th step slot, then `JMP 3`, so
@@ -215,6 +220,7 @@ fn pause_of_1000_ms_ends_after_167_slots() {
     assert_eq!(b.take_marks(), [0]);
 }
 
+// QUIRK E-12: kept
 #[test]
 fn sync_run_burns_pauses_without_game_time() {
     // Pause 1000 -> 50 steps of 20 ms each, then the rest; the instance never enters the table.
@@ -265,6 +271,7 @@ fn sync_run_burns_pauses_without_game_time() {
     );
 }
 
+// QUIRK E-12: kept
 #[test]
 fn sync_run_reports_the_ki_pause() {
     // `0x18C` in the synchronous run stops nothing in the run; the run reports it to the caller.
@@ -278,6 +285,7 @@ fn sync_run_reports_the_ki_pause() {
     assert_eq!(b.run_sync_pause(99, &[]), None);
 }
 
+// QUIRK E-12: kept
 #[test]
 fn sync_run_stops_at_the_step_limit() {
     let mut b = Bench::new(vec![module(1, &[], &[word(op::JMP, 0)])]);
@@ -296,6 +304,7 @@ fn sync_run_stops_at_the_step_limit() {
     assert_eq!(b.engine.next_thread_id, 4);
 }
 
+// QUIRK E-6: deviation
 #[test]
 fn sync_run_and_spawn_of_a_missing_module_start_nothing() {
     let mut b = Bench::new(vec![module(1, &[], &[])]);
@@ -366,6 +375,7 @@ fn insert_with_children(b: &mut Bench, id: i32, module: u32, child: u32, grandch
     b.engine.threads.insert(id, t);
 }
 
+// QUIRK E-11, E-44: kept
 #[test]
 fn stop_builtins_follow_e11_and_p9() {
     let idle = [word(op::PUSHA, 1); 9];
@@ -432,6 +442,7 @@ fn grandchild_pc(b: &Bench, id: i32) -> Option<u32> {
         .map(|g| g.pc)
 }
 
+// QUIRK E-44: kept
 #[test]
 fn stop_in_a_sync_run_hits_every_thread_with_a_child() {
     let idle = [word(op::PUSHA, 1); 9];
@@ -444,6 +455,7 @@ fn stop_in_a_sync_run_hits_every_thread_with_a_child() {
     assert!(!b.get(1).stop);
 }
 
+// QUIRK E-42: kept
 #[test]
 fn semaphore_wait_takes_and_continues_in_the_same_slot() {
     let code = [word(op::PUSHA, 1); 6];
@@ -465,6 +477,7 @@ fn semaphore_wait_takes_and_continues_in_the_same_slot() {
     assert_eq!(b.engine.mem.semaphores.get(&5), Some(&1));
 }
 
+// QUIRK E-42: kept
 #[test]
 fn semaphore_builtins_set_clear_and_read() {
     // k = int(0) = 4, j = int(1) = 9.

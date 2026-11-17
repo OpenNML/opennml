@@ -172,6 +172,7 @@ fn units_are_hit_through_the_hull_of_their_running_animation() {
 /// `0x0058E790` passes to `Vector3_ApplyNodeTransform` `0x00578180`. Checked on the SPA finca (flat,
 /// scale y 0.082) and the SID town hall (wide, scale x 2.09) against the same models with
 /// scale 1, as the reimplementation computed before D-367.
+// QUIRK D-367: kept
 #[test]
 fn hitboxes_take_the_node_scale_of_the_rdo() {
     let Some(dir) = corpus_game_dir() else {

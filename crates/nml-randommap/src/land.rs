@@ -214,6 +214,7 @@ mod tests {
         MsvcRand::new(seed).rand() as i32
     }
 
+    // QUIRK D-329: kept
     #[test]
     fn start_angle_draws_mod_361_and_steps_360_by_n() {
         // Seed 209 draws 721 -> `% 361` = 360 degrees, seed 99 draws 361 -> 0 degrees: the same position (D-329).
@@ -244,6 +245,7 @@ mod tests {
         assert_eq!(draws, 1 + 4 * 64 + 3 * 2);
     }
 
+    // QUIRK D-329: kept
     #[test]
     fn player_tiles_count_against_the_last_area() {
         let first = AreaDef {
@@ -281,6 +283,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-329: kept
     #[test]
     fn share_player_lands_keeps_the_counter() {
         // Two blocks of two copies each: first `SharePlayerLands`, then without an ID.
@@ -316,6 +319,7 @@ mod tests {
         assert_eq!(ids(&areas), [7, 7]);
     }
 
+    // QUIRK D-330: kept
     #[test]
     fn land_area_without_id_gets_one() {
         // Land area without an ID on the left half of a 16x16 map.
@@ -371,6 +375,7 @@ mod tests {
         assert!(own > 0);
     }
 
+    // QUIRK D-330: kept
     #[test]
     fn land_area_center_and_shared_id() {
         let def = AreaDef {
@@ -389,6 +394,7 @@ mod tests {
         assert_eq!(lands[0].grown, 1);
     }
 
+    // QUIRK D-346: deviation
     #[test]
     fn area_id_with_low_byte_zero_is_rejected() {
         // Mask = ID low byte = 0: the tile would stay free and be placed again endlessly.
@@ -429,6 +435,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-346: deviation
     #[test]
     fn area_id_with_low_byte_ff_grows_but_is_not_painted() {
         // Mask = `0xFF` = border mark: every tile is placed only once (no hang), but the paint routine

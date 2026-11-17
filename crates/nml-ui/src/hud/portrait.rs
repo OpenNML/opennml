@@ -758,6 +758,8 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         }
     }
 
+    // QUIRK O-238: kept
+    // QUIRK O-240: deviation
     #[test]
     fn nothing_selected_nothing_hovered_draws_nothing_and_keeps_areas() {
         // O-238: nothing selected, nothing under the mouse -> nothing drawn.
@@ -777,6 +779,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert_eq!((hit.guid, hit.kind), (100, 0x1700_0000));
     }
 
+    // QUIRK O-238: kept
     #[test]
     fn group_shows_the_nation_symbol_with_text_500() {
         let mut rig = rig();
@@ -810,6 +813,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert!(rig.portrait(-1, 0, &missing).is_empty());
     }
 
+    // QUIRK O-238: kept
     #[test]
     fn hovered_foreign_object_replaces_empty_or_group_display() {
         // Without selection and with multi-selection the object under the mouse replaces the display (also foreign
@@ -847,6 +851,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert!(rig.portrait(5, 0, &PortraitModel::default()).is_empty());
     }
 
+    // QUIRK O-239: kept
     #[test]
     fn value_formats_follow_n_6_2() {
         // Untracked `%d` or `base[COLOR FF00FF00]+delta`; tracked `cur/base` or `cur/(base...)`;
@@ -913,6 +918,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         );
     }
 
+    // QUIRK O-239: kept
     #[test]
     fn only_nine_values_fit() {
         // O-239: eleven slots for values... slots 0 and 1 belong to portrait and subtitle, nine remain. More values
@@ -959,6 +965,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert_eq!(text[1], ([21, BAR_Y + 1], 0xFFFF_FFFF));
     }
 
+    // QUIRK O-239: kept
     #[test]
     fn missing_values_take_no_place() {
         // Only present values count: the second value stands in slot 3 (4, 32), even if it is the third kind.
@@ -981,6 +988,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert_eq!(rig.areas.len(), 1);
     }
 
+    // QUIRK O-242: kept
     #[test]
     fn subtitle_swallows_keyid_and_keeps_the_space() {
         // O-242: without switch 0x200 `[KEYID 1000]` is dropped, the space before it stays.
@@ -1021,6 +1029,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert_eq!(text[9].0[0] - text[0].0[0], 9 * 10);
     }
 
+    // QUIRK O-242: kept
     #[test]
     fn long_subtitle_wraps_at_130_and_grows_upwards() {
         // Two lines (wrap at 130 px): the bottom edge stays at slot 1 + 12, the text grows upward.
@@ -1033,6 +1042,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert_eq!(ys, BTreeSet::from([top, top + 2, top + 15, top + 17]));
     }
 
+    // QUIRK O-259: kept
     #[test]
     fn counter_row_follows_the_right_edge() {
         // 1024 x 768: first icon (969, 30), second (914, 30), 50 x 50 POINT; time right-aligned at y 80 with shadow
@@ -1072,6 +1082,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert!(pos(Some(rig.atlas("TextFont"))) < pos(Some(ov)));
     }
 
+    // QUIRK O-259: kept
     #[test]
     fn counter_row_skips_entries_without_icon_and_keeps_the_gap_closed() {
         // Without an `icons.ini` entry or with a sheet beyond the list: skipped, x stays (no gap).
@@ -1093,6 +1104,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert_eq!(player_color(Some(12)), 0xFFAC_ACAC);
     }
 
+    // QUIRK O-259: kept
     #[test]
     fn counter_tooltip_area_is_fixed_50() {
         // O-259: the area is 50 x 50, even if the cell of the icon sheet has a different size; the time row follows
@@ -1119,6 +1131,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert!(rig.areas.hit([969, 80]).is_none());
     }
 
+    // QUIRK O-240: deviation
     #[test]
     fn counter_areas_are_rebuilt_each_frame_and_never_duplicate() {
         // Deviation: the original appends the areas again every frame (the list grows); the reimplementation replaces
@@ -1142,6 +1155,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert!(rig.areas.is_empty());
     }
 
+    // QUIRK O-240: deviation
     #[test]
     fn hit_prefers_the_last_area_and_reports_the_bar_kind() {
         // N.6.3: `{0xC, ..., guid, 0x17000000, 1}`; with several hits the last one wins (counter-upgrades after the
@@ -1157,6 +1171,7 @@ Font PanelInfo\nFontSize 12\nTextureFont\nFontName Test\n",
         assert_eq!(hit([200, 200]), None);
     }
 
+    // QUIRK O-239: kept
     #[test]
     fn value_kinds_follow_the_fixed_table() {
         // Tables on the stack of `0x00456F96` (attributes) and `0x00457014` (icons); GUID = icon + 20.

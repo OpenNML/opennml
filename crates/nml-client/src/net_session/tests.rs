@@ -27,6 +27,7 @@ fn texts() -> Texts {
     Texts::load(&vfs, &loc)
 }
 
+// QUIRK E-300: deviation
 #[test]
 fn session_name_defaults_to_session_dash_player() {
     // Quirk E-300 (`FUN_004EB190`): empty -> "<15789> - <player>", written back to `NetSession`.
@@ -240,6 +241,7 @@ fn start_infos_follow_rows_with_an_open_row() {
 
 /// The game speed of the start is at most 20 (protocol rule); 255 from the settings would halt the start. A smaller
 /// game speed stays.
+// QUIRK O-153: deviation
 #[test]
 fn start_infos_clamp_the_speed_to_the_net_limit() {
     let texts = texts();
@@ -363,6 +365,7 @@ fn map_install() -> (tempfile::TempDir, Vfs) {
 
 /// A fixed map only with the same checksum over `.lvl` and `.wld` (deviation from quirk E-322); never without one of
 /// the files; a random map always.
+// QUIRK E-322: deviation
 #[test]
 fn map_available_follows_the_checksum() {
     let (_dir, vfs) = map_install();
@@ -484,6 +487,7 @@ fn random_draft(seed: &str) -> MatchDraft {
 /// `session_from_draft` with `LevelType` 1 makes a `MapId::Random` of `Info` (seed text, size, number of players =
 /// `SessionInfo.players`, map type, landscape, time of day), map name = seed text; no file is read (a path without a
 /// map is the same too), settings and raster as with a fixed map.
+// QUIRK E-313: kept
 #[test]
 fn random_session_carries_the_seed_text() {
     let (_dir, vfs) = map_install();
@@ -521,6 +525,7 @@ fn random_session_carries_the_seed_text() {
 
 /// The client's draft from a lobby state with a random map ([`lobby_draft`]) shows "Random value:" (15659) with the
 /// seed text in `LEVELINFO` (quirk E-313), plus map type, landscape and time of day (15671/15670/15672).
+// QUIRK E-313: kept
 #[test]
 fn levelinfo_shows_the_random_seed_in_the_lobby() {
     let table = "15659=Random value:
@@ -607,6 +612,7 @@ fn rows_from_draft_cleans_computer_names() {
     assert_eq!(rows_from_draft(&draft, 2).len(), 2);
 }
 
+// QUIRK E-307: deviation
 #[test]
 fn rows_fit_matches_in_ui_and_core() {
     // The slot check of `LAN31` (`nml_ui::draft::rows_fit` over the slots of the draft) and that of the core

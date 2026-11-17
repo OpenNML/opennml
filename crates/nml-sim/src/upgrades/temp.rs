@@ -253,6 +253,7 @@ mod tests {
             .expect("savegame valid");
     }
 
+    // QUIRK K-286, W-224: kept
     #[test]
     fn taxes_pay_146_gold_per_governor_in_600_ticks() {
         // re/temp-upgrades 9 V1, W-224: only governors of slot 0 (not the colonist, not the governor of
@@ -287,6 +288,7 @@ mod tests {
         assert_eq!(gold(&sim, 0) - before, 600_000);
     }
 
+    // QUIRK W-224: kept
     #[test]
     fn two_governors_pay_double_taxes_in_1200_steps() {
         // re/temp-upgrades 9 V2, W-224: two governors, via `tick::step` (one object tick = two steps):
@@ -313,6 +315,7 @@ mod tests {
         assert_eq!(ends, expected);
     }
 
+    // QUIRK K-284: kept
     #[test]
     fn applying_the_same_temp_guid_twice_changes_nothing() {
         // re/temp-upgrades 9 V3, K-284: again after 30 s -> false, rest keeps running, no second event.
@@ -373,6 +376,7 @@ mod tests {
         (w, steps)
     }
 
+    // QUIRK W-225: kept
     #[test]
     fn faster_building_sets_speed_300_and_resets_it_to_100() {
         // re/temp-upgrades 9 V4, W-225: 0x601 {300} on applying, build step 30 -> 200 instead of 600 steps; after
@@ -393,6 +397,7 @@ mod tests {
         assert!(entries(&sim, w).is_empty());
     }
 
+    // QUIRK K-287: kept
     #[test]
     fn percent_modifiers_are_clamped_to_100() {
         // re/temp-upgrades 9 V6, K-287: config 120 = 175 -> modifier +100 (ranged 20 -> 40, not 55); the end
@@ -410,6 +415,7 @@ mod tests {
         assert!(entries(&sim, g).is_empty());
     }
 
+    // QUIRK K-285: kept
     #[test]
     fn entries_without_0x80_never_expire() {
         // K-285: 4460 (`0x49`, without config 13: rest 0) stays after 10,000 ticks, the values keep
@@ -426,6 +432,7 @@ mod tests {
         assert_loads(&state, &rules);
     }
 
+    // QUIRK W-225: kept
     #[test]
     fn a_dying_carrier_ends_its_temp_upgrades_with_msgend() {
         // re/temp-upgrades 9 V16: in the death tick (step 5 sets DIED) step 6 removes the entry, `0x601 {100}`
@@ -454,6 +461,7 @@ mod tests {
         );
     }
 
+    // QUIRK K-288: kept
     #[test]
     fn an_owner_change_keeps_the_temp_list_and_pays_the_new_owner() {
         // K-288: the list moves along (rest keeps running), `MSGTICK 57F` pays the new
@@ -474,6 +482,7 @@ mod tests {
         assert_loads(&state, &rules);
     }
 
+    // QUIRK K-59: kept
     #[test]
     fn the_tick_runs_during_the_animation_lock() {
         // K-59: step 6 lies outside the lock branch - MSGTICK and deduction run.

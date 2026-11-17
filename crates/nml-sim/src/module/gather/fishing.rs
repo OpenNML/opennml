@@ -353,6 +353,7 @@ mod tests {
         panic!("fishing does not end");
     }
 
+    // QUIRK W-23: kept
     #[test]
     fn a_spanish_boat_fishes_at_once_every_eight_or_nine_ticks_up_to_300() {
         let (units, done, load) = fish(BOAT, 2000, 296, false);
@@ -371,6 +372,7 @@ mod tests {
         assert_eq!(load, (500, load::FOOD));
     }
 
+    // QUIRK W-44: kept
     #[test]
     fn an_empty_basket_gives_one_fish_after_capacity_plus_one_misses() {
         let (units, done, load) = fish(ENG_BOAT, 0, 0, false);
@@ -380,6 +382,7 @@ mod tests {
         assert_eq!(load, (1, load::FOOD));
     }
 
+    // QUIRK W-54: kept
     #[test]
     fn fishing_reads_80001_as_flags_and_answers_its_animation_queries() {
         let rules = econ_rules();

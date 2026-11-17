@@ -227,6 +227,7 @@ mod tests {
         h.input(UiInput::Up(MouseButton::Left));
     }
 
+    // QUIRK O-91: kept
     #[test]
     fn disabled_button_takes_no_slot_and_keeps_the_normal_set() {
         // O-91: `DISABLE` from the file locks already at the first query during construction, even without a response.
@@ -286,6 +287,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-16: kept
     #[test]
     fn hover_and_press_select_sets_1_and_2() {
         let mut h = Harness::new();

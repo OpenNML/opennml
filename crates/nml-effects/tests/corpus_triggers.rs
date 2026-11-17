@@ -15,6 +15,7 @@ use nml_world::assets::ModelCache;
 use nml_world::classes::BaseModule;
 use nml_world::level::{ObjectClass, level_paths, load_level};
 
+// QUIRK D-252: kept
 #[test]
 fn every_level_gets_its_effects() {
     let Some(dir) = corpus_game_dir() else {

@@ -282,6 +282,7 @@ fn seat_peers(m: &Machine) -> Vec<Option<u8>> {
 
 /// The host crashes. Client 1 (first candidate) becomes host, client 2 comes back, the slot of the old host loses once,
 /// and both then compute 400 ticks of the same sequence as without a network.
+// QUIRK E-268, E-347: deviation
 #[test]
 fn host_cut_migrates_and_keeps_hashes_equal() {
     let mut lan = Lan::running([true; 3]);
@@ -356,6 +357,7 @@ fn host_cut_migrates_and_keeps_hashes_equal() {
 
 /// The host stays silent (`set_muted`) but keeps computing. After 30 s of silence the clients see a dropout and
 /// migrate; afterwards they compute the same sequence.
+// QUIRK E-268: deviation
 #[test]
 fn host_silent_migrates_after_the_timeout() {
     let mut lan = Lan::running([true; 3]);
@@ -384,6 +386,7 @@ fn host_silent_migrates_after_the_timeout() {
 
 /// The line host-client 1 breaks, client 1 becomes host; the old host distributes the next bundle `K` only to client 2
 /// and then crashes. The new host takes `K` from the `Rejoin` of client 2, and both compute the same sequence.
+// QUIRK E-348, E-350: deviation
 #[test]
 fn crash_mid_distribution_keeps_everyone_equal() {
     let mut lan = Lan::running([true; 3]);
@@ -414,6 +417,7 @@ fn crash_mid_distribution_keeps_everyone_equal() {
 /// Only the line host-client 2 breaks. Client 1 still hears the host and holds the `Rejoin` of client 2 until `W`, then
 /// rejects it with `MIGRATION_REFUSED`; client 2 gives up (abort savegame) and does not become host itself. Host and
 /// client 1 play on.
+// QUIRK E-292: kept
 #[test]
 fn candidate_still_hearing_the_host_refuses_rejoin() {
     let mut lan = Lan::running([true; 3]);
@@ -457,6 +461,7 @@ fn candidate_still_hearing_the_host_refuses_rejoin() {
 /// behind since the cut, the new host can no longer supplement it (`MIGRATION_FAILED`); client 2 writes the abort
 /// savegame as today, equal to the state of the new host at this tick. The new host computes the sequence of its
 /// replay.
+// QUIRK E-292: kept
 #[test]
 fn held_rejoin_then_gathering_makes_no_second_host() {
     let mut lan = Lan::running_n(&[true; 4]);
@@ -516,6 +521,7 @@ fn held_rejoin_then_gathering_makes_no_second_host() {
 
 /// First the host drops out (client 1 becomes host), then the new host. Client 2 takes the next entry of the list from
 /// `Migrated` - itself - and plays on alone; both former hosts lose.
+// QUIRK E-269, E-349: deviation
 #[test]
 fn second_migration_takes_the_next_successor() {
     let mut lan = Lan::running([true; 3]);
@@ -653,6 +659,7 @@ fn migration_during_pause_and_resync_runs_on() {
 /// Client 2 does not listen (no candidate), and the only candidate, client 1, crashes with the host. Client 2 waits out
 /// the deadline of dialing and then writes the abort savegame as today (`HostLost`), equal to the state of the host at
 /// this tick.
+// QUIRK E-268: deviation
 #[test]
 fn failed_migration_falls_back_to_the_abort_save() {
     let mut lan = Lan::running([true, true, false]);
@@ -700,6 +707,7 @@ fn failed_migration_falls_back_to_the_abort_save() {
 /// formed. The bundle carries `End` instead of `Handover`: the host ends with `HostEnded` and network savegame as
 /// at the end for all (the driver no longer counts as handing over), without its own defeat; client 2 ends
 /// likewise with the same state.
+// QUIRK E-268: deviation
 #[test]
 fn handover_falls_back_to_end_when_the_last_candidate_crashes() {
     let mut lan = Lan::running([true, true, false]);
@@ -792,6 +800,7 @@ fn handover_hands_the_match_to_client_1() {
 
 /// The new host is fully host - in the frame of the change the driver sets `SimHost::net_host`, which enables the
 /// mirror commands of the UI; the other client stays without.
+// QUIRK E-269: deviation
 #[test]
 fn new_host_mirrors_script_commands() {
     let mut lan = Lan::running([true; 3]);

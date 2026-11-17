@@ -54,6 +54,8 @@ fn layer_mask(sim: &Sim, id: ObjectId) -> u32 {
 }
 
 /// `GetQuarryPosition` (`0x005340E0`): building `0xB03` (return value ignored, C-196), otherwise position.
+///
+/// QUIRK C-196: kept
 fn quarry_position(sim: &mut Sim, id: ObjectId, t: ObjectId) -> (i32, i32) {
     if sim.object(t).is_some_and(|o| o.has_module(3, false)) {
         let me = position(sim, id);
@@ -301,6 +303,8 @@ pub(crate) fn push_out_point(sim: &mut Sim, id: ObjectId, p: (i32, i32), r: i32)
 
 /// `PlanHighPathToUnit` (`0x00534AE0`): dead/missing quarry -> `false`; too close to the attack point
 /// (own position, C-192) -> push out; then `GameWorld_PlanHighPath` (PATH synchronous).
+///
+/// QUIRK C-192: kept
 fn plan_high_path_to_unit(sim: &mut Sim, id: ObjectId, mut p: (i32, i32), flags: i32) -> bool {
     let Some(w) = walk(sim, id) else { return false };
     let (q, min_r, layer) = (w.quarry, w.min_attack_radius, w.layer);
@@ -452,6 +456,8 @@ pub(crate) fn on_msg_find_to_unit(sim: &mut Sim, id: ObjectId, env: &Envelope) -
 
 /// `PropertyWalk_UpdateSeekTarget(force, reached)` (`0x00536FD0`, re/combat-attack 7a.8): every
 /// walk tick with `(false, false)`, at the end of the trajectory with `(true, true)`.
+///
+/// QUIRK C-188, C-195: kept
 pub(crate) fn update_seek_target(sim: &mut Sim, id: ObjectId, force: bool, reached: bool) {
     if st(sim, id) & status::DIED != 0 {
         clear_seek_target(sim, id);

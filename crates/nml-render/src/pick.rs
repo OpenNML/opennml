@@ -695,6 +695,7 @@ mod tests {
         assert!(pick(&parts, &world, &ray_at(45.0, 35.0), only, &mut d));
     }
 
+    // QUIRK D-367: kept
     #[test]
     fn hitboxes_apply_the_node_scale() {
         // Helper node `hitbox`: stored as a cube +-20 around (0, 20, 0), scale (2, 0.5, 1.5)

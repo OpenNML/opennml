@@ -560,6 +560,8 @@ fn assert_full(seq: &[(u64, u64)]) {
 
 /// E-255/E-256/E-257/E-277/E-290: Three machines with 0/40/130 ms compute the same checksum sequence over 400
 /// ticks; every machine records all commands, at the execution ticks of the raster.
+// QUIRK E-276, E-277, E-290: kept
+// QUIRK E-255, E-256, E-257: deviation
 #[test]
 fn three_peers_share_the_hash_sequence() {
     let mut t = Table::running();
@@ -613,6 +615,8 @@ fn three_peers_share_the_hash_sequence() {
 }
 
 /// The network match equals the replay of its command log without a network: the same checksum tick by tick.
+// QUIRK E-290: kept
+// QUIRK E-255: deviation
 #[test]
 fn net_match_equals_its_replay() {
     let mut t = Table::running();
@@ -645,6 +649,7 @@ fn net_match_equals_its_replay() {
 }
 
 /// `NET_GOLDEN` in debug and release (`cargo test -p nml-client --release net_driver`).
+// QUIRK E-257: deviation
 #[test]
 fn net_golden_is_fixed_in_debug_and_release() {
     let mut t = Table::running();
@@ -659,6 +664,7 @@ fn net_golden_is_fixed_in_debug_and_release() {
 /// compute the same sequence. The value is measured; `NET_GOLDEN` itself stays at the raster of the original.
 const NET_GOLDEN_FINE: u64 = 0xc802_0248_f8a7_5a72;
 
+// QUIRK E-255: deviation
 #[test]
 fn net_golden_fine_is_fixed() {
     let mut t = Table::running_cfg(false, RasterStage::LanFast.config());
@@ -676,6 +682,7 @@ fn net_golden_fine_is_fixed() {
 /// (contributions before 37, 45, ...), its commands take effect at `41 + 8k`; `next_exec_step` counts absolutely. All
 /// compute the same sequence from tick 37 without desync, and every command is in the log at an execution tick of the
 /// shifted raster.
+// QUIRK E-328: deviation
 #[test]
 fn origin_shifts_the_round_grid() {
     const ORIGIN: u64 = 37;
@@ -756,6 +763,8 @@ fn origin_shifts_the_round_grid() {
 
 /// Client 2 drops out at 2,000 ms without `Bye` (`cut`). Its slot loses at host and client 1 at the same tick, the
 /// host no longer waits for it afterwards, and the sequences stay equal.
+// QUIRK E-267, E-272: kept
+// QUIRK E-256: deviation
 #[test]
 fn client_vanishes_mid_match() {
     let mut t = Table::running();
@@ -829,6 +838,8 @@ fn client_vanishes_mid_match() {
 /// Client 1 pauses. All machines stand after the execution tick `e(k)` of the bundle with the halt at `e(k) + 1`, show
 /// the pause there and do not compute on until client 1 lifts it. Before that nobody shows the pause, and the distance
 /// between the machines stays at most `T + V` in every frame.
+// QUIRK O-316: kept
+// QUIRK E-264: deviation
 #[test]
 fn net_pause_holds_every_peer_until_resume() {
     let mut t = Table::running();
@@ -1245,6 +1256,7 @@ fn marked_parts(text: &str) -> Vec<String> {
 /// all halt after `e(k)`, client 2 writes the report (five files, `report.txt` marks exactly `daytime`), adopts state
 /// and command log of the host, and afterwards all three compute the same sequence. Its game host part (own slot,
 /// speed) stays.
+// QUIRK E-260: deviation
 #[test]
 fn resync_restores_equal_hashes() {
     let mut t = Table::running();
@@ -1339,6 +1351,7 @@ fn resync_restores_equal_hashes() {
 /// During the sync all machines stand after `e(k)` and do not compute on until the `Resume`. As long as the host is in
 /// the sync, no machine is beyond `e(k) + 1`; likewise every client as long as its core is in the sync. The host does
 /// not send its state until it stands there itself (otherwise client 2 would reject the tick and report `failed`).
+// QUIRK E-260: deviation
 #[test]
 fn resync_holds_every_peer_until_resume() {
     let mut t = Table::running();
@@ -1381,6 +1394,7 @@ fn resync_holds_every_peer_until_resume() {
 
 /// The third desync does not sync any more. All stand in `Stopped` after `e(k)`, every machine reports the control
 /// entry `Stop` with the name from the local time of the host, and nobody computes on.
+// QUIRK E-261: deviation
 #[test]
 fn third_desync_stops_all_peers() {
     let mut t = Table::running();
@@ -1465,6 +1479,7 @@ fn report_inputs() -> ([Seat; 8], Vec<TurnBundle>) {
 /// `report.txt` has one line per part of `SimState` with both values (number of lines = number of parts, in
 /// declaration order), marks exactly the deviating ones, names turn, tick, both checksums, slots and names and the
 /// commands of the last three bundles; the folder has the five files.
+// QUIRK E-260: deviation
 #[test]
 fn report_lists_every_part() {
     let host_sim = testworld::net_host(0, true);
@@ -1514,6 +1529,7 @@ fn report_lists_every_part() {
 
 /// The network state (`NMLNETST`) survives writing and reading and rejects a foreign identifier and a wrong checksum
 /// with an error message.
+// QUIRK E-260: deviation
 #[test]
 fn net_state_round_trips_and_rejects_damage() {
     let mut sim = testworld::net_host(0, true);
@@ -1551,6 +1567,7 @@ fn net_state_round_trips_and_rejects_damage() {
 
 /// `adopt` takes state and log of the host and rebuilds history, fog and fog memories; own slot, speed, fog switch and
 /// turn mode stay. A state of a different match is rejected.
+// QUIRK E-260: deviation
 #[test]
 fn adopt_takes_state_and_log_and_keeps_the_host_part() {
     let mut host = testworld::net_host(0, true);
@@ -1600,6 +1617,7 @@ fn adopt_takes_state_and_log_and_keeps_the_host_part() {
 /// Late arrival: client 1 (40 ms) deviates, the host sends its state delayed ([`LateLarge`]). Client 1 stands after
 /// `e(k)` before the state of the host is there, adopts it while pumping at the standstill and reports `Synced`;
 /// afterwards all compute the same sequence.
+// QUIRK E-260: deviation
 #[test]
 fn resync_of_a_near_client_adopts_while_standing() {
     let mut t = Table::running_with(true);
@@ -1646,6 +1664,7 @@ fn play_for(t: &mut Table, ms: u64) {
 /// with `End`, record the network savegame `netz_YYYY_MM_DD_hhmm` (local time of the host) there and then stand
 /// forever; the simulation parts are bit-identical, and everyone reports the end exactly once ([`NetFrame::finish`]),
 /// without failure at the clients (the `Bye` of the host after the bundle has no effect).
+// QUIRK E-268: deviation
 #[test]
 fn host_end_saves_equal_states_everywhere() {
     let mut t = Table::running();
@@ -1699,6 +1718,7 @@ fn host_end_saves_equal_states_everywhere() {
 /// computes with the bundles it has up to the execution tick of the first missing bundle, records exactly one network
 /// savegame `netz_YYYY_MM_DD_hhmm` (own local time) there and then stands forever. The state equals the state of the
 /// host at the same tick.
+// QUIRK E-258: deviation
 #[test]
 fn host_crash_lets_clients_save_and_leave() {
     let mut t = Table::running();
@@ -1868,6 +1888,7 @@ fn client_leave_says_bye_and_loses_the_slot() {
 
 /// The messages about the end of the network match with the name of the savegame, or without it if it could not be
 /// written.
+// QUIRK E-296: kept
 #[test]
 fn finish_messages_name_the_save() {
     let name = "netz_2026_11_06_1415".to_string();
@@ -1901,6 +1922,7 @@ fn finish_messages_name_the_save() {
 /// of each UTF-16 unit as atlas code (E-296, O-61). Every message may therefore contain only characters up to U+00FF
 /// (umlauts yes, typographic quotation marks no); foreign text in [`NetFinish::Failed`] (e.g. a load error with
 /// typographic quotation marks) is converted for this.
+// QUIRK E-296: kept
 #[test]
 fn net_messages_stay_within_latin1() {
     let name = "netz_2026_11_06_1415".to_string();

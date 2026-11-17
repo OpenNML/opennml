@@ -219,6 +219,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-267: kept
     #[test]
     fn a_placed_gate_removes_the_walls_below_and_joins_the_ring() {
         // Case 1: ring from the command `0x18`, all parts unfinished (master = corner (10, 10)).
@@ -268,6 +269,7 @@ mod tests {
         assert_eq!(loaded.objects().count(), sim.state.objects().count());
     }
 
+    // QUIRK W-267: kept
     #[test]
     fn a_gate_on_a_finished_ring_frees_the_blocked_tiles_below() {
         // Case 2: finished ring (way a): the pieces block their tiles before the gate is placed, afterwards
@@ -333,6 +335,7 @@ mod tests {
         assert_eq!(master_of(&sim, site), ObjectId(0));
     }
 
+    // QUIRK W-267: kept
     #[test]
     fn a_gate_on_a_wall_without_master_makes_the_piece_its_master() {
         let rules = rules();
@@ -358,6 +361,7 @@ mod tests {
         assert_eq!(loaded.objects().count(), sim.state.objects().count());
     }
 
+    // QUIRK W-268: kept
     #[test]
     fn gate_init_stops_when_the_master_is_gone_or_itself() {
         // Master missing: the ID is in the piece, the object no longer exists.
@@ -435,6 +439,7 @@ mod tests {
         panic!("construction site {id:?} not finished");
     }
 
+    // QUIRK K-291, D-230: kept
     #[test]
     fn closing_blocks_the_doors_in_all_layers_and_opening_frees_them() {
         let rules = rules();
@@ -519,6 +524,7 @@ mod tests {
         assert!(door_tiles(&sim, ObjectId(0)).is_empty());
     }
 
+    // QUIRK K-291: kept
     #[test]
     fn own_units_are_blocked_by_a_closed_gate() {
         // K-291: door tiles block for everyone, also for own units; no auto-opening.
@@ -559,6 +565,7 @@ mod tests {
         assert_eq!(sim.object(unit).unwrap().tile, target);
     }
 
+    // QUIRK K-292: kept
     #[test]
     fn a_finished_gate_is_open() {
         let rules = rules();
@@ -578,6 +585,7 @@ mod tests {
         assert_eq!(door_sounds(&sim, site), 0);
     }
 
+    // QUIRK K-292: kept
     #[test]
     fn opening_during_construction_is_overwritten_by_completion() {
         // K-292: `CloseDoor` during construction (script only) blocks the door tiles; completion
@@ -628,6 +636,7 @@ mod tests {
         assert!(free_in_base_layers(&sim, 37, 38) && free_in_base_layers(&sim, 40, 38));
     }
 
+    // QUIRK K-293: kept
     #[test]
     fn the_wall_dying_before_the_collapse_keeps_closed_doors_blocked() {
         // K-293 (hypothesis, `0x00508900`/`0x00508EB0`): if the group dies via `FinallyDeath` of the
@@ -670,6 +679,7 @@ mod tests {
         assert!(free_in_base_layers(&sim, 11, 15) && free_in_base_layers(&sim, 14, 15));
     }
 
+    // QUIRK W-270: kept
     #[test]
     fn a_gate_handed_to_slot_8_opens_with_a_sound() {
         // W-270: `OnOwnerChanged` -> `HasFlags(TOR)` and new slot 8 -> `OpenDoor(0)` with sound.

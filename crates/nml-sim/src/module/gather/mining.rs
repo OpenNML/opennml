@@ -470,6 +470,7 @@ mod tests {
         (units, done, load_of(&sim, unit), announced, count)
     }
 
+    // QUIRK W-44: kept
     #[test]
     fn an_empty_deposit_gives_one_unit_after_twenty_one_empty_steps() {
         let (units, done, load, announced, count) = mine_at_rate_60(Some(0), 0);
@@ -482,6 +483,7 @@ mod tests {
         assert_eq!(count, 0);
     }
 
+    // QUIRK W-45: kept
     #[test]
     fn a_mine_without_a_deposit_gives_one_unit_per_step_forever() {
         let (units, done, load, announced, _) = mine_at_rate_60(None, 0);

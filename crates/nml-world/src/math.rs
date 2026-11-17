@@ -195,6 +195,7 @@ mod tests {
         ));
     }
 
+    // QUIRK D-367: kept
     #[test]
     fn helper_node_matrix_scales_in_node_space_before_rotating() {
         // `0x00578180`: v * s, then rotation, then position. Rotation 90 degrees about y, scale (2, 1, 0.5).

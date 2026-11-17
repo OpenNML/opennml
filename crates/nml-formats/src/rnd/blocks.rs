@@ -571,6 +571,7 @@ mod tests {
         parse_with(main, &[], &[], &[]).unwrap()
     }
 
+    // QUIRK D-323, D-324: kept
     #[test]
     fn dispatcher_takes_the_first_substring_match() {
         // Value = second word of the line (`sscanf("%s %s")`), keyword anywhere.
@@ -618,6 +619,7 @@ mod tests {
         assert_eq!(parse("SmoothFactor 99999999999").smooth_factor, 1215752191);
     }
 
+    // QUIRK D-350: deviation
     #[test]
     fn const_define_and_include_are_read_by_the_dispatcher() {
         let script = parse_with(
@@ -663,6 +665,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-350: deviation
     #[test]
     fn project_file_name_sits_between_first_and_last_quote() {
         assert_eq!(
@@ -691,6 +694,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-323, D-324: kept
     #[test]
     fn area_block_reads_keys_in_order_and_flags_without_value() {
         let script = parse(
@@ -738,6 +742,7 @@ mod tests {
         assert_eq!(script.placements[0].max_group_radius, 4);
     }
 
+    // QUIRK D-324: kept
     #[test]
     fn block_ends_only_at_exactly_a_closing_brace() {
         // `}// x` becomes `}` and ends; `} ;x` becomes `} ` and does not end.
@@ -750,6 +755,7 @@ mod tests {
         assert_eq!(script.land_areas[0].num_tiles, 2);
     }
 
+    // QUIRK D-324: kept
     #[test]
     fn player_area_block_is_kept_as_template() {
         let script = parse(
@@ -837,6 +843,8 @@ mod tests {
         assert_eq!(script.placements[0].num_groups, 1);
     }
 
+    // QUIRK D-26: kept
+    // QUIRK D-345: deviation
     #[test]
     fn light_and_water_blocks_write_terrain_params() {
         let script = parse(
@@ -886,6 +894,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-345: deviation
     #[test]
     fn object_and_shadow_light_start_at_zero_when_the_block_exists() {
         let script = parse(
@@ -967,6 +976,7 @@ BaseTexture B
         assert_eq!(script.base_texture, "A");
     }
 
+    // QUIRK D-324: deviation
     #[test]
     fn end_of_file_inside_a_block_is_an_error() {
         let error = parse_with("create_LandArea\n{\nID 3\n", &[], &[], &[]).unwrap_err();

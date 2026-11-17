@@ -406,6 +406,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-95: kept
     #[test]
     fn listbox_scrollbar_appears_only_with_more_items_than_rows() {
         let mut h = Harness::new();
@@ -447,6 +448,7 @@ mod tests {
         assert_eq!(list(&h).1.hover, -1);
     }
 
+    // QUIRK O-117: kept
     #[test]
     fn text_window_resets_on_every_query_and_insets_only_on_a_new_count() {
         // `FUN_004638F0`: every query sets the text window to the full client (138, 153, 312, 219); the -50 at the
@@ -483,6 +485,7 @@ mod tests {
         assert_eq!(list(&h).1.text_window, [138, 153, 262, 219]);
     }
 
+    // QUIRK O-118: kept
     #[test]
     fn autoysize_writes_the_absolute_client_into_the_relative_rect() {
         // `OnAttach` `0x00464120` with `AUTOYSIZE`: the rectangle arises from the absolute client
@@ -506,6 +509,7 @@ mod tests {
         assert_eq!([abs[0], abs[1], abs[2]], [240, 270, 440], "shifted twice");
     }
 
+    // QUIRK O-95: kept
     #[test]
     fn initial_scroll_only_when_selection_exceeds_rows() {
         // O-95: 10 entries, 4 rows; selection 4 (= rows) does not scroll, selection 5 scrolls to 5 - 4 + 1 = 2.
@@ -525,6 +529,7 @@ mod tests {
         assert_eq!((sb.value, sb.resolution), (2, 7));
     }
 
+    // QUIRK O-95: kept
     #[test]
     fn click_on_empty_space_repeats_the_old_selection() {
         // O-95: two entries, four rows.
@@ -544,6 +549,7 @@ mod tests {
         assert_eq!(list(&h).1.selection, 1);
     }
 
+    // QUIRK O-19: kept
     #[test]
     fn listbox_click_has_no_visible_background_toggle() {
         // O-19 (corrected): the click toggles `+0x100`, but `FUN_0045A050` finds no second set.
@@ -560,6 +566,7 @@ mod tests {
         assert_eq!(h.tree.node(id).bkg_set, 0);
     }
 
+    // QUIRK O-106: kept
     #[test]
     fn listbox_double_click_sends_4_4_d() {
         // O-106: sequence 4, 5, 4, 5, 11 - both clicks report code 4, the double click (slot 6 `0x00463DB0`) code 4

@@ -89,6 +89,7 @@ fn act(sim: &mut Sim, number: i32, params: &[&str]) -> Dispatched {
     dispatch(sim, &mut container(), &mut msg)
 }
 
+// QUIRK E-150: kept
 #[test]
 fn place_151_rounds_centre_towards_zero_and_adds_one_from_3x3() {
     let rules = rules();
@@ -113,6 +114,7 @@ fn place_151_rounds_centre_towards_zero_and_adds_one_from_3x3() {
     assert_eq!(place(&mut sim, "einzeln"), Some((10.5 * cell, 10.5 * cell)));
 }
 
+// QUIRK E-150: kept
 #[test]
 fn place_151_draws_one_random_angle_217_none() {
     let rules = rules();
@@ -207,6 +209,7 @@ fn place_unknown_area_does_nothing_and_draws_nothing() {
     assert!(created(&mut sim).is_empty());
 }
 
+// QUIRK E-150: kept
 #[test]
 fn spawn_3_walks_tiles_row_by_row_and_wraps() {
     let rules = rules();
@@ -241,6 +244,7 @@ fn spawn_3_walks_tiles_row_by_row_and_wraps() {
     assert!(created(&mut sim).is_empty());
 }
 
+// QUIRK E-150: kept
 #[test]
 fn spawn_3_stops_at_first_failure() {
     let rules = rules();
@@ -260,6 +264,7 @@ fn value(sim: &Sim, name: &str) -> Option<String> {
     sim.state.names.get(name).map(str::to_owned)
 }
 
+// QUIRK E-195: kept
 #[test]
 fn spawn_396_appends_new_ids_after_existing_ones() {
     let rules = rules();
@@ -319,6 +324,7 @@ fn spawn_396_appends_new_ids_after_existing_ones() {
     assert_eq!(value(&sim, "dsp"), Some(id.as_i32().to_string()));
 }
 
+// QUIRK E-150: kept
 #[test]
 fn spawn_14_uses_slot_8_and_draws_before_creating() {
     let rules = rules();
@@ -491,6 +497,7 @@ fn act_done(sim: &mut Sim, number: i32, params: &[&str]) {
     );
 }
 
+// QUIRK E-149: kept
 #[test]
 fn remove_6_195_196_queue_without_death_or_bit_2() {
     let rules = rules();
@@ -525,6 +532,7 @@ fn remove_6_195_196_queue_without_death_or_bit_2() {
     }
 }
 
+// QUIRK E-149: kept
 #[test]
 fn remove_6_unknown_filter_or_area_does_nothing() {
     let rules = rules();
@@ -541,6 +549,7 @@ fn remove_6_unknown_filter_or_area_does_nothing() {
     assert!(sim.state.destroy_queue.is_empty());
 }
 
+// QUIRK E-149, E-184: kept
 #[test]
 fn remove_194_queues_stale_ids_silently() {
     let rules = rules();
@@ -575,6 +584,7 @@ fn remove_194_queues_stale_ids_silently() {
     assert!(sim.state.names.get("trupp").is_some());
 }
 
+// QUIRK E-196: kept
 #[test]
 fn give_197_ignores_owner_colours_with_slot_index_and_changes_at_tick_end() {
     let rules = rules();
@@ -623,6 +633,7 @@ fn give_197_ignores_owner_colours_with_slot_index_and_changes_at_tick_end() {
     }
 }
 
+// QUIRK E-157: kept
 #[test]
 fn give_197_uses_raw_guid_filter_for_unknown_ids_and_all_owners() {
     let rules = rules();
@@ -652,6 +663,7 @@ fn rider_with_horse(sim: &mut Sim, slot: i32, name: &str) -> (ObjectId, ObjectId
     (rider, horse)
 }
 
+// QUIRK E-197: deviation
 #[test]
 fn give_202_renames_to_last_transferred_and_keeps_name_for_slot_8() {
     let rules = rules();
@@ -690,6 +702,7 @@ fn give_202_renames_to_last_transferred_and_keeps_name_for_slot_8() {
     act_done(&mut sim, 202, &["gibtsnicht", "1"]);
 }
 
+// QUIRK E-197: deviation
 #[test]
 fn give_202_same_owner_keeps_rider_link() {
     let rules = rules();
@@ -713,6 +726,7 @@ fn give_202_same_owner_keeps_rider_link() {
     );
 }
 
+// QUIRK E-197: deviation
 #[test]
 fn give_202_moves_carried_horse_without_name() {
     let rules = rules();
@@ -735,6 +749,7 @@ fn give_202_moves_carried_horse_without_name() {
     assert!(of_slot(&sim, 0).is_empty());
 }
 
+// QUIRK E-157: kept
 #[test]
 fn give_341_whole_slot_including_dying_never_to_8() {
     let rules = rules();
@@ -789,6 +804,7 @@ fn gauge(sim: &Sim, id: ObjectId, attribute: u32) -> (i32, i32, i32) {
     )
 }
 
+// QUIRK E-158, E-194: kept
 #[test]
 fn hp_actions_hit_dying_objects() {
     let rules = rules();
@@ -859,6 +875,7 @@ fn hp_actions_hit_dying_objects() {
     assert_eq!(crate::save::checksum(sim.state), before);
 }
 
+// QUIRK E-158: kept
 #[test]
 fn attribute_385_only_if_present_and_384_xp_via_rank() {
     let rules = rules();
@@ -911,6 +928,7 @@ fn attribute_385_only_if_present_and_384_xp_via_rank() {
     assert_eq!(gauge(&sim, unit, 30).1, 90);
 }
 
+// QUIRK E-158: kept
 #[test]
 fn attribute_385_refreshes_module_parameters() {
     let rules = rules();
@@ -995,6 +1013,7 @@ fn all_remove_give_hp_actions_are_done_in_a_running_script() {
     );
 }
 
+// QUIRK E-208: deviation
 #[test]
 fn attribute_384_xp_continues_when_the_rounded_rest_is_zero() {
     // Fraction 99,500 at maximum 100: the rounded current value is already 100, so the remainder is 0. The
@@ -1050,6 +1069,7 @@ fn act_guarded(sim: &mut Sim, number: i32, params: &[&str]) {
     );
 }
 
+// QUIRK E-159: deviation
 #[test]
 fn resources_21_22_allow_negative_stock_and_kinds_3_4() {
     let rules = rules();
@@ -1080,6 +1100,7 @@ fn resources_21_22_allow_negative_stock_and_kinds_3_4() {
     assert_eq!(sim.state.players, before);
 }
 
+// QUIRK O-170: kept
 #[test]
 fn resources_21_22_book_the_statistic_by_kind() {
     let rules = rules();
@@ -1100,6 +1121,7 @@ fn resources_21_22_book_the_statistic_by_kind() {
     assert_eq!(booked, [(10, 500), (8, -40), (9, 7), (9, 3)]);
 }
 
+// QUIRK E-160: kept
 #[test]
 fn diplomacy_is_one_sided_and_silent() {
     let rules = rules();
@@ -1139,6 +1161,7 @@ fn diplomacy_is_one_sided_and_silent() {
     assert!(sim.state.events.is_empty(), "{:?}", sim.state.events);
 }
 
+// QUIRK E-155: kept
 #[test]
 fn behavior_203_includes_humans_and_slot_8_sets_only_default() {
     let rules = rules();
@@ -1195,6 +1218,7 @@ fn message_log(f: impl FnOnce()) -> Vec<(ObjectId, u32)> {
     MESSAGES.with(|b| std::mem::take(&mut *b.borrow_mut()))
 }
 
+// QUIRK E-155: kept
 #[test]
 fn behavior_204_moves_animal_home_and_sets_ai_attack_for_humans() {
     let rules = rules();
@@ -1249,6 +1273,7 @@ fn behavior_204_moves_animal_home_and_sets_ai_attack_for_humans() {
     act_done(&mut sim, 204, &["0", &guid, "area fern", "9"]);
 }
 
+// QUIRK E-165: kept
 #[test]
 fn hit_factor_343_sets_100_not_handicap() {
     let rules = rules();
@@ -1274,6 +1299,7 @@ fn hit_factor_343_sets_100_not_handicap() {
     assert_eq!(sim.state.combat.hit_factor, before);
 }
 
+// QUIRK E-199: kept
 #[test]
 fn daytime_173_applies_upgrades() {
     let rules = rules();
@@ -1317,6 +1343,7 @@ fn daytime_173_applies_upgrades() {
     }
 }
 
+// QUIRK E-202: deviation
 #[test]
 fn task_status_200_uses_second_value() {
     let rules = rules();
@@ -1387,6 +1414,7 @@ fn group(sim: &Sim, name: &str) -> Option<Vec<ObjectId>> {
     })
 }
 
+// QUIRK E-195: kept
 #[test]
 fn group_393_skips_duplicates_394_keeps_old_value_when_empty_397_appends_duplicates() {
     let rules = rules();
@@ -1460,6 +1488,7 @@ fn group_393_skips_duplicates_394_keeps_old_value_when_empty_397_appends_duplica
     assert_eq!(group(&sim, "neu"), None);
 }
 
+// QUIRK E-210: kept
 #[test]
 fn remove_name_395_deletes_any_name() {
     let rules = rules();
@@ -1523,6 +1552,7 @@ fn all_player_group_actions_are_done_in_a_running_script() {
     );
 }
 
+// QUIRK E-155: deviation
 #[test]
 fn guarded_world_action_reports_the_real_block_and_ends_it() {
     // Block 1 (file index 1, not 0): 203 with stance 7 is a run-time error. The message carries block 1
@@ -1577,6 +1607,7 @@ fn in_collision(sim: &Sim, id: ObjectId) -> bool {
     sim.state.collision.all.iter().any(|l| l.contains(&id))
 }
 
+// QUIRK E-153: kept
 #[test]
 fn actions_159_160_161_162_365_366_hide_and_show_slots_and_objects() {
     let rules = rules();
@@ -1633,6 +1664,7 @@ fn actions_159_160_161_162_365_366_hide_and_show_slots_and_objects() {
     }
 }
 
+// QUIRK E-190: deviation
 #[test]
 fn actions_211_shows_214_hides_and_area_grows() {
     let rules = rules();
@@ -1709,6 +1741,7 @@ fn wipe_fog(sim: &mut Sim) {
     }
 }
 
+// QUIRK E-163: kept
 #[test]
 fn area_view_20_stamps_explored_seen_and_cleared_every_cycle_until_24() {
     let rules = rules();
@@ -1761,6 +1794,7 @@ fn area_view_20_stamps_explored_seen_and_cleared_every_cycle_until_24() {
     );
 }
 
+// QUIRK E-163: kept
 #[test]
 fn area_view_20_twice_needs_24_twice() {
     let rules = rules();
@@ -1802,6 +1836,7 @@ fn area_view_20_twice_needs_24_twice() {
     assert_eq!(sim.state.fog.explored.count(0b100), 9, "slot 2 stays");
 }
 
+// QUIRK E-163: kept
 #[test]
 fn area_view_20_needs_a_player_0_to_7_and_a_known_area_and_24_checks_neither() {
     let rules = rules();
@@ -1850,6 +1885,7 @@ fn missing(sim: &Sim, bit: u8) -> Vec<(i32, i32)> {
     v
 }
 
+// QUIRK E-163, E-201: kept
 #[test]
 fn clear_explored_372_inclusive_swapped_and_noop_for_slot_8() {
     let rules = rules();
@@ -1900,6 +1936,7 @@ fn clear_explored_372_inclusive_swapped_and_noop_for_slot_8() {
     assert_eq!(missing(&sim, 3), [(62, 5), (63, 5)]);
 }
 
+// QUIRK E-163, E-201: kept
 #[test]
 fn clear_explored_347_keeps_last_row() {
     let rules = rules();
@@ -1941,6 +1978,7 @@ fn clear_explored_347_keeps_last_row() {
     assert_eq!(crate::save::checksum(sim.state), before);
 }
 
+// QUIRK E-164: kept
 #[test]
 fn button_lock_207_208_write_the_entry_always() {
     let rules = rules();
@@ -1971,6 +2009,7 @@ fn quests_untouched(sim: &Sim) -> bool {
         && sim.state.script.mission.sub_quests == [Quest::default(); 10]
 }
 
+// QUIRK E-204: kept
 #[test]
 fn quests_ignore_numbers_outside_1_to_10() {
     let rules = rules();
@@ -2024,6 +2063,7 @@ fn quests_ignore_numbers_outside_1_to_10() {
     );
 }
 
+// QUIRK E-204: kept
 #[test]
 fn status_setters_keep_the_text() {
     let rules = rules();
@@ -2084,6 +2124,7 @@ fn status_setters_keep_the_text() {
     );
 }
 
+// QUIRK E-204: kept
 #[test]
 fn prefill_198_199_sets_status_1_for_first_n() {
     let rules = rules();

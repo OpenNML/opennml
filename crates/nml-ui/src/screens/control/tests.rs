@@ -123,6 +123,7 @@ fn index_of(list: &KeyList, id: i32) -> i32 {
     i32::try_from(i.unwrap_or_else(|| panic!("action {id} missing in the list"))).unwrap()
 }
 
+// QUIRK O-102: kept
 #[test]
 fn keylist_has_headings_and_keyid_entries() {
     let Some(mut l) = corpus_logic() else {
@@ -194,6 +195,7 @@ fn headings_are_not_selectable() {
     assert_eq!(l.send("keylist", code::QUERY_VALUE).0, -1);
 }
 
+// QUIRK O-113: kept
 #[test]
 fn selecting_shows_key_and_description() {
     let Some(mut l) = corpus_logic() else {
@@ -236,6 +238,7 @@ fn selecting_shows_key_and_description() {
     assert_eq!(l.send("key", code::QUERY_STATUS).0, -1);
 }
 
+// QUIRK O-112: kept
 #[test]
 fn arrows_digits_and_escape_are_rejected() {
     let mut l = Logic::new(
@@ -266,6 +269,8 @@ fn arrows_digits_and_escape_are_rejected() {
     }
 }
 
+// QUIRK O-102: kept
+// QUIRK O-114: deviation
 #[test]
 fn new_key_is_stored_in_the_key_map() {
     // Logic: Engine.ini form in its place or appended (`CMap::operator[]`); without `keys.ini` rows there is no
@@ -343,6 +348,7 @@ fn new_key_is_stored_in_the_key_map() {
     assert_eq!(field.text.as_deref(), Some("STRG H"));
 }
 
+// QUIRK O-102: kept
 #[test]
 fn reset_asks_then_replaces_the_key_map() {
     // Logic: `RESET` asks with 15096, OK = `{0x32}`, no cancel command; return value -1.
@@ -504,6 +510,7 @@ fn shared_buffers_keep_the_frames_deterministic() {
 /// message, response 1 anyway. The rows with type and nation equal to the value or 0 (for the value 0 only 0) and
 /// exactly the same selection are checked; the own action counts. Actions without a row (448-451, 1911) are free
 /// (deviation, re/menu-flow).
+// QUIRK O-102, O-327, O-328: kept
 #[test]
 fn assigning_a_key_used_in_the_context_is_rejected() {
     let Some(mut l) = corpus_logic() else {

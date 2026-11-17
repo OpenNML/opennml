@@ -147,6 +147,7 @@ fn run_until(sim: &mut Sim, max: usize, done: impl Fn(&Sim) -> bool) -> (usize, 
     panic!("condition not reached after {max} steps");
 }
 
+// QUIRK W-233: kept
 #[test]
 fn the_headquarters_guid_follows_the_nation() {
     // `0x00477C00`: nation 0...5 -> 1300, 1600, 1000, 2500, 1900, 2200; otherwise and slot not in 0...7 -> 0.
@@ -200,6 +201,8 @@ fn the_trade_messages_answer_like_the_dispatcher() {
     assert_eq!(load_of(&sim, cart), before);
 }
 
+// QUIRK W-233, W-236, W-242: kept
+// QUIRK K-290: deviation
 #[test]
 fn the_trade_cart_shuttles_like_the_original() {
     // re/trading 9.2 (slot 1 instead of 0): gold 1000, wood 0, wood price 1024.
@@ -268,6 +271,7 @@ fn the_trade_cart_shuttles_like_the_original() {
     assert_eq!(account(&sim, 2), (1000, 1000));
 }
 
+// QUIRK W-236, W-246: kept
 #[test]
 fn trade_rates_match_the_market() {
     // re/trading 9.1 (price 40 -> 859 after `market_adjust`): `0x22B` directly with a load set;
@@ -415,6 +419,7 @@ fn trade_rates_match_the_market() {
     }
 }
 
+// QUIRK W-239: deviation
 #[test]
 fn an_invalid_ware_at_the_partner_is_a_trade_error() {
     // 3.3: kind > 3 (also negative) -> `TradeError!`, 0, nothing changed.
@@ -432,6 +437,7 @@ fn an_invalid_ware_at_the_partner_is_a_trade_error() {
     }
 }
 
+// QUIRK W-235: kept
 #[test]
 fn trade_to_slot_8_stops_with_the_load() {
     // W-235 (9.2): target 8 -> after the first `0x32B` gold 800, load 200 gold, no FINDTO.
@@ -482,6 +488,7 @@ fn a_cart_of_slot_8_delivers_nothing() {
     assert_eq!(walk_replies(&sim, cart), (None, None));
 }
 
+// QUIRK W-238: kept
 #[test]
 fn an_empty_account_keeps_driving_empty() {
     // W-238: gold 0 -> empty run, 0 exchanged, the cycle continues.
@@ -512,6 +519,7 @@ fn an_empty_account_keeps_driving_empty() {
     assert!(moves_within(&mut sim, cart, 20));
 }
 
+// QUIRK W-240: kept
 #[test]
 fn selling_with_a_foreign_load_adjusts_the_food_price() {
     // W-240: kind 2/3 with a load that is not wood corrects the food price by the raw amount;
@@ -536,6 +544,7 @@ fn selling_with_a_foreign_load_adjusts_the_food_price() {
     }
 }
 
+// QUIRK W-239: deviation
 #[test]
 fn an_invalid_ware_logs_after_delivery() {
     // W-239: `0x12B {7, 2}` stores the kind unchecked; `0x32B` delivers and does not reload
@@ -561,6 +570,7 @@ fn an_invalid_ware_logs_after_delivery() {
     assert_eq!(walk_replies(&sim, cart), (None, None));
 }
 
+// QUIRK W-241: kept
 #[test]
 fn an_unreachable_hq_ends_the_cycle_silently() {
     // W-241: the search knows no region; HQ 1900 behind a wall across the whole map is still
@@ -596,6 +606,7 @@ fn an_unreachable_hq_ends_the_cycle_silently() {
     assert_eq!(walk_replies(&sim, cart), (None, None));
 }
 
+// QUIRK W-234: kept
 #[test]
 fn friends_of_the_same_nation_count_as_home() {
     // W-234: a second SPA player (slot 3) whom slot 1 lists as a friend has a nearer HQ
@@ -633,6 +644,7 @@ fn friends_of_the_same_nation_count_as_home() {
     }
 }
 
+// QUIRK W-237: kept
 #[test]
 fn the_load_may_exceed_the_capacity() {
     // W-237: 200 gold -> 800 wood; `+0x2A8` stays 800, only attribute 17 is clamped to 200.
@@ -697,6 +709,8 @@ fn a_new_order_ends_the_cycle_with_the_load() {
     assert_eq!(trading_of(&sim, cart).sync_depth, 0);
 }
 
+// QUIRK W-234: kept
+// QUIRK K-290: deviation
 #[test]
 fn trading_with_the_own_slot_stops_after_two_synchronous_jumps() {
     // K-290 (A7): target = own slot, cart at the own HQ. `0x32B` loads 200 gold, `0x22B`
@@ -722,6 +736,7 @@ fn trading_with_the_own_slot_stops_after_two_synchronous_jumps() {
     );
 }
 
+// QUIRK K-290: deviation
 #[test]
 fn trading_with_an_allied_slot_of_the_same_nation_stops_after_two_synchronous_jumps() {
     // K-290 (A7) via the player command `0x45`: slot 3 is SPA like slot 1 and has a trading office;
@@ -787,6 +802,7 @@ fn trading_with_an_allied_slot_of_the_same_nation_stops_after_two_synchronous_ju
     );
 }
 
+// QUIRK K-290: deviation
 #[test]
 fn handlers_entered_at_depth_two_change_nothing() {
     // A7: `0x22B` and `0x32B` entered at `sync_depth >= 2` return 0 without changing load,
@@ -909,6 +925,7 @@ fn tax_timers(sim: &Sim, id: ObjectId) -> Vec<crate::module::base::ModuleEvent> 
 const FIRST_TAX_STEP: usize = 23;
 const TAX_PERIOD: usize = 20;
 
+// QUIRK W-243: kept
 #[test]
 fn tax_follows_the_formula() {
     // re/trading 9.3: floor(level * MaxTax * count / 100) (toward zero) per credit.
@@ -950,6 +967,7 @@ fn tax_follows_the_formula() {
     }
 }
 
+// QUIRK W-243: kept
 #[test]
 fn a_cart_never_pays_tax() {
     // W-243: the cart has no module 3 (`matches_class(0x403)` false) -> -1, nothing booked,
@@ -974,6 +992,7 @@ fn a_cart_never_pays_tax() {
     assert_eq!(gold(&sim), start);
 }
 
+// QUIRK W-243: kept
 #[test]
 fn only_a_finished_building_with_an_owner_pays_tax() {
     // 3.6: construction site (module 3 without flag 0x400) and building without owner player (slot 8) -> -1.
@@ -992,6 +1011,7 @@ fn only_a_finished_building_with_an_owner_pays_tax() {
     assert_eq!(gold(&sim), start);
 }
 
+// QUIRK W-243: kept
 #[test]
 fn zero_interval_starts_no_timer() {
     // 9.3: interval 0 -> neither `Init(finished)` nor `0x72B` creates a timer; `0x62B`
@@ -1013,6 +1033,7 @@ fn zero_interval_starts_no_timer() {
     assert_eq!(gold(&sim), start + 35);
 }
 
+// QUIRK W-243: kept
 #[test]
 fn each_start_message_adds_a_timer() {
     // W-243: `Init(finished)` (= handler `0x72B`) and every further `0x72B` each create a
@@ -1036,6 +1057,7 @@ fn each_start_message_adds_a_timer() {
     }
 }
 
+// QUIRK W-244: kept
 #[test]
 fn set_tax_level_is_unchecked() {
     // W-244: `0x82B` sets the level unchecked (return value 1); the tax calculates with it.
@@ -1059,6 +1081,7 @@ fn set_tax_level_is_unchecked() {
     assert_eq!(trading_of(&sim, house).tax_level, -5);
 }
 
+// QUIRK W-242, O-171: kept
 #[test]
 fn kinds_follow_accounting_md_trade_cart() {
     // Statistic 11 of the cart (`0x0052E77E`, `0x0052E829`, O-171): delivered **food** (raw,

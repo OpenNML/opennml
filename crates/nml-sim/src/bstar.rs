@@ -264,6 +264,8 @@ impl Planner {
     /// (`BStarPlanner_SetupSearch` `0x00409600`, `BStarPlanner_AddNode` `0x00409AA0`); all other inputs compute
     /// bit-identically. The search then ends by itself: all neighbors lie on the start point, which was already
     /// visited.
+    ///
+    /// QUIRK K-327: deviation
     fn per_step(&self, d: i32) -> i32 {
         match self.step_size() {
             0 => 0,

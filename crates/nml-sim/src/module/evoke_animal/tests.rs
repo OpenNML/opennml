@@ -154,6 +154,7 @@ fn init_reads_the_anim_and_stops_the_regeneration() {
     assert_eq!(sim.module(evoker, INDEX).unwrap().base.flags, 0);
 }
 
+// QUIRK C-276, C-283: kept
 #[test]
 fn casting_pays_at_once_and_reserves() {
     let rules = tk::evoke_rules();
@@ -199,6 +200,7 @@ fn casting_pays_at_once_and_reserves() {
     assert!(seen.contains(&(ev, INDEX, msg::EVOKE)));
 }
 
+// QUIRK C-280: kept
 #[test]
 fn the_first_free_spot_is_one_tile_ahead() {
     let rules = tk::evoke_rules();
@@ -215,6 +217,7 @@ fn the_first_free_spot_is_one_tile_ahead() {
     assert_eq!(evoke_animal(&sim, ev).unwrap().spawn, [x0 + TILE, 0, z0]);
 }
 
+// QUIRK C-280: kept
 #[test]
 fn a_blocked_spot_moves_round_the_ring() {
     let rules = tk::evoke_rules();
@@ -267,6 +270,7 @@ fn a_blocked_spot_moves_round_the_ring() {
     assert!(same, "hit in the region of the evoker");
 }
 
+// QUIRK C-280: kept
 #[test]
 fn ring_five_is_shifted_unchecked() {
     // C-280: block rings 1-4 only via collision cost (one object with a
@@ -292,6 +296,7 @@ fn ring_five_is_shifted_unchecked() {
     assert_eq!(spawn::find_spawn_pos(&mut sim, ev), Some(want));
 }
 
+// QUIRK K-312: deviation
 #[test]
 fn a_full_map_fails_the_cast_before_paying() {
     // K-312 (A7): without a free place the search ends at the map boundary; the cast fails before the
@@ -331,6 +336,7 @@ fn walk_to(unit: ObjectId, tile: (i32, i32)) -> Command {
     }
 }
 
+// QUIRK C-277: kept
 #[test]
 fn a_walk_order_refunds_the_evocation() {
     // V3, C-277.
@@ -353,6 +359,7 @@ fn a_walk_order_refunds_the_evocation() {
     assert_eq!(evokes(&seen), 0, "no 0x220 any more");
 }
 
+// QUIRK C-277: kept
 #[test]
 fn death_during_the_evocation_refunds() {
     let rules = tk::evoke_rules();
@@ -386,6 +393,7 @@ fn death_during_the_evocation_refunds() {
     assert_eq!(evokes(&seen) + evokes(&seen2), 0, "0x220 does not fire");
 }
 
+// QUIRK C-277: kept
 #[test]
 fn a_new_cast_aborts_the_running_one() {
     let rules = tk::evoke_rules();
@@ -440,6 +448,7 @@ fn a_new_cast_aborts_the_running_one() {
     assert_eq!(evokes(&seen) + evokes(&seen2), 1);
 }
 
+// QUIRK C-276: kept
 #[test]
 fn mana_regenerates_up_to_max_minus_reserve() {
     // +100 per tick up to 74,500, then `current_value` shows 75 and the tick sets
@@ -464,6 +473,7 @@ fn mana_regenerates_up_to_max_minus_reserve() {
     }
 }
 
+// QUIRK C-276: kept
 #[test]
 fn release_frees_the_reserve() {
     let rules = tk::evoke_rules();
@@ -475,6 +485,7 @@ fn release_frees_the_reserve() {
     assert_eq!(reserve(&sim, ev), 15);
 }
 
+// QUIRK C-293: kept
 #[test]
 fn a_cast_without_label_does_nothing_but_clears_bit_4() {
     // C-293: animation 5 has no marker.
@@ -624,6 +635,7 @@ fn releases(seen: &[(ObjectId, usize, u32)]) -> usize {
         .count()
 }
 
+// QUIRK C-284: kept
 #[test]
 fn a_wolf_appears_at_n_plus_81() {
     // V1, C-284 corrected.
@@ -723,6 +735,7 @@ fn huntable(sim: &mut Sim, id: ObjectId) -> bool {
     crate::filter::matches(sim, id, &f, -1)
 }
 
+// QUIRK C-146, C-276, C-278: kept
 #[test]
 fn a_dead_wolf_frees_the_reserve_and_stays_an_ordinary_corpse() {
     // V6, C-146, C-278.
@@ -799,6 +812,7 @@ fn a_dead_wolf_frees_the_reserve_and_stays_an_ordinary_corpse() {
     assert_eq!((decay, t), (Some(303), 332), "decay/removed in T+...");
 }
 
+// QUIRK C-146: kept
 #[test]
 fn a_wild_wolf_corpse_is_huntable() {
     // Counter-check to C-146: without `0x314` module 21 stays on and the carcass gets `0x215`.
@@ -815,6 +829,7 @@ fn a_wild_wolf_corpse_is_huntable() {
     assert!(base.has_pending_timer(0x215));
 }
 
+// QUIRK C-146: kept
 #[test]
 fn the_evoked_message_queues_the_meat_module_off() {
     // re/evoke-aura 3.2a, `0x004FEC23`: `GameObject_QueueModuleTickChange(0x15, 0)` instead of
@@ -841,6 +856,7 @@ fn the_evoked_message_queues_the_meat_module_off() {
     assert!(o.pending_activation.is_empty());
 }
 
+// QUIRK C-279: kept
 #[test]
 fn the_evoker_death_leaves_the_wolves() {
     // C-279.
@@ -870,6 +886,7 @@ fn the_evoker_death_leaves_the_wolves() {
     assert_eq!(reserve(&sim, body), 25);
 }
 
+// QUIRK C-279: kept
 #[test]
 fn the_evoker_owner_change_keeps_the_reserve() {
     // C-279: a living change of ownership changes the ID, later `0x320` lapse.
@@ -893,6 +910,7 @@ fn the_evoker_owner_change_keeps_the_reserve() {
     assert_eq!(reserve(&sim, moved), 25);
 }
 
+// QUIRK C-284: kept
 #[test]
 fn the_evoked_animal_doubles_its_base_hitpoints() {
     // C-284 corrected (Ghidra `0x00510A89…0x00510AAA`): key-0 absolute value = base value.
@@ -919,6 +937,7 @@ fn the_evoked_animal_doubles_its_base_hitpoints() {
     assert_eq!(hitpoints(&sim, wolf), (20, 20));
 }
 
+// QUIRK C-276: kept
 #[test]
 fn four_wolves_then_the_fifth_fails() {
     // V4.
@@ -958,6 +977,7 @@ fn four_wolves_then_the_fifth_fails() {
     assert_eq!(wolves, 4);
 }
 
+// QUIRK C-276: kept
 #[test]
 fn bears_and_cats_fit_by_cost() {
     // V5.

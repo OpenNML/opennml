@@ -241,6 +241,7 @@ mod tests {
         sim.state.area_queries.get(key).unwrap().list.clone()
     }
 
+    // QUIRK K-295: kept
     #[test]
     fn first_fill_is_inclusive_and_tracking_half_open() {
         let rules = kit::rules();
@@ -279,6 +280,7 @@ mod tests {
         assert_eq!(sim.state.area_queries.count(key), 3);
     }
 
+    // QUIRK K-296: kept
     #[test]
     fn objects_that_stop_matching_stay_listed() {
         let rules = kit::rules();
@@ -310,6 +312,7 @@ mod tests {
         assert!(list(&sim, kept).is_empty());
     }
 
+    // QUIRK K-296: kept
     #[test]
     fn a_dying_enemy_stays_listed_and_a_destroyed_one_leaves() {
         let rules = kit::rules();
@@ -413,6 +416,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-58, E-65: kept
     #[test]
     fn collect_in_tile_rect_is_inclusive_and_ignores_the_owner() {
         let rules = kit::rules();
@@ -515,6 +519,7 @@ mod tests {
         );
     }
 
+    // QUIRK E-58: kept
     #[test]
     fn collect_in_tile_rect_reads_the_tree_list_for_player_9_or_the_tree_filter() {
         let rules = kit::rules();

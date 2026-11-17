@@ -122,6 +122,7 @@ fn priorities(bar: &MessageBar, tag: usize) -> Vec<u32> {
     bar.queue(tag).iter().map(|m| m.flags >> 24).collect()
 }
 
+// QUIRK O-42, O-210: kept
 #[test]
 fn enqueue_vectors_follow_n_7_2() {
     let mut b = bar();
@@ -176,6 +177,7 @@ fn enqueue_vectors_follow_n_7_2() {
     );
 }
 
+// QUIRK O-211: kept
 #[test]
 fn duplicate_is_checked_only_at_the_anchor() {
     let mut b = bar();
@@ -206,6 +208,7 @@ fn duplicate_is_checked_only_at_the_anchor() {
     );
 }
 
+// QUIRK O-210: kept
 #[test]
 fn long_queue_keeps_the_head_and_order() {
     let mut b = bar();
@@ -257,6 +260,7 @@ fn unknown_or_untyped_messages_do_not_exist() {
     assert_eq!(names, ["ECONOMY", "MILITARY", "OTHER"]);
 }
 
+// QUIRK O-212: kept
 #[test]
 fn duration_is_len_times_time_per_char_plus_fade() {
     let mut b = bar();
@@ -290,6 +294,7 @@ fn duration_is_len_times_time_per_char_plus_fade() {
     assert!(out.is_empty(), "message 21 without sound");
 }
 
+// QUIRK O-212: kept
 #[test]
 fn head_is_replaced_without_fade_when_another_waits() {
     let mut b = bar();
@@ -362,6 +367,7 @@ fn sound_once_blocks_15_seconds_per_tag() {
     assert_eq!(out, [BarEffect::Sound(873)]);
 }
 
+// QUIRK O-42, O-219: kept
 #[test]
 fn ping_only_with_tile_and_pushes_five_latest() {
     let mut b = bar();
@@ -414,6 +420,7 @@ fn ping_only_with_tile_and_pushes_five_latest() {
     assert_eq!(stack.pop(), None);
 }
 
+// QUIRK O-217: kept
 #[test]
 fn cinemascope_mutes_and_hides_but_keeps_the_clock() {
     let mut b = bar();
@@ -557,6 +564,7 @@ fn text_origin(cmds: &[DrawCmd], color: u32) -> Option<(i32, i32)> {
     ))
 }
 
+// QUIRK O-214: kept
 #[test]
 fn message_position_follows_the_resolution() {
     let mut b = bar();
@@ -627,6 +635,7 @@ fn message_position_follows_the_resolution() {
     assert_eq!(rows.into_iter().collect::<Vec<_>>(), [234, 249]);
 }
 
+// QUIRK O-214: kept
 #[test]
 fn negative_x_aligns_right() {
     // POSITION -5 (the magnitude does not count): x = W - width. "Gold" = 40 px.
@@ -649,6 +658,7 @@ fn negative_x_aligns_right() {
     }
 }
 
+// QUIRK O-213: kept
 #[test]
 fn game_clock_scales_with_game_speed() {
     // Speed 10: 1:1.

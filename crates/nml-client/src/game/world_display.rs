@@ -282,6 +282,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-286: kept
     #[test]
     fn world_display_reports_flag_marks_beams_and_charges() {
         let w = world();

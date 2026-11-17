@@ -712,6 +712,7 @@ ki_kind = 2
         }
     }
 
+    // QUIRK E-40: kept
     #[test]
     fn slots_argument_parses_kinds_and_handicaps() {
         use nml_control::SlotSetupKind;

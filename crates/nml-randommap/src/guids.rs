@@ -100,6 +100,7 @@ mod tests {
         grid
     }
 
+    // QUIRK D-335: deviation
     #[test]
     fn guid_draw_runs_in_memory_order_and_keeps_unknown_numbers() {
         let script = RandomMapScript {
@@ -145,6 +146,7 @@ mod tests {
         assert_eq!([tiles[0], tiles[3], tiles[6]], [5, 7, 7]);
     }
 
+    // QUIRK D-335: deviation
     #[test]
     fn texture_without_guid_on_a_tile_is_an_error() {
         let script = RandomMapScript {

@@ -1529,6 +1529,7 @@ mod tests {
 
     /// In the network, `SetPlayerResult` from outside accepts only the own slot with result 1
     /// (giving up, dropout); a foreign slot and victory are rejected, the script path stays free.
+    // QUIRK E-267: kept
     #[test]
     fn network_limits_player_result_to_own_slot() {
         let rules = testkit::rules();
@@ -1562,6 +1563,7 @@ mod tests {
     /// Signal `0x5C` changes no state (checksum before = after), only reports the event
     /// with the color of the slot field (`0x004789E0`, at execution) and does **not** check the slot field against the
     /// sender (the original does not check, O-321).
+    // QUIRK O-321: kept
     #[test]
     fn signal_changes_no_state() {
         let rules = testkit::rules();
@@ -1670,6 +1672,7 @@ mod tests {
     /// O-322: The vision checkbox of the diplomacy dialog sends
     /// `{0x63, N, l, on}` - "N sees what I see" - with the sender as `q`. That sets `View[N]` bit `l`; with the
     /// sender as `p`, `View[l]` bit `q`. Without the sender in `p` or `q` the vision stays.
+    // QUIRK O-322: kept
     #[test]
     fn shared_vision_accepts_sender_as_q() {
         let rules = testkit::rules();
@@ -1711,6 +1714,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK O-216, O-247: kept
     #[test]
     fn diplomacy_announces_231_to_233_to_everyone() {
         // `GameWorld_CmdSetDiplomacy` `0x00478720`: message 231 + mode to all (`to: None`) without location,
@@ -1726,6 +1730,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-247: kept
     #[test]
     fn diplomacy_without_change_still_announces() {
         // O-247: every valid command reports, even if the relationship already stands so.
@@ -1745,6 +1750,7 @@ mod tests {
         assert_eq!(announced(&sim), [(None, 232, (-1, -1), 0x1_0100)]);
     }
 
+    // QUIRK O-247: kept
     #[test]
     fn invalid_diplomacy_announces_nothing() {
         let rules = testkit::rules();

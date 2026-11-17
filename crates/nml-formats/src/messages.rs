@@ -237,6 +237,7 @@ mod tests {
         assert_eq!(m.get(5), None);
     }
 
+    // QUIRK O-249: deviation
     #[test]
     fn tags_keep_their_file_order() {
         // The names sort differently (A < B < Z) than the file (Z, A, B); the index follows the file.
@@ -263,6 +264,7 @@ FONT F
         assert_eq!((m.tags["Z"].position, m.tags["Z"].color), ((1, 2), 0x11));
     }
 
+    // QUIRK O-249: deviation
     #[test]
     fn a_repeated_tag_name_replaces_the_values_but_keeps_the_first_index() {
         let m = parse_messages(
@@ -287,6 +289,7 @@ MSGTAG W
         assert_eq!(order, [("X", 0), ("Y", 1), ("W", 2)]);
     }
 
+    // QUIRK O-215: kept
     #[test]
     fn msgcopy_sets_the_current_number() {
         // `MSGCOPY 5` stores under 5 and makes 5 the current number: the following `/MSGID`
@@ -366,6 +369,7 @@ TEXT 20
         assert_eq!((copy.text_id(), copy.sound_id()), (Some(17251), Some(876)));
     }
 
+    // QUIRK O-215: kept
     #[test]
     fn installation_message_tags_are_economy_military_other() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {
@@ -401,6 +405,7 @@ TEXT 20
         );
     }
 
+    // QUIRK O-215: kept
     #[test]
     fn message_230_inherits_sound_925_without_the_sound_bit() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {

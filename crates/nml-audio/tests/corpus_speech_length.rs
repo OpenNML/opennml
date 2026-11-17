@@ -6,6 +6,7 @@ use nml_formats::ogg::{fmod_stream_length_ms, ogg_info};
 use nml_rda::Vfs;
 use nml_rda::testutil::{GameVersion, corpus_game_dir, game_version};
 
+// QUIRK E-171: kept
 #[test]
 fn speech_lengths_match_the_decoder() {
     let Some(dir) = corpus_game_dir() else {

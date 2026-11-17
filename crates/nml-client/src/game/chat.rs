@@ -84,6 +84,7 @@ mod tests {
 
     /// Windows 1-3 (`FUN_004B9940`): all, friends including the sender, chat mask; empty text and window 4 give no
     /// command.
+    // QUIRK O-325: kept
     #[test]
     fn recipients_of_the_three_windows() {
         let mut sim = plain_testkit::host();

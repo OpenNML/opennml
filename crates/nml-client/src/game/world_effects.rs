@@ -863,6 +863,7 @@ mod tests {
         assert_eq!(f.world.shown.len(), 2);
     }
 
+    // QUIRK D-244: kept
     #[test]
     fn the_charge_uses_the_bomber_model() {
         let mut f = Fixture::new();
@@ -920,6 +921,7 @@ mod tests {
     /// one each as soon as `(remaining_ms + 100) / 1000` falls below the last one (start 10): at
     /// `remaining_ms` 9,800, 8,800, ..., 800. Position = node `dynamite01` rotated by the charge
     /// rotation. Then the explosion at the charge.
+    // QUIRK D-244: kept
     #[test]
     fn digits_count_nine_to_zero() {
         let mut f = Fixture::new();
@@ -964,6 +966,7 @@ mod tests {
     /// position + fixed, unrotated world offset and turns by ship yaw + yaw offset; the yaw of the
     /// demolition expert is the simulation value when laying. The explosion appears at the
     /// followed position of the last frame.
+    // QUIRK D-244, D-282: kept
     #[test]
     fn charge_follows_a_moving_ship_with_an_unrotated_offset() {
         let mut f = Fixture::new();
@@ -1011,6 +1014,7 @@ mod tests {
 
     /// D-281 (`0x004F0620`, `0x00493030`): everyone sees the charge model, even in fog; the digits
     /// only on ground the local player sees.
+    // QUIRK D-281: kept
     #[test]
     fn charge_is_drawn_in_fog_but_digits_are_not() {
         let mut f = Fixture::new();
@@ -1036,6 +1040,7 @@ mod tests {
     /// The target vanishes during the fuse time (ship sunk, building taken over, new ID). The
     /// charge stays at its last position, keeps counting, the explosion appears there; no jump to
     /// the origin.
+    // QUIRK D-282: kept
     #[test]
     fn charge_stays_where_its_target_vanished() {
         let mut f = Fixture::new();
@@ -1076,6 +1081,7 @@ mod tests {
     /// D-282: after loading (or restart, `reset`) a charge found sits silently at the laying
     /// position without offset and rotation, the explosion there; the digits keep counting from
     /// the next boundary (`m_LastCount` was in the savegame).
+    // QUIRK D-282: kept
     #[test]
     fn loaded_charge_sits_still_at_the_laying_point() {
         let mut f = Fixture::new();
@@ -1120,6 +1126,7 @@ mod tests {
     }
 
     /// Tracks, following, drawing and digits read only the state.
+    // QUIRK D-282: kept
     #[test]
     fn charges_leave_the_checksum_alone() {
         let mut f = Fixture::new();
@@ -1143,6 +1150,7 @@ mod tests {
         assert!(!f.digits().is_empty());
     }
 
+    // QUIRK D-237: deviation
     #[test]
     fn ground_effects_sit_on_the_terrain() {
         let height = |x: f32, z: f32| x * 0.5 + z * 0.25;
@@ -1198,6 +1206,7 @@ mod tests {
     /// In the viewer's step mode (`step N`, no frame until afterwards) the charge follows the target
     /// after every logic step; digit and explosion are at the position of the last step, not at
     /// that of the last drawn frame.
+    // QUIRK D-282: kept
     #[test]
     fn charge_follows_its_target_through_steps_without_frames() {
         let mut f = Fixture::new();
@@ -1246,6 +1255,7 @@ mod tests {
 
     /// The flag `after_reset` is used up at once after loading; a charge laid afterwards follows
     /// its target.
+    // QUIRK D-282: kept
     #[test]
     fn charge_laid_right_after_a_load_follows_its_target() {
         let mut f = Fixture::new();

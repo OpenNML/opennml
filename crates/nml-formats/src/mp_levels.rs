@@ -198,6 +198,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-185: kept
     #[test]
     fn entry_is_appended_at_the_path_line() {
         // The original appends only at `PATH` (FUN_004E5EF0): a stray `NAME` at the end of the file creates no
@@ -285,6 +286,7 @@ NNAME 15123\r\nNTYPE SID\r\n\r\nNNAME 15124\r\nNTYPE ENG\r\n\r\nNNAME 15125\r\nN
         assert_eq!(types.daytime_types.len(), types.daytimes.len());
     }
 
+    // QUIRK O-185: kept
     #[test]
     fn random_map_types_share_one_pending_name() {
         // FUN_004CC0D0: all `*NAME` lines write the same intermediate variable, the entry is created only

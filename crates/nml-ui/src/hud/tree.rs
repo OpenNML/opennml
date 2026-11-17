@@ -371,6 +371,7 @@ mod tests {
         assert_eq!(at(HudEventKind::Button, &[300, 4]), None);
     }
 
+    // QUIRK O-34, O-248: kept
     #[test]
     fn windows_have_layers_4_3_2_1() {
         let w = all_windows();
@@ -456,6 +457,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-248: kept
     #[test]
     fn dispatch_runs_event_before_children_and_mouse_after() {
         let off = HudSwitches {
@@ -502,6 +504,7 @@ mod tests {
         assert!(!called);
     }
 
+    // QUIRK O-248: kept
     #[test]
     fn invisible_node_still_gets_event_and_mouse_but_not_its_children() {
         let mut w = all_windows();
@@ -527,6 +530,7 @@ mod tests {
         assert!(log.contains(&(WindowKind::Toolbar, Slot::Mouse)));
     }
 
+    // QUIRK O-248: kept
     #[test]
     fn tooltip_gets_events_before_the_bars() {
         let w = all_windows();
@@ -550,6 +554,7 @@ mod tests {
         assert!(!log.iter().any(|(k, _)| *k == WindowKind::Toolbar));
     }
 
+    // QUIRK O-248: kept
     #[test]
     fn draw_order_skips_children_of_invisible_nodes_and_draws_tooltip_last() {
         let mut w = all_windows();
@@ -590,6 +595,7 @@ mod tests {
 
     /// The corner buttons are children of the minimap - after its slot 3, before its slot 2 and before the bar; only
     /// for a visible node.
+    // QUIRK O-388: kept
     #[test]
     fn minimap_buttons_come_between_slot_3_and_slot_2() {
         let mut w = all_windows();

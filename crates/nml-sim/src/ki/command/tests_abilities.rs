@@ -229,6 +229,7 @@ fn exec(object: ObjectId, button: i32, idx: i32) -> CommandKind {
     }
 }
 
+// QUIRK E-93: kept
 #[test]
 fn governor_pays_by_button_and_acts_by_index() {
     // E-93: button and index do not match; paid by the button, effect by the index (list 0 combat view, 1 taxes, 2
@@ -251,6 +252,7 @@ fn governor_pays_by_button_and_acts_by_index() {
     }
 }
 
+// QUIRK E-93: kept
 #[test]
 fn shadow_warrior_index_two_costs_mana_without_effect() {
     // E-93: `0x284` sends `{549, 2}` to a list with one entry: the mana (50) is gone, `0x12C {2}` finds no record; the
@@ -266,6 +268,7 @@ fn shadow_warrior_index_two_costs_mana_without_effect() {
     external_rejected(&s.rules, &s.base, kind);
 }
 
+// QUIRK E-93: kept
 #[test]
 fn smith_button_522_is_free() {
     // E-93: `0x296` sends button 522 without a value set: Armor (index 0) without cost.
@@ -279,6 +282,7 @@ fn smith_button_522_is_free() {
     external_rejected(&s.rules, &s.base, kind);
 }
 
+// QUIRK E-93: kept
 #[test]
 fn flag_bearer_lowers_morale_twice() {
     // E-93: `0x2A8 {559, 1}` and `0x2AC {557, 1}` both act on index 1 (lower morale), but pay 60 and 90 respectively;
@@ -304,6 +308,7 @@ fn flag_bearer_lowers_morale_twice() {
     assert!(!temp_guids(&state, f).contains(&MORALE_UP));
 }
 
+// QUIRK E-26: deviation
 #[test]
 fn ki_path_keeps_owner_death_and_module_checks() {
     // Ownership, death and module also apply to the AI; without module 44, dead or foreign -> rejected, state unchanged
@@ -410,6 +415,7 @@ fn killer_cost(state: &SimState, id: ObjectId) -> i32 {
     }
 }
 
+// QUIRK E-95: kept
 #[test]
 fn trapper_kills_with_546() {
     // E-95: `0x2F5` sends button 546 (Pistoleer) instead of 456: the trapper pays 40 instead of 60.
@@ -427,6 +433,7 @@ fn trapper_kills_with_546() {
     external_rejected(&s.rules, &s.base, kind);
 }
 
+// QUIRK E-95: kept
 #[test]
 fn sniper_snipes_with_546() {
     // E-95: `0x2EF` always sends 546; the sharpshooter (command bar 457) pays 40 instead of 50.
@@ -444,6 +451,7 @@ fn sniper_snipes_with_546() {
     external_rejected(&s.rules, &s.base, kind);
 }
 
+// QUIRK E-95: kept
 #[test]
 fn chief_scouts_with_556() {
     // E-95: `0x2F1` always sends 556 (trapper) with 30/5000/1; the chief (command bar 484, 60) pays 25 in the command.
@@ -469,6 +477,7 @@ fn chief_scouts_with_556() {
     external_rejected(&s.rules, &s.base, kind);
 }
 
+// QUIRK E-95: kept
 #[test]
 fn storm_art_two_uses_480() {
     // E-95: `0x281` sends kind 2 (storm) with button 480 instead of 481 (same cost 80); target point the world position
@@ -500,6 +509,7 @@ fn storm_art_two_uses_480() {
     external_rejected(&s.rules, &s.base, kind);
 }
 
+// QUIRK E-94: kept
 #[test]
 fn banish_always_uses_547() {
     // E-94: `0x2EE` always sends 547: the pilgrim (command bar 553 for 200) pays 25, the missionary (command bar 439)
@@ -537,6 +547,7 @@ fn banish_always_uses_547() {
     }
 }
 
+// QUIRK E-96: kept
 #[test]
 fn ki_skips_the_target_filter() {
     // Fog and range of the target filter (`target_fits`) are not checked by the original for the AI: Kill with 548 on a
@@ -560,6 +571,7 @@ fn ki_skips_the_target_filter() {
 
 // --- E-96: checks in the dispatch --------------------------------------------------------------
 
+// QUIRK E-36, E-96: kept
 #[test]
 fn dynamite_sleeps_even_without_a_command() {
     // E-96: `0x2AA` sets the pause 5000 after every query, also without a command (actor missing or carries the lock
@@ -602,6 +614,7 @@ fn dynamite_sleeps_even_without_a_command() {
     }
 }
 
+// QUIRK E-96: kept
 #[test]
 fn cloak_only_for_one() {
     // E-96: `0x2F3` camouflages only for `on == 1`, otherwise uncamouflages (also 2 and -1); Start healing `0x2F2` and
@@ -652,6 +665,7 @@ fn cloak_only_for_one() {
     assert_eq!(outcome, Outcome::Accepted);
 }
 
+// QUIRK E-96: kept
 #[test]
 fn spell_targets_dead_objects() {
     // E-96: spell kinds 1/2 take the world position of a dead (still present) target too; a missing target gives no
@@ -678,6 +692,7 @@ fn spell_targets_dead_objects() {
     }
 }
 
+// QUIRK E-96: kept
 #[test]
 fn damage_building_needs_module_3_at_the_target() {
     // `0x295`: only a target with building module 3 (present and switched on); second word the ID of the found object.
@@ -912,6 +927,7 @@ fn every_ability_row_gives_its_command() {
     assert_eq!(covered, ability_ids());
 }
 
+// QUIRK E-34: deviation
 #[test]
 fn ability_rows_pop_exactly_their_pops_even_when_rejecting() {
     // Each row takes exactly its arguments from the stack and pushes nothing - also on rejection, missing, dead or

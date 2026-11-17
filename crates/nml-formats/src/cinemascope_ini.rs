@@ -143,6 +143,7 @@ mod tests {
     /// Structure of the file of the installation (values from re/campaign-ui D6.1).
     const SAMPLE: &str = "#Cinemascope\r\nBARSIZE 170\r\nBARTEXTURETOP 32 32 data/icons/cinemascope_icon_oben.tga\r\nBARTEXTUREDOWN 32 32 data/icons/cinemascope_icon_unten.tga\r\nDIALOGAREA 0\r\n  PORTRAITPOS 24 876\r\n  PORTRAITSIZE 128 128\r\n  TEXTPOS 170 880\r\n  TEXTSIZE 933 124\r\n  TEXTFONT DialogText\r\n  TEXTCOLOR FFFFFFFF\r\n/DIALOGAREA\r\n";
 
+    // QUIRK O-48: kept
     #[test]
     fn cinemascope_ini_reads_bars_tiles_and_area_0() {
         let c = parse_cinemascope_ini(SAMPLE);
@@ -175,6 +176,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-352: kept
     #[test]
     fn later_area_inherits_missing_values() {
         // The buffer is never reset (O-352): area 1 inherits everything it does not set itself, including the font.
@@ -195,6 +197,7 @@ mod tests {
         assert_eq!(c.areas[&0].text_pos, [7, 8]);
     }
 
+    // QUIRK O-352: kept
     #[test]
     fn area_without_textfont_has_empty_font_name() {
         // Without `TEXTFONT` the area carries "" (no `DialogText`, `0x00447A63`); missing numbers stay 0.
@@ -232,6 +235,7 @@ mod tests {
         assert_eq!((c.bar_top, c.bar_down), (None, None));
     }
 
+    // QUIRK O-48: kept
     #[test]
     fn area0_is_none_without_dialogarea() {
         // Without area 0 there is nothing; the area builds the pixel branch of the original (FUN_004477E0).

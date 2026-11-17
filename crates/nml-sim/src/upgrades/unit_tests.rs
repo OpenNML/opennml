@@ -40,6 +40,7 @@ const ATTACK: usize = 17;
 const FIGHT_NEAR: usize = 18;
 const FIGHT_FAR: usize = 19;
 
+// QUIRK K-69, K-281: kept
 #[test]
 fn percentages_add_per_type_and_overwrite_per_guid() {
     let rules = rules();
@@ -66,6 +67,7 @@ fn percentages_add_per_type_and_overwrite_per_guid() {
     assert_eq!(sim.state.applied_upgrades[0], vec![2801, 2800]);
 }
 
+// QUIRK W-213: kept
 #[test]
 fn slot_8_writes_the_table_but_reads_zero() {
     let rules = rules();
@@ -89,6 +91,7 @@ fn slot_8_writes_the_table_but_reads_zero() {
     assert_eq!(*sim.state, before);
 }
 
+// QUIRK W-214: kept
 #[test]
 fn incremental_counts_and_marks_without_list_or_variants() {
     let rules = rules();
@@ -139,6 +142,7 @@ fn revoking_removes_the_percentages_of_every_player() {
     }
 }
 
+// QUIRK W-215: kept
 #[test]
 fn removing_without_apply_makes_the_count_negative() {
     let rules = rules();
@@ -150,6 +154,7 @@ fn removing_without_apply_makes_the_count_negative() {
     assert_eq!(crate::economy::guid_count(&sim, 0, 3374), -1);
 }
 
+// QUIRK K-282, K-300: kept
 #[test]
 fn an_upgrade_switches_sites_passengers_and_dying_objects_of_the_slot() {
     use crate::module::quarter::{accept_unit, flags::FREE_FOR_QUARTER};
@@ -244,6 +249,7 @@ fn an_upgrade_switches_sites_passengers_and_dying_objects_of_the_slot() {
     assert!(!enabled(&sim, foreign, FIGHT_FAR) && enabled(&sim, foreign, FIGHT_NEAR));
 }
 
+// QUIRK K-70, W-216: kept
 #[test]
 fn types_without_obj_upgrades_keep_their_variants() {
     // K-70: type 1102 with stand in the variants 9 (with 2800) and 10 (without), but not in
@@ -269,6 +275,7 @@ fn types_without_obj_upgrades_keep_their_variants() {
     assert_eq!(prop_bits(&sim, woman, STAND), 1 << 9);
 }
 
+// QUIRK K-283: kept
 #[test]
 fn an_owner_change_does_not_recompute_variants() {
     let rules = rules();
@@ -422,6 +429,7 @@ fn hitpoints_follow_armour_upgrades_proportionally() {
     assert_eq!(sim.attribute(q, 14), 220);
 }
 
+// QUIRK W-212: kept
 #[test]
 fn rank_and_type_percent_truncate_separately() {
     let rules = rules();
@@ -488,6 +496,7 @@ fn regeneration_uses_the_type_percent() {
     assert_eq!(fraction(&sim, boosted), 100_000, "full after 1516 ticks");
 }
 
+// QUIRK W-232: kept
 #[test]
 fn termites_destroy_a_building_with_one_hitpoint() {
     // W-232: the counter-upgrade 3376 (termites, -60% hit points) lowers the maximum of a
@@ -548,6 +557,7 @@ fn energy_to_hitpoints_uses_both_percentages() {
     assert_eq!(hit_points(&sim, target), (150, 297));
 }
 
+// QUIRK W-220: deviation
 #[test]
 fn queue_entries_from_slot_11_are_dropped() {
     let rules = rules();
@@ -584,6 +594,7 @@ fn daytime_guids(t: u32) -> Vec<u32> {
     (0..6).map(|k| 4500 + t + 10 * k).collect()
 }
 
+// QUIRK W-221: kept
 #[test]
 fn the_level_start_applies_six_daytime_upgrades_per_slot() {
     use crate::setup::{MatchSetup, new_match};
@@ -633,6 +644,7 @@ fn the_level_start_applies_six_daytime_upgrades_per_slot() {
     assert_eq!(crate::save::checksum(sim.state), before);
 }
 
+// QUIRK W-220: deviation
 #[test]
 fn console_upgrades_reject_slots_from_11() {
     use crate::command::CommandKind;
@@ -704,6 +716,7 @@ fn console_apply_all_runs_2800_to_3399() {
     assert!(sim.state.applied_upgrades[1].is_empty());
 }
 
+// QUIRK K-300: kept
 #[test]
 fn a_colonist_quartered_during_an_upgrade_cannot_leave_the_tower() {
     // K-300 on quartered units, behavior of the reimplementation without intervention: 2800

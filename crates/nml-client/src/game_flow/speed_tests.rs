@@ -59,6 +59,7 @@ fn head(m: &Match, id: i32) -> Option<BarMessage> {
 /// `+` raises the speed 10 -> 11, reports 9 with `0x03010000` (display including fade-out `len * 55 + 1500` ms) and
 /// writes the setting `GameSpeed`; `-` undoes it with message 10. The match's message bar gets the message from the
 /// host (`Hud::post`), not from the simulation.
+// QUIRK O-319: kept
 #[test]
 fn plus_raises_speed_with_message_9_and_setting() {
     let Some(mut m) = start(10) else {
@@ -88,6 +89,7 @@ fn plus_raises_speed_with_message_9_and_setting() {
 
 /// At the limit (19 or 0) nothing changes: neither speed nor message nor setting (`FUN_0042F050` calls the command
 /// only on a change); the key is consumed all the same. 18 + 1 reaches 19 with a message.
+// QUIRK O-319: kept
 #[test]
 fn speed_stops_at_19_and_0_without_message() {
     let Some(mut m) = start(18) else {
@@ -123,6 +125,7 @@ fn speed_stops_at_19_and_0_without_message() {
 /// O-319: With the game menu open, `+` takes effect (confirmed against the original in a reference run): message 9
 /// is at the head at once when the queue is empty; its timer stands still while the menu holds the match
 /// (`FUN_00494A00` runs only with the game tick), so the display time remains.
+// QUIRK O-319: kept
 #[test]
 fn speed_message_shows_at_once_with_the_game_menu_open_and_waits() {
     let Some(mut m) = start(10) else {

@@ -594,6 +594,7 @@ mod tests {
         7
     }
 
+    // QUIRK D-268: kept
     #[test]
     fn footprint_offsets_follow_side_and_pair() {
         let p = Vec3::new(1000.0, 5.0, 2000.0);
@@ -623,6 +624,7 @@ mod tests {
         assert_eq!(f.kind(), 0xD0);
     }
 
+    // QUIRK D-268: kept
     #[test]
     fn footprint_texture_and_radius_follow_the_kind_bits() {
         let name = |kind| Footprint::texture(kind).strip_prefix(FOOTSTEP_DIR).unwrap();
@@ -643,6 +645,7 @@ mod tests {
         assert_eq!(Footprint::radius(0x60), 300.0);
     }
 
+    // QUIRK D-268: kept
     #[test]
     fn footprint_alpha_is_full_until_five_seconds_left() {
         let mut f = Footprint::new(Vec3::ZERO, 0.0, 0, 1, 2);
@@ -659,6 +662,7 @@ mod tests {
         assert_eq!(alpha(0), 0);
     }
 
+    // QUIRK D-268: kept
     #[test]
     fn footprint_lives_20_s_or_10_s_below_quality_2() {
         assert_eq!(Footprint::new(Vec3::ZERO, 0.0, 0, 1, 2).life_ms(), 20_000);
@@ -677,6 +681,7 @@ mod tests {
         assert_eq!((0..101).filter(|_| f.tick(&frustum(), &seen)).count(), 100);
     }
 
+    // QUIRK D-272: kept
     #[test]
     fn footprint_is_seen_only_through_its_first_mark() {
         // Pair (type 6) with yaw 0: mark 0 at (0, 0, 30) +/-10 across, mark 1 at (0, 0, -30).
@@ -810,6 +815,7 @@ mod tests {
         assert_eq!(t.points().len(), 51);
     }
 
+    // QUIRK D-284, D-285: kept
     #[test]
     fn tread_bridges_unseen_segments() {
         let p = [
@@ -842,6 +848,7 @@ mod tests {
         assert_eq!(q[2].corners[0], q[1].corners[2]);
     }
 
+    // QUIRK D-286: kept
     #[test]
     fn tread_bounds_follow_new_points_and_the_drawn_segments() {
         let (p0, p1, p2) = (
@@ -898,6 +905,7 @@ mod tests {
         assert_eq!(t.bounds(), (Vec3::ZERO, Vec3::new(60.0, 0.0, 0.0)));
     }
 
+    // QUIRK D-286: kept
     #[test]
     fn tread_along_z_is_never_visible() {
         // Exactly along z (same x): the track itself would be in view ...
@@ -929,6 +937,7 @@ mod tests {
         assert!(!one.visible(&frustum()));
     }
 
+    // QUIRK D-286: kept
     #[test]
     fn tread_sight_sphere_sits_at_the_min_corner() {
         // The track ends in view but begins behind the camera.
@@ -953,6 +962,7 @@ mod tests {
         assert!(!t.listed());
     }
 
+    // QUIRK D-286: kept
     #[test]
     fn slanted_tread_in_view_is_visible() {
         let mut t = tread(
@@ -1012,6 +1022,7 @@ mod tests {
         assert!((drawn[14].1 - 0.085).abs() < 1e-3, "{:?}", drawn[14]);
     }
 
+    // QUIRK D-269: kept
     #[test]
     fn surf_ring_is_seen_through_its_model_sphere_and_the_fog() {
         // Far to the side: sphere around pos + center with radius r * scale.

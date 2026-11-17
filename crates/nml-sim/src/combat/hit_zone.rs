@@ -151,6 +151,8 @@ mod tests {
         r
     }
 
+    // QUIRK C-91, C-209: kept
+    // QUIRK C-210: deviation
     #[test]
     fn zones_rotate_over_the_nearer_half_and_keep_the_first_of_equals() {
         let rules = zoned();

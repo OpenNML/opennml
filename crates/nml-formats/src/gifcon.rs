@@ -585,6 +585,7 @@ mod tests {
         assert_eq!(g[&1114], [1115, 1116]);
     }
 
+    // QUIRK W-273: kept
     #[test]
     fn heroes_lines_are_not_trimmed() {
         // re/heroes-resources 1.1: a leading space makes the line a comment, duplicates
@@ -611,6 +612,7 @@ HERO 1200
         assert!(c.object_record(3503).is_none());
     }
 
+    // QUIRK O-115: kept
     #[test]
     fn mouse_pointers_follow_fun_004cd790() {
         let text = "#

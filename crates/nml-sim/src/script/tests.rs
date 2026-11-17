@@ -106,6 +106,7 @@ fn fired(traces: &[ScriptTrace], block: u32) -> bool {
     })
 }
 
+// QUIRK E-185: kept
 #[test]
 fn level_container_starts_at_id_one() {
     // E-185: the game engine constructor `FUN_0043BB70` sets `m_LastTriggerEngineID` to 1.
@@ -121,6 +122,7 @@ fn level_container_starts_at_id_one() {
     assert_eq!(off.script.next_container_id, 0);
 }
 
+// QUIRK E-185: kept
 #[test]
 fn start_creates_the_level_container() {
     let rules = rules_for(&script(&[(&[], &["n12;a"]), (&[], &["n12;b"])]));
@@ -152,6 +154,7 @@ fn start_creates_the_level_container() {
     assert!(!dialog_running(&state));
 }
 
+// QUIRK E-129: kept
 #[test]
 fn timer_counts_from_next_tick_countdown_from_set_tick() {
     // E-129: timers are decreased before the blocks (from the following tick), the countdown after them
@@ -192,6 +195,7 @@ fn condition_4_is_false_without_countdown() {
     assert!(level(&state).switches.is_empty());
 }
 
+// QUIRK E-124: kept
 #[test]
 fn first_prefix_is_ignored_no_short_circuit() {
     // E-124: the prefix of the first condition has no effect, afterwards strictly left to right without
@@ -213,6 +217,7 @@ fn first_prefix_is_ignored_no_short_circuit() {
     assert!(speech(&state).events.is_empty());
 }
 
+// QUIRK E-126: kept
 #[test]
 fn block_without_effect_stays() {
     // E-126: numbers without a case (41) and 510 without variables do not set `m_bDeleteMe`.
@@ -248,6 +253,7 @@ fn step_of_done(rules: &Rules, limit: usize) -> Option<usize> {
     })
 }
 
+// QUIRK E-130: kept
 #[test]
 fn wait_40_ends_after_20_ticks_and_continues_same_tick() {
     // E-130: `max(1, ceil(ms/50))` ticks, following action in the same tick.
@@ -263,6 +269,7 @@ fn wait_40_ends_after_20_ticks_and_continues_same_tick() {
     assert_eq!(step_of_done(&plain, 100), Some(1));
 }
 
+// QUIRK E-130: kept
 #[test]
 fn wait_minus_one_reruns_the_wait_action_every_tick() {
     // `w40;-1` is event waiting without an event: action 40 reruns every tick (the block fires every
@@ -287,6 +294,7 @@ fn wait_minus_one_reruns_the_wait_action_every_tick() {
     );
 }
 
+// QUIRK E-125: kept
 #[test]
 fn repeatable_block_restarts_after_the_wait() {
     // E-125: the action index stays after the wait, `n12` runs only once, `n25` every time.
@@ -310,6 +318,7 @@ fn repeatable_block_restarts_after_the_wait() {
     }
 }
 
+// QUIRK E-172: kept
 #[test]
 fn wait_without_w_resets_the_start_index() {
     // E-172: `n40;5` calls `SuspendAtAction` without `w` and sets the start index to 0.
@@ -339,6 +348,7 @@ fn wait_without_w_resets_the_start_index() {
     );
 }
 
+// QUIRK E-132: kept
 #[test]
 fn missing_variable_takes_the_operand() {
     // E-132: 361-363 set a missing variable to the operand.
@@ -362,6 +372,7 @@ fn missing_variable_takes_the_operand() {
     assert_eq!((v["q"], v["r"]), (7, -7));
 }
 
+// QUIRK E-128: kept
 #[test]
 fn variable_actions_359_and_510_to_512() {
     let rules = rules_for(&script(&[
@@ -392,6 +403,7 @@ fn variable_actions_359_and_510_to_512() {
     assert!(c.blocks.is_empty());
 }
 
+// QUIRK E-144: deviation
 #[test]
 fn random_switch_and_timer_formulas() {
     // 33: `(rand * Z1) / 32767`; 180: `(rand * (Z2 - Z1)) / 32767 + Z1`, one CRT `rand()` each from the
@@ -484,6 +496,7 @@ pub(super) fn spawn(sim: &mut Sim, name: Option<&str>, tile: (i32, i32)) -> Obje
     id
 }
 
+// QUIRK E-135: kept
 #[test]
 fn conditions_23_24_27() {
     let rules = rules_with_areas(
@@ -563,6 +576,7 @@ fn conditions_23_24_27() {
     assert!(!check(27, &["lebt", "feld"]), "Mid(5) cuts blindly");
 }
 
+// QUIRK E-128: kept
 #[test]
 fn script_conditions_read_the_container() {
     let file = ScriptFile { blocks: Vec::new() };
@@ -636,6 +650,7 @@ fn script_off_has_no_container() {
     assert_eq!(ScriptState::default().rand, CrtRand::new(0));
 }
 
+// QUIRK E-120: deviation
 #[test]
 fn bad_script_fails_new_match_in_german() {
     // Load errors only make the start with a script fail.
@@ -819,6 +834,7 @@ fn no_number_is_pending() {
     assert!(pending.is_empty(), "no effect yet: {pending:?}");
 }
 
+// QUIRK E-133: kept
 #[test]
 fn every_catalog_number_builds_its_message() {
     let rules = rules_with_areas("", &[("feld", [2, 2, 5, 5])]);
@@ -909,6 +925,7 @@ fn ki_start_counts_words() {
     );
 }
 
+// QUIRK E-123: kept
 #[test]
 fn messages_cut_areas_and_keep_texts() {
     let rules = rules_for("");
@@ -965,6 +982,7 @@ fn ticks_until_done(actions: &[&str]) -> Option<usize> {
     step_of_done(&rules, 200).map(|s| s - 1)
 }
 
+// QUIRK E-131: kept
 #[test]
 fn waits_follow_a4() {
     assert_eq!(ticks_until_done(&["w149;1;2;3"]), Some(12));
@@ -1068,6 +1086,7 @@ fn query_2500_needs_one_object_and_clears_only_when_true() {
     assert_eq!(object_event_bits(&sim, a), 0);
 }
 
+// QUIRK E-172: kept
 #[test]
 fn w334_with_empty_names_does_not_wait() {
     // Case `0x51`: message, `m_bDeleteMe` and waiting only with `L > 0`.
@@ -1098,6 +1117,7 @@ fn w334_with_empty_names_does_not_wait() {
     );
 }
 
+// QUIRK E-133: kept
 #[test]
 fn no_effect_numbers_pass_layer_e_without_pending() {
     // E-133: 17, 344-346, 350-352 and 403 reach empty D cases; 403 waits anyway.
@@ -1122,6 +1142,8 @@ fn no_effect_numbers_pass_layer_e_without_pending() {
     assert!(level(&state).switches.is_empty());
 }
 
+// QUIRK E-181: kept
+// QUIRK E-166: deviation
 #[test]
 fn profile_variables_382_383() {
     // 382 creates `Var[p0]` with 0 (also with an empty name, E-181) and writes it into the mirror; 383
@@ -1161,6 +1183,7 @@ fn rules_with_speech(level: &str) -> Rules {
     rules
 }
 
+// QUIRK E-141: deviation
 #[test]
 fn timer_from_speech_length() {
     // 230: `percent_len(speech length, Z1)`; 232: old value + speech length (if missing, the length).
@@ -1404,6 +1427,7 @@ fn dialog_ticks_in_the_same_step_and_ends_after_its_last_block() {
     assert_eq!(level_switches(&state), ["a", "b"]);
 }
 
+// QUIRK E-139: kept
 #[test]
 fn ki_and_level_rest_during_dialog() {
     use crate::ki::start::testkit::{ai_setup, ki_rules};
@@ -1482,6 +1506,7 @@ fn dialog_waits_on_its_own_timers() {
     assert_eq!(level_switches(&state), ["b"]);
 }
 
+// QUIRK E-143: kept
 #[test]
 fn start_dialog_replaces_and_guards() {
     // `testing::start_dialog` (dry run) without a level script; a running dialog is replaced (fresh
@@ -1534,6 +1559,7 @@ fn start_dialog_replaces_and_guards() {
     assert!(!dialog_running(&state));
 }
 
+// QUIRK E-174: deviation
 #[test]
 fn dialog_start_from_a_dialog_container_is_guarded() {
     // E-174 (deviating): the load check rejects 39 in dialog scripts; if the message nevertheless comes
@@ -1613,6 +1639,7 @@ fn limits(events: &[SimEvent]) -> Vec<String> {
         .collect()
 }
 
+// QUIRK E-141: deviation
 #[test]
 fn line_ends_after_its_length() {
     // Text 100: OGG 3000 ms -> expiry in step 60 (3000 - 60 * 50 = 0 < 1); `w150` continues in the
@@ -1640,6 +1667,7 @@ fn line_ends_after_its_length() {
     assert!(speech(&state).events.is_empty());
 }
 
+// QUIRK E-173: kept
 #[test]
 fn new_line_reports_the_old_one_without_removing() {
     // E-173: the interrupted line 7 is appended at the back without first removing an equal entry;
@@ -1663,6 +1691,7 @@ fn new_line_reports_the_old_one_without_removing() {
     assert!(sim.state.script.mission.info_history.is_empty());
 }
 
+// QUIRK E-173: kept
 #[test]
 fn expiry_removes_one_equal_entry_first() {
     let rules = rules_with_speech("");
@@ -1688,6 +1717,8 @@ fn expiry_removes_one_equal_entry_first() {
     assert_eq!(sim.state.script.mission.speech.events, [5, 5, 9]);
 }
 
+// QUIRK E-173: kept
+// QUIRK E-141: deviation
 #[test]
 fn tip_time_is_three_halves_and_overwrite_is_silent() {
     // Text 200: 20 UTF-16 units, `tpc` 55 -> 20 * 55 * 3 / 2 = 1650 ms -> event in step 33.
@@ -1761,6 +1792,7 @@ fn info_window_213_plays_on_slot_plus_4() {
     assert_eq!(speech(&state).tip_ms, [0, 1600]);
 }
 
+// QUIRK E-124: kept
 #[test]
 fn condition_19_consumes_even_if_block_is_false() {
     // E-124: all conditions run; 19 consumes the event although `5;x` blocks the block.
@@ -1792,6 +1824,7 @@ fn query_600_removes_only_the_first_match() {
     assert_eq!(speech(&state).events, [4, 3]);
 }
 
+// QUIRK E-173: deviation
 #[test]
 fn event_list_drops_the_oldest_at_the_limit() {
     let rules = rules_with_speech("");
@@ -1850,6 +1883,7 @@ fn sums_and_traces(
     (sums, all)
 }
 
+// QUIRK E-142: deviation
 #[test]
 fn save_load_mid_dialog_and_mid_wait_keeps_the_sequence() {
     // Part 1: saving in a `w40` of the dialog (the level block hangs on action 39 of the dialog start).
@@ -1916,6 +1950,7 @@ fn save_load_mid_dialog_and_mid_wait_keeps_the_sequence() {
     assert_eq!(level_switches(&loaded), ["done"]);
 }
 
+// QUIRK E-140: deviation
 #[test]
 fn replay_from_command_log_matches() {
     // Replay from the command log gives the same sequence as the run, also across a running
@@ -2029,6 +2064,7 @@ fn countdown_s(state: &SimState) -> i32 {
     state.script.mission.countdown_s
 }
 
+// QUIRK E-205: kept
 #[test]
 fn countdown_display_follows_the_announced_container_and_truncates() {
     // `n15` registers the level container, `n11;5` sets the counter; the display follows the counter
@@ -2062,6 +2098,7 @@ fn countdown_display_follows_the_announced_container_and_truncates() {
     assert_eq!(countdown_s(&state), 0);
 }
 
+// QUIRK E-205: kept
 #[test]
 fn countdown_16_stops_the_display_and_keeps_the_last_value() {
     // Block 1 unregisters as soon as the rest is at most 1000 ms (condition 4 checks before the tick).
@@ -2080,6 +2117,7 @@ fn countdown_16_stops_the_display_and_keeps_the_last_value() {
     assert_eq!(countdown_s(&state), 1);
 }
 
+// QUIRK E-205: kept
 #[test]
 fn n15_and_n16_differ_in_the_level_script() {
     // E-185: the level container has the ID 1 (as in the original). With ID 0 the unregistering 16
@@ -2110,6 +2148,7 @@ fn n15_and_n16_differ_in_the_level_script() {
     assert_eq!(state.script.mission.countdown_container, 0);
 }
 
+// QUIRK E-205: kept
 #[test]
 fn countdown_display_pauses_during_dialog() {
     let dialog = script(&[(&[], &["w40;5000", "n12;x"])]);
@@ -2151,6 +2190,7 @@ fn rules_with_long_dialog() -> Rules {
     )
 }
 
+// QUIRK E-226: deviation
 #[test]
 fn skip_dialog_ends_the_dialog_in_the_same_step() {
     // The dialog waits in `w40;1000`; the command arrives at the tick boundary (commands run before
@@ -2184,6 +2224,7 @@ fn skip_dialog_ends_the_dialog_in_the_same_step() {
     assert!(level_switches(&plain).is_empty());
 }
 
+// QUIRK E-226: deviation
 #[test]
 fn skip_without_dialog_is_rejected() {
     use crate::command::{Outcome, execute};
@@ -2225,6 +2266,7 @@ fn skip_without_dialog_is_rejected() {
     assert!(sim.state.script.dialog.as_ref().unwrap().skipped);
 }
 
+// QUIRK E-226: deviation
 #[test]
 fn skipped_is_saved_and_survives_loading() {
     use crate::command::{Outcome, execute};

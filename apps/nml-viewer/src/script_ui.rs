@@ -1587,6 +1587,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-350: kept
     #[test]
     fn viewer_without_hud_keeps_egui_bars() {
         // Deviation from the original: without `--hud` the egui bars stay in cinemascope; with `--hud` the original

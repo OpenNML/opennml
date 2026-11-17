@@ -277,6 +277,7 @@ mod tests {
         assert_eq!(chord_name(&[]), "");
     }
 
+    // QUIRK O-107: kept
     #[test]
     fn parse_chord_uppercases_and_splits() {
         assert_eq!(parse_chord("left"), [0x25]);
@@ -321,6 +322,7 @@ mod tests {
         assert!(!chord_matches(&left, &[]));
     }
 
+    // QUIRK O-301: kept
     #[test]
     fn binding_needs_exactly_the_key_set() {
         // `0x0040FC50`: same sum (left/right counted as general) and every key of the binding in the event.

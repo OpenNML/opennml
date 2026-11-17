@@ -210,6 +210,7 @@ mod tests {
         sim.object(id).unwrap().show_counter_upgrade
     }
 
+    // QUIRK W-19: kept
     #[test]
     fn chastity_belt_halves_the_enemy_production() {
         // re/temp-upgrades 9 V8: missionary (slot 0, 3354 researched, 150/150/150) starts 3374; player 1 enemy:
@@ -300,6 +301,7 @@ mod tests {
         assert_eq!(count(&state, 1, CHASTITY), 0);
     }
 
+    // QUIRK W-217, W-226: kept
     #[test]
     fn one_counter_upgrade_per_guid_and_per_slot() {
         // re/temp-upgrades 9 V9: second 0x2F {3375} from slot 0 -> rejected; slot 2 with {3374} -> rejected
@@ -331,6 +333,7 @@ mod tests {
         assert_eq!(count_of_slot(sim.state, 1), 0);
     }
 
+    // QUIRK W-218: kept
     #[test]
     fn a_dying_source_ends_its_counter_upgrade_in_the_next_phase_0_step() {
         // re/temp-upgrades 9 V14, W-218: the source dies at rest 50,000 -> rest 0 (`ExpireBySource`), expiry in
@@ -361,6 +364,7 @@ mod tests {
         assert_eq!(count(&state, 1, CHASTITY), 0);
     }
 
+    // QUIRK W-217, W-227: kept
     #[test]
     fn two_expiries_in_one_step_end_one_after_the_other() {
         // re/temp-upgrades 9 V15, W-227: two sources die in the same tick; the first in list order ends in the
@@ -393,6 +397,7 @@ mod tests {
         assert_eq!(count(&state, 1, WEAKNESS), 0);
     }
 
+    // QUIRK W-230: kept
     #[test]
     fn an_owner_change_of_the_source_decouples_the_counter_upgrade() {
         // W-230: the source changes owner (new HID); its death ends nothing, and
@@ -422,6 +427,7 @@ mod tests {
         assert_eq!(entries(&state), [(CHASTITY, 119_900, m)]);
     }
 
+    // QUIRK W-217, W-228: kept
     #[test]
     fn revoking_ignores_diplomacy_changes_during_the_run() {
         // W-228: during the run slot 1 becomes a friend; the revocation lowers anyway. Slot 2 was
@@ -452,6 +458,7 @@ mod tests {
         assert_eq!(sim.type_upgrade_percent(1, COLONIST, 14), 0);
     }
 
+    // QUIRK W-228: kept
     #[test]
     fn weakness_shrinks_hitpoints_and_marks_the_start_objects() {
         // re/temp-upgrades 9 V11: 3375 against slot 1, colonist full: max 96, current 96, display 1; a colonist
@@ -480,6 +487,8 @@ mod tests {
         }
     }
 
+    // QUIRK W-226: kept
+    // QUIRK W-231: deviation
     #[test]
     fn counter_upgrade_commands_check_source_button_and_running() {
         // A8 (deviation from W-231): foreign source, dead source, button not in the menu, 3354 missing
@@ -533,6 +542,7 @@ mod tests {
         assert!(!button_locked(&sim, 0, b74) && !button_locked(&sim, 1, b75));
     }
 
+    // QUIRK W-229: kept
     #[test]
     fn a_duration_under_one_second_becomes_ten() {
         // W-229: config 13 = 0 -> rest 10,000; 1 s stays 1000 (limit `< 1000`).

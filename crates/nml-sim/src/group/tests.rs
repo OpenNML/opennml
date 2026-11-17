@@ -185,6 +185,7 @@ fn type_0_with_all_units_on_one_spot_keeps_them_together() {
     assert_eq!(g.targets.get(a.0), g.targets.get(b.0));
 }
 
+// QUIRK K-210: kept
 #[test]
 fn a_formation_of_7_or_more_drops_the_command() {
     // K-210: no group, no FINDTO; the ID is consumed anyway (`mgr.next++`).
@@ -201,6 +202,7 @@ fn a_formation_of_7_or_more_drops_the_command() {
     assert!(u.iter().all(|&m| posted_find_to(&sim, m).is_none()));
 }
 
+// QUIRK K-215: kept
 #[test]
 fn a_second_move_to_the_same_selection_realigns_with_the_old_offsets() {
     // K-215: same members -> realign, no new group, offsets of the formation setup.
@@ -224,6 +226,7 @@ fn a_second_move_to_the_same_selection_realigns_with_the_old_offsets() {
     );
 }
 
+// QUIRK K-213: kept
 #[test]
 fn a_new_formation_with_direction_keeps_the_old_one() {
     // K-213: other formation, but with a march direction -> old group (type 0) realigns.
@@ -253,6 +256,7 @@ fn a_new_formation_with_direction_keeps_the_old_one() {
     assert!(u.iter().all(|&m| walk(&sim, m).unwrap().group == 1));
 }
 
+// QUIRK K-94: kept
 #[test]
 fn a_single_move_takes_the_unit_out_of_its_group() {
     let rules = rules();
@@ -427,6 +431,7 @@ fn nearby_units_form_one_pack_and_only_the_leader_plans() {
     assert!(find(&sim, 0).unwrap().success.is_none());
 }
 
+// QUIRK K-218: kept
 #[test]
 fn a_pack_whose_leader_does_not_plan_stays_put() {
     // K-218: followers get no FINDTO of their own.
@@ -616,6 +621,7 @@ fn line_of(sim: &mut Sim, inf: i32, pike: i32, warriors: i32) -> Vec<ObjectId> {
     u
 }
 
+// QUIRK K-214: kept
 #[test]
 fn a_line_puts_pikemen_first_and_warriors_into_the_rear_group() {
     let rules = rules();
@@ -662,6 +668,7 @@ fn a_line_puts_pikemen_first_and_warriors_into_the_rear_group() {
     }));
 }
 
+// QUIRK K-256: kept
 #[test]
 fn only_warriors_in_a_formation_do_not_move_at_all() {
     // K-256 (re/groups-formations 12.9, corrected in re/groups-formations 9): 0 rank members ->
@@ -683,6 +690,7 @@ fn only_warriors_in_a_formation_do_not_move_at_all() {
     );
 }
 
+// QUIRK K-208, K-212: kept
 #[test]
 fn a_formation_place_outside_the_map_drops_the_command() {
     // K-212: blocked place or one far outside the map -> whole command lapses; rank 0 walks anyway.
@@ -721,6 +729,7 @@ fn a_formation_place_outside_the_map_drops_the_command() {
     );
 }
 
+// QUIRK K-212: kept
 #[test]
 fn a_formation_place_in_water_drops_the_command() {
     let rules = rules();
@@ -734,6 +743,7 @@ fn a_formation_place_in_water_drops_the_command() {
     assert!(sim.state.groups.map.is_empty());
 }
 
+// QUIRK K-256: kept
 #[test]
 fn a_formation_with_one_ranked_member_leaves_its_rear_group_standing() {
     // K-256: +0x2C == 1 -> special case, the rear group gets no command.
@@ -793,6 +803,7 @@ fn layers_merge_by_class_and_largest_size() {
     );
 }
 
+// QUIRK K-210: kept
 #[test]
 fn a_type_6_formation_of_two_drops_the_command() {
     // K-210: type 6 also takes rank 0 (no rear group); the geometry always fails from two
@@ -825,6 +836,7 @@ fn marching_line(state: &mut SimState, rules: &Rules, to: (i32, i32)) -> Vec<Obj
     u
 }
 
+// QUIRK K-219: kept
 #[test]
 fn all_members_report_and_get_their_march_path() {
     // re/groups-formations 3.5 step 2/3: `0x2A00` goes to all, posted; after two object ticks (four
@@ -866,6 +878,7 @@ fn all_members_report_and_get_their_march_path() {
     }
 }
 
+// QUIRK K-180: kept
 #[test]
 fn the_march_reports_distributes_and_advances_in_lockstep() {
     let rules = rules();
@@ -907,6 +920,7 @@ fn the_march_reports_distributes_and_advances_in_lockstep() {
     assert_eq!(g.matched_speed, default_speed(&sim, u[0]));
 }
 
+// QUIRK K-221: kept
 #[test]
 fn a_member_that_cannot_move_stalls_the_march() {
     // K-221: m_CanMove = 0 -> 0x2A00 aborts instead of reporting; reported stays below members.
@@ -1116,6 +1130,7 @@ fn responses(sim: &Sim) -> usize {
         .count()
 }
 
+// QUIRK K-220: kept
 #[test]
 fn scatter_moves_units_radially_one_and_a_half_times_out() {
     // re/groups-formations 3.9: (0,0) and (4096,0) -> c = (2048,0) -> targets (-1024,0) and (5120,0).
@@ -1259,6 +1274,7 @@ fn set_formation_0_dissolves_a_formation() {
     assert!(u.iter().all(|&m| walk(&sim, m).unwrap().group == NO_GROUP));
 }
 
+// QUIRK K-222: kept
 #[test]
 fn set_formation_with_the_same_formation_leaves_the_rear_group_standing() {
     // K-222 clarified statically: realigning with anchor -1 moves neither formation nor rear group.
@@ -1351,6 +1367,7 @@ fn a_unit_changing_owner_leaves_its_group() {
     assert_eq!(find(&sim, 0).unwrap().members, vec![u[1]]);
 }
 
+// QUIRK K-215, K-258: kept
 #[test]
 fn a_member_dying_mid_march_stalls_the_others_at_the_next_frame() {
     // K-258: leaving (`0x00429640`/`0x00406F80`) does not remove the member from `ready`; the
@@ -1601,6 +1618,7 @@ fn formation_checksums_match_the_golden_sequence() {
     assert_eq!(h.0, FORMATION_GOLDEN, "{:#018x}", h.0);
 }
 
+// QUIRK K-214: kept
 #[test]
 fn the_formation_scene_marches_through_all_states() {
     // Counter-check before entering the golden: the scene shows what it should show.
@@ -1654,6 +1672,7 @@ fn the_formation_scene_marches_through_all_states() {
     }
 }
 
+// QUIRK K-204, K-216: deviation
 #[test]
 fn formation_checksums_survive_saving_and_loading_mid_march() {
     let reference = formation_checksums(None);
@@ -1764,6 +1783,7 @@ fn straggler_run(save_at: Option<usize>, at_save: Probe) -> Vec<u64> {
     out
 }
 
+// QUIRK K-204: deviation
 #[test]
 fn a_straggler_chase_survives_saving_and_loading() {
     let reference = straggler_run(None, |_, _, _| {});
@@ -1801,6 +1821,7 @@ fn a_straggler_chase_survives_saving_and_loading() {
     }
 }
 
+// QUIRK K-259: kept
 #[test]
 fn a_chase_dropping_its_chase_point_falls_back_to_the_next_high_point() {
     // `TickFormationChase` (`0x00536DC0`) deletes the chase point only with `CPtrList::RemoveHead`
@@ -1882,6 +1903,7 @@ fn a_chase_dropping_its_chase_point_falls_back_to_the_next_high_point() {
     }
 }
 
+// QUIRK K-259: kept
 #[test]
 fn members_running_into_a_blocked_frame_place_drop_out_and_a_rejoiner_stalls_the_march() {
     // K-259: the scene of `formation_scene` with the bar only at x = 30. Frame places lie in
@@ -2049,6 +2071,7 @@ fn lists_a_destroyed_member(s: &mut SimState, r: &Rules, _: &[ObjectId]) {
     assert!(listed, "destroyed member stays listed");
 }
 
+// QUIRK K-261: kept
 #[test]
 fn a_destroyed_member_stays_listed_and_the_save_loads_and_continues() {
     // K-261: `destroy_object` does not leave the group; the savegame loads anyway and continues
@@ -2172,6 +2195,7 @@ fn sunk_canoe_run(save_at: Option<usize>) -> Vec<u64> {
     out
 }
 
+// QUIRK K-261: kept
 #[test]
 fn a_sunk_canoe_stays_in_its_group_and_the_save_loads() {
     // K-261 with a real canoe death (re/riding 13.3: no leaving on destruction): two canoes with

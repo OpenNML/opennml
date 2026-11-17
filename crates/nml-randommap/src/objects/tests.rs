@@ -15,6 +15,7 @@ fn attempt_at(tx: i32, tz: i32, rect: [i32; 4]) -> Attempt {
     }
 }
 
+// QUIRK D-361: kept
 #[test]
 // The check values are exact multiples of 1/4096 and exactly representable as `f32`.
 #[allow(clippy::excessive_precision)]
@@ -29,6 +30,7 @@ fn random_rotation_uses_pi_12867() {
     assert_eq!(random_rotation(360), 6.28271484375);
 }
 
+// QUIRK D-336: kept
 #[test]
 fn rotation_applies_to_the_next_object_of_the_type() {
     // D-336: the first object of a type carries the project rotation, every further one the rotation
@@ -70,6 +72,7 @@ fn rotation_applies_to_the_next_object_of_the_type() {
     assert_eq!(run.slots_used, slots);
 }
 
+// QUIRK D-337: kept
 #[test]
 fn set_object_blocks_the_rect_unconditionally() {
     // `RandomMapObject_Place` `0x004EC842`: `SetRect` also over already blocked tiles; the tiles
@@ -89,6 +92,7 @@ fn set_object_blocks_the_rect_unconditionally() {
     assert_eq!(run.draws, 0);
 }
 
+// QUIRK D-336, D-362: kept
 #[test]
 fn ground_texture_uses_the_new_rotation() {
     // D-362/D-336: `GroundTexture` computes with the new rotation after R7. Seed 1 draws 41 -> 41 degrees:
@@ -132,6 +136,7 @@ fn ground_texture_uses_the_new_rotation() {
     assert_eq!(MsvcRand::new(1).rand() % 361, 41);
 }
 
+// QUIRK D-358: kept
 #[test]
 fn ground_texture_without_name_paints_nothing_and_unknown_name_paints_minus_one() {
     // `0x005456E7…0x005456F5`: empty name -> no call; unknown name -> `FUN_00541710` -1.
@@ -154,6 +159,7 @@ fn ground_texture_without_name_paints_nothing_and_unknown_name_paints_minus_one(
     run.result.unwrap();
 }
 
+// QUIRK D-362: kept
 #[test]
 fn placers_paint_ground_texture_after_setting() {
     // General placer with `GroundTexture F`: every placed object has its tile painted

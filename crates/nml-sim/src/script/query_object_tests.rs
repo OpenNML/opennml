@@ -71,6 +71,7 @@ fn hp_fraction(sim: &mut Sim, id: ObjectId, fraction: i32) {
         .set_current_fraction(14, fraction);
 }
 
+// QUIRK E-203: kept
 #[test]
 fn query_1400_sees_dying_and_gives_zero_for_stale_ids() {
     let rules = rules();
@@ -117,6 +118,7 @@ fn query_1400_sees_dying_and_gives_zero_for_stale_ids() {
     assert_eq!(query::hp_percent(&sim, "held"), 0);
 }
 
+// QUIRK E-203: kept
 #[test]
 fn conditions_28_and_30_read_1400_and_a_stale_id_is_below_any_positive_limit() {
     let rules = rules();
@@ -198,6 +200,7 @@ fn condition_29_compares_equal_and_guards_negative_index() {
     );
 }
 
+// QUIRK E-134: kept
 #[test]
 fn condition_31_is_always_false() {
     let rules = rules();
@@ -217,6 +220,7 @@ fn condition_31_is_always_false() {
     assert!(traces(std::mem::take(&mut sim.state.events)).is_empty());
 }
 
+// QUIRK E-192: deviation
 #[test]
 fn query_2100_counts_the_observer_and_same_owner_types_within_current_sight() {
     let rules = rules();
@@ -266,6 +270,7 @@ fn query_2100_counts_the_observer_and_same_owner_types_within_current_sight() {
     assert_eq!(query::sees_count(&mut sim, 1100, "beob"), 2);
 }
 
+// QUIRK E-192: deviation
 #[test]
 fn query_2100_unknown_filter_or_missing_observer_is_minus_one() {
     let rules = rules();
@@ -307,6 +312,7 @@ fn condition_32_counts_at_least_n() {
     assert!(check(&mut sim, "0", "1101") && !check(&mut sim, "1", "1101"));
 }
 
+// QUIRK E-191: deviation
 #[test]
 fn query_2200_uses_the_observers_tile_and_players_0_to_7() {
     let rules = rules();
@@ -344,6 +350,7 @@ fn query_2200_uses_the_observers_tile_and_players_0_to_7() {
     assert!(!query::tile_seen(&sim, 0, "beob"));
 }
 
+// QUIRK E-191: deviation
 #[test]
 fn condition_33_compares_equal_one_and_guards_negative_players() {
     let rules = rules();
@@ -375,6 +382,7 @@ fn cone_world(rules: &Rules, facing: i32) -> (SimState, ObjectId) {
     (state, observer)
 }
 
+// QUIRK E-192: deviation
 #[test]
 fn query_2600_strict_cone_line_of_sight_and_or_filter() {
     let rules = rules();
@@ -444,6 +452,7 @@ fn query_2600_strict_cone_line_of_sight_and_or_filter() {
     assert!(!query::sees_in_cone(&mut sim, "beob", 1100, 1, 90));
 }
 
+// QUIRK E-192: deviation
 #[test]
 fn query_2600_skips_itself_filters_unknown_ids_and_extends_lists_with_or() {
     let rules = rules();
@@ -491,6 +500,7 @@ fn query_2600_skips_itself_filters_unknown_ids_and_extends_lists_with_or() {
     assert!(query::sees_in_cone(&mut sim, "beob", 4, 1, 90));
 }
 
+// QUIRK E-192: deviation
 #[test]
 fn query_2600_guards_missing_observers_and_empty_sight() {
     let rules = rules();

@@ -42,6 +42,10 @@ Everything is in English: documentation, comments, messages, commit messages, id
 
 - Addresses like `0x004BA620` and names like `FUN_...` denote places in the original program.
 - `re/<topic> <section>` and IDs like `O-163` refer to analysis notes that are not part of this repository.
+- A comment line `QUIRK O-163: kept` or `QUIRK O-163: deviation (A7)` marks the place that implements a quirk of the
+  original or deliberately deviates from it, preferably on the test that shows the behavior. The line holds nothing
+  else; several IDs are separated by `, `. Plain mentions like `(O-163)` remain references. Keep marker lines with
+  the code they belong to when moving it; do not invent new IDs.
 - A1-A8 are the deliberate deviations listed in `docs/deviations.md`.
 
 ## Viewer MCP

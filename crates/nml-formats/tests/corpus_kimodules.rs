@@ -20,6 +20,8 @@ fn range_len(m: &KiModule, addr: u32) -> u32 {
         .map_or(0, |&(_, len)| len)
 }
 
+// QUIRK E-1: kept
+// QUIRK E-15: deviation
 #[test]
 fn kimodules_parse_with_the_documented_invariants() {
     let Some(dir) = corpus_game_dir() else {

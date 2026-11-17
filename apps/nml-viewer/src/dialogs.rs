@@ -920,6 +920,7 @@ Font Credits\nFontSize 15\nTextureFont\nFontName Test\n";
     /// At width 1920, e.g. `garamond_39_0_0_0_0` (`MenuTitle`, relative 26) is missing from the installation;
     /// the generator creates it (here in a throwaway directory instead of the cache of the user).
     /// `MenuButton` (40/600) is supplied by the installation itself.
+    // QUIRK O-59: deviation
     #[cfg(windows)]
     #[test]
     fn missing_atlases_are_generated_for_the_dialogs() {

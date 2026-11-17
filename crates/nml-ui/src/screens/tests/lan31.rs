@@ -66,6 +66,7 @@ impl Logic {
     }
 }
 
+// QUIRK E-281: deviation
 #[test]
 fn lan31_opens_on_the_session_map() {
     // (Deviation from E-281) code 5 of the frame sets map kind, game mode (list index for the game type), limits,
@@ -173,6 +174,7 @@ fn lan31_opens_on_the_session_map() {
     assert_eq!(element(&d, LAN31, "leveltype").items.len(), 2);
 }
 
+// QUIRK E-308: deviation
 #[test]
 fn lan31_offers_no_saved_game() {
     // (Deviation from E-308) `LEVELTYPE` in `LAN31` only "Map" (0) and "Random map" (1); a `LevelType` 2 becomes 0.
@@ -203,6 +205,7 @@ fn lan31_offers_no_saved_game() {
     assert_eq!(l.click("lan3", "exitchange"), -1);
 }
 
+// QUIRK E-307: deviation
 #[test]
 fn changegame_with_occupied_dropped_rows_shows_15402() {
     // (Deviation from E-307) computer on row 3, new map with 3 players -> message 15402 without follow-up command,
@@ -226,6 +229,7 @@ fn changegame_with_occupied_dropped_rows_shows_15402() {
     assert!(l.lobby_effects().is_empty());
 }
 
+// QUIRK E-307: deviation
 #[test]
 fn changegame_sends_the_change_and_reopens_the_lobby() {
     // An open row 3 drops out with 3 players -> `Info` from the chosen map, map and settings into the draft, the rows
@@ -281,6 +285,7 @@ fn changegame_sends_the_change_and_reopens_the_lobby() {
     assert_eq!(l.data.draft.slots, slots);
 }
 
+// QUIRK E-313: kept
 #[test]
 fn empty_seed_draws_anew_on_each_changegame() {
     // E-313 (reproduced): `CHANGEGAME` with a random map fills `Info` like `random_slots` (seed, size, players
@@ -347,6 +352,7 @@ fn empty_seed_draws_anew_on_each_changegame() {
     assert_eq!(l.data.draft, before);
 }
 
+// QUIRK E-281: deviation
 #[test]
 fn exitchange_reopens_the_lobby_without_change() {
     // `0x004D51A7`...`0x004D5202`: frame closed, lobby open - nothing else; the draft (= session) stays, the settings

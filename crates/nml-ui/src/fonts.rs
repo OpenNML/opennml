@@ -580,6 +580,7 @@ mod tests {
         parse_localisation(text).fonts.remove(0)
     }
 
+    // QUIRK O-58: kept
     #[test]
     fn relative_font_sizes_match_the_shipped_atlases() {
         // re/ui-rendering 3.3: atlases for the widths 800/1024/1280/1400/1600.
@@ -599,6 +600,7 @@ mod tests {
         assert_eq!(relative_px(0, 27), 0);
     }
 
+    // QUIRK O-58: kept
     #[test]
     fn atlas_path_names_the_installed_files() {
         let menu_button = def(
@@ -730,6 +732,7 @@ Icons InfoIcons\nIconsName data\\icons\\own.tga\nIconsSize 32 24\n";
         assert_ne!(book.by_name("MenuButton"), book.by_name("TextFont"));
     }
 
+    // QUIRK O-59: deviation
     #[test]
     fn font_fallback_takes_the_next_bigger_atlas() {
         // Present: 16 and 33 (weight 600); looking for 21.
@@ -782,6 +785,7 @@ Icons InfoIcons\nIconsName data\\icons\\own.tga\nIconsSize 32 24\n";
         );
     }
 
+    // QUIRK O-22, O-59: deviation
     #[test]
     fn unknown_names_get_the_generated_replacement() {
         // A deviation from the original: "MS Sans Serif" 10 px through the generator; without a generator or if it
@@ -827,6 +831,7 @@ Icons InfoIcons\nIconsName data\\icons\\own.tga\nIconsSize 32 24\n";
         assert_eq!(assets.image(atlas).dimensions(), (256, 256));
     }
 
+    // QUIRK O-59: deviation
     #[test]
     fn fonts_without_any_atlas_fall_back_to_text_font_or_blank() {
         // No atlas for MenuButton in any size: font TextFont (16 px, Garamond/0).

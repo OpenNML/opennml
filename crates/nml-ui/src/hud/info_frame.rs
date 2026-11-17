@@ -595,6 +595,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-248: kept
     #[test]
     fn params_follow_the_actions() {
         // 168: style from the flag, start rectangle (x, y, x + 100, y + 100).
@@ -615,6 +616,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-358: kept
     #[test]
     fn frame_168_unknown_flag_is_plain_0x40() {
         // `0x0044355B...0x00443574`: only flags 1 and 2 set a bit; flag 3 acts like flag 0.
@@ -632,6 +634,7 @@ mod tests {
         assert_eq!(three.rect, [1250, 35, 1250 + 112, 35 + 27]);
     }
 
+    // QUIRK E-248, O-359: kept
     #[test]
     fn frame_213_at_pos_1_is_630_wide_at_x_650_y_40() {
         let mut rig = rig();
@@ -647,6 +650,7 @@ mod tests {
         assert_eq!(rig.attach(speech(1), 20002).rect[..3], [650, 40, 1280]);
     }
 
+    // QUIRK O-359: kept
     #[test]
     fn frame_213_height_is_max_of_text_and_100_plus_60() {
         let mut rig = rig();
@@ -659,6 +663,7 @@ mod tests {
         assert_eq!(long.rect, [0, 40, 630, 40 + text_h + 60]);
     }
 
+    // QUIRK O-358: kept
     #[test]
     fn frame_168_flag_1_sits_at_the_right_edge() {
         let mut rig = rig();
@@ -675,6 +680,7 @@ mod tests {
         assert_eq!(f.rect, [1280 - 137, 35, 1280, 35 + 32]);
     }
 
+    // QUIRK O-358: kept
     #[test]
     fn frame_168_flag_2_sits_at_x_0() {
         let mut rig = rig();
@@ -692,6 +698,7 @@ mod tests {
         assert_eq!(rig.glyphs(&cmds).len(), 4);
     }
 
+    // QUIRK O-358: kept
     #[test]
     fn size_is_fixed_when_the_counter_grows_and_text_overflows() {
         // O-358: measured once with "3"; if the counter grows, the window stays, the text overflows.
@@ -721,6 +728,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-360: kept
     #[test]
     fn newer_frame_lies_below_older() {
         // O-360: `open` attaches at the head, `draw` draws from the head: the newer window comes first.
@@ -750,6 +758,7 @@ mod tests {
         assert!(rig.draw_all(&frames).is_empty());
     }
 
+    // QUIRK O-359, O-377: kept
     #[test]
     fn frame_before_portrait_and_text_right_of_it_without_shadow() {
         let mut rig = rig();
@@ -787,6 +796,7 @@ mod tests {
         assert!(rig.with_texture(&cmds, PORTRAIT_TGA).is_empty());
     }
 
+    // QUIRK O-359: kept
     #[test]
     fn bkg_is_infoframe_for_168_and_menuframe_for_213() {
         assert_eq!(InfoFrameParams::of(&window(0, 0, 0), 1).bkg, INFO_FRAME_BKG);

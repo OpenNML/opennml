@@ -401,6 +401,7 @@ mod tests {
 
     /// `0x1403` (`OnMsgRaiseLowHp`): the branch is dead, the HP stay, the answer is 0 (not
     /// -1 like an unknown code).
+    // QUIRK C-132: kept
     #[test]
     fn the_dead_low_hitpoint_raise_answers_zero_and_changes_nothing() {
         let rules = rules();
@@ -419,6 +420,7 @@ mod tests {
         assert_eq!(hp(&sim), 10);
     }
 
+    // QUIRK W-81: kept
     #[test]
     fn selling_a_site_refunds_one_percent_of_the_rest_value() {
         let rules = rules();
@@ -455,6 +457,7 @@ mod tests {
         assert_eq!(guid_count(&sim, 0, 1001), 0);
     }
 
+    // QUIRK W-81, D-248: kept
     #[test]
     fn selling_a_finished_house_refunds_nothing_and_takes_its_living_space() {
         let rules = rules();
@@ -712,6 +715,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-248: kept
     #[test]
     fn exploding_buildings_set_a_timer_for_the_blast() {
         let rules = rules();
@@ -756,6 +760,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-155: kept
     #[test]
     fn the_powder_house_blasts_5_tiles_at_enemies_or_3_tiles_at_everyone() {
         use crate::combat::testkit as ck;
@@ -809,6 +814,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-85, W-276: kept
     #[test]
     fn a_destroyed_wall_link_becomes_a_site_again_while_the_wall_lives() {
         let rules = rules();
@@ -902,6 +908,7 @@ mod tests {
         assert_eq!(query(&mut sim, palisade, msg::WAKE), 0);
     }
 
+    // QUIRK W-87: kept
     #[test]
     fn pending_counts_stay_with_the_old_slot_after_an_owner_change() {
         // Quirk W-87 (re/buildings 8.6, 12.17): `GameWorld_ChangeObjectOwner` rebooks only the object
@@ -938,6 +945,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-86: kept
     #[test]
     fn owner_changes_hand_the_new_id_to_the_wall_links() {
         let rules = rules();
@@ -980,6 +988,7 @@ mod tests {
         assert_eq!(crate::world::object_event_bits(&sim, house), 0);
     }
 
+    // QUIRK E-189: kept
     #[test]
     fn building_destroy_counts_even_unfinished_sites() {
         // `0x00506445`: kill counter for the slot of the last attacker with the building GUID,

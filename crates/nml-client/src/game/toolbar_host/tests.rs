@@ -117,6 +117,7 @@ fn quarter_mut(sim: &mut SimHost, id: ObjectId) -> &mut nml_sim::module::quarter
     }
 }
 
+// QUIRK O-236: kept
 #[test]
 fn signature_kinds_follow_n_2() {
     // re/game-ui N.2 (deviation from the original): order queued -> 0, order done/continues -> 3, gate -> 2, an
@@ -208,6 +209,7 @@ fn signature_kinds_follow_n_2() {
     assert_eq!(rebuild_kind(&empty, &a, &[]), None);
 }
 
+// QUIRK O-395: kept
 #[test]
 fn production_cancel_event_makes_a_silent_rebuild() {
     // `0x00507960`: a cancel reports `{0x10, 0}` (after "in progress" -1), only for a selected own building
@@ -269,6 +271,7 @@ fn normal_msgs(bar: &Toolbar) -> Vec<i32> {
 
 /// A cancelled upgrade appears again in the bar at once, whether it waited or ran (original `0x00507960` ->
 /// `{0x10, 0}` -> silent rebuild `0x00457DB0` with the hide check of `0x004557C0`).
+// QUIRK O-395: kept
 #[test]
 fn cancelled_upgrade_returns_to_the_bar() {
     const RESEARCH: u32 = 2806;
@@ -348,6 +351,7 @@ fn cancelled_upgrade_returns_to_the_bar() {
 /// fetches the events of the immediate command (`take_immediate_events`, like `GameSession::advance_paused`); from that
 /// `{0x10, 0}` results instead of `{0x10, 3}`, the button is back in the same frame. A second pause frame does not
 /// rebuild again; the first tick after resuming delivers the event again (second silent rebuild, without effect).
+// QUIRK O-395: kept
 #[test]
 fn cancelled_upgrade_returns_to_the_bar_in_the_pause() {
     const RESEARCH: u32 = 2806;
@@ -461,6 +465,7 @@ fn quartered_selection_drops_the_unit() {
     assert_eq!(toolbar_model(&sim, &sel.ids, false).selection.len(), 1);
 }
 
+// QUIRK O-275: kept
 #[test]
 fn one_selection_change_gives_exactly_one_select_sound() {
     // One `{8}` => exactly one selection sound - that of the host (`selection_changed` -> `Voices::selection`); the
@@ -489,6 +494,7 @@ fn one_selection_change_gives_exactly_one_select_sound() {
     );
 }
 
+// QUIRK O-236, O-275: kept
 #[test]
 fn gate_toggle_rebuilds_fully_with_select_sound() {
     // O-236, O-275: `{0x10, 2}` rebuilds fully and reports the selection sound; the host maps it to
@@ -533,6 +539,7 @@ fn gate_toggle_rebuilds_fully_with_select_sound() {
     assert!(voices.selection(&sim.state, &[c], 0).is_some());
 }
 
+// QUIRK O-270: kept
 #[test]
 fn headhunter_button_changes_selection_without_rebuild() {
     // O-270: The headhunter button selects the HQ without `{8}`; the bar keeps the button set, `+0x524` and portrait.
@@ -832,6 +839,7 @@ fn host_with_415() -> SimHost {
     sim
 }
 
+// QUIRK O-281: kept
 #[test]
 fn occupant_button_415_needs_an_occupant() {
     // `Toolbar_BuildButtonSet` (`0x004558B4...0x004558C5`): kind TARGET/TARGET_DO stays only if
@@ -890,6 +898,7 @@ fn occupant_button_415_needs_an_occupant() {
     assert!(active_target_buttons(&mut sim, &[]).is_empty());
 }
 
+// QUIRK O-271, O-274: kept
 #[test]
 fn hero_row_is_rebuilt_on_creation_and_kept_for_a_dead_hero() {
     // O-271, O-274 (Ghidra `0x004864A2`, `0x00481BDB`, `0x00532C34`): initial state = `heroes_of`; creating an object
@@ -1020,6 +1029,7 @@ fn build_cursor_frame_is_snapped_with_the_cursor_rotation() {
 /// `Toolbar_IsButtonLocked` `0x0044AF60`), per slot and with a running counter-upgrade. The only intended gap:
 /// `REQUIRED_GUID_NATION` is checked only by `Toolbar_IsButtonLocked` (key shortcut), not by drawing (O-230); the
 /// shipped data does not use the list, which the test also checks.
+// QUIRK O-230: kept
 #[test]
 fn toolbar_locks_match_the_sim_for_every_corpus_button() {
     use nml_sim::command::validate::{
@@ -1144,6 +1154,7 @@ fn toolbar_locks_match_the_sim_for_every_corpus_button() {
 
 /// `REQUIRED_GUID_NATION` locks only `Toolbar_IsButtonLocked` (`0x0044AF60`, key shortcut and the command check of
 /// the simulation), not the drawn button (`0x0044F250` reads only `REQUIRED_GUID`, O-230).
+// QUIRK O-230: kept
 #[test]
 fn nation_requirement_locks_only_the_sim_check() {
     use nml_formats::gifcon::parse_toolbar;

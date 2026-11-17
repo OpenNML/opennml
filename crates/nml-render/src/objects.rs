@@ -1026,6 +1026,7 @@ mod tests {
         assert_eq!(normal_matrix(&flat), glam::Mat3::ZERO);
     }
 
+    // QUIRK D-39: kept
     #[test]
     fn material_colors_like_the_game() {
         let rdo = sample_rdo(RdoLayout::Standard);
@@ -1181,6 +1182,7 @@ mod tests {
     /// `FUN_00580B10`: only the first `EF-MATERIAL` gets the player color as diffuse and ambient
     /// (diffuse alpha stays), after that tint and `k` apply as before; a second `EF-MATERIAL`
     /// (as in `kanone_sid.rdo`) and the white material keep their color.
+    // QUIRK D-39, D-220: kept
     #[test]
     fn the_player_colour_replaces_only_the_first_ef_material() {
         let rdo = sample_rdo(RdoLayout::Standard);
@@ -1241,6 +1243,7 @@ mod tests {
     /// in player color * `k` (`0x005884C0` with `r.color · r.k`), further `EF-MATERIAL`s with their
     /// `.rdo` color (`Material_FromRdoMaterial`), all others white (`Material_MakeDefaultWhite`);
     /// white and `.rdo` color without `k`, a tint has no effect.
+    // QUIRK D-264: kept
     #[test]
     fn the_stealth_look_is_white_with_the_player_colour_times_brightness() {
         let rdo = sample_rdo(RdoLayout::Standard);
@@ -1289,6 +1292,7 @@ mod tests {
     /// (`0x005833B0`) takes both from the material (`Model_LoadMaterials` `0x00581D10`: both
     /// `1 − transparency`). So ambient alpha always equals diffuse alpha (D-287), also with player
     /// color, tint and silhouette white; opaque groups stay at 1.
+    // QUIRK D-287: kept
     #[test]
     fn the_ambient_alpha_follows_the_diffuse_alpha() {
         let rdo = sample_rdo(RdoLayout::Standard);
@@ -1434,6 +1438,7 @@ mod tests {
     /// `a · (1 + max(0, N·L))` clamped to [0, 1]; the fixed-function pipeline (rigid meshes, skin
     /// meshes without a pose) takes only `diffuse.a`. Silhouette alpha 0.1 -> 0.1...0.2, own camouflage
     /// 0.5 -> 0.5...1.
+    // QUIRK D-287: kept
     #[test]
     fn skinned_meshes_mix_with_the_light_alpha() {
         let ghost = |alpha| InstanceLook {

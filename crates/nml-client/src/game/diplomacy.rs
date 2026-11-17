@@ -203,6 +203,7 @@ mod tests {
 
     /// Tribute mask `0x05` (slots 0 and 2), "Transfer gold" -> `{0x65, 0, 0x05, 0, 100}`; with gold >= 100 slot 2
     /// gets 100 gold (message 230 via `TributeSent`), with gold 50 message 2 and nothing booked.
+    // QUIRK O-324: kept
     #[test]
     fn tribute_d1() {
         for (gold, paid) in [(150, true), (50, false)] {
@@ -247,6 +248,7 @@ mod tests {
 
     /// Slot 0, row 3 "Enemy" -> "Allied" (0): `{0x64, 0, 3, 0}`, message 231 to all with
     /// `(3 | 0x100) << 8 | 0 = 0x10300`.
+    // QUIRK O-247: kept
     #[test]
     fn status_d2() {
         let mut host = halted(4);
@@ -282,6 +284,7 @@ mod tests {
     }
 
     /// Vision check mark in row 3 -> `{0x63, 3, 0, 1}` -> `View[3]` bit 0 (N sees what I see).
+    // QUIRK O-322: kept
     #[test]
     fn view_d3() {
         let mut host = halted(4);
@@ -308,6 +311,7 @@ mod tests {
 
     /// 7 occupied slots: slot 0; 2 allied, 5 enemy, 6 neutral, 4 eliminated. "Allied players" -> bit 2 on, 5 and 6
     /// off, bit 0 (own) and bit 4 (eliminated) unchanged; the other buttons by relation.
+    // QUIRK C-231, O-324: kept
     #[test]
     fn chat_by_relation_d4() {
         let scene = || {

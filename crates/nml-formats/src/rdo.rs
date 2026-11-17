@@ -506,6 +506,7 @@ mod tests {
         assert!(parse_rdo(&[]).is_err());
     }
 
+    // QUIRK D-264: kept
     #[test]
     fn rdo_rejects_bad_indices_and_types() {
         let mut file = sample_rdo(RdoLayout::Standard);
@@ -530,6 +531,7 @@ mod tests {
         assert_eq!(mesh.material_runs(), [(0, 2, 0), (2, 1, 1), (3, 1, 0)]);
     }
 
+    // QUIRK D-365: kept
     #[test]
     fn mesh_scale_is_read() {
         // `scale` (`+0x12C`): helper nodes like `blocking01` of palme04...06 carry 20/29 (D-365).
@@ -544,6 +546,7 @@ mod tests {
         assert_eq!(parsed.meshes[1].scale, [3.0, 4.0, 5.0]);
     }
 
+    // QUIRK D-356: kept
     #[test]
     fn bounds_keep_all_eight_stored_corners() {
         // Helper nodes store the corners in a different order (x, z, y): all 8 are preserved.

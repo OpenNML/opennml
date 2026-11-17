@@ -818,6 +818,7 @@ mod tests {
 
     const TYPES: &str = "GUID 1000\nNAME HQ\nVALUEID 100 6 1 0\nPROPID 3\nGUID 1100\nNAME Kolonist\nVALUEID 100 6 1 0\nPROPID 0\nGUID 3602\nNAME Baum\nVALUEID 100 6 1 256\nPROPID 4\n";
 
+    // QUIRK E-40: kept
     #[test]
     fn ki_kind_maps_to_handicap() {
         let handicaps: Vec<_> = (0..=5).map(ki_kind_handicap).collect();
@@ -949,6 +950,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-7: kept
     #[test]
     fn resource_and_living_space_settings_apply_in_multiplayer_only() {
         let mut rules = rules();
@@ -1030,6 +1032,7 @@ mod tests {
         assert_eq!(state.tables[0].count, 0);
     }
 
+    // QUIRK E-41: deviation
     #[test]
     fn new_match_copies_the_campaign_difficulty() {
         // `0x4E39` reads the difficulty in the tick; the simulation does not know the start package.
@@ -1051,6 +1054,7 @@ mod tests {
         }
     }
 
+    // QUIRK K-35: kept
     #[test]
     fn railroad_game_types_are_accepted() {
         let rules = rules();
@@ -1063,6 +1067,7 @@ mod tests {
     }
 
     /// Game type -2 (menu level) starts without a lobby.
+    // QUIRK O-446: kept
     #[test]
     fn menu_level_mode_starts_without_lobby() {
         let rules = rules();
@@ -1076,6 +1081,7 @@ mod tests {
     }
 
     /// Game type 2 (domination) and lobby color 8 ("White") are free.
+    // QUIRK D-298: kept
     #[test]
     fn domination_and_white_are_accepted() {
         let rules = rules();
@@ -1088,6 +1094,7 @@ mod tests {
         assert_eq!(state.players[0].color, 8);
     }
 
+    // QUIRK K-35, K-277: kept
     #[test]
     fn mode_4_skips_objects_of_empty_slots() {
         // Colonists on slots 0 (occupied), 1 (no [PLAYER]: empty) and 2 (occupied), plus a
@@ -1132,6 +1139,7 @@ VALUEID 60002 6 1 1792
         (rules, state)
     }
 
+    // QUIRK D-297: kept
     #[test]
     fn free_flag_tile_keeps_the_position() {
         // Target tile free: no tile center, no change (not to y either).
@@ -1142,6 +1150,7 @@ VALUEID 60002 6 1 1792
         assert_eq!(v, before);
     }
 
+    // QUIRK D-297: kept
     #[test]
     fn occupied_flag_tile_takes_the_first_ring_tile() {
         let (rules, mut state) = flag_world(32);
@@ -1177,6 +1186,7 @@ VALUEID 60002 6 1 1792
         assert_eq!(v, [5.0 * 128.0 + 64.0, 3.25, 13.0 * 128.0 + 64.0]);
     }
 
+    // QUIRK K-33: kept
     #[test]
     fn flag_tile_outside_the_map_counts_as_free() {
         // Tile (0, 0) occupied, ring 1 begins at (-1, -1) outside: free (K-33); the position then lies
@@ -1207,6 +1217,7 @@ VALUEID 60002 6 1 1792
         assert_eq!(v, [-5.0, 0.0, -5.0]);
     }
 
+    // QUIRK K-33: kept
     #[test]
     fn no_free_tile_keeps_the_last_counters() {
         // Everything occupied (K-33): after ring 19 the counters stand at (a, b) =
@@ -1223,6 +1234,7 @@ VALUEID 60002 6 1 1792
         assert_eq!(v, [49.0 * 128.0 + 64.0, 2.0, 49.0 * 128.0 + 64.0]);
     }
 
+    // QUIRK D-297: kept
     #[test]
     fn start_flag_is_snapped_by_the_ring_search_not_the_box() {
         // `place_start_objects`: the flag 4300 goes to `find_free_flag_tile`; free target tile ->
@@ -1271,6 +1283,7 @@ VALUEID 60002 6 1 1792
     /// `[2players]-battlebeach`. The flag stands 3 tiles right of the start point (`PLACEOBJECT 4300 3 0`),
     /// the main building sets its lock margin beforehand. If the target tile lies in it (nations 2 to 5 with
     /// a wider main building), the flag goes to the first free ring tile, otherwise it stays.
+    // QUIRK D-297: kept
     #[test]
     fn corpus_battle_beach_start_flags() {
         use nml_rda::Vfs;
@@ -1376,6 +1389,7 @@ VALUEID 60002 6 1 1792
         }
     }
 
+    // QUIRK E-147: kept
     #[test]
     fn wld_names_are_registered_untrimmed() {
         // `OBJ_NAME` comes from the `.wld` already in lowercase; spaces stay (E-147).
@@ -1504,6 +1518,7 @@ VALUEID 60002 6 1 1792
         assert!(err.starts_with("random map: game mode 4"), "{err}");
     }
 
+    // QUIRK D-339: kept
     #[test]
     fn lobby_wraps_and_overwrites_front_slots() {
         // `GameEngine_SetupPlayersFromLobby` `0x00432E09`: slots 0 and 2 active, three entries - AI "A"
@@ -1531,6 +1546,7 @@ VALUEID 60002 6 1 1792
         }
     }
 
+    // QUIRK D-339: kept
     #[test]
     fn human_losing_the_slot_aborts_the_start() {
         // Human "A" -> 0, AI "B" -> 2, AI "C" overwrites slot 0: the original would have no local
@@ -1552,6 +1568,7 @@ VALUEID 60002 6 1 1792
         assert_eq!(state.players[1].name, "B");
     }
 
+    // QUIRK D-339: kept
     #[test]
     fn no_active_slot_returns_without_start_resources() {
         // No active slot: after more than 8 rounds the original returns without start resources
@@ -1575,6 +1592,7 @@ VALUEID 60002 6 1 1792
         assert_eq!(state.resource(0, 0), 1500);
     }
 
+    // QUIRK W-6: kept
     #[test]
     fn random_map_start_resources_and_deposits_use_level_zero() {
         // W-6: on random maps stage 0 (`values[0]`) also applies to the start resources of all slots,
@@ -1683,6 +1701,7 @@ VALUEID 60002 6 1 1792
         assert_eq!(obj.world_pos[1], 0.0, "flat terrain");
     }
 
+    // QUIRK D-342: kept
     #[test]
     fn random_map_crt_starts_at_the_generator_end() {
         // D-342: `SimState.crt` starts at the final state of the generator; the one tree of the

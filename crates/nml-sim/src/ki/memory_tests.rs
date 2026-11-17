@@ -340,6 +340,7 @@ fn global_list_builtins() {
     assert!(r.guarded().is_empty());
 }
 
+// QUIRK E-34: deviation
 #[test]
 fn attacker_lists_keep_the_original_balance() {
     let mut r = Rig::new();
@@ -424,6 +425,7 @@ fn attacker_lists_keep_the_original_balance() {
     assert_eq!(r.guarded(), [0x162, 0x169, 0x188, 0x15E, 0x161]);
 }
 
+// QUIRK E-34: deviation
 #[test]
 fn building_queue_lists_drift_apart_like_a6() {
     let mut r = Rig::new();
@@ -460,6 +462,7 @@ fn building_queue_lists_drift_apart_like_a6() {
     assert_eq!(r.mem.building_queue, [0, 400]);
 }
 
+// QUIRK E-34: deviation
 #[test]
 fn quarter_list_builtins() {
     let mut r = Rig::new();
@@ -478,6 +481,7 @@ fn quarter_list_builtins() {
     assert_eq!(r.mem.quarterable, [6]);
 }
 
+// QUIRK E-31: kept
 #[test]
 fn position_lists_sort_with_the_loop_index() {
     let mut r = Rig::new();
@@ -537,6 +541,7 @@ fn position_lists_sort_with_the_loop_index() {
     assert!(r.guarded().is_empty());
 }
 
+// QUIRK E-31: kept
 #[test]
 fn distance_sums_wrap_like_the_x87() {
     let mut r = Rig::new();
@@ -566,6 +571,7 @@ fn distance_sums_wrap_like_the_x87() {
     assert_eq!(pushed.last(), Some(&(r.mem.resources[0].len() as i32)));
 }
 
+// QUIRK E-31, E-48: kept
 #[test]
 fn resource_lists_sort_by_the_base_and_0x10b_pushes_twice() {
     let mut r = Rig::new();
@@ -624,6 +630,7 @@ fn resource_lists_sort_by_the_base_and_0x10b_pushes_twice() {
     assert!(r.guarded().is_empty());
 }
 
+// QUIRK E-30: kept
 #[test]
 fn position_list_reads_and_removals() {
     let mut r = Rig::new();

@@ -536,6 +536,8 @@ pub fn enter_container(sim: &mut Sim, u: ObjectId, c: ObjectId) {
 /// Mounted (only from mobile containers) the mount comes along - quirk: `QUARTERED` is cleared on the
 /// **container**, not on the rider. Finally `0x1611` (attack module), `0x3D00` (walk restores the backed-up
 /// behavior) and the healing module back into the tick list.
+///
+/// QUIRK C-19: kept
 pub fn leave_container(sim: &mut Sim, u: ObjectId) -> bool {
     let mut ok = true;
     set_status(sim, u, status::QUARTERED, false);
@@ -1003,6 +1005,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK W-130: kept
     #[test]
     fn the_spiral_walks_square_rings_and_stops_left_of_the_radius() {
         // Step width 2048 (hard radius 1024), unit 1024.
@@ -1035,6 +1038,7 @@ mod tests {
         assert_eq!(n, 1680);
     }
 
+    // QUIRK W-125: kept
     #[test]
     fn the_headquarters_takes_five_units_and_flags_its_state() {
         let rules = rules(false);
@@ -1092,6 +1096,7 @@ mod tests {
         assert_eq!(q(&sim, hq).occupants, units[..5]);
     }
 
+    // QUIRK W-124: kept
     #[test]
     fn free_for_quarter_is_set_on_capacity_changes_but_never_cleared() {
         // `PropertyQuarter_OnPlayerDataChanged` (`0x0051FC90`): sets the flag with free places,
@@ -1251,6 +1256,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-133, C-138: kept
     #[test]
     fn a_destroyed_building_releases_its_occupants_with_random_damage() {
         let rules = rules(true);

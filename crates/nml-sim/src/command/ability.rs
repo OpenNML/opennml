@@ -1612,6 +1612,7 @@ mod tests {
         assert!(posted(&sim, standing).is_empty());
     }
 
+    // QUIRK K-79: kept
     #[test]
     fn unmask_treats_the_count_as_an_id() {
         // re/masking 9, K-79: `n = 1`, `ids = [X]`; the loop first hits the pseudo ID 1
@@ -1807,6 +1808,7 @@ mod tests {
         );
     }
 
+    // QUIRK K-80: kept
     #[test]
     fn healing_commands_stop_at_the_first_missing_id() {
         // K-80: `GetObjectById == NULL` ends the loop; an existing but rejected object (foreign)
@@ -1861,6 +1863,7 @@ mod tests {
         assert!(posted(&sim, e).is_empty());
     }
 
+    // QUIRK K-310: kept
     #[test]
     fn heal_target_skips_missing_ids() {
         // K-310: `0x78` skips missing IDs; `0x81D` is discarded by the filter
@@ -1926,6 +1929,7 @@ mod tests {
         }
     }
 
+    // QUIRK K-91, D-241: kept
     #[test]
     fn self_heal_pays_the_button_cost_or_nothing() {
         let rules = rules();
@@ -2046,6 +2050,7 @@ mod tests {
 
     /// The commands post with abort; the effect does not come until after the FIFO (one object
     /// tick).
+    // QUIRK C-271: kept
     #[test]
     fn evocation_commands_post_with_abort() {
         let rules = evoke_rules();
@@ -2141,6 +2146,7 @@ mod tests {
     /// The commands check like the command bar (A8): ownership, life, selectability, module, menu,
     /// lock, MY filter (436 and 441-443: property and not `SWIMMING`) and the button matching
     /// the kind.
+    // QUIRK C-281: deviation
     #[test]
     fn evocation_commands_follow_the_toolbar() {
         let rules = evoke_rules();
@@ -2228,6 +2234,7 @@ mod tests {
     /// C-281 remainder: a valid animal evocation without enough mana still aborts all modules
     /// (FIFO entry with abort: first `AbortAllModules`, then the cast); the module evokes
     /// nothing.
+    // QUIRK C-281: deviation
     #[test]
     fn a_valid_evocation_without_mana_still_aborts() {
         let rules = evoke_rules();
@@ -2388,6 +2395,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK C-304: kept
     #[test]
     fn drain_commands_follow_the_toolbar() {
         let rules = spell_rules();
@@ -2447,6 +2455,7 @@ mod tests {
         assert_eq!(queue_len(&sim, m), 1);
     }
 
+    // QUIRK K-91, K-313: kept
     #[test]
     fn scouting_reveals_a_vision_source_for_five_seconds() {
         // re/spells 9.5, K-313: Chief 1715, button 484 (cost 60): mana 100 -> 40, vision source
@@ -2542,6 +2551,7 @@ mod tests {
         assert_eq!(sources_at(&sim, (5, 6)).len(), 1);
     }
 
+    // QUIRK K-313: kept
     #[test]
     fn scout_commands_follow_the_toolbar() {
         let rules = spell_rules();
@@ -2702,6 +2712,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK K-314, C-336: kept
     #[test]
     fn special_attack_commands_post_with_abort() {
         // re/special-attacks 2.4, 4.1: per command `{code, [target, button]}` (`0x5F`: `{0x231, [1, 1,
@@ -2914,6 +2925,7 @@ mod tests {
         assert_rejected(sim, 0, kind);
     }
 
+    // QUIRK C-308: kept
     #[test]
     fn cast_spell_accepts_arts_one_to_three() {
         // re/spells 2.3: kind 1 <-> 480, kind 2 <-> 481 with the target point as `f32` bits
@@ -2997,6 +3009,7 @@ mod tests {
         assert_cast_rejected(&mut sim, cast_at(evoker, 1, p, 480), "no button 480");
     }
 
+    // QUIRK K-91, K-320: kept
     #[test]
     fn whirlwind_pays_in_the_command() {
         // K-320, re/special-attacks 2.4: `0x4F` deducts the cost of 542 (75) in the command and posts
@@ -3066,6 +3079,7 @@ mod tests {
         assert!(sim.state.events.is_empty());
     }
 
+    // QUIRK K-320: kept
     #[test]
     fn a_whirlwind_without_enemies_loses_the_mana() {
         // K-320: no enemy within radius 2 (one 3 tiles away, an own one next to it) -> the
@@ -3101,6 +3115,7 @@ mod tests {
         assert_eq!((hp(&sim, far), hp(&sim, own)), (1000, 1000));
     }
 
+    // QUIRK K-91, K-314, K-320: kept
     #[test]
     fn damage_building_checks_but_does_not_pay() {
         // re/spells 9.6, K-314: mana 100 >= 60 -> `{0x231, [1, 1, target, 60]}` with abort, no deduction in the
@@ -3134,6 +3149,7 @@ mod tests {
         assert!(sim.state.events.is_empty());
     }
 
+    // QUIRK K-87: deviation
     #[test]
     fn damage_building_without_values_walks_but_never_hits() {
         // K-87 (deviation from the original): without a value set of the button GUID 551 the command passes
@@ -3167,6 +3183,7 @@ mod tests {
         assert_eq!(mana(&sim, smith), 100);
     }
 
+    // QUIRK C-336: kept
     #[test]
     fn target_command_builds_the_original_commands() {
         // `Input_IssueTargetAction` (`0x0044D350`, re/special-attacks 2.4, re/spells 2.3): every
@@ -3287,6 +3304,7 @@ mod tests {
         CommandKind::RobCorpses { unit, button }
     }
 
+    // QUIRK K-91: kept
     #[test]
     fn fifteen_robs_from_full_mana() {
         // re/headhunter-robbing 9.3, K-91: mana 150, cost 10 (config 15 of the button 540) -> 15
@@ -3319,6 +3337,8 @@ mod tests {
         assert!(sim.state.events.is_empty());
     }
 
+    // QUIRK K-91: kept
+    // QUIRK K-317: deviation
     #[test]
     fn rob_commands_follow_the_toolbar() {
         // Deviating from K-317 (A8): `0x4C` like the command bar - own, living unit with module 48

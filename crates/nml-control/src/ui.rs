@@ -955,6 +955,7 @@ mod tests {
 
     /// `pointer_model` in the report, with and without the field; a line without the field (older than this version)
     /// can be read.
+    // QUIRK O-297: kept
     #[test]
     fn ui_state_reports_the_pointer_model() {
         let model = UiPointerModelData {

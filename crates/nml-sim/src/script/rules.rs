@@ -400,6 +400,7 @@ mod tests {
         assert!(rules.errors.is_empty(), "{:?}", rules.errors);
     }
 
+    // QUIRK E-171: kept
     #[test]
     fn speech_ms_falls_back_to_text_and_digits() {
         let rules = rules_with_speech(&[(1, 3000, 20), (2, 0, 20)]);

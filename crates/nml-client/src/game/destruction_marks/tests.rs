@@ -84,6 +84,7 @@ fn yaw_of(r: u32) -> f32 {
     r as f32 / 32768.0 * std::f32::consts::TAU
 }
 
+// QUIRK D-248: kept
 #[test]
 fn smoke_columns_follow_the_hull_in_tile_steps() {
     // Hull 384 x 256, tile 128: x 0/128/256/384 at both z edges (4 + 4), z 0/128/256 at
@@ -107,6 +108,7 @@ fn smoke_columns_follow_the_hull_in_tile_steps() {
     assert_eq!(got.len(), 4);
 }
 
+// QUIRK D-248: kept
 #[test]
 fn hull_is_the_rectangle_of_the_two_turned_corners() {
     // `0x0046C350` rotates only `+-half`: at 90 degrees the axes swap, at 45 degrees the rectangle becomes narrow
@@ -138,6 +140,8 @@ fn hull_is_the_rectangle_of_the_two_turned_corners() {
     assert!(((max.y - min.y) * 0.5 - hz).abs() < 1e-2);
 }
 
+// QUIRK D-248: kept
+// QUIRK D-275: deviation
 #[test]
 fn craters_one_in_the_middle_and_seven_inside_the_shrunken_hull() {
     // Start value `EFFECTS_SEED` (2): center rotation 45, then per crater x, z, rotation. Hull 384 x 256
@@ -167,6 +171,8 @@ fn craters_one_in_the_middle_and_seven_inside_the_shrunken_hull() {
     assert_eq!(Footprint::radius(CRATER_CENTER), 300.0);
 }
 
+// QUIRK D-248: kept
+// QUIRK D-275: deviation
 #[test]
 fn tiny_hull_puts_all_craters_at_the_corner() {
     // sx = 90 - 150 < 1 -> `rand % 1` = 0: all seven at the corner `min` (even -> `0x250`).
@@ -201,6 +207,7 @@ fn host_with_building() -> (SimHost, ObjectId) {
     (host, id)
 }
 
+// QUIRK D-248, D-283: kept
 #[test]
 fn a_destroyed_building_smokes_and_leaves_eight_craters_at_any_quality() {
     let (host, id) = host_with_building();
@@ -234,6 +241,7 @@ fn a_destroyed_building_smokes_and_leaves_eight_craters_at_any_quality() {
     }
 }
 
+// QUIRK D-271: deviation
 #[test]
 fn without_shape_or_object_nothing_appears_and_reset_repeats_the_dice() {
     let (mut host, id) = host_with_building();

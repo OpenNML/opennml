@@ -3,6 +3,8 @@
 //! The original calculates the terrain only when loading the level into a color buffer and an image (D-21: a later
 //! change of light does not change the map). The reimplementation calculates without a GPU in 8 bits per channel
 //! (deviation from the original, O-294) and additionally delivers an [`RgbaImage`] for the presentation.
+//!
+//! QUIRK O-294: deviation
 
 use glam::Vec3;
 use image::RgbaImage;
@@ -171,6 +173,7 @@ mod tests {
     /// Light from straight above.
     const UP: Vec3 = Vec3::new(0.0, 1.0, 0.0);
 
+    // QUIRK O-286: kept
     #[test]
     fn water_tile_is_blue_c4() {
         let terrain = flat_terrain(4, -10.0, |_, _| 1);
@@ -183,6 +186,7 @@ mod tests {
         assert!(map.colors.iter().all(|&c| c == 0x0000_0080));
     }
 
+    // QUIRK D-38: kept
     #[test]
     fn shade_never_brightens_and_keeps_base_for_negative_f() {
         assert_eq!(shade([200, 100, 50], 0.8), [160, 80, 40]);
@@ -191,6 +195,7 @@ mod tests {
         assert_eq!(shade([200, 100, 50], 1.0), [200, 100, 50]);
     }
 
+    // QUIRK D-38: kept
     #[test]
     fn missing_texture_gives_raw_ff_and_leaves_colour_buffer() {
         let terrain = flat_terrain(3, 100.0, |x, _| if x == 1 { 0 } else { 1 });
@@ -207,6 +212,7 @@ mod tests {
         assert!(map.colors.iter().all(|&c| c == 0));
     }
 
+    // QUIRK O-286: kept
     #[test]
     fn top_row_is_largest_z() {
         // Texture GUID = z + 1, color = 10 * GUID in red.
@@ -224,6 +230,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-286: kept
     #[test]
     fn light_factor_uses_the_averaged_unnormalised_normals() {
         // Flat terrain: n_bar = (0, 1, 0). Light oblique and given unnormalized: L_hat = (0, 0.6, 0.8),
@@ -239,6 +246,7 @@ mod tests {
 
     /// Tinteba River (64 x 64, light (800, 400, -1300), strength 14, water -150) with the values of a preliminary
     /// check (reader program following the formula of `0x004E3790`). The editions agree in the shipped data.
+    // QUIRK D-21, O-286: kept
     #[test]
     fn corpus_minimap_terrain_of_a_level() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {

@@ -1445,6 +1445,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
 
     const LAYOUT: u32 = 0x46;
 
+    // QUIRK O-60: kept
     #[test]
     fn glyphs_draw_whole_cells_and_advance_by_width() {
         // O-60: whole cell (16 x 16) from the pen position, advance = width from the `.fnt`, no kerning; characters
@@ -1485,6 +1486,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(measure(b"AB", f.big, &f.book), [40, 30]);
     }
 
+    // QUIRK O-61: kept
     #[test]
     fn utf16_keeps_only_the_low_byte() {
         // O-61: low byte per UTF-16 unit.
@@ -1509,6 +1511,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(runs(&lay("ś]x", LAYOUT, 400)), [r(0, 0, 30, "[]x")]);
     }
 
+    // QUIRK O-62: kept
     #[test]
     fn shadow_is_two_pixels_down_and_text_two_right() {
         // O-62: shadow at (x, y+2) in `color & 0xFF000000` before the text at (x+2, y).
@@ -1544,6 +1547,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(quad(&plain[0]).0, [10, 20, 26, 36]);
     }
 
+    // QUIRK O-78: kept
     #[test]
     fn words_keep_their_space_and_wrap_on_it() {
         // O-78: "cd " ends at 48; with W = 47 only its space overhangs -> wrap.
@@ -1569,6 +1573,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(runs(&lay("a\tb", LAYOUT, 400)), [r(0, 0, 30, "a\tb")]);
     }
 
+    // QUIRK O-78: kept
     #[test]
     fn first_word_of_a_new_line_loses_its_space_width_only() {
         // O-78: The wrapping word loses its space in text and width, the advance uses the old width (the gap stays);
@@ -1581,6 +1586,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!((l.width, l.height), (44, 30));
     }
 
+    // QUIRK O-79: kept
     #[test]
     fn line_height_comes_from_the_breaking_run() {
         // O-79: line 1 in Big (30 high), then "b " small; "c" wraps and advances only by 15.
@@ -1603,6 +1609,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(lay("[FONT Big]A[FONT Small]b", LAYOUT, 400).height, 15);
     }
 
+    // QUIRK O-79: kept
     #[test]
     fn double_cr_makes_no_empty_line() {
         // O-79: `CR` only sets the top edge to the bottom edge; two in a row act like one.
@@ -1612,6 +1619,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(runs(&lay("[CR]a", LAYOUT, 400)), [r(0, 0, 10, "a")]);
     }
 
+    // QUIRK O-79: kept
     #[test]
     fn cr_space_cr_makes_one() {
         // O-79: The space run carries the line height.
@@ -1621,6 +1629,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         );
     }
 
+    // QUIRK O-80: kept
     #[test]
     fn long_word_at_line_start_is_cut_and_after_words_overhangs() {
         // O-80: at the line start shortened character by character (rest lost), then an empty line.
@@ -1638,6 +1647,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         );
     }
 
+    // QUIRK O-80: kept
     #[test]
     fn truncate_flag_cuts_every_word() {
         // 0x80: every overhanging word is shortened; afterwards further words are shortened to empty and discarded,
@@ -1650,6 +1660,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(l.height, 45);
     }
 
+    // QUIRK O-81: kept
     #[test]
     fn centering_needs_the_width_flag() {
         assert_eq!(runs(&lay("aaa", 0x06 | CENTER, 200))[0].0, 0);
@@ -1660,6 +1671,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(runs(&lay("[CENTERXPOS]aaa", LAYOUT, 201))[0].0, 100);
     }
 
+    // QUIRK O-81: kept
     #[test]
     fn centering_uses_integer_half() {
         // Line 101 wide in 200 -> (200 - 101) / 2 = 49.
@@ -1680,6 +1692,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(l.width, 74);
     }
 
+    // QUIRK O-81: kept
     #[test]
     fn center_merges_a_single_run_last_line() {
         // O-81: A last line of one run is centered together with the second-to-last as one group:
@@ -1706,6 +1719,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!((l.width, l.height), (30, 30));
     }
 
+    // QUIRK O-77: kept
     #[test]
     fn tags_split_on_semicolon_and_match_by_prefix() {
         let f = fixture();
@@ -1735,6 +1749,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         );
     }
 
+    // QUIRK O-77: kept
     #[test]
     fn broken_tags_render_as_text() {
         // O-77: lowercase, without space, space after `;` -> literal, as one run (laid out like a word, space
@@ -1773,6 +1788,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         }
     }
 
+    // QUIRK O-82: kept
     #[test]
     fn defaultcolor_checks_bit_2_of_the_color() {
         // O-82: `[DEFAULTCOLOR]` takes the start color only if its bit 2 (0x04) is set, otherwise white.
@@ -1893,6 +1909,8 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         );
     }
 
+    // QUIRK O-220: kept
+    // QUIRK O-253: deviation
     #[test]
     fn playername_inserts_slot_names_only_for_0_to_7() {
         // O-220 (`0x00561B7E`): only 0 <= n < 8; -1, 8 and no `%d` yield nothing (the value would otherwise be stack
@@ -1905,6 +1923,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         }
     }
 
+    // QUIRK O-252: deviation
     #[test]
     fn self_referencing_name_terminates() {
         // O-252: slot 0 is named `[PLAYERNAME 0]`; the original split the inserted name again endlessly. The
@@ -1983,6 +2002,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(text, "x");
     }
 
+    // QUIRK O-220: kept
     #[test]
     fn plid_tags_read_the_player_bytes() {
         // Parameter block `[0xB]`: byte 0 = PLID1, byte 1 = PLID2; a byte outside 0...7 yields nothing.
@@ -2002,6 +2022,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         );
     }
 
+    // QUIRK O-220: kept
     #[test]
     fn inserted_names_are_parsed_again() {
         // The inserted text is split again (`FUN_0055FA90`, like `[CURLEVEL…]`): a name with a tag colors the rest of
@@ -2014,6 +2035,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(l[2].1, 0xFFFF_0000);
     }
 
+    // QUIRK O-253: deviation
     #[test]
     fn taskstatus_sets_the_color() {
         // `FUN_00432B60`: 0 (unknown) `FF969696`, 1 (value != 0) `FF00FF00`, 2 (value 0) `FFFF0000`; only the color
@@ -2027,6 +2049,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(lay_game("a [TASKSTATUS x] b", 0)[2].1, 0xFFFF_FFFF);
     }
 
+    // QUIRK O-253: deviation
     #[test]
     fn counters_and_trade_costs_print_decimal() {
         // `"%d"`: sign, several digits; `%d %d` = slot and GUID.
@@ -2042,6 +2065,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(lay_game_text("a [COUNTDOWN] b"), "a [COUNTDOWN] b");
     }
 
+    // QUIRK O-220: kept
     #[test]
     fn without_game_values_tags_stay_empty() {
         // Current behavior (no game context, `FUN_004B9140` = 0): all game tags vanish, `[TASKSTATUS]` leaves the
@@ -2147,6 +2171,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         }
     }
 
+    // QUIRK O-241: kept
     #[test]
     fn resolve_knows_the_extra_tags() {
         // The readable form (`ui_state`) inserts the additional tags; their color and icon tags stay as text. Missing
@@ -2209,6 +2234,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(resolve_game_tags("a [KEYID 4]", &tags), "a [KEYID 4]");
     }
 
+    // QUIRK O-243: kept
     #[test]
     fn extra_tags_color_their_runs() {
         // In the layout the inserted tags take effect: wood (icon and number) red, gold in the base color (O-243).
@@ -2245,6 +2271,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         );
     }
 
+    // QUIRK O-77: kept
     #[test]
     fn placeholders_vanish_without_game_context() {
         // Game placeholders without game context, `[PROGRESS]` without 0x20, `[KEYID]` without 0x200 and the level
@@ -2260,6 +2287,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         );
     }
 
+    // QUIRK O-77, O-113: kept
     #[test]
     fn keyid_placeholder_shows_the_key_name() {
         // With 0x200 `[KEYID n]` inserts `"(name)"` at the point behind the tag (`FUN_0055FA90`,
@@ -2354,6 +2382,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         assert_eq!(texts(&lay_ctx(line, None)), ["N:", "G:", "S: "]);
     }
 
+    // QUIRK O-86: deviation
     #[test]
     fn setplayercolor_uses_the_table() {
         // Table `0x006321B4` (re/ui-rendering 3.8.2).
@@ -2379,6 +2408,7 @@ Icons Sym\nIconsName data\\icons\\sym.tga\nIconsSize 16 16\n";
         }
     }
 
+    // QUIRK O-71: kept
     #[test]
     fn icon_runs_take_the_set_size_and_draw_one_tile() {
         let f = fixture();

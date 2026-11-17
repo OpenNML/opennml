@@ -370,6 +370,8 @@ fn start_reload(sim: &mut Sim, id: ObjectId, msg: Message) {
 }
 
 /// `PropertyShootProjectile_LaunchArrow` (`0x00525F90`, re/combat-ranged 3.2).
+///
+/// QUIRK C-88: deviation (A7)
 fn launch_arrow(sim: &mut Sim, id: ObjectId) {
     let Some(s) = shoot(sim, id).cloned() else {
         return;
@@ -1061,6 +1063,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-95: kept
     #[test]
     fn aiming_and_loosing_set_vision_sources_for_the_target_owner() {
         let rules = rules();
@@ -1166,6 +1169,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-3, C-87: kept
     #[test]
     fn an_order_while_the_bow_is_not_ready_ends_at_canshoot_without_a_shot() {
         // C-87: abort in the middle of the shot clears 0x60A (group 0x80), 0x160A (0x81) stays; a new
@@ -1205,6 +1209,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-96: kept
     #[test]
     fn fire_arrows_are_chosen_per_shot_with_variant_bit_13() {
         // C-96: fire arrow with a building target and bit 13; FIREARROW at the shoot module, FIRE at the attack module.
@@ -1241,6 +1246,7 @@ mod tests {
         assert!(sim.module(a, 0x11).unwrap().base.flags & 0x4_0000 == 0);
     }
 
+    // QUIRK C-80: kept
     #[test]
     fn an_archer_without_marker_3_looses_no_arrow() {
         // C-80: without time marker 3 `aim_arrow` does not schedule the shot `0x40A` - the order runs
@@ -1354,6 +1360,7 @@ mod tests {
         (a, t)
     }
 
+    // QUIRK C-92: kept
     #[test]
     fn a_rifle_presents_once_fires_59_at_s_plus_16_and_reloads_until_s_plus_50() {
         // re/combat-ranged 10: GUNSTART 666 -> S+7, GUNSHOOTING 866 -> S+16 (59 = 24*4931/2000),
@@ -1403,6 +1410,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-91, C-93: kept
     #[test]
     fn a_gun_hits_at_once_without_range_or_line_of_sight_checks() {
         // C-93: the hit falls at once at marker 3 (S+16), even if a house stands in between after the
@@ -1438,6 +1446,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-90: kept
     #[test]
     fn a_gun_without_bullets_only_plays_the_reload_animation() {
         // C-90: empty magazine and not presented -> only the reload animation, no timer.
@@ -1455,6 +1464,7 @@ mod tests {
         assert_eq!(sim.object(t).unwrap().attributes.current_value(14, 0), 160);
     }
 
+    // QUIRK C-115: kept
     #[test]
     fn gun_hits_on_buildings_spark_and_on_units_bleed() {
         let rules = rules();
@@ -1583,6 +1593,7 @@ mod tests {
         assert_eq!(hp(group[1]), 56);
     }
 
+    // QUIRK C-91, C-123: kept
     #[test]
     fn a_cannon_against_a_building_flies_to_the_chosen_hit_zone() {
         // Zones +/-100 in x/z at the HQ (6 tiles away, rotation 0): from the cannon (-100, 0, 0) is
@@ -1630,6 +1641,7 @@ mod tests {
         assert_eq!(before - after, 3500);
     }
 
+    // QUIRK C-81: kept
     #[test]
     fn a_pat_cannon_without_marker_3_fires_after_100_ms() {
         // C-81: max(marker 3 = 0, 100) -> S+2.
@@ -1655,6 +1667,7 @@ mod tests {
         assert_eq!(k, Some(2));
     }
 
+    // QUIRK C-86: kept
     #[test]
     fn an_aborted_cannon_still_fires_its_running_shot() {
         // C-86: abort clears no timers for the cannon.
@@ -1718,6 +1731,7 @@ mod tests {
         [p[0] + d[0], p[1] + d[1], p[2] + d[2]]
     }
 
+    // QUIRK O-283: kept
     #[test]
     fn the_quartered_shoot_position_is_the_building_node_nearest_the_target() {
         // 0x00525500: distance node - (target - shooter), the smallest wins, rotated by the yaw of the
@@ -1736,6 +1750,7 @@ mod tests {
         assert_eq!(s(&sim, [1000.0, 0.0, 1000.0]), offset(w, SHOOT_NODES[2]));
     }
 
+    // QUIRK O-283: kept
     #[test]
     fn the_node_choice_ignores_the_building_yaw_but_the_node_turns_with_it() {
         // O-283: the choice is computed in model space with the unrotated target direction; the rotation is not

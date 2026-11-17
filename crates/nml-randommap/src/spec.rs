@@ -187,6 +187,7 @@ pub(crate) mod tests {
         assert_eq!(serde_json::from_str::<RandomMapSpec>(&json).unwrap(), spec);
     }
 
+    // QUIRK O-430: kept
     #[test]
     fn seed_hash_runs_over_utf16_units() {
         assert_eq!(seed_hash("AC"), 199);
@@ -202,6 +203,7 @@ pub(crate) mod tests {
         assert_eq!(seed_hash("AC\0EA"), 199);
     }
 
+    // QUIRK D-326: kept
     #[test]
     fn defines_follow_size_and_types() {
         let spec = RandomMapSpec {
@@ -224,6 +226,7 @@ pub(crate) mod tests {
         assert_eq!(map_dim(2), 256);
     }
 
+    // QUIRK D-326: kept
     #[test]
     fn scale_factor_per_size() {
         assert_eq!(scale_factor(0), Fx(4096));

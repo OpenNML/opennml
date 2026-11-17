@@ -407,6 +407,7 @@ mod tests {
         sim.object(id).is_some_and(|o| o.status & status::DIED != 0)
     }
 
+    // QUIRK C-289: kept
     #[test]
     fn the_wolf_aura_reaches_own_and_allied_upgrade_types() {
         // V7, V15, C-289: radius `Fixed(20) >> 2` = 20,480 (5 tiles, center distance).
@@ -457,6 +458,7 @@ mod tests {
         assert!(ring(&sim, wolf));
     }
 
+    // QUIRK C-285: kept
     #[test]
     fn the_aura_tick_runs_every_three_ticks() {
         // V10, C-285: real evocation; "E" is the tick in which the wolf appears (`0x314` ->
@@ -540,6 +542,7 @@ mod tests {
         assert_eq!(sim.attribute(warrior, SPEED), 292);
     }
 
+    // QUIRK C-288: kept
     #[test]
     fn two_wolves_do_not_stack() {
         // V11, C-288: B discards the warrior in each of its ticks (4460 already there); A runs away ->
@@ -579,6 +582,7 @@ mod tests {
         assert!(influenced(&sim, b).unwrap().contains(&warrior));
     }
 
+    // QUIRK C-287: kept
     #[test]
     fn quartering_in_the_radius_keeps_the_bonus() {
         // V12, C-287: quartered within the radius -> not found ("lost"), the precheck
@@ -612,6 +616,7 @@ mod tests {
         assert_eq!(temp_guids(&sim, warrior), [tk::WOLF_AURA]);
     }
 
+    // QUIRK C-286: kept
     #[test]
     fn an_owner_change_of_the_beneficiary_keeps_the_bonus() {
         // C-286: the beneficiary switches to an ally (slot 2). The old ID
@@ -638,6 +643,7 @@ mod tests {
         assert_eq!(temp_guids(&sim, new), [tk::WOLF_AURA]);
     }
 
+    // QUIRK C-223: kept
     #[test]
     fn the_aura_ends_with_the_wolf() {
         // V13: death in T (`check_death`), ownership on slot 8 in phase 0 after T -> slot 5 removes
@@ -687,6 +693,7 @@ mod tests {
         }
     }
 
+    // QUIRK C-223: kept
     #[test]
     fn a_living_owner_change_ends_the_aura_for_good() {
         // V14, C-223: removal with the filter of the **old** slot (with slot 1 the
@@ -747,6 +754,7 @@ mod tests {
         wolf
     }
 
+    // QUIRK C-290: deviation
     #[test]
     fn a_second_influence_applies_at_once() {
         // C-290 (A7): a second influence with a running set is applied at once;
@@ -783,6 +791,7 @@ mod tests {
         assert_eq!(timers(&sim, wolf, msg::AURA_TICK), 1, "no second chain");
     }
 
+    // QUIRK C-291: kept
     #[test]
     fn init_posts_direct_influences() {
         // C-291: type with 450001 = `4460 4461` and 450002 = `0 1` -> init posts two
@@ -839,6 +848,7 @@ mod tests {
         assert_eq!(timers(&sim, carrier, msg::AURA_TICK), 2);
     }
 
+    // QUIRK C-292: deviation
     #[test]
     fn stop_removes_the_influence() {
         // `0x32C` (re/evoke-aura 3.8, deviation from C-292): only the simulation part.
@@ -878,6 +888,7 @@ mod tests {
         assert!(!aura_pending(&sim, wolf), "chain ended");
     }
 
+    // QUIRK K-64: kept
     #[test]
     fn the_0x67f_message_applies_both_records() {
         // V16, K-64 (`0x0046DF40...0x0046E00A`): first the fraction (A full, B 50 % -> A

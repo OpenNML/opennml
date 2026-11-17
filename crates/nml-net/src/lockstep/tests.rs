@@ -571,6 +571,7 @@ fn is_resumed(e: &CoreEvent) -> bool {
     e == &CoreEvent::Resumed
 }
 
+// QUIRK E-293: deviation
 #[test]
 fn start_waits_for_every_loaded() {
     let mut rig = Rig::new(&[10, 30]);
@@ -631,6 +632,7 @@ fn start_waits_for_every_loaded() {
     }
 }
 
+// QUIRK E-293: deviation
 #[test]
 fn load_error_aborts_for_everyone() {
     let mut rig = Rig::new(&[10, 20]);
@@ -659,6 +661,7 @@ fn load_error_aborts_for_everyone() {
     }
 }
 
+// QUIRK E-263: deviation
 #[test]
 fn wrong_versions_are_rejected() {
     let own = hello("Host");
@@ -743,6 +746,7 @@ fn wrong_versions_are_rejected() {
     );
 }
 
+// QUIRK E-287: kept
 #[test]
 fn full_or_started_session_rejects() {
     let own = hello("Host");
@@ -851,6 +855,7 @@ fn invalid_game_speed_fails_the_start() {
     }
 }
 
+// QUIRK E-255: deviation
 #[test]
 fn start_carries_the_raster() {
     let cfg = TurnConfig::new(4, 2).unwrap();
@@ -863,6 +868,7 @@ fn start_carries_the_raster() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-255, E-256: deviation
 #[test]
 fn commands_execute_at_the_raster() {
     for l in [2, 1, 3] {
@@ -897,6 +903,7 @@ fn commands_execute_at_the_raster() {
     }
 }
 
+// QUIRK E-257: deviation
 #[test]
 fn bundle_orders_by_slot_then_input() {
     // (slot host, slot client) -> expected order. With the host on slot 0 the slot order contradicts the arrival order,
@@ -936,6 +943,7 @@ fn bundle_orders_by_slot_then_input() {
     }
 }
 
+// QUIRK E-256: deviation
 #[test]
 fn missing_contribution_blocks_the_exec_step() {
     let mut rig = Rig::running(&[0, 2_000]);
@@ -961,6 +969,7 @@ fn missing_contribution_blocks_the_exec_step() {
     assert!(steps.iter().all(|&s| s > 12), "{steps:?}");
 }
 
+// QUIRK E-256: deviation
 #[test]
 fn slow_peer_bounds_the_lead() {
     for l in [1, 2, 3] {
@@ -988,6 +997,7 @@ fn slow_peer_bounds_the_lead() {
     }
 }
 
+// QUIRK E-293: deviation
 #[test]
 fn turn_before_go_is_ignored() {
     let mut rig = Rig::new(&[10]);
@@ -1046,6 +1056,7 @@ fn paused_by_client_1(delays: &[u64]) -> Rig {
     rig
 }
 
+// QUIRK E-264: deviation
 #[test]
 fn pause_halts_everyone_after_the_same_exec_step() {
     let mut rig = paused_by_client_1(&[20, 70]);
@@ -1082,6 +1093,7 @@ fn pause_halts_everyone_after_the_same_exec_step() {
     assert!(rig.steps().iter().all(|&s| s > cfg.exec_step(2)));
 }
 
+// QUIRK O-316: kept
 #[test]
 fn only_the_pauser_resumes() {
     let mut rig = paused_by_client_1(&[20, 70]);
@@ -1126,6 +1138,8 @@ fn only_the_pauser_resumes() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-294: kept
+// QUIRK E-265: deviation
 #[test]
 fn speed_only_from_host() {
     let mut rig = Rig::running(&[20, 50]);
@@ -1155,6 +1169,7 @@ fn speed_only_from_host() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-294: kept
 #[test]
 fn one_wish_per_kind_and_round() {
     let mut rig = Rig::running(&[10, 30, 60]);
@@ -1214,6 +1229,7 @@ fn save_wish_from_any_player() {
 /// A name with a dot or space at the end is not a network savegame. Windows strips both when opening (`CON.` and
 /// `NUL ` are then the devices, `name.` would overwrite `name`), and network savegames have no extension that could
 /// hide this.
+// QUIRK E-274: kept
 #[test]
 fn save_name_with_trailing_dot_or_space_is_rejected() {
     for bad in [
@@ -1352,6 +1368,8 @@ fn mirror_commands_from_clients_are_dropped() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-267, E-272: kept
+// QUIRK E-258: deviation
 #[test]
 fn closed_link_defeats_the_slot_once() {
     let mut rig = Rig::running(&[20, 40]);
@@ -1454,6 +1472,7 @@ fn leaves_after_round_1(input: impl FnOnce(&mut ClientCore)) -> Rig {
     rig
 }
 
+// QUIRK E-264: deviation
 #[test]
 fn pauser_lost_before_the_halt_bundle_does_not_halt() {
     // Pause in contribution 1, then `Bye` before bundle 1 is formed: the contribution counts, the pause does not.
@@ -1476,6 +1495,7 @@ fn pauser_lost_before_the_halt_bundle_does_not_halt() {
     );
 }
 
+// QUIRK E-267, E-272: kept
 #[test]
 fn losses_follow_commands_in_slot_order() {
     let mut rig = Rig::running(&[10, 20, 30]);
@@ -1500,6 +1520,8 @@ fn losses_follow_commands_in_slot_order() {
     }
 }
 
+// QUIRK E-267: kept
+// QUIRK E-258: deviation
 #[test]
 fn silence_for_30s_is_a_loss() {
     let mut rig = Rig::running(&[20, 40]);
@@ -1548,6 +1570,8 @@ fn silence_for_30s_is_a_loss() {
     ));
 }
 
+// QUIRK O-316: kept
+// QUIRK E-264: deviation
 #[test]
 fn pauser_lost_lifts_the_pause() {
     let mut rig = paused_by_client_1(&[20, 40]);
@@ -1569,6 +1593,7 @@ fn pauser_lost_lifts_the_pause() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-267: kept
 #[test]
 fn loss_before_go_aborts_the_start() {
     let mut rig = Rig::new(&[10, 20, 30]);
@@ -1627,6 +1652,7 @@ fn resync(slots: &[u8]) -> NetControl {
 
 const RESYNC_HALT: Phase = Phase::Halted(HaltReason::Resync);
 
+// QUIRK E-260: deviation
 #[test]
 fn equal_hashes_never_resync() {
     let mut rig = Rig::running(&[20, 60]);
@@ -1645,6 +1671,7 @@ fn equal_hashes_never_resync() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-260: deviation
 #[test]
 fn first_desync_resyncs_the_deviant_only() {
     let mut rig = Rig::running(&[20, 60]);
@@ -1700,6 +1727,7 @@ fn first_desync_resyncs_the_deviant_only() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-261: deviation
 #[test]
 fn two_deviants_in_one_round_count_once() {
     let mut rig = Rig::new(&[20, 40, 60]);
@@ -1725,6 +1753,7 @@ fn two_deviants_in_one_round_count_once() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-261: deviation
 #[test]
 fn third_desync_stops() {
     let mut rig = Rig::running(&[20, 60]);
@@ -1807,6 +1836,7 @@ fn third_desync_stops() {
     }
 }
 
+// QUIRK E-260: deviation
 #[test]
 fn resync_waits_for_all_targets() {
     let mut rig = Rig::running(&[20, 40, 60]);
@@ -1877,6 +1907,7 @@ fn resync_waits_for_all_targets() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-260: deviation
 #[test]
 fn deviant_lost_before_the_bundle_is_no_desync() {
     // Client 1 contributes turn 1 with a wrong checksum and leaves before the slow host forms bundle 1: its
@@ -1928,6 +1959,7 @@ fn pause_and_resync_in_round_1() -> Rig {
     rig
 }
 
+// QUIRK E-261: deviation
 #[test]
 fn resync_runs_before_a_pause_in_the_same_bundle() {
     let mut rig = pause_and_resync_in_round_1();
@@ -1964,6 +1996,7 @@ fn resync_runs_before_a_pause_in_the_same_bundle() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-261: deviation
 #[test]
 fn pauser_lost_during_resync_lifts_the_pause() {
     let mut rig = pause_and_resync_in_round_1();
@@ -1985,6 +2018,7 @@ fn pauser_lost_during_resync_lifts_the_pause() {
     rig.assert_same_execution();
 }
 
+// QUIRK E-261: deviation
 #[test]
 fn stray_resync_messages_are_dropped() {
     let mut rig = Rig::running(&[20]);
@@ -2098,6 +2132,7 @@ fn failures(rig: &Rig, i: usize) -> Vec<String> {
 /// Orderly end (E-268): `HostCore::end` appends `End { name }` (`netz_JJJJ_MM_TT_hhmm`, local time of the host) to the
 /// next bundle; everyone halts after its execution tick at the same tick in `Phase::Ended`, then `Bye` to all (without
 /// `Failed` at the clients). A running pause is lifted by the end beforehand so that the bundle can be formed.
+// QUIRK E-268: deviation
 #[test]
 fn host_end_halts_everyone_after_the_end_bundle() {
     for paused in [false, true] {
@@ -2210,6 +2245,7 @@ fn host_end_sends_the_bundle_then_bye() {
 /// `Failed("The connection to the host was aborted.")` and ends; before `Go` the same on a closed connection and
 /// silence, only a `Bye` carries its cleaned reason ([`silence_for_30s_is_a_loss`],
 /// [`host_loss_before_go_shows_a_clean_text`]).
+// QUIRK E-258: deviation
 #[test]
 fn host_loss_fails_clients_with_the_abort_text() {
     let mut rig = Rig::running(&[20, 70]);
@@ -2257,6 +2293,7 @@ fn host_loss_fails_clients_with_the_abort_text() {
 /// future, duplicate or already bundled) makes its slot lost (`Bye` to it, dropout command in the next bundle). An
 /// honest machine never sends either: contributions and bundles travel without gaps in turn order over an ordered
 /// wire, and a client closes turn `k` only after bundle `k − 1`.
+// QUIRK E-259: deviation
 #[test]
 fn protocol_error_counts_as_loss() {
     // Bundle with a wrong turn from the host.
@@ -2521,6 +2558,7 @@ impl Rig {
 
 /// (deviates from E-303, E-304): After each join the whole state goes to each client; after the third join all three
 /// clients have the same state as the host, same `revision`, rows in join order.
+// QUIRK E-283, E-284, E-303, E-306: deviation
 #[test]
 fn join_broadcasts_the_lobby() {
     let rig = lobby_rig(&[20, 30, 40]);
@@ -2547,6 +2585,7 @@ fn join_broadcasts_the_lobby() {
 }
 
 /// If a client leaves in the lobby, its row becomes open, and everyone sees that in the next state.
+// QUIRK E-304: deviation
 #[test]
 fn leave_broadcasts_the_open_row() {
     let mut rig = lobby_rig(&[20, 30, 40]);
@@ -2568,6 +2607,7 @@ fn leave_broadcasts_the_open_row() {
 
 /// Kick = `Bye { KICKED }`, connection closed, the client reports `Kicked` exactly once (no `Failed`), the others see
 /// row 2 open.
+// QUIRK E-280, E-305: deviation
 #[test]
 fn kick_closes_and_opens_the_row() {
     let mut rig = lobby_rig(&[20, 30, 40]);
@@ -2670,6 +2710,8 @@ fn host_leave_tells_every_client_once() {
 
 /// E-286, deviating from E-310: the sender of a chat line is the row of the connection; `[`/`]` are dropped, at most
 /// `CHAT_INPUT` characters; everyone gets the line exactly once, also the sender and the host.
+// QUIRK E-286: kept
+// QUIRK E-280, E-306, E-310: deviation
 #[test]
 fn chat_sender_comes_from_the_link() {
     use crate::msg::CHAT_INPUT;
@@ -2808,6 +2850,7 @@ fn start_assigns_slots_from_rows() {
 }
 
 /// After the start the host rejects every `Hello` (E-287); the late client reports `Rejected` (no `Failed`).
+// QUIRK E-287: kept
 #[test]
 fn late_join_is_rejected() {
     let mut rig = lobby_rig(&[20]);
@@ -2894,6 +2937,7 @@ fn foreign_build_is_rejected() {
 }
 
 /// Names lose `[` and `]` (deviates from E-309), also in the lobby state and in the host's peer list.
+// QUIRK E-309: deviation
 #[test]
 fn names_lose_brackets() {
     use crate::msg::clean_name;
@@ -3033,6 +3077,7 @@ fn client_cleans_names_from_the_lobby() {
 
 /// After `Go` lobby wishes have no effect: the client sends none, the host discards foreign and own ones, the state
 /// stays; probe, chat and host edit likewise.
+// QUIRK E-280: deviation
 #[test]
 fn lobby_wish_after_go_is_ignored() {
     let mut rig = Rig::running(&[20]);
@@ -3122,6 +3167,7 @@ fn change_game_reaches_every_client() {
 
 /// The game host checks the rows (`rows_fit` holds), then a join takes row 3; the switch to three players is rejected
 /// in the core, state and announcement stay with the old session.
+// QUIRK E-307: deviation
 #[test]
 fn change_refused_when_a_join_takes_a_dropped_row() {
     let mut rig = Rig::new(&[20, 30, 400]);
@@ -3221,6 +3267,7 @@ fn rejected(host: &mut HostCore, peer: Peer) -> String {
 
 /// A `Hello` with a matching slot claim goes into the row of its slot ("Occupied", broadcast); a second machine with
 /// the same slot and a slot without a row are rejected with the reason from `join_seat`.
+// QUIRK E-325: deviation
 #[test]
 fn hello_with_matching_claim_joins_its_seat() {
     let mut host = loaded_host(&[1, 3, 4], 3);
@@ -3280,6 +3327,7 @@ fn hello_without_claim_is_rejected_in_a_loaded_lobby() {
 }
 
 /// A different checksum of the simulation part is rejected by the host, also for a free slot.
+// QUIRK E-325: deviation
 #[test]
 fn hello_with_other_checksum_is_rejected() {
     let mut host = loaded_host(&[1, 3, 4], 3);
@@ -3383,6 +3431,7 @@ fn loaded_lobby_has_no_chat() {
 
 /// Start from a loaded lobby in which the host is not in row 0 (slots 1, 3, 4, host on 3 = row 1). `info_for` gets the
 /// right pairs (machine, row), slot and `saved` arrive at everyone, and the match starts.
+// QUIRK E-325: deviation
 #[test]
 fn start_from_a_loaded_lobby_with_the_host_not_in_row_0() {
     use crate::msg::SavedStart;
@@ -3445,6 +3494,7 @@ fn start_from_a_loaded_lobby_with_the_host_not_in_row_0() {
 
 /// E-287 (deviates from E-328): After the start of a loaded match the host admits nobody any more, not even with a
 /// matching slot claim; the reason names the running match (not the occupied slot).
+// QUIRK E-328: deviation
 #[test]
 fn no_join_after_a_loaded_start() {
     let mut host = loaded_host(&[0, 2], 0);

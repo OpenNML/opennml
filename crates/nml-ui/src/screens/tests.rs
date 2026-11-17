@@ -182,6 +182,7 @@ fn start_routes_by_button_name() {
     assert!(d.find("OPTIONS").is_some());
 }
 
+// QUIRK O-30: kept
 #[test]
 fn quit_quits_without_question() {
     // O-30 (main menu): `PostQuitMessage(0)` at once, no command, no confirmation prompt.
@@ -273,6 +274,7 @@ fn singleplayer_opens_selectprofile_without_profile() {
     assert!(l.effects.is_empty());
 }
 
+// QUIRK O-103: kept
 #[test]
 fn options_switches_pages_and_ignores_the_open_one() {
     // O-103: "frame opened" clears the flag; a subpage button closes the open page (also the empty one) and opens
@@ -320,6 +322,7 @@ fn options_switches_pages_and_ignores_the_open_one() {
     assert_eq!(d.app.menu().open_names(), ["options", "soundoptions"]);
 }
 
+// QUIRK O-103: kept
 #[test]
 fn options_ok_writes_settings_before_the_menu_commands() {
     // O-103, `0x004D3809`...`0x004D38A8`: write `Engine.ini` at once, then `{3, page}`, `{4,"options"}`,
@@ -393,6 +396,7 @@ fn options_ok_writes_settings_before_the_menu_commands() {
     assert_eq!(d.app.menu().open_names(), ["logo", "start"]);
 }
 
+// QUIRK O-103: kept
 #[test]
 fn escape_does_nothing_in_options() {
     // O-103: `OK` has no `CHECKESCAPE` (like the subpage buttons and `VIDEOOPTIONS`): ESC triggers nothing.
@@ -439,6 +443,7 @@ fn credits_ok_returns_to_start() {
     assert!(d.find("CREDITS").is_none());
 }
 
+// QUIRK O-111: deviation
 #[test]
 fn infoframe_enter_is_ok_escape_is_cancel() {
     // `FUN_004BCD70`: remember text and commands, `{5,"infoframe"}`; `textinfo` code 7 returns the text; `ok`
@@ -540,6 +545,7 @@ fn msgbox_takes_a_free_text_first() {
     assert_eq!(l.state.info_free, None);
 }
 
+// QUIRK O-103: kept
 #[test]
 fn msgbox_has_no_escape() {
     // O-103: `MSGBOX` has only `OK` with `CHECKENTER`; ESC has no effect, ENTER closes and queues the command.
@@ -663,6 +669,7 @@ fn speech_test() -> UiEffect {
     }
 }
 
+// QUIRK O-98: kept
 #[test]
 fn video_changes_only_the_working_copy_until_accept() {
     // O-98: code 5 of the frame copies resolution, qualities and gamma; comboboxes change only the copy, without
@@ -750,6 +757,7 @@ fn video_changes_only_the_working_copy_until_accept() {
     assert_eq!(slider(&d, "VIDEOOPTIONSGAMMA"), (25, 100));
 }
 
+// QUIRK O-98: kept
 #[test]
 fn accept_writes_mode_and_quality_and_queues_reload() {
     // `0x004CE7E6`...`0x004CE8F8`: gamma from the copy; `SetDisplayMode` only on a changed resolution; `{0x1F}` only
@@ -812,6 +820,7 @@ fn accept_writes_mode_and_quality_and_queues_reload() {
     assert_eq!(d.app.config().screen_x_size, 1024);
 }
 
+// QUIRK O-99: kept
 #[test]
 fn gamma_applies_at_once_without_lower_bound() {
     // O-99: `int = min(ftol((G - 0.5) * 50), 99)` without a lower limit; code 1 `G = (f32)v * 0.02 + 0.5` at once.
@@ -875,6 +884,7 @@ fn gamma_applies_at_once_without_lower_bound() {
     assert_eq!(element(&d, "videooptions", "gamma").value, Some(-20));
 }
 
+// QUIRK O-98: kept
 #[test]
 fn display_modes_are_filtered_like_the_original() {
     // O-98, `0x004D1475`...`0x004D158B`: width in {800, 1024, 1280, 1400, 1600}, 16/32 bits, first one per (W, H,
@@ -894,6 +904,7 @@ fn display_modes_are_filtered_like_the_original() {
     assert_eq!(l.send("videooptions", "resolution", code::FREE_ITEMS).0, 1);
 }
 
+// QUIRK O-98: kept
 #[test]
 fn resolution_without_match_gives_no_answer() {
     // O-98, `0x004CEAC8`...`0x004CEB3A`: without an equal entry no answer and return value -1.
@@ -925,6 +936,7 @@ fn resolution_without_match_gives_no_answer() {
     assert_eq!(resolution.selection, Some(-1));
 }
 
+// QUIRK O-98: kept
 #[test]
 fn particles_and_shadow_lists_run_backwards() {
     // `particles`: texts 15043, 15042, 15041, index = 2 - value; `shadow`: 15054 ... 15051, index = 3 - value;
@@ -952,6 +964,7 @@ fn particles_and_shadow_lists_run_backwards() {
     assert_eq!((copy.particles, copy.shadow), (1, 3));
 }
 
+// QUIRK O-32, O-101: kept
 #[test]
 fn volumes_are_1000_steps_one_to_one() {
     // `FUN_004D1930`: `resolution 1000` overrides the 20 of the `.dlg`; value = volume of the category 1:1
@@ -984,6 +997,7 @@ fn volumes_are_1000_steps_one_to_one() {
     assert_eq!(slider(&d, "SOUNDOPTIONSSPEACHVOLUME"), (499, 1000));
 }
 
+// QUIRK O-100: kept
 #[test]
 fn sfx_test_on_every_report() {
     // O-100: the slider reports code 1 on every call, `soundvolume` plays `SFX_TEST` on every message - also
@@ -1016,6 +1030,7 @@ fn sfx_test_on_every_report() {
     assert_eq!(set[0], set[1]);
 }
 
+// QUIRK O-100: kept
 #[test]
 fn speech_test_waits_for_the_previous() {
     // `0x004D1C31`...`0x004D1C8A`: test sentence only when the previous one has faded out; the host reports it via
@@ -1053,6 +1068,7 @@ fn speech_test_waits_for_the_previous() {
     assert!(d.app.speech_playing());
 }
 
+// QUIRK O-100: kept
 #[test]
 fn return2_closes_soundoptions2() {
     // O-100, `0x004D1F41`...`0x004D1FB6`: `RETURN` and `RETURN2` queue `{3,"soundoptions2"}`,
@@ -1087,6 +1103,7 @@ fn return2_closes_soundoptions2() {
     assert_eq!(d.app.menu().open_names(), ["soundoptions3"]);
 }
 
+// QUIRK D-371: kept
 #[test]
 fn sounddriver_lists_the_host_drivers() {
     // Code 2 from `MenuOptions.sound_drivers`, code 0 = `m_DriverID`, code 4 with a different index sets it,
@@ -1121,6 +1138,7 @@ fn sounddriver_lists_the_host_drivers() {
     assert_eq!((combo.items, combo.selection), (drivers, Some(0)));
 }
 
+// QUIRK O-32: kept
 #[test]
 fn three_d_sound_restarts_the_music() {
     // `0x004D1ADF`...`0x004D1EB5`: `m_IsHardwareOn` = (v != 0), then broadcast `0x161` (menu music anew); the restart
@@ -1153,6 +1171,7 @@ fn three_d_sound_restarts_the_music() {
     assert!(d.app.config().sound.is_hardware_on);
 }
 
+// QUIRK O-32, O-101: kept
 #[test]
 fn gameplay_sliders_have_20_steps() {
     // O-101, `FUN_004CEB80`: code 6 `resolution 20` (the `.dlg` says 10), value = field 1:1.
@@ -1215,6 +1234,7 @@ fn gameplay_sliders_have_20_steps() {
     assert_eq!(slider(&d, "GAMEPLAYOPTIONSMOUSESPEED"), (10, 20));
 }
 
+// QUIRK E-315: kept
 #[test]
 fn gamespeed_hidden_for_net_clients() {
     // `0x004CEEB5`...`0x004CEEC2` (re/multiplayer-menus L.7.1, E-315): code 5 of `GAMESPEED` hides the slider in a
@@ -1262,6 +1282,7 @@ fn gamespeed_hidden_for_net_clients() {
     }
 }
 
+// QUIRK O-101: kept
 #[test]
 fn menulevel_changes_only_the_setting() {
     // O-101: `MENULEVEL` sets only `IsMenuLevel` (v != 0), no command `0x20`/`0x21`, no effect.
@@ -1291,6 +1312,7 @@ fn menulevel_changes_only_the_setting() {
     assert_eq!(d.app.menu().open_names(), ["gameplayoptions"]);
 }
 
+// QUIRK O-32, O-101: kept
 #[test]
 fn hardware_cursor_applies_at_once() {
     // `0x004CF0F8`...`0x004CF133`: `HardwareCursor` = (v != 0), `Cursor_SetHardwareCursorVisible` at once.
@@ -1485,6 +1507,7 @@ fn profile_effects(effects: Vec<UiEffect>) -> Vec<UiEffect> {
         .collect()
 }
 
+// QUIRK O-28: kept
 #[test]
 fn start_with_profile_opens_singleplayer_menu_and_copies_name() {
     // `0x004D1764`...`0x004D17B9`: with an active profile `NetName` = profile name (`FUN_0040C060`),
@@ -1519,6 +1542,7 @@ fn start_with_profile_opens_singleplayer_menu_and_copies_name() {
     assert_eq!(name_text(&d.app.config().net_name), "Bert");
 }
 
+// QUIRK O-28: kept
 #[test]
 fn create_profile_unlocks_entries_0_and_1() {
     // `create` code 8 (`0x004DB4AE`...`0x004DB634`): `FUN_004C8430`, write `profiles.ini`, Sel = new index, query
@@ -1578,6 +1602,7 @@ fn create_profile_unlocks_entries_0_and_1() {
     assert_eq!(d.app.profiles().file.profiles.len(), 1);
 }
 
+// QUIRK O-27: kept
 #[test]
 fn create_with_rd_prefix_unlocks_everything_and_strips_prefix() {
     // O-27: `[RD]` is dropped (the field shows the shortened name at once), `FUN_0040C380` unlocks everything.
@@ -1617,6 +1642,7 @@ fn create_with_rd_prefix_unlocks_everything_and_strips_prefix() {
     assert_eq!(p.levels.len(), total);
 }
 
+// QUIRK O-123: kept
 #[test]
 fn create_empty_name_does_nothing() {
     // O-123: `wcslen(NetName) < 1` -> return value -1, no message, no command, no writing.
@@ -1631,6 +1657,7 @@ fn create_empty_name_does_nothing() {
     assert_eq!(l.names(), [" "]);
 }
 
+// QUIRK O-123: kept
 #[test]
 fn create_duplicate_shows_15748() {
     // O-123: name exists (`_wcscmp`) -> message 15748, return value 1, nothing else; different case -> created.
@@ -1648,6 +1675,7 @@ fn create_duplicate_shows_15748() {
     assert_eq!(l.effects, [UiEffect::WriteProfiles]);
 }
 
+// QUIRK O-125: kept
 #[test]
 fn ok_and_delete_hidden_without_selection() {
     // `profilename` code 5: Sel = cur (return value -1); `ok`/`delete` code 5: `HIDE` without a selection;
@@ -1714,6 +1742,7 @@ fn ok_and_delete_hidden_without_selection() {
     assert!(!element(&d, "selectprofile", "delete").hidden);
 }
 
+// QUIRK O-28: kept
 #[test]
 fn ok_activates_the_selection_and_writes() {
     // `ok` code 8: `FUN_004C83F0(Sel)` (active, name to `NetName`, write), `{3}`, `{5,"singleplayermenu"}`.
@@ -1730,6 +1759,7 @@ fn ok_activates_the_selection_and_writes() {
     );
 }
 
+// QUIRK O-29, O-122: kept
 #[test]
 fn delete_asks_15747_and_reopens() {
     // `delete` code 8: confirmation prompt 15747 with OK `{0x29, Sel}` (Sel at the click), without a cancel command.
@@ -1768,6 +1798,7 @@ fn delete_asks_15747_and_reopens() {
     assert_eq!(d.app.profiles().current_name(), "Bert");
 }
 
+// QUIRK O-121: deviation
 #[test]
 fn deleting_an_earlier_profile_keeps_the_active_one() {
     // Deviation (O-121): deleting before the active one adjusts the index; in the original index 2 would stay
@@ -1814,6 +1845,7 @@ fn cancel_without_profile_returns_to_start() {
     assert!(l.effects.is_empty());
 }
 
+// QUIRK O-125: kept
 #[test]
 fn singleplayer_menu_buttons_follow_menu_flow() {
     // `FUN_004DA150`: six buttons, each `{3, frame}` and `{5, target}`; no code 5 branch (O-125).
@@ -1877,6 +1909,7 @@ fn autoplay_logic() -> Logic {
     l
 }
 
+// QUIRK E-342: deviation
 #[test]
 fn loadautoplay_lists_the_autoplay_folder_by_name() {
     // `DIR` code 2 sets the directory `Autoplay` (`FUN_004BFC40(3)`) and lists it with the full file name in the
@@ -1900,6 +1933,7 @@ fn loadautoplay_lists_the_autoplay_folder_by_name() {
     assert_eq!(l.send("loadautoplay", "dir", code::FREE_ITEMS).0, 1);
 }
 
+// QUIRK O-186: deviation
 #[test]
 fn loadautoplay_start_needs_a_selection() {
     let mut l = autoplay_logic();
@@ -1921,6 +1955,7 @@ fn loadautoplay_start_needs_a_selection() {
     assert_eq!(l.status("loadautoplay", "start"), (1, Some(HIDE)));
 }
 
+// QUIRK O-186: deviation
 #[test]
 fn loadautoplay_start_queues_close_wait_and_0x19() {
     let mut l = autoplay_logic();
@@ -1937,6 +1972,7 @@ fn loadautoplay_start_queues_close_wait_and_0x19() {
     );
 }
 
+// QUIRK E-342: deviation
 #[test]
 fn loadautoplay_delete_asks_15174_and_deletes_the_full_name() {
     let mut l = autoplay_logic();
@@ -2020,6 +2056,7 @@ fn loadautoplay_cancel_returns_to_the_main_folder() {
     );
 }
 
+// QUIRK O-186: deviation
 #[test]
 fn loadautoplay_opens_from_the_singleplayer_menu() {
     let Some(mut d) = live_profiles(&["Anna"], 0, "Anna") else {
@@ -2042,6 +2079,7 @@ fn loadautoplay_opens_from_the_singleplayer_menu() {
     assert_eq!(d.app.menu().open_names(), ["singleplayermenu"]);
 }
 
+// QUIRK O-122: kept
 #[test]
 fn net_name_survives_cancel() {
     // O-122: typing in `PROFILENAME` writes `NetName` directly; `CANCEL` does not undo that, the single player menu

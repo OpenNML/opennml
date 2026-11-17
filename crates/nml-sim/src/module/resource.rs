@@ -145,6 +145,7 @@ mod tests {
         send(sim, id, &Message::new(code, &[1]))
     }
 
+    // QUIRK W-49: kept
     #[test]
     fn deposits_give_exactly_their_config_amount_below_the_overflow_limit() {
         let rules = Rules::synthetic(TYPES, 32);
@@ -203,6 +204,7 @@ mod tests {
         assert!(!sim.state.occupancy.test(4, 8) && !sim.state.occupancy.test(12, 8));
     }
 
+    // QUIRK W-60: kept
     #[test]
     fn fish_baskets_become_visible_at_the_first_access() {
         let rules = Rules::synthetic(TYPES, 32);

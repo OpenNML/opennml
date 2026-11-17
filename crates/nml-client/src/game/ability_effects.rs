@@ -753,6 +753,7 @@ mod tests {
         (node.to_string(), path.to_string())
     }
 
+    // QUIRK D-236, D-242: kept
     #[test]
     fn effects_follow_the_module_state() {
         let mut f = Fixture::new();
@@ -944,6 +945,7 @@ mod tests {
         (f, g, victim)
     }
 
+    // QUIRK D-242: kept
     #[test]
     fn suck_beam_flies_from_the_victim_to_the_ghost_node() {
         let (mut f, g, victim) = sucking();
@@ -993,6 +995,7 @@ mod tests {
         assert_eq!(e.flight_s(), (z2 - start).length() / 128.0);
     }
 
+    // QUIRK D-279: kept
     #[test]
     fn suck_beam_is_not_rehung_on_a_new_target() {
         let (mut f, g, victim) = sucking();
@@ -1021,6 +1024,7 @@ mod tests {
         assert_eq!(e.placement().position, above_victim(f.frame(other)));
     }
 
+    // QUIRK D-242: kept
     #[test]
     fn suck_beam_runs_out_after_the_end() {
         let (mut f, g, _victim) = sucking();
@@ -1086,6 +1090,8 @@ mod tests {
         assert!(f.ability.beams().is_empty());
     }
 
+    // QUIRK D-242, D-277: kept
+    // QUIRK D-278: deviation
     #[test]
     fn evoker_beam_measures_its_flight_against_the_staff() {
         let mut f = Fixture::new();
@@ -1135,6 +1141,7 @@ mod tests {
         assert!(!f.effects.game_effect(new).unwrap().effect.is_active());
     }
 
+    // QUIRK D-242, D-279: kept
     #[test]
     fn suck_beam_is_rebuilt_after_load() {
         let (mut f, g, victim) = sucking();
@@ -1168,6 +1175,7 @@ mod tests {
         assert!(f.key(g, &Show::Suck).is_some());
     }
 
+    // QUIRK D-242: kept
     #[test]
     fn beams_leave_the_checksum_alone() {
         let (mut f, _g, _victim) = sucking();

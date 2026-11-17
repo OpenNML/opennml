@@ -108,6 +108,7 @@ fn sums(
 
 /// All 38 `.ldg` draw without a panic and without missing images; `kamp1-1.ldg` and `multiplayer.ldg` have
 /// stable checksums (per edition).
+// QUIRK O-138, O-139: kept
 #[test]
 fn loading_screens_draw_stable() {
     let Some(dir) = corpus_game_dir() else { return };

@@ -193,6 +193,7 @@ mod tests {
     use crate::combat::testkit::*;
     use crate::messaging::{send, send_mut};
 
+    // QUIRK C-84: kept
     #[test]
     fn ranges_come_from_34_and_min_of_21_and_18_and_stay_cached() {
         let rules = rules();
@@ -222,6 +223,7 @@ mod tests {
         assert_eq!(send(&mut sim, a, &Message::new(0x513, &[])), 0);
     }
 
+    // QUIRK C-82: kept
     #[test]
     fn the_ship_flag_is_200001_masked_with_the_mid_0x113() {
         let rules = rules();
@@ -239,6 +241,7 @@ mod tests {
         assert_eq!(send(&mut sim, s, &Message::new(0xC13, &[])), 0);
     }
 
+    // QUIRK C-91: kept
     #[test]
     fn a_shot_needs_fighting_and_a_living_target_and_turns_building_zones() {
         let mut rules = rules();
@@ -292,6 +295,7 @@ mod tests {
         ));
     }
 
+    // QUIRK C-94: kept
     #[test]
     fn ships_aim_with_the_side_of_the_target() {
         // Ship side in `fight_far` (re/ships 9.1): ship at (81920, 65536)

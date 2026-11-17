@@ -300,6 +300,8 @@ mod tests {
     }
 
     /// O-153: The keys clamp to 0 to 19, loading and resuming accept any speed 0 ... 255.
+    // QUIRK O-319: kept
+    // QUIRK O-153: deviation
     #[test]
     fn load_accepts_every_speed() {
         let (mut file, rules) = save_file();
@@ -317,6 +319,7 @@ mod tests {
     }
 
     /// O-332: A control group with 10000 IDs loads (no length limit).
+    // QUIRK O-332: kept
     #[test]
     fn groups_with_10000_ids_load() {
         let (mut file, rules) = save_file();
@@ -379,6 +382,7 @@ mod tests {
 
     /// Saving in the middle of a move with binding and rotation; after loading, the camera moves for N frames exactly
     /// as without loading. Container `FORMAT` 1 (without script camera) is rejected with an error message.
+    // QUIRK E-239: deviation
     #[test]
     fn host_part_restores_the_script_camera() {
         use crate::game::input::testkit;
@@ -463,6 +467,7 @@ mod tests {
 
     /// Idle worker index and masks survive saving and loading. A savegame with container format 3 (before the new
     /// fields) is rejected with an error message.
+    // QUIRK O-293: kept
     #[test]
     fn idle_index_and_masks_round_trip() {
         let (mut file, rules) = save_file();
@@ -485,6 +490,7 @@ mod tests {
 
     /// The network part of the host (session, own slot, turn spacing, slot assignment) survives saving and
     /// loading.
+    // QUIRK E-274: kept
     #[test]
     fn host_part_net_round_trips() {
         use nml_sim::state::Control;

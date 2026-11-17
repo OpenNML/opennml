@@ -537,6 +537,7 @@ mod tests {
         assert_eq!(none.may_trigger(), -1);
     }
 
+    // QUIRK E-315: kept
     #[test]
     fn app_commands_carry_the_original_codes() {
         let name = || "start".to_string();

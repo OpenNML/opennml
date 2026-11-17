@@ -363,6 +363,7 @@ mod tests {
         assert_eq!(sim.state.tables[9].count, 1);
     }
 
+    // QUIRK W-164: deviation
     #[test]
     fn the_constructor_draws_one_crt_value_for_the_sway() {
         assert_eq!([0, 16383, 32767].map(rot_count), [-50, -1, 50]);
@@ -382,6 +383,7 @@ mod tests {
         assert_eq!((t.reg_pos, t.status), ([ObjectId::NONE; 2], 0));
     }
 
+    // QUIRK W-31: kept
     #[test]
     fn lumberjacks_register_on_opposite_corners_and_fill_the_tree() {
         let rules = rules(200);
@@ -434,6 +436,7 @@ mod tests {
         assert_eq!(ask(&mut sim, t, 0x604, &[]).0, -1);
     }
 
+    // QUIRK W-28, W-29: kept
     #[test]
     fn an_empty_tree_falls_in_sixteen_tree_ticks_and_frees_layers_zero_to_three() {
         let rules = rules(200);
@@ -503,6 +506,7 @@ mod tests {
         assert!(sim.state.occupancy.test(12, 20) && sim.object(other).is_some());
     }
 
+    // QUIRK W-28: kept
     #[test]
     fn a_tree_emptied_with_two_lumberjacks_leaves_the_search() {
         let rules = rules(100);

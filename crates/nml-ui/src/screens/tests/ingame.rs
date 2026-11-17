@@ -60,6 +60,7 @@ fn resume(speed: Option<u8>) -> UiEffect {
     UiEffect::ResumeGame { game_speed: speed }
 }
 
+// QUIRK O-143: kept
 #[test]
 fn open_game_menu_needs_a_game_and_state_0() {
     // `FUN_0042E150`: nothing without an engine or with state != 0; otherwise pointer shown, state 1,
@@ -137,6 +138,7 @@ fn campaign_opens_ingameoptions_free_game_ingameoptions3() {
     );
 }
 
+// QUIRK O-153: deviation
 #[test]
 fn return_closes_and_resumes_with_config_speed() {
     // O-153: `RETURN` queues `{0x0F}` (no closing of its own); `FUN_0042E290` in state 1: state 0, `{4, frame}`,
@@ -181,6 +183,7 @@ fn return_closes_and_resumes_with_config_speed() {
     assert_eq!(d.app.game_menu_state(), 0);
 }
 
+// QUIRK O-195: kept
 #[test]
 fn close_game_menu_without_game_closes_ingameoptions() {
     // O-195: `{0x0F}` without an engine always closes `ingameoptions` (`0x004CA2A8`:
@@ -202,6 +205,8 @@ fn close_game_menu_without_game_closes_ingameoptions() {
     assert!(d.app.take_effects().is_empty());
 }
 
+// QUIRK O-195: kept
+// QUIRK O-153: deviation
 #[test]
 fn resume_after_load_dialog_needs_state_1() {
     // `FUN_0042F6B0` (`0x004C99CD`: only with an engine): state 1 -> 0 and resume, without speed; otherwise nothing.
@@ -332,6 +337,7 @@ fn quit_asks_15783_and_reopens_on_cancel() {
     assert_eq!(d.app.take_effects(), [UiEffect::Quit]);
 }
 
+// QUIRK O-30, O-147: kept
 #[test]
 fn campaign_menu_restart_asks_and_reloads() {
     // O-147 (`0x004D753A`...`0x004D75CE`): `restart` queues `{3, frame}`, builds the cancel command `{5, frame}`,
@@ -431,6 +437,7 @@ fn quest_and_tiplog_return_to_the_menu() {
     }
 }
 
+// QUIRK O-143: kept
 #[test]
 fn menu_state_stays_1_across_sub_dialogs() {
     // O-143: state `Engine+0x2CCC` stays 1 across options, loading, saving and confirmations.
@@ -552,6 +559,7 @@ fn savegame_disabled_under_the_lock() {
     assert!(element(&report, MENU3, "load").enabled);
 }
 
+// QUIRK E-339: deviation
 #[test]
 fn ingame_menu_disables_save_and_load_during_playback() {
     // `0x004D7643`...`0x004D771E`, `GameApp+0x19F3`: during a replay `savegame*` and `load` answer with `DISABLE`; the
@@ -593,6 +601,7 @@ fn ingame_menu_disables_save_and_load_during_playback() {
     assert!(element(&report, MENU3, "options").enabled);
 }
 
+// QUIRK O-371: kept
 #[test]
 fn closing_menu_or_load_dialog_hides_the_pointer_only_under_the_lock() {
     // O-371, O-379, re/campaign-ui D6.17: `FUN_0042E290` (`0x0042E2BE`, close game menu) and `FUN_0042F6B0`
@@ -618,6 +627,7 @@ fn closing_menu_or_load_dialog_hides_the_pointer_only_under_the_lock() {
     assert!(!app.pointer_hidden());
 }
 
+// QUIRK O-143: kept
 #[test]
 fn set_game_resets_the_state_and_reopen_menu_follows_the_game() {
     // `set_game` sets the state to 0; `reopen_menu` queues `{6, game menu}` (with a match) or
@@ -718,6 +728,7 @@ fn mission_items(
     }
 }
 
+// QUIRK O-53: kept
 #[test]
 fn quest_text_follows_d6_9() {
     // `FUN_004334E0` (re/campaign-ui D6.9): bit 4 (6) -> green, bit 1 (3) -> base color, four entries per objective
@@ -757,6 +768,7 @@ fn quest_text_follows_d6_9() {
     );
 }
 
+// QUIRK O-365: kept
 #[test]
 fn quest_text_is_empty_without_quests() {
     // O-365: with 0 objectives the field stays empty, the default text 15034 does not appear - also without mission
@@ -770,6 +782,7 @@ fn quest_text_is_empty_without_quests() {
     assert!(quest_items(&quests(&[(0, 1), (10, 2)]), &texts).is_empty());
 }
 
+// QUIRK O-366: kept
 #[test]
 fn tiplog_lists_old_to_new_with_separators_between() {
     // `FUN_004DB6F0` (re/campaign-ui D6.8, O-366): old -> new, duplicates stay, separators only between the entries, no
@@ -800,6 +813,7 @@ fn tiplog_lists_old_to_new_with_separators_between() {
     assert!(tiplog_items(&MissionInfo::default(), &texts).is_empty());
 }
 
+// QUIRK O-365: kept
 #[test]
 fn quest_text_asks_for_no_requery() {
     // O-365: code 9 answers 1 without `timeout` - `query_head` reads that as "never requery".
@@ -812,6 +826,7 @@ fn quest_text_asks_for_no_requery() {
     }
 }
 
+// QUIRK O-365: kept
 #[test]
 fn quest_text_is_filled_once_at_open() {
     // O-365: The content is created on opening (code 2); if an objective changes while the menu is open, it stays. Only
@@ -854,6 +869,7 @@ fn quest_text_is_filled_once_at_open() {
     assert_eq!(items(&d), b, "reopening reads the new state");
 }
 
+// QUIRK O-365: kept
 #[test]
 fn set_mission_keeps_the_game_menu() {
     // `set_mission` touches neither state nor queue (unlike `set_game`, which sets the state to 0).
@@ -893,6 +909,7 @@ fn no_resume(effects: &[UiEffect]) -> bool {
         .any(|e| matches!(e, UiEffect::ResumeGame { .. }))
 }
 
+// QUIRK E-315: kept
 #[test]
 fn net_menu_is_ingameoptions2_with_five_buttons() {
     // `FUN_0042E150` with a network session: state 2 and `{6,"INGAMEOPTIONS2"}` on every machine (host and client, also
@@ -971,6 +988,7 @@ fn set_net_role_keeps_the_game_menu() {
     assert_eq!(queued(&app), before, "no command");
 }
 
+// QUIRK E-315: kept
 #[test]
 fn return2_sends_0x13() {
     // `RETURN2` (`0x004D73CD`): `{0x13}` without a closing of its own; `0x13` with an engine `FUN_0042E5D0`: only in
@@ -1020,6 +1038,7 @@ fn return2_sends_0x13() {
     assert!(d.app.take_effects().is_empty());
 }
 
+// QUIRK E-315: kept
 #[test]
 fn escape_closes_the_net_menu() {
     // `RETURN2` carries `CHECKESCAPE`: ESC acts like the button (without click sound) and counts as taken.
@@ -1039,6 +1058,8 @@ fn escape_closes_the_net_menu() {
     );
 }
 
+// QUIRK E-315: kept
+// QUIRK E-316: deviation
 #[test]
 fn quitgame_asks_15780_then_0x27() {
     // `QUITGAME` (`0x004D7248`): `{3, frame}`, confirmation 15780, OK `{0x27, 2, slot, 1}`, cancel `{5, frame}`. The
@@ -1082,6 +1103,7 @@ fn quitgame_asks_15780_then_0x27() {
     assert!(no_resume(&effects), "{effects:?}");
 }
 
+// QUIRK E-315: kept
 #[test]
 fn quit_asks_15783_then_0x25() {
     // `QUIT`: `{3, frame}`, confirmation 15783, OK `{0x25}`, cancel `{5, frame}`.
@@ -1114,6 +1136,7 @@ fn quit_asks_15783_then_0x25() {
     assert_eq!(d.app.take_effects(), [UiEffect::Quit]);
 }
 
+// QUIRK E-315: kept
 #[test]
 fn net_menu_returns_from_options_to_ingameoptions2() {
     // `OPTIONS2`: `{3, frame}`, `{6,"gameplayoptions2"}`, `{6,"soundoptions2"}`, return `{5,"ingameoptions2"}`;
@@ -1165,6 +1188,7 @@ fn net_menu_returns_from_options_to_ingameoptions2() {
     assert_eq!(back, Some(open(MENU2, true)));
 }
 
+// QUIRK E-316: deviation
 #[test]
 fn net_menu_closes_before_the_end_screen_and_the_message() {
     // `FUN_0042F9A0` -> `FUN_0042E5D0`: state 2 like 1, but without speed - `{4,"ingameoptions2"}` (if open), state 0,

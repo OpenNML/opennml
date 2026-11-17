@@ -721,6 +721,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-238, C-310: kept
     #[test]
     fn text_messages_fill_in_names_color_and_duration() {
         use crate::game::testworld::{HQ_SID, HQ_SPA, SID_SHERIFF, hunter_host, spawn};
@@ -843,6 +844,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-238: kept
     #[test]
     fn sound_2d_requests_the_named_event() {
         let (host, _, _) = host();
@@ -895,6 +897,7 @@ mod tests {
 
     /// `0x00493030` from outside (digits of the dynamite charge): the caller computes visibility; only
     /// seen positions get a number, without height offset, with color and clock time.
+    // QUIRK D-244: kept
     #[test]
     fn pushed_floats_need_a_seen_position() {
         let mut n = Notices::default();
@@ -956,6 +959,7 @@ mod tests {
     /// at (x, y + 2) in `color & 0xFF000000`, text at (x + 2, y)), color `0xC8C8C8` with the alpha of the tick
     /// `FUN_004925D0`; rises 0.1 units per ms; after 2,000 ms nothing anymore. Pixels outside 0 ... W, 0 ... H are
     /// dropped.
+    // QUIRK D-244: kept
     #[test]
     fn floats_draw_left_aligned_in_info_messages_and_fade() {
         let (_dir, vfs) = info_messages_install();
@@ -1028,6 +1032,7 @@ mod tests {
     /// Device projection (`FUN_00572650`): the half screen size is an integer (`>> 1`): at 1025 x 769 the screen center
     /// lies at (512, 384), not at (512.5, 384.5) as in [`crate::game::grid::project`]; behind the camera (`w <= 0`)
     /// no position.
+    // QUIRK D-244: kept
     #[test]
     fn device_projection_halves_the_size_as_integer() {
         let size = (1025, 769);

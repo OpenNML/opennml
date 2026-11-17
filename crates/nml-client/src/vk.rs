@@ -381,6 +381,7 @@ mod tests {
         assert!(held.held().is_empty());
     }
 
+    // QUIRK O-116: kept
     #[test]
     fn left_and_right_modifiers_share_one_vk_until_both_are_up() {
         let mut held = HeldVk::default();
@@ -395,6 +396,7 @@ mod tests {
         assert!(held.held().is_empty());
     }
 
+    // QUIRK O-116: kept
     #[test]
     fn mouse_buttons_join_the_table_at_round_start() {
         let escape = parse_chord("ESCAPE");

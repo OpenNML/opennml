@@ -649,6 +649,7 @@ mod tests {
         assert_eq!(e.sound.voices().count(), 3);
     }
 
+    // QUIRK D-167: deviation
     #[test]
     fn rain_starts_once_and_stops_with_the_weather_and_mute_keeps_mixing() {
         let (_dir, vfs) = test_vfs();
@@ -710,6 +711,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-158: kept
     #[test]
     fn nation_music_selects_in_every_mode_and_starts_only_in_multiplayer() {
         // `Game_StartNationMusic` (`0x0042EF90`): without a nation nothing, otherwise `SelectNation`; the playlist
@@ -749,6 +751,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-119: kept
     #[test]
     fn video_speech_fades_in_to_full_volume() {
         let (_dir, vfs) = test_vfs();
@@ -788,6 +791,7 @@ mod tests {
         assert!(!e.sound.voice(id).unwrap().fade.unwrap().active);
     }
 
+    // QUIRK O-119: kept
     #[test]
     fn video_speech_flags_stop_category_eight() {
         let (_dir, vfs) = test_vfs();

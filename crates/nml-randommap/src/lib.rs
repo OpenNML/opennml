@@ -539,6 +539,7 @@ ScaleClumpsToMapSize
         assert!(text.contains("random map \"ZKA\""), "{text}");
     }
 
+    // QUIRK D-328: kept
     #[test]
     fn generator_prepares_areas_and_counts_draws() {
         let spec = RandomMapSpec {
@@ -577,6 +578,7 @@ ScaleClumpsToMapSize
         assert_eq!(map.rand_state, plain.state());
     }
 
+    // QUIRK D-328: kept
     #[test]
     fn generate_grows_land_and_player_areas() {
         let files = files(&[("maps/a.rnd", SCRIPT)]);
@@ -634,6 +636,7 @@ radius 0
 }
 ";
 
+    // QUIRK D-328: kept
     #[test]
     fn generate_paints_base_texture_and_connections() {
         let files = files(&[("maps/a.rnd", PAINT_SCRIPT)]);
@@ -691,6 +694,7 @@ radius 0
         }
     }
 
+    // QUIRK D-327: deviation
     #[test]
     fn missing_or_unreadable_project_is_an_error() {
         let spec = test_spec();
@@ -789,6 +793,7 @@ Texture MOUNTAIN
 }
 ";
 
+    // QUIRK D-328: kept
     #[test]
     fn generate_computes_heights_smoothing_and_steepness() {
         let files = files(&[("maps/a.rnd", RELIEF_SCRIPT)]);
@@ -814,6 +819,7 @@ Texture MOUNTAIN
         assert_eq!(map.steep, again.steep);
     }
 
+    // QUIRK D-328: kept
     #[test]
     fn generation_is_repeatable() {
         let files = files(&[("maps/a.rnd", SCRIPT)]);
@@ -832,6 +838,7 @@ Texture MOUNTAIN
         assert_eq!(a.dim, 256);
     }
 
+    // QUIRK D-337, D-349: kept
     #[test]
     fn object_block_is_steep_plus_rects() {
         // The blocking map of the object step is a copy of the steepness plus the footprint rectangles

@@ -9,6 +9,7 @@ use nml_sim::state::Control;
 use nml_sim::tick::step;
 use nml_world::level::{level_paths, load_level};
 
+// QUIRK W-221: kept
 #[test]
 fn matches_start_on_all_multiplayer_maps_and_run() {
     let Some(dir) = corpus_game_dir() else {
@@ -669,6 +670,7 @@ fn a_fishing_boat_delivers_its_first_catch_at_the_harbor() {
 /// re/riding 13.1: Among the mounts (walk `SADDLE`/`SADDLEBOAT`) only the PRI canoe 1712 has a
 /// `dummy01` - in the sub-object `pri/units/kanu/krieger.rdo` of its animations, rest position
 /// (0; 11.81; -24.95).
+// QUIRK K-232: deviation
 #[test]
 fn mount_nodes_contain_only_the_pri_canoe() {
     let Some(dir) = corpus_game_dir() else {
@@ -692,6 +694,7 @@ fn mount_nodes_contain_only_the_pri_canoe() {
 
 /// re/ships 4.4, 9.1; re/train-multipart 3.1: cannons of the ships and coupling nodes of the
 /// train vehicles come from the models (`Rules::cannon_nodes`, `Rules::train_nodes`).
+// QUIRK C-215: kept
 #[test]
 fn ship_cannons_and_train_couplings_come_from_the_models() {
     let Some(dir) = corpus_game_dir() else {

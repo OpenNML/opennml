@@ -1595,6 +1595,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-103: deviation
     #[test]
     fn requirements_once_buildings_and_build_menus_are_checked() {
         let rules = rules();
@@ -1691,6 +1692,7 @@ mod tests {
         assert_eq!(objects_of(&sim, HQ).len(), 3);
     }
 
+    // QUIRK W-109: kept
     #[test]
     fn a_wall_of_three_parts_has_a_master_with_two_links_and_costs_three_times() {
         let rules = rules();
@@ -1893,6 +1895,7 @@ mod tests {
         assert_eq!(objects_of(&sim, WALL).len(), 1);
     }
 
+    // QUIRK W-137: kept
     #[test]
     fn queued_chop_wood_clears_later_entries_and_appends_the_next_tree_entry() {
         let rules = rules();
@@ -1961,6 +1964,7 @@ mod tests {
         assert!(codes(&sim, foreign).is_empty() && queue(&sim, foreign).is_empty());
     }
 
+    // QUIRK W-141: kept
     #[test]
     fn delivering_uses_the_code_of_the_load_and_an_accepting_finished_building() {
         let rules = rules();
@@ -2019,6 +2023,7 @@ mod tests {
         assert!(codes(&sim, boat).is_empty());
     }
 
+    // QUIRK W-47: deviation
     #[test]
     fn gathering_building_and_fishing_check_their_targets() {
         let rules = rules();
@@ -2216,6 +2221,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-223: deviation
     #[test]
     fn research_of_a_disabled_guid_is_rejected() {
         // `Player_IsGuidDisabled`: config 1 = 0 in the value set of the slot locks the GUID for this
@@ -2279,6 +2285,7 @@ mod tests {
         assert_eq!(validate::check_production(&sim, 0, hq, RESEARCH), Ok(()));
     }
 
+    // QUIRK E-164: kept
     #[test]
     fn button_lock_207_blocks_build_and_production_for_every_slot() {
         // The script lock 207 applies to all slots (`GameWorld+0x21E0` is global) and takes effect in the
@@ -2316,6 +2323,7 @@ mod tests {
         assert_eq!(validate::check_build(&sim, 0, HOUSE, &[worker]), Ok(()));
     }
 
+    // QUIRK E-200: kept
     #[test]
     fn button_unlock_208_cannot_lift_level_lock() {
         // `Player_IsGuidDisabled` (`0x0047DE80`): a script byte 0 falls back to the level data; 208
@@ -2386,6 +2394,7 @@ mod tests {
         assert_eq!(validate::check_production(&sim, 0, hq, RESEARCH), Ok(()));
     }
 
+    // QUIRK W-19: kept
     #[test]
     fn rail_orders_need_a_station() {
         let rules = rules();
@@ -2418,6 +2427,7 @@ mod tests {
         assert_eq!(running(&sim, station), (2518, 1));
     }
 
+    // QUIRK W-76: deviation
     #[test]
     fn building_and_cancelling_at_dead_buildings_is_rejected() {
         // A8: The UI offers neither building/repairing (target filters 412/413, `DIED` never
@@ -2521,6 +2531,7 @@ mod tests {
         assert_eq!(out, Outcome::Accepted);
     }
 
+    // QUIRK W-82: deviation
     #[test]
     fn selling_works_for_own_living_buildings_only() {
         let rules = rules();
@@ -2547,6 +2558,7 @@ mod tests {
     /// E-223: A container only counts as a vehicle with an **enabled** walk module (`HasModule(0, 0)`,
     /// `0x0047D9EB`), on every path. A building with a disabled walk module takes the building path
     /// (`quarter_open`, `FINDTO {container, −1, 1}`, move-in via `0x1617`), not the vehicle path.
+    // QUIRK E-223: kept
     #[test]
     fn external_quarter_treats_a_container_with_disabled_walk_as_a_building() {
         let rules = rules();
@@ -2584,6 +2596,7 @@ mod tests {
         assert!(is_vehicle(&sim, hq));
     }
 
+    // QUIRK W-136: deviation
     #[test]
     fn quartering_and_rally_points_need_own_containers() {
         let rules = rules();
@@ -2664,6 +2677,7 @@ mod tests {
         assert_eq!(building(&sim, foreign_hq).unwrap().meeting_point, before);
     }
 
+    // QUIRK W-140: kept
     #[test]
     fn queued_variants_follow_execute_queued_command() {
         let rules = rules();
@@ -3114,6 +3128,7 @@ mod tests {
         assert!(responses(&sim).is_empty());
     }
 
+    // QUIRK W-137: kept
     #[test]
     fn chopping_wood_acknowledges_even_from_the_queue_but_the_next_tree_does_not() {
         let rules = rules();
@@ -3175,6 +3190,7 @@ mod tests {
         assert!(responses(&sim).is_empty());
     }
 
+    // QUIRK W-104: deviation
     #[test]
     fn building_sites_must_be_seen_by_the_sender_and_wall_parts_explored() {
         let rules = rules();
@@ -3231,6 +3247,7 @@ mod tests {
         sim.state.fog.seen.or(t.0, t.1, 1 << 1);
     }
 
+    // QUIRK W-198: kept
     #[test]
     fn vehicle_quarter_commands_need_an_own_visible_ship() {
         // A8 / re/ships 2.4, 3.1: A vehicle accepts `0x13` if it is own, living and visible in the fog of

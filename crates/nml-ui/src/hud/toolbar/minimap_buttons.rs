@@ -201,6 +201,7 @@ mod tests {
     /// The mode button shows the GUID and tooltip of the next mode (0 -> 574, 1 -> 575, 2 -> 573) and, as its icon, the
     /// tile of the current mode (tile m shows the image of the next one, O-292); a click on 573/574/575 sets mode
     /// 0/1/2.
+    // QUIRK O-292: kept
     #[test]
     fn mode_button_shows_the_next_mode_m10() {
         for (mode, guid) in [(0, 574), (1, 575), (2, 573)] {
@@ -228,6 +229,7 @@ mod tests {
 
     /// Positions, icons and condition of 580 (re/game-ui D5.1, at 1024 x 768 and 800 x 600); colors of the
     /// constructor without a list.
+    // QUIRK O-292, O-388: kept
     #[test]
     fn corner_buttons_follow_d5_1() {
         let specs = layout(1024, 768, 0, 0);

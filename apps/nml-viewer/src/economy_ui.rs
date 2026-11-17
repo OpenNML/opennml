@@ -508,6 +508,7 @@ mod tests {
 
     /// The viewer draws no egui line to the rally point (the flag is the model in the world);
     /// the coordinates stay in the "Economy" window.
+    // QUIRK D-257: kept
     #[test]
     fn the_viewer_draws_no_rally_line() {
         let mut host = host();

@@ -1443,6 +1443,7 @@ mod tests {
         })
     }
 
+    // QUIRK D-250: kept
     #[test]
     fn remapping_keeps_effects_of_surviving_objects_and_releases_vanished_ones() {
         let (_dir, vfs) = vfs();
@@ -2006,6 +2007,7 @@ mod tests {
         assert_eq!(target_object_of(&world, key), Some(3));
     }
 
+    // QUIRK D-276, D-279: kept
     #[test]
     fn target_is_sticky_after_the_object_vanishes() {
         let (_dir, vfs) = vfs();
@@ -2105,6 +2107,7 @@ mod tests {
         assert_eq!(e.flight_s(), (z - carrier).length() / 128.0);
     }
 
+    // QUIRK D-277: kept
     #[test]
     fn point_targets_are_set_at_once_and_remeasured_with_every_placement() {
         let (_dir, vfs) = vfs();
@@ -2223,6 +2226,7 @@ mod tests {
         7
     }
 
+    // QUIRK D-268: kept
     #[test]
     fn footprints_are_listed_from_the_next_tick_and_end_in_the_tick_their_life_runs_out() {
         let (_dir, vfs) = vfs();
@@ -2325,6 +2329,7 @@ mod tests {
         assert!(world.tread_mut(key).is_some());
     }
 
+    // QUIRK D-286: kept
     #[test]
     fn treads_draw_only_while_their_sight_sphere_lists_them() {
         let (_dir, vfs) = vfs();
@@ -2411,6 +2416,7 @@ mod tests {
         assert_eq!(world.surf_ring_count(), 0);
     }
 
+    // QUIRK D-274: deviation
     #[test]
     fn release_owned_stops_all_own_effects_into_the_world() {
         let (_dir, vfs) = vfs();
@@ -2469,6 +2475,7 @@ mod tests {
         assert_eq!(kinds, [1, 6]);
     }
 
+    // QUIRK D-271: deviation
     #[test]
     fn clear_empties_layer_four() {
         let mut world = EffectWorld::new();

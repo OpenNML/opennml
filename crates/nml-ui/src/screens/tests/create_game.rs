@@ -163,6 +163,7 @@ fn opening_create_game_opens_the_map_side_frame() {
     assert_eq!(d.app.menu().open_names(), [CREATE]);
 }
 
+// QUIRK O-128, O-187: kept
 #[test]
 fn game_type_filters_the_map_list_and_reselects_entry_0() {
     // O-128: `gametype` code 4 reopens `LOADMULTIPLAYERMAP` (`{3}`, `{5}`), the list is filtered by `GTYPE`,
@@ -241,6 +242,7 @@ fn game_type_filters_the_map_list_and_reselects_entry_0() {
     assert_eq!(element(&d, CREATE, "leveltype").items.len(), 2, "O-187");
 }
 
+// QUIRK O-129: kept
 #[test]
 fn game_type_change_closes_the_random_map() {
     // O-129 corrected: The requery `leveltype` code 2 does not reach a ComboBox (`FUN_0045E8A0` takes only code 5),
@@ -292,6 +294,7 @@ fn saved_random_railroad() -> EngineConfig {
     }
 }
 
+// QUIRK O-187, O-188: kept
 #[test]
 fn saved_random_map_with_railroad_opens_the_random_frame_as_level_type_0() {
     // O-188 (remaining case): code 5 of the frame opens `RANDOMMAP` (`LevelType 1`), then `leveltype` code 2 silently
@@ -414,6 +417,7 @@ const RANDOM_ELEMENTS: [&str; 6] = [
     "daytime",
 ];
 
+// QUIRK O-140: deviation
 #[test]
 fn random_map_page_writes_the_settings() {
     // `FUN_004D7760`: no element has a code 5 branch (-1, no `status`, all free); code 0/2 show fields and lists,
@@ -610,6 +614,7 @@ fn seed_field_keeps_the_typed_text() {
     assert_eq!(name_text(&d.app.config().random_map_seed), "AbC");
 }
 
+// QUIRK O-140: deviation
 #[test]
 fn create2_builds_random_map_slots() {
     // `FUN_004BF1F0(0)` with `LevelType 1` (`0x004BF241`...`0x004BF3C8`): `Info` = seed, size, players + 2,
@@ -711,6 +716,7 @@ fn create2_builds_random_map_slots() {
     assert_eq!((own.key, own.name.as_str(), own.kind), (-1, "Anna", 999));
 }
 
+// QUIRK O-140: deviation
 #[test]
 fn empty_seed_gives_41_then_18467() {
     // O-140: an empty seed is drawn at every `CREATE2` from the menu's own MSVC state (`swprintf(L"%d", rand())`,
@@ -828,6 +834,7 @@ fn domination_frees_the_time_limit_and_shows_info_line_11() {
     assert_eq!(element(&d, CREATE, "timelimit").text.as_deref(), Some("45"));
 }
 
+// QUIRK O-127: kept
 #[test]
 fn unit_limit_offers_75_to_150() {
     // O-127: four texts 15531...15534 (without 15530 "50"); index = value; `RESOURCEN` 15550...15553.
@@ -924,6 +931,7 @@ fn time_limit_free_only_for_types_2_to_4() {
     assert!(element(&d, CREATE, "timelimit").enabled);
 }
 
+// QUIRK O-131: kept
 #[test]
 fn time_limit_filter_accepts_digits_only_and_swallows_escape() {
     // O-131: code `0xB` without `key` -1, digits -1 (insert), every other character 1 - also ESC (27) and RETURN.
@@ -978,6 +986,7 @@ fn time_limit_filter_accepts_digits_only_and_swallows_escape() {
     );
 }
 
+// QUIRK O-130: kept
 #[test]
 fn time_limit_clamps_on_query_only() {
     // O-130: code 7 clamps `TimeLimit` to 1...999 (written back) and shows the buffer; code `0xC` takes the text with
@@ -1045,6 +1054,7 @@ fn time_limit_clamps_on_query_only() {
     );
 }
 
+// QUIRK O-132: kept
 #[test]
 fn session_name_edits_net_session() {
     // O-132: `SESSIONNAME` also exists in single player and writes `NetSession` (pointer, `size 30`).
@@ -1073,6 +1083,7 @@ fn session_name_edits_net_session() {
     assert_eq!(name_text(&d.app.config().net_session), "RoundX");
 }
 
+// QUIRK O-132: kept
 #[test]
 fn create2_copies_settings_into_the_draft() {
     // `create2` code 8: `{3, dialog}`, `{4, side frame}`, `FUN_004BF1F0(0)` (slots from the map, own slot type 999 with

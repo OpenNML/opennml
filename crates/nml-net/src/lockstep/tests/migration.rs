@@ -201,6 +201,7 @@ fn host_loss_without_candidate_still_fails() {
 }
 
 /// Text 15212 path (E-268 part "Lobby" adopted): before `Go` nothing changes, even if the clients are listening.
+// QUIRK E-268: deviation
 #[test]
 fn host_loss_in_lobby_is_unchanged() {
     // Lobby after the `Welcome`: connection closed -> abort.
@@ -346,6 +347,7 @@ fn into_parts_hands_over_kept_bundles_and_open_turns() {
 
 /// A contribution that the client closes between `rejoin` and `rehome` goes out only after the `Migrated`, and exactly
 /// once; what was open before the `Rejoin` travels only in it.
+// QUIRK E-348: deviation
 #[test]
 fn contribution_closed_during_migration_reaches_the_new_host() {
     let mut client = running_client(vec![reachable(1), reachable(2)]);
@@ -388,6 +390,7 @@ fn contribution_closed_during_migration_reaches_the_new_host() {
 
 /// `rehome` inserts the missing bundles in sequence (control entries as in `on_bundle`), takes over the list and the
 /// desync count and reports `Rehomed`; afterwards the bundles of the new host continue as usual.
+// QUIRK E-348: deviation
 #[test]
 fn rehome_fills_missing_bundles_in_order() {
     let mut client = running_client(vec![reachable(1), reachable(2)]);
@@ -623,6 +626,7 @@ fn succession_gives_up_at_the_end() {
 
 /// If a candidate refuses with [`crate::msg::MIGRATION_REFUSED`] (it still hears the host), the client gives up
 /// instead of trying the next one - otherwise it could become a second host itself.
+// QUIRK E-292: kept
 #[test]
 fn succession_gives_up_when_refused() {
     let list = [reachable(1), reachable(2), reachable(3)];

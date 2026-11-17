@@ -24,6 +24,7 @@ mod tests {
         rules
     }
 
+    // QUIRK E-51: kept
     #[test]
     fn filter_ids_from_1000_are_guid_filters_and_buildings_need_finished() {
         let rules = rules_with_entries();
@@ -66,6 +67,7 @@ mod tests {
         assert_eq!(filter_from_id(&rules, 183).mode2, 0x800);
     }
 
+    // QUIRK E-51: kept
     #[test]
     fn module_descriptors_with_mask_zero_do_not_count() {
         // 5.15.3: `ObjectType_FindModuleDesc(m, 0xFFFFFFFF)` ignores descriptors with variant mask 0 - for the
@@ -102,6 +104,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-52: kept
     #[test]
     fn unknown_filter_ids_give_an_empty_filter_that_never_matches() {
         let rules = rules_with_entries();

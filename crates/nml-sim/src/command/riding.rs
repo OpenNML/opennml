@@ -239,6 +239,7 @@ mod tests {
         assert_eq!(posted(&sim, c), [(0x10D, vec![a.as_i32()], true)]);
     }
 
+    // QUIRK K-224: kept
     #[test]
     fn mount_skips_carried_horses_and_takes_foreign_ones() {
         // The target A already carries (CARRIING): list empty, the circle search takes the free horse B
@@ -344,6 +345,7 @@ mod tests {
         assert_eq!(queue_len(&sim, c), 1);
     }
 
+    // QUIRK K-224: kept
     #[test]
     fn board_boat_posts_without_checking_the_target() {
         // 0x0C: {0x10E, [boat]} per unit without a check (also a foreign canoe, K-224), response 12.
@@ -454,6 +456,7 @@ mod tests {
         }
     }
 
+    // QUIRK K-224: kept
     #[test]
     fn mount_and_board_boat_with_missing_or_invalid_ids_still_save_and_load() {
         // `mount_start` accepts every ID from `0x10D`/`0x10E`; the former load check rejected

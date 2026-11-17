@@ -564,6 +564,7 @@ mod tests {
         assert!(p[2].abs_diff(127) <= 1, "B = {}", p[2]);
     }
 
+    // QUIRK O-194: kept
     #[test]
     fn additive_blend_adds_srcalpha_times_colour() {
         // State block `billboard` (O-194): target + source * source alpha, the target is kept.
@@ -588,6 +589,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-63: kept
     #[test]
     fn destination_alpha_stays_opaque_over_opaque_ground() {
         // The alpha component of the blend is `One/OneMinusSrcAlpha`: the D3D8 back buffer alpha is never
@@ -609,6 +611,7 @@ mod tests {
         assert!(q[3].abs_diff(128) <= 1, "A = {}", q[3]);
     }
 
+    // QUIRK O-63: kept
     #[test]
     fn gray_atlas_darkens_twice() {
         // O-63: atlas pixel RGB = A = 128; SRCALPHA acts in addition to the texture color -> 0.5 * 0.5.
@@ -651,6 +654,7 @@ mod tests {
 
     /// Video quad (deviation): with the UV from `nml_ui::video::video_uv`, LINEAR at 1:1 hits the texel centers, the
     /// image stays texel-exact (without the shift, LINEAR averages 2 x 2 neighbors each, see above).
+    // QUIRK O-66: deviation
     #[test]
     fn video_uv_keeps_texels_at_one_to_one() {
         let Some(gpu) = gpu() else { return };
@@ -744,6 +748,7 @@ mod tests {
         assert_eq!(argb_to_rgba(0x0000_00FF), [0.0, 0.0, 1.0, 0.0]);
     }
 
+    // QUIRK O-194: kept
     #[test]
     fn batches_merge_only_adjacent_equal_keys() {
         let a = TextureId(0);

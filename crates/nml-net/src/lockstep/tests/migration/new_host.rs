@@ -230,6 +230,7 @@ fn new_host_waits_for_expected_rejoins() {
 
 /// An expected client that does not come loses after the window `W` (bundle `K + 1`), and the new host plays on
 /// alone.
+// QUIRK E-347: deviation
 #[test]
 fn absent_client_loses_after_the_window() {
     let mut rig = rig_candidates(2);
@@ -292,6 +293,7 @@ fn defeated_client_gone_costs_no_wait() {
 
 /// The new host is one bundle behind a client; it takes the bundle from that client's `Rejoin` (control entries as on
 /// reception), its own open contribution for it is dropped, and everyone executes the same sequence.
+// QUIRK E-348: deviation
 #[test]
 fn fringe_new_host_behind_takes_the_bundle() {
     let mut clients = running_clients(2, candidates(2));
@@ -335,6 +337,7 @@ fn fringe_new_host_behind_takes_the_bundle() {
 }
 
 /// A client two bundles behind gets both in the `Migrated`, in sequence; afterward the same sequence.
+// QUIRK E-348: deviation
 #[test]
 fn fringe_client_two_behind_is_filled() {
     let mut clients = running_clients(2, candidates(2));
@@ -367,6 +370,7 @@ fn fringe_client_two_behind_is_filled() {
 
 /// Open contributions `> K` become ordinary contributions, `≤ K` (already in the bundle) are dropped - no command is
 /// missing, none comes twice.
+// QUIRK E-348: deviation
 #[test]
 fn open_turns_become_contributions_and_duplicates_are_dropped() {
     let mut clients = running_clients(3, candidates(3));
@@ -422,6 +426,7 @@ fn open_turns_become_contributions_and_duplicates_are_dropped() {
 }
 
 /// The pause of the old host is lifted by the new host, as is that of one who did not return.
+// QUIRK E-346: deviation
 #[test]
 fn pause_of_the_old_host_is_lifted() {
     let mut clients = running_clients(2, candidates(2));
@@ -458,6 +463,7 @@ fn pause_of_the_old_host_is_lifted() {
 }
 
 /// The pause of a third party who returns stays; only that party can lift it.
+// QUIRK E-346: deviation
 #[test]
 fn pause_of_a_third_stays_and_only_the_pauser_resumes() {
     let mut clients = running_clients(3, candidates(3));
@@ -489,6 +495,7 @@ fn pause_of_a_third_stays_and_only_the_pauser_resumes() {
 }
 
 /// The `Resume` of the pausing player reached only some; `Migrated::paused_by` aligns everyone with the new host.
+// QUIRK E-346: deviation
 #[test]
 fn resume_seen_by_some_is_aligned_by_migrated() {
     let resume =
@@ -592,6 +599,7 @@ fn resync_in_progress_is_dropped() {
 
 /// The desync count survives the host migration (also from a bundle that only one client had); the next desync is
 /// the third and stops the match.
+// QUIRK E-268: deviation
 #[test]
 fn desync_count_survives_migration() {
     let resync = |k| bundle(k, vec![NetControl::Resync { slots: vec![2] }]);
@@ -637,6 +645,7 @@ fn desync_count_survives_migration() {
 
 /// E-268, "grace period" part, deviated: Even the first turn after the host migration compares the checksum, including
 /// that of a contribution from the `Rejoin`.
+// QUIRK E-268: deviation
 #[test]
 fn deviation_after_migration_is_caught_in_the_first_round() {
     let mut clients = running_clients(2, candidates(2));
@@ -655,6 +664,7 @@ fn deviation_after_migration_is_caught_in_the_first_round() {
 }
 
 /// Without clients the new host plays on alone as a network match (pause and game speed work as on the host).
+// QUIRK E-269: deviation
 #[test]
 fn lone_new_host_plays_on() {
     let mut clients = running_clients(1, candidates(1));
@@ -750,6 +760,7 @@ fn migrated_lists_successors_without_the_new_host() {
 
 /// If a bundle `≤ K` is missing everywhere, the new host aborts the host migration: `Reject` with
 /// [`MIGRATION_FAILED`] to every returnee (its [`Succession`] gives up), `MigrationFailed`, phase `Ended`.
+// QUIRK E-348: deviation
 #[test]
 fn missing_bundle_everywhere_aborts() {
     let mut clients = running_clients(2, candidates(2));
@@ -801,6 +812,7 @@ fn missing_bundle_everywhere_aborts() {
 
 /// After an orderly handover (`only`) or if a bundle `≤ K` already carries the result of the old host, no second
 /// dropout command comes.
+// QUIRK E-347: deviation
 #[test]
 fn old_host_loss_is_not_repeated() {
     // Orderly handover.

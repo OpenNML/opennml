@@ -682,6 +682,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK W-91: kept
     #[test]
     fn colonists_are_paid_at_the_start_and_wait_for_money() {
         let rules = rules();
@@ -729,6 +730,7 @@ mod tests {
         assert!(!bld(&sim, hq).msg_sent);
     }
 
+    // QUIRK W-92: kept
     #[test]
     fn cancelling_the_running_entry_refunds_the_rest_share() {
         let rules = rules();
@@ -811,6 +813,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK O-395: kept
     #[test]
     fn cancel_reports_the_ui_rebuild_on_every_success_path() {
         // `0x00507960`: Notify(0) after "in progress" -1 on all three success paths (waiting `0x00507A9F`, running
@@ -852,6 +855,7 @@ mod tests {
         assert_eq!(take_cancelled(&mut sim), [hq]);
     }
 
+    // QUIRK W-95: kept
     #[test]
     fn the_queue_holds_26_waiting_plus_one_and_once_kinds_only_once() {
         let rules = rules();
@@ -878,6 +882,7 @@ mod tests {
         assert_eq!(enqueue_msg(&mut sim, other, 1112), 1);
     }
 
+    // QUIRK W-19: kept
     #[test]
     fn paddocks_turn_into_horse_colours_with_one_shared_counter() {
         let rules = rules();
@@ -903,6 +908,7 @@ mod tests {
         assert_eq!(bld(&sim, hq).make_queue.back(), Some(&3424));
     }
 
+    // QUIRK W-19: kept
     #[test]
     fn slow_production_halves_the_pace_and_ships_use_the_shipyard_upgrade() {
         let mut rules = rules();
@@ -939,6 +945,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-97: kept
     #[test]
     fn trades_pay_at_the_end_and_move_the_prices() {
         let rules = rules();
@@ -978,6 +985,7 @@ mod tests {
         assert_eq!(res(&sim, LIVING_SPACE), 5);
     }
 
+    // QUIRK W-97: kept
     #[test]
     fn trades_without_money_retry_every_100_ms_and_announce_once() {
         let rules = rules();
@@ -1004,6 +1012,7 @@ mod tests {
         assert_eq!(bld(&sim, hq).make_guid, 0);
     }
 
+    // QUIRK W-96: kept
     #[test]
     fn destroying_the_building_releases_the_counts_and_refunds_the_running_entry() {
         let rules = rules();
@@ -1181,6 +1190,7 @@ mod tests {
         (state, hq, colonist)
     }
 
+    // QUIRK W-211: kept
     #[test]
     fn research_applies_the_upgrade_when_it_ends() {
         use crate::module::gather::unit_delay;
@@ -1217,6 +1227,7 @@ mod tests {
         assert_eq!(bld(&sim, hq).make_guid, 0);
     }
 
+    // QUIRK W-211: kept
     #[test]
     fn a_follow_up_research_unlocks_only_after_the_end() {
         use crate::command::validate::check_production;
@@ -1256,6 +1267,7 @@ mod tests {
         assert_eq!(steps, [600, 600, 700, 600, 700]);
     }
 
+    // QUIRK W-211: kept
     #[test]
     fn cancelling_research_allows_enqueueing_again() {
         let rules = crate::upgrades::testkit::rules();

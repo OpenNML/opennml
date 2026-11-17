@@ -720,6 +720,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-254: kept
     #[test]
     fn icon_sits_two_right_three_up_and_two_lower_when_pressed() {
         let mut rig = rig();
@@ -750,6 +751,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-254: kept
     #[test]
     fn small_buttons_scale_the_icon_but_not_the_offset() {
         let mut rig = rig();
@@ -767,6 +769,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-257: kept
     #[test]
     fn stance_cells_follow_the_status_bar_grid_of_32() {
         // O-257, O-280: with a status bar `resourcen_icons.tga` has its 32 px grid (first loader); base icon and icon
@@ -801,6 +804,7 @@ mod tests {
         assert_eq!(*uv, [t(0.5), t(32.5), t(30.5), t(62.5)]);
     }
 
+    // QUIRK O-257: kept
     #[test]
     fn stance_cells_are_24_px_at_scale_1_without_status_bar() {
         // O-257: without a status bar (`IsStatusBar 0`) stance and formation take the 24 px tiles of the bar at scale
@@ -826,6 +830,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-257: kept
     #[test]
     fn selected_stance_takes_its_own_colors() {
         let mut rig = rig();
@@ -853,6 +858,7 @@ mod tests {
         assert_eq!(color(&mut rig, &plain), 0xFF00_0100);
     }
 
+    // QUIRK O-255: kept
     #[test]
     fn veil_shrinks_from_the_top() {
         let mut rig = rig();
@@ -910,6 +916,7 @@ mod tests {
         assert_eq!(quads(&rig.draw(&upgrade))[2].1, [249, 606, 296, 630]);
     }
 
+    // QUIRK O-256: kept
     #[test]
     fn bars_follow_tracked_attributes_and_overhang_one_pixel() {
         let mut rig = rig();
@@ -965,6 +972,7 @@ mod tests {
         assert!(quads(&rig.draw(&h)).len() > 2);
     }
 
+    // QUIRK O-260: kept
     #[test]
     fn click_sound_on_every_release_and_double_but_not_when_locked() {
         // Double-click: 3, 2, 3, 2, 0x13 -> 9, 9, 0x27 and three sounds (O-260); the sound comes before the event.
@@ -1028,6 +1036,7 @@ mod tests {
         assert!(!b.mouse(HudEventKind::LeftDown, OUTSIDE, &mut out));
     }
 
+    // QUIRK O-223, O-260: kept
     #[test]
     fn right_double_click_emits_0x28() {
         // O-223: the button sends 0x28 including the sound; the bar does not handle it.
@@ -1050,6 +1059,7 @@ mod tests {
         assert!(out.is_empty());
     }
 
+    // QUIRK O-261: kept
     #[test]
     fn lock_holds_only_for_the_frame() {
         // O-261: the lock colors and locks only this frame; the state is written back.
@@ -1086,6 +1096,7 @@ mod tests {
         assert!(sel.clickable);
     }
 
+    // QUIRK O-261: kept
     #[test]
     fn initial_lock_is_lost_on_the_first_mouse_event() {
         // A button created with BUTTONMSG < 0 is locked until the first mouse event arrives (O-261).
@@ -1122,6 +1133,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-261: kept
     #[test]
     fn mouse_states_follow_the_original_handlers() {
         let mut b = Button::new(spec(MAKE), None);
@@ -1152,6 +1164,7 @@ mod tests {
         assert!(out.is_empty());
     }
 
+    // QUIRK O-245: kept
     #[test]
     fn tooltip_602_needs_running_and_missing_requirement() {
         // O-245. Only a running counter-upgrade: the button is locked but shows the ordinary tooltip.
@@ -1261,6 +1274,7 @@ mod tests {
         assert_eq!(b.state, ButtonState::Hover);
     }
 
+    // QUIRK O-245, O-255: kept
     #[test]
     fn waiting_entry_reports_zero_progress() {
         // O-245: a waiting order (progress fixed 1.0) reports 0; the running one only for exactly 1.0.

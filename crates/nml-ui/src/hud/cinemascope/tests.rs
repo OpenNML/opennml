@@ -200,6 +200,7 @@ fn with_bars(rig: &Rig) -> CinemascopeView {
     view
 }
 
+// QUIRK O-351: kept
 #[test]
 fn bars_follow_the_resolution() {
     let mut rig = rig();
@@ -223,6 +224,7 @@ fn bars_follow_the_resolution() {
     }
 }
 
+// QUIRK O-351: kept
 #[test]
 fn edge_tiles_count_and_positions() {
     let mut rig = rig();
@@ -252,6 +254,7 @@ fn edge_tiles_count_and_positions() {
     assert_eq!(dst(top[41])[0], 1312);
 }
 
+// QUIRK O-351: kept
 #[test]
 fn no_barsize_no_bars() {
     let mut rig = rig_with("BARTEXTURETOP 32 32 data/icons/top.tga\r\n");
@@ -266,6 +269,7 @@ fn no_barsize_no_bars() {
     assert!(rig.draw(&view).is_empty());
 }
 
+// QUIRK O-353: kept
 #[test]
 fn portrait_rect_is_19_657_to_121_753() {
     let mut rig = rig();
@@ -290,6 +294,7 @@ fn portrait_rect_is_19_657_to_121_753() {
     assert_eq!((uv, filter), ([0.0, 0.0, 1.0, 1.0], Filter::Linear));
 }
 
+// QUIRK O-354: kept
 #[test]
 fn portrait_fade_is_127_after_250_ms_and_255_after_500() {
     let mut rig = rig();
@@ -327,6 +332,7 @@ fn portrait_fade_is_127_after_250_ms_and_255_after_500() {
     assert!(by_texture(&rig, &cmds, Some(PORTRAIT_TGA)).is_empty());
 }
 
+// QUIRK O-354: kept
 #[test]
 fn portrait_fade_freezes_without_bars() {
     let rig = rig();
@@ -342,6 +348,7 @@ fn portrait_fade_freezes_without_bars() {
     assert_eq!(view.portraits[0].fade, Fade::show());
 }
 
+// QUIRK O-354: kept
 #[test]
 fn bar_message_clears_portrait_states_both_ways() {
     let rig = rig();
@@ -369,6 +376,7 @@ fn bar_message_clears_portrait_states_both_ways() {
     }
 }
 
+// QUIRK O-354: kept
 #[test]
 fn hide_on_cleared_slot_fades_the_old_portrait_again() {
     let mut rig = rig();
@@ -395,6 +403,7 @@ fn hide_on_cleared_slot_fades_the_old_portrait_again() {
     assert!(by_texture(&rig, &cmds, Some(PORTRAIT_TGA)).is_empty());
 }
 
+// QUIRK O-48, O-353: kept
 #[test]
 fn frame_drawn_before_portrait_in_the_same_rect() {
     let mut rig = rig();
@@ -447,6 +456,8 @@ fn frame_drawn_before_portrait_in_the_same_rect() {
     assert_eq!(cmds.len(), last_tile + 5);
 }
 
+// QUIRK O-353: kept
+// QUIRK O-378: deviation
 #[test]
 fn unknown_portrait_draws_nothing_and_loads_once() {
     let mut rig = rig();
@@ -473,6 +484,7 @@ fn unknown_portrait_draws_nothing_and_loads_once() {
     assert_eq!(missing.count(), 1);
 }
 
+// QUIRK O-48, O-352: kept
 #[test]
 fn dialog_text_at_136_660_width_746_without_shadow() {
     let mut rig = rig();
@@ -493,6 +505,7 @@ fn dialog_text_at_136_660_width_746_without_shadow() {
     assert!(cmds.iter().all(|c| color(c) == WHITE));
 }
 
+// QUIRK O-48: kept
 #[test]
 fn fallback_without_dialogarea_draws_in_pixels() {
     let ini = "BARSIZE 170\r\nBARTEXTURETOP 32 32 data/icons/top.tga\r\n\
@@ -528,6 +541,7 @@ BARTEXTUREDOWN 32 32 data/icons/bottom.tga\r\n";
     assert_eq!(origin(&text[0]), [170, 0]);
 }
 
+// QUIRK E-240, O-355: kept
 #[test]
 fn text_slots_fade_without_bars() {
     let mut rig = rig();
@@ -545,6 +559,7 @@ fn text_slots_fade_without_bars() {
     assert!(by_texture(&rig, &cmds, None).is_empty(), "no bars");
 }
 
+// QUIRK O-356: kept
 #[test]
 fn tip_slots_2_and_3_with_shadow() {
     let mut rig = rig();
@@ -575,6 +590,7 @@ fn tip_slots_2_and_3_with_shadow() {
     );
 }
 
+// QUIRK O-356: kept
 #[test]
 fn text_relayouts_every_frame_with_a_live_counter() {
     let mut rig = rig();
@@ -617,6 +633,7 @@ fn text_out_of_range_slot_is_ignored() {
     }
 }
 
+// QUIRK O-352: kept
 #[test]
 fn second_color_is_never_drawn() {
     let mut rig = rig();

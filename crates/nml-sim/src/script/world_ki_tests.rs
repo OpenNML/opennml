@@ -190,6 +190,7 @@ fn n1_in_a_dialog_runs_after_the_dialog() {
     assert_eq!(pending(&state), 0, "thread finished");
 }
 
+// QUIRK E-221: kept
 #[test]
 fn n37_deletes_the_engine_and_later_starts_do_nothing() {
     let rules = rules_with_area();
@@ -221,6 +222,7 @@ fn n37_deletes_the_engine_and_later_starts_do_nothing() {
     );
 }
 
+// QUIRK E-220: deviation
 #[test]
 fn n340_sets_a_global_and_ignores_bad_index_or_missing_engine() {
     let rules = rules_with_area();

@@ -268,6 +268,7 @@ mod tests {
         assert!(!stream.rewind(), "a source without seeking back");
     }
 
+    // QUIRK O-69: kept
     #[test]
     fn resampler_converts_48000_and_22050() {
         // Linear between the source frames, the last one holds.
@@ -309,6 +310,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-69: kept
     #[test]
     fn resampler_clamps_values_above_one() {
         // Bink sound can exceed 1.0 (up to about 1.15); clamping happens only at `to_i16`.

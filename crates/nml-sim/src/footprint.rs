@@ -329,6 +329,7 @@ mod tests {
         m.map(|row| row.map(f32::to_bits))
     }
 
+    // QUIRK D-356: kept
     #[test]
     fn generator_matrix_rotates_z_then_y_then_x() {
         // Only y = pi/2: `Rz · ((Ry · Rx) · T)` = Ry with translation in row 3 (zeros as +0).
@@ -384,6 +385,7 @@ mod tests {
     /// Measured: bits of `generator_world_matrix([640, 10, 384], [0.3, 0.5, 0.7])`.
     const GENERATOR_MATRIX_DIGEST: u64 = 0xAFDD_56C5_C333_D1C5;
 
+    // QUIRK D-356: kept
     #[test]
     fn generator_matrix_differs_from_object_matrix() {
         let (p, r) = ([640.0, 10.0, 384.0], [0.3, 0.5, 0.7]);

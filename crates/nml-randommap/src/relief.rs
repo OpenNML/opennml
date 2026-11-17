@@ -263,6 +263,7 @@ mod tests {
         assert_eq!(grid, before);
     }
 
+    // QUIRK D-347: deviation
     #[test]
     fn smoothing_stops_at_a_fixed_point() {
         let spike = || {
@@ -291,6 +292,7 @@ mod tests {
         assert_eq!(flat, Grid::new(2, 2));
     }
 
+    // QUIRK D-347: deviation
     #[test]
     fn smoothing_that_never_settles_is_an_error() {
         // An oscillating grid cannot be built: the averaging makes the grid smoother and ends in the

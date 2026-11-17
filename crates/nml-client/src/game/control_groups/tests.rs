@@ -136,6 +136,7 @@ fn setup() -> MatchSetup {
 
 /// O-43: select A, B, Ctrl+1 -> G1 = [A, B], no camera; 1 -> only the camera on the mean; select C, 1 ->
 /// [A, B] without camera and without sound; 1 -> camera. The camera cycle keeps the offset (`MoveCameraTo(x, z, 0)`).
+// QUIRK O-43: kept
 #[test]
 fn store_select_and_cycle() {
     let mut w = World::new();
@@ -180,6 +181,7 @@ fn store_select_and_cycle() {
 
 /// Clusters (`FUN_0047F8B0`, `0x0047BE00`): A, D more than 5 tiles apart, Ctrl+2; 2, 2, 2 -> camera A, D, A. An object
 /// joins the nearest cluster whose **first** member is closer than 5 tiles (strictly), otherwise a new one.
+// QUIRK O-43: kept
 #[test]
 fn clusters_use_the_first_member_and_five_tiles() {
     let mut w = World::new();
@@ -222,6 +224,7 @@ fn clusters_use_the_first_member_and_five_tiles() {
 
 /// Shift+2 with [B] -> G2 = [A, D, B], B out of G1 (`addtogroup` `0x004FB0E0`: each ID first out of all lists, then
 /// at the back; `last = -1`; empty selection: nothing). Ctrl+2 with [A, D] takes A out of G1.
+// QUIRK O-43, O-311: kept
 #[test]
 fn add_moves_ids_between_groups() {
     let mut w = World::new();
@@ -258,6 +261,7 @@ fn add_moves_ids_between_groups() {
 /// O-310 (`FUN_004FB180` from `0x00488F60`): after 1 (G1 = [C]) Shift-click D -> G1 = [C, D], D out of G2;
 /// Shift-click D (deselect) -> G1 stays. The path applies at every accepted addition before the unit filter
 /// (also a building that drops out again right away), only for `last` 0..9 and fewer than 30 entries.
+// QUIRK O-310: kept
 #[test]
 fn shift_click_extends_the_last_group() {
     let mut w = World::new();
@@ -310,6 +314,8 @@ fn shift_click_extends_the_last_group() {
 /// O-311: groups are never maintained. A dies -> G1 = [A, B] stays, 1 -> [B]; a removed object (stale ID)
 /// silently drops out; G1 = [A, H] -> 1 -> [A] (building drops out); [H1, H2] -> empty, `last` stays -1;
 /// a building alone can be selected.
+// QUIRK O-311: kept
+// QUIRK O-315: deviation
 #[test]
 fn groups_are_never_pruned() {
     let mut w = World::new();
@@ -358,6 +364,7 @@ fn groups_are_never_pruned() {
 
 /// O-311 (`storegroup` `0x004FB1EA`): Ctrl+n with an empty selection clears the group and sets `last = n`; pressing n
 /// afterwards runs only the empty camera cycle (no clusters: nothing).
+// QUIRK O-311: kept
 #[test]
 fn store_with_empty_selection_clears_and_sets_last() {
     let mut w = World::new();
@@ -429,6 +436,7 @@ fn save_and_load(w: &World, slots: &[ControlGroups]) -> (World, Vec<ControlGroup
 }
 
 /// O-312 (deviation): G1...G9 come back, the selection is empty, the last group -1; 1 selects (without camera).
+// QUIRK O-312: deviation
 #[test]
 fn groups_survive_save_and_load_with_empty_selection() {
     let mut w = World::new();
@@ -463,6 +471,7 @@ fn groups_survive_save_and_load_with_empty_selection() {
 /// A group with a removed object (stale ID), a carcass still present (died, not selectable) and an object of
 /// another slot survives saving and loading; all IDs stay in the group, only what `Selection` allows is selected
 /// (the foreign object alone; together with an own unit the multi-selection of the units remains).
+// QUIRK O-312: deviation
 #[test]
 fn stale_group_ids_survive_save_and_load() {
     let mut w = World::new();
@@ -500,6 +509,7 @@ fn stale_group_ids_survive_save_and_load() {
 
 /// O-332: `addtogroup` does not truncate (as in the original): after 300 entries in batches every ID is in the
 /// group, and the savegame loads the same list.
+// QUIRK O-332: kept
 #[test]
 fn add_keeps_every_entry_beyond_255() {
     let mut w = World::new();
@@ -524,6 +534,7 @@ fn add_keeps_every_entry_beyond_255() {
 
 /// Group commands change neither the checksum nor the command log of the simulation (local, without
 /// `NetSession_SubmitMessage`); neither do the Shift path and the camera cycle.
+// QUIRK O-312: deviation
 #[test]
 fn groups_change_no_checksum() {
     let mut w = World::new();
@@ -563,6 +574,7 @@ fn two_hqs() -> (World, ObjectId, ObjectId, ObjectId, ObjectId) {
 /// (program clock) moves only the camera to the first selected object if it has this GUID; otherwise the search
 /// goes from the remembered index (object slot + 1) cyclically through the objects of the local slot; a hit already
 /// selected moves only the camera. Foreign slots are never searched.
+// QUIRK O-314: kept
 #[test]
 fn select_next_guid_cycles_and_double_taps() {
     let (mut w, h1, h2, foe, unit) = two_hqs();
@@ -618,6 +630,7 @@ fn select_next_guid_cycles_and_double_taps() {
 /// O-314: the search checks no status. A hit that `0x00488F60` rejects (here quartered) clears the selection (and
 /// the last group), still reports the new selection and advances the index; the next press selects the next object
 /// of the kind.
+// QUIRK O-314: kept
 #[test]
 fn rejected_hit_clears_the_selection_and_still_advances() {
     let mut w = World::new();
@@ -647,6 +660,7 @@ fn rejected_hit_clears_the_selection_and_still_advances() {
 
 /// The `selectnextguid` indices are in the host part of the savegame per slot; after loading the cycle continues.
 /// The double-tap deadline is transient.
+// QUIRK O-333: deviation
 #[test]
 fn next_guid_index_survives_save_and_load() {
     let (mut w, h1, h2, _, _) = two_hqs();

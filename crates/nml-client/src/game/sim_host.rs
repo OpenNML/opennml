@@ -3187,6 +3187,7 @@ mod tests {
     /// `GameWorld_BuildRenderListsAndFrameUpdate` (`0x0047FC70`): the rendering does not draw objects of a hidden
     /// slot (render bits 0, so no model, no shadow, no click target), unless they are in the special list `L[p]`
     /// of the slot.
+    // QUIRK E-253: kept
     #[test]
     fn objects_of_a_hidden_slot_are_not_drawn_unless_listed_for_slots_0_to_8() {
         let mut host = host();
@@ -3207,6 +3208,7 @@ mod tests {
 
     /// The host sends `ScriptSelection` only when the set changes and
     /// only if the running script uses 35-38; otherwise the command log stays free of it.
+    // QUIRK E-230: deviation
     #[test]
     fn sync_selection_sends_only_changes_and_only_with_ui_conditions() {
         use crate::game::testworld::abl;
@@ -3279,6 +3281,7 @@ mod tests {
 
     /// `press_button` sends the button value only with a running script with 35-38; every
     /// report arrives (no sync: even the same button twice is an event).
+    // QUIRK E-229: deviation
     #[test]
     fn press_button_without_ui_conditions_sends_nothing() {
         use crate::game::testworld::abl;
@@ -3311,6 +3314,7 @@ mod tests {
 
     /// O-318: if the match halts (`halted`), `ScriptButton` goes into the state immediately via `submit`, like every
     /// command, not to the tick boundary.
+    // QUIRK O-318: kept
     #[test]
     fn press_button_while_halted_executes_at_once() {
         use crate::game::testworld::abl;
@@ -3331,6 +3335,7 @@ mod tests {
     /// O-318: `flush_pending` executes the waiting commands in order immediately; a command executed
     /// immediately afterwards follows them in the log and in the state, the savegame contains them, and the
     /// replay reaches the same checksum.
+    // QUIRK O-318: kept
     #[test]
     fn flushed_pending_commands_run_before_later_immediate_ones() {
         // Without objects inserted afterwards (like `immediate_commands_replay_like_the_next_step`): the replay
@@ -3589,6 +3594,7 @@ VALUEID 30001 1 1 0
         ));
     }
 
+    // QUIRK D-89: deviation
     #[test]
     fn carried_objects_take_the_display_of_their_carrier() {
         use super::testkit::*;
@@ -3633,6 +3639,7 @@ VALUEID 30001 1 1 0
         assert_ne!(of(&host, rider), of(&host, horse));
     }
 
+    // QUIRK K-238: kept
     #[test]
     fn a_diver_sinks_by_its_height_offset() {
         use super::testkit::*;
@@ -3671,6 +3678,7 @@ VALUEID 30001 1 1 0
         assert_eq!(y(&host), surface - 32.0);
     }
 
+    // QUIRK K-238: kept
     #[test]
     fn a_surfacing_diver_without_onwater_is_still_drawn_below_the_surface() {
         use super::testkit::*;
@@ -4110,6 +4118,7 @@ VALUEID 30001 1 1 0
     /// like `GameObject_SetPlayerColor` (`0x004680B0`), i.e. the lobby color of the slot, not the
     /// slot; it follows a change of owner (`GameObject_OnOwnerChanged` `0x0046F850`), a carcass
     /// keeps the color of the old owner (C-142, dying slot 5 `0x0050E460`).
+    // QUIRK C-142: kept
     #[test]
     fn entry_looks_take_the_player_colour_and_follow_an_owner_change() {
         use super::testkit::*;
@@ -4275,6 +4284,7 @@ VALUEID 30001 1 1 0
         assert!(host.account_line().starts_with("Balance player 3: Gold"));
     }
 
+    // QUIRK K-325: deviation
     #[test]
     fn game_time_runs_1_2_times_faster_with_at_most_two_steps_per_frame() {
         let mut host = host();
@@ -4399,6 +4409,7 @@ VALUEID 30001 1 1 0
         }
     }
 
+    // QUIRK O-318: kept
     #[test]
     fn immediate_commands_replay_like_the_next_step() {
         // The original executes giving up (`0x27` -> `0x50000056`) immediately in single player, even if no tick
@@ -4490,6 +4501,7 @@ VALUEID 30001 1 1 0
 
     /// E-329 after loading: with the log of the savegame the replay stays complete and, after further ticks,
     /// equals the replay of the undivided match.
+    // QUIRK E-329: deviation
     #[test]
     fn loaded_save_with_log_keeps_the_replay_complete() {
         let mut whole = host();
@@ -4836,6 +4848,7 @@ VALUEID 30001 1 1 0
         assert_eq!(info.rejections[19].reason, "reason 30");
     }
 
+    // QUIRK E-332: deviation
     #[test]
     fn log_stops_at_the_replay_limit() {
         let mut host = host();
@@ -4936,6 +4949,7 @@ VALUEID 30001 1 1 0
         assert!(expected > 0, "the cycle of the scene has idle ticks");
     }
 
+    // QUIRK O-287: kept
     #[test]
     fn no_rows_while_paused() {
         // Without a step (pause, open game menu, single frame without enough time) no idle tick counts.
@@ -5128,6 +5142,7 @@ VALUEID 30001 1 1 0
         assert_eq!(drawn_as(&mut host, target), (true, false));
     }
 
+    // QUIRK D-290: kept
     #[test]
     fn an_object_leaving_sight_is_always_drawn_either_as_object_or_as_memory() {
         assert_no_gap_at_the_fog_edge(Rules::synthetic(TYPES, 32), 1000);
@@ -5135,6 +5150,7 @@ VALUEID 30001 1 1 0
 
     /// The original checks tents (movable fog memories, list `+0x188`) every frame without camera restriction
     /// (`0x0047E5B8`); the reimplementation after every step.
+    // QUIRK D-229, D-290: kept
     #[test]
     fn a_tent_leaving_sight_is_always_drawn_either_as_object_or_as_memory() {
         use crate::game::testworld::{self, DWELLING_TENT};
@@ -5149,6 +5165,7 @@ VALUEID 30001 1 1 0
 
     /// An immediately executed command (pause, `execute_now`) checks the memories right away, like the original in
     /// the next frame without a tick.
+    // QUIRK D-290: kept
     #[test]
     fn memories_are_checked_after_an_immediate_command() {
         let (mut host, _, target) = sight_host(Rules::synthetic(TYPES, 32), 1000);
@@ -5384,6 +5401,7 @@ VALUEID 30001 1 1 0
         assert_eq!(y(&host, &arrived), 5.0);
     }
 
+    // QUIRK C-161: kept
     #[test]
     fn attack_points_stay_until_the_next_event_and_follow_the_active_player() {
         let mut host = host();
@@ -5651,6 +5669,7 @@ VALUEID 170002 6 1 4
         assert_eq!(anim(&host, tail), DisplayAnim::Sim(0));
     }
 
+    // QUIRK D-370: kept
     #[test]
     fn wheel_rate_follows_the_original_formula() {
         // Speed <= 0 counts as 128 (normal speed).
@@ -5662,6 +5681,7 @@ VALUEID 170002 6 1 4
         assert_eq!(super::wheel_rate(128, 153), 153.0 * 0.46875 / 128.0);
     }
 
+    // QUIRK D-370: kept
     #[test]
     fn the_wheels_turn_with_the_speed_of_the_loco() {
         use super::testkit::*;
@@ -5740,6 +5760,7 @@ VALUEID 170002 6 1 4
         }
     }
 
+    // QUIRK K-247: deviation
     #[test]
     fn the_cart_tail_turns_with_the_interpolated_head() {
         use super::testkit::*;
@@ -6144,6 +6165,7 @@ VALUEID 170002 6 1 4
         nml_sim::messaging::send(&mut sim, id, &nml_sim::message::Message::new(code, &[]))
     }
 
+    // QUIRK D-267: kept
     #[test]
     fn ghosts_and_evoked_animals_fade_in_the_look() {
         // re/ghosts-banish 3.4/7 (alpha via `0x00468090`), re/evoke-aura 7 (appearing 0 -> 1 in 80
@@ -6186,6 +6208,7 @@ VALUEID 170002 6 1 4
         assert_eq!(alpha(&mut host, evoker), 1.0);
     }
 
+    // QUIRK K-13: deviation
     #[test]
     fn masked_units_are_half_transparent_for_everyone() {
         // re/masking 7: camouflaged unit alpha 0.5 (`0x00468090`) for every viewer; for foreigners
@@ -6234,6 +6257,7 @@ VALUEID 170002 6 1 4
         assert_eq!(host.entry_look(archer, 0).unwrap().alpha, 1.0);
     }
 
+    // QUIRK K-13, D-235: deviation
     #[test]
     fn the_alarm_post_shows_the_tree_to_foreigners() {
         // re/masking 7, D-235: viewers with `View[owner] & (1 << viewer)` see
@@ -6305,6 +6329,7 @@ VALUEID 170002 6 1 4
         (look.bits, look.alpha)
     }
 
+    // QUIRK D-263: kept
     #[test]
     fn stealthed_foreigner_is_drawn_only_while_moving() {
         // re/world-display W.2.1, D-263 (`ObjectRenderer_Draw` `0x0054A3E1`): for a viewer
@@ -6338,6 +6363,7 @@ VALUEID 170002 6 1 4
         assert_eq!(checksum(&host.state), sum, "rendering changes nothing");
     }
 
+    // QUIRK D-267: kept
     #[test]
     fn owner_sees_half_alpha_with_shadow() {
         // re/masking 7, re/world-display W.2.2: module 25 sets alpha 0.5 in `0x319` (`0x0051D740`), the
@@ -6361,6 +6387,7 @@ VALUEID 170002 6 1 4
         }
     }
 
+    // QUIRK D-267: kept
     #[test]
     fn buried_assassin_is_opaque_for_the_owner_and_hidden_for_foreigners() {
         // re/world-display W.2.2, D-267: `0x11C` (`0x004FFA00`) sets `MASKED | WAITING4KILLING`,
@@ -6415,6 +6442,7 @@ VALUEID 170002 6 1 4
         assert!(draws_own_effects(cleared.0, dug_in));
     }
 
+    // QUIRK D-267: kept
     #[test]
     fn mounted_carried_or_dead_stealthed_units_draw_no_ghost() {
         // No silhouette bit `0x80` beyond the original: mounting sends `0x619` (`DoMount`, re/riding 2.4)
@@ -6548,6 +6576,7 @@ VALUEID 170002 6 1 4
     /// without a cheat); the replay toggles it likewise, but from the current value (it applies until the program
     /// ends, no restart per match as with the fog switch). The only test that changes the process-wide switch; it
     /// restores it at the end.
+    // QUIRK O-392: kept
     #[test]
     fn bloodmode_toggles_the_program_blood_switch() {
         use crate::game::blood;
@@ -6763,6 +6792,7 @@ VALUEID 60002 6 1 5888
     /// In replay mode `step_once` takes the commands of the file at their tick (before the tick, like
     /// `Replay::play`), then the accepted ones from `pending`; checksum and log equal the recorded match. The host
     /// discards own commands, only the giving up of the view slot goes through.
+    // QUIRK E-331: kept
     #[test]
     fn playback_feeds_commands_before_their_step() {
         let commands = recorded_commands();
@@ -6842,6 +6872,7 @@ VALUEID 60002 6 1 5888
 
     /// E-331: at the end of the file the replay switches itself off silently - exactly one log entry, the
     /// match continues to compute, the locks stay.
+    // QUIRK E-331: kept
     #[test]
     fn playback_end_is_logged_once() {
         let mut host = host();

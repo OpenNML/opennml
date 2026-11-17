@@ -185,6 +185,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK O-160: kept
     #[test]
     fn win_unlocks_next_and_sets_new_flag() {
         let t = table();
@@ -201,6 +202,7 @@ mod tests {
         assert_eq!(current_entry(&p, &t).unwrap().path, "l2");
     }
 
+    // QUIRK O-159: kept
     #[test]
     fn win_skips_headline() {
         let t = table();
@@ -215,6 +217,7 @@ mod tests {
         assert!(auto_continue(&p, &t, true));
     }
 
+    // QUIRK O-204: kept
     #[test]
     fn loss_counts_trials() {
         let t = table();
@@ -240,6 +243,7 @@ mod tests {
         assert_eq!(rec(&p, 0, 1), [(1, false), (1, false)]);
     }
 
+    // QUIRK O-159: kept
     #[test]
     fn replay_moves_on_without_headline_jump() {
         // O-159: The following entry (here headline 3) is already unlocked: entry + 1, flag 0, no jump.
@@ -258,6 +262,7 @@ mod tests {
         assert_eq!(rec(&p, 0, 4).len(), 1);
     }
 
+    // QUIRK O-47: kept
     #[test]
     fn last_entry_moves_to_next_campaign_without_unlock() {
         let t = table();
@@ -280,6 +285,7 @@ mod tests {
         assert_eq!(rec(&p, 0, 6), [(1, true)]);
     }
 
+    // QUIRK O-47: kept
     #[test]
     fn campaign_3_end_stays() {
         let t = table();
@@ -295,6 +301,7 @@ mod tests {
         assert!(!auto_continue(&p, &t, true));
     }
 
+    // QUIRK O-47: kept
     #[test]
     fn stop_blocks_auto_continue_only_on_new_entries() {
         // O-47: `STOP` of the entry that would come next, and only for a newly unlocked entry.
@@ -345,6 +352,8 @@ mod tests {
         assert_eq!(p, before);
     }
 
+    // QUIRK O-204: kept
+    // QUIRK O-203, O-205: deviation
     #[test]
     fn booking_edges_follow_the_original() {
         let t = table();

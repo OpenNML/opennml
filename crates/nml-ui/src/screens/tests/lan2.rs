@@ -114,6 +114,7 @@ impl Logic {
 /// The columns of the status rule `READY`, `RACE`, `TEAM`, `HANDICAP`, `COLOR` and `NAME`.
 const COLUMNS: [&str; 6] = ["ready", "race", "team", "handicap", "color", "name"];
 
+// QUIRK E-302: kept
 #[test]
 fn status_rule_like_the_original() {
     // L.3.1: rows human (host), human (client), computer Normal, open; rows 4 ... 7 are missing. For each view and row,
@@ -298,6 +299,7 @@ fn client_writes_only_his_row() {
     assert_eq!(l.query(LAN2, "ready6", code::QUERY_VALUE), (1, Some(-1)));
 }
 
+// QUIRK E-302: kept
 #[test]
 fn host_sets_computer_ready_and_kicks() {
     let mut l = Logic::lobby(&[HUMAN, HUMAN, 2, 0], 0);
@@ -366,6 +368,7 @@ fn host_sets_computer_ready_and_kicks() {
     ));
 }
 
+// QUIRK E-302: kept
 #[test]
 fn start_visible_only_when_ready() {
     // L.3.4: host and every row with kind != 0 ready, at least two such rows, and the map name not empty.
@@ -412,6 +415,7 @@ fn start_visible_only_when_ready() {
     assert_eq!(c.lobby_status("start"), Some(HIDE));
 }
 
+// QUIRK E-285: kept
 #[test]
 fn exit_goes_to_the_main_menu() {
     // E-285 (`0x004D49EE`...`0x004D4A44`): lobby closed, `{9}`, `{5,"start"}` - always to the main menu, never to
@@ -460,6 +464,7 @@ fn changegame_visible_only_for_the_host() {
     assert_eq!(host.lobby_status("changegame"), Some(HIDE));
 }
 
+// QUIRK E-310: deviation
 #[test]
 fn changegame_closes_the_lobby_and_opens_lan31() {
     // re/multiplayer-menus L.16 no. 1: code 8 checks nothing (even without clients and with all ready checkmarks):
@@ -482,6 +487,7 @@ fn changegame_closes_the_lobby_and_opens_lan31() {
     }
 }
 
+// QUIRK E-286: kept
 #[test]
 fn chat_input_drops_brackets_and_caps_79() {
     // re/multiplayer-menus L.4: `INPUT` shares the buffer `App+0x1418` (`size 0x50` = 79 characters, `inputbuffer 1`);
@@ -563,6 +569,7 @@ fn chat_input_drops_brackets_and_caps_79() {
     assert_eq!(d.app.menu().open_names(), [CHAT], "the frame stays open");
 }
 
+// QUIRK E-286: kept
 #[test]
 fn chat_shows_five_lines_newest_last() {
     // `FUN_004B9A80`: five lines, the oldest on top, the newest at the bottom; missing ones on top as " [CR]".
@@ -602,6 +609,7 @@ fn chat_shows_five_lines_newest_last() {
     assert_eq!(shared.get(), format!("{}{}", " [CR]".repeat(4), line(9)));
 }
 
+// QUIRK E-310: deviation
 #[test]
 fn chat_line_format() {
     // `FUN_004B9A80`: name red, text in the base color; text cut to 79 characters at the receiver (`FUN_004B9BD0`).

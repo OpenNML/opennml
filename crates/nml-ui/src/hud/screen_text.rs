@@ -429,6 +429,7 @@ mod tests {
     /// O-373: kind 2 stands left-aligned at (0, H/2) with shadow (shadow at (x, y + 2) in `color & 0xFF000000`, text
     /// at (x + 2, y)) and fades out linearly over the whole duration: initial tick alpha 255, after 1000 of 2000 ms
     /// `ftol(255 - 1000 * 255/2000)` = 127, gone from 2000 ms.
+    // QUIRK O-373: kept
     #[test]
     fn screen_text_art_2_at_half_height_fades_linearly() {
         let mut texts = ScreenTexts::new();
@@ -458,6 +459,7 @@ mod tests {
     /// O-373: a new text of the same kind (!= 0) is rejected as long as the old one does not carry the flag "half";
     /// only the tick sets that, at `elapsed >= ms / 2`. After that the new one replaces the old one at the same list
     /// position. Kind 0 always appends; other kinds do not affect each other.
+    // QUIRK O-373: kept
     #[test]
     fn newer_screen_text_dropped_while_old_under_half_time() {
         let mut texts = ScreenTexts::new();
@@ -488,6 +490,7 @@ mod tests {
 
     /// `FUN_00492A40`: kind 0 at (0, 32) left-aligned, kind 1 centered on the full width at y = H - 200; the color
     /// keeps only its RGB bits. `ms <= 0` ends in the first tick.
+    // QUIRK O-373: kept
     #[test]
     fn screen_text_kinds_0_and_1_positions() {
         let mut texts = ScreenTexts::new();
@@ -520,6 +523,7 @@ mod tests {
     /// Test vector: two chat lines 100 ms apart. The second waits until the timer of the first (8000/6 = 1333 ms)
     /// frees the kind, and then starts at (20, H - 200); the first has meanwhile risen 1333 * 1500/65536 ~ 30 px.
     /// Alpha `1024 - t * 1280/8000`: 255 at 4800 ms, 0 from 6400 ms; gone at 8000 ms.
+    // QUIRK O-389: kept
     #[test]
     fn chat_lines_wait_rise_and_fade_d5b() {
         let mut texts = ScreenTexts::new();
@@ -577,6 +581,7 @@ mod tests {
     /// If a chat line arrives when none is younger than 1333 ms, it stands immediately. An entry that has moved up is
     /// ticked in the same tick if the trigger was not the last of the list (the list reads the successor before the
     /// tick), and can itself free the next one; the chat does not touch screen texts of other kinds.
+    // QUIRK O-389: kept
     #[test]
     fn chat_line_after_the_timer_starts_at_once_and_other_kinds_stay() {
         let mut texts = ScreenTexts::new();
@@ -625,6 +630,7 @@ mod tests {
 
     /// Tags in the chat text take effect when drawing (`FUN_00492F20` -> `FUN_00560FF0`): `[COLOR ...]` recolors the
     /// rest, the tag itself does not appear.
+    // QUIRK O-389: kept
     #[test]
     fn chat_line_draws_tags() {
         let mut texts = ScreenTexts::new();

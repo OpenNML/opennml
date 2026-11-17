@@ -81,6 +81,7 @@ mod tests {
 
     /// `FUN_004BFCC0`: flush bottom right at (W - width, H - height), color `0xC8FFFFFF`, one quad per character
     /// without a shadow, in fixed pixels (the position follows the screen size, the font does not).
+    // QUIRK O-440: kept
     #[test]
     fn version_line_sits_flush_in_the_bottom_right_corner() {
         // Width 4 * 9 = 36, height 17.

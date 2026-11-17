@@ -318,6 +318,7 @@ mod tests {
         assert_eq!(timers(&sim, new), 0);
     }
 
+    // QUIRK C-221: kept
     #[test]
     fn enemy_radius_upgrades_skip_the_type_check() {
         // re/temp-upgrades 9 V7, C-221: 4459 (ENEMYUPGRADE) hits enemy colonists and buildings in the radius without

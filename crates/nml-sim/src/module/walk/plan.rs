@@ -597,6 +597,7 @@ mod tests {
     use crate::group::testkit::{INFANTRY, mv, rules, spawn, state, tile_center};
     use crate::group::{NO_GROUP, find};
 
+    // QUIRK K-253: deviation
     #[test]
     fn retrying_out_of_the_formation_chase_heads_for_the_anchor_and_leaves_the_group() {
         // re/groups-formations 12.4: `restore_state == 0xB` without a goal -> HighPath = group anchor, leave,
@@ -622,6 +623,7 @@ mod tests {
         assert_eq!(w.restore_state, 2);
     }
 
+    // QUIRK K-253: deviation
     #[test]
     fn retrying_out_of_the_chase_without_a_group_keeps_the_path() {
         // K-253 (A7): the original crashes without a group; here only `restore_state = 2`.

@@ -263,6 +263,7 @@ mod tests {
 
     const TYPES: &str = "GUID 4201\nNAME Fahne\nVALUEID 100 6 1 0\nPROPID 5\nVALUEID 60001 6 1 1\nVALUEID 60002 6 1 256\nGUID 4300\nNAME Spieler_Fahne\nVALUEID 100 6 1 1024\nPROPID 5\nVALUEID 60001 6 1 1\nVALUEID 60002 6 1 5888\n";
 
+    // QUIRK W-157: kept
     #[test]
     fn natur_animates_later_and_flags_count_with_a_fixed_timer() {
         let rules = Rules::synthetic(TYPES, 16);
@@ -374,6 +375,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK D-292: kept
     #[test]
     fn neutral_flag_takes_the_nearest_walker() {
         // 3.99 tiles = 510 world units (16,320 in 1/4096) lie within the radius 16,384.
@@ -417,6 +419,7 @@ mod tests {
         assert_eq!(sim.state.flag_counts, [0, 1, 0, 0, 0, 0, 0, 0, 0]);
     }
 
+    // QUIRK D-292: kept
     #[test]
     fn quartered_or_dead_units_do_not_hold() {
         for bit in [status::QUARTERED, status::DIED] {
@@ -455,6 +458,7 @@ mod tests {
         assert!(sim.state.countdowns[&crate::flags::LEADER_COUNTDOWN] > 5000);
     }
 
+    // QUIRK D-292: kept
     #[test]
     fn allies_take_flags_from_each_other() {
         // D-292: diplomacy does not count.
@@ -469,6 +473,7 @@ mod tests {
         assert_eq!(sim.state.flag_counts, [0, 0, 1, 0, 0, 0, 0, 0, 0]);
     }
 
+    // QUIRK D-292: kept
     #[test]
     fn buildings_do_not_take_flags() {
         let (rules, mut state) = world();
@@ -480,6 +485,7 @@ mod tests {
         assert_eq!(sim.state.flag_counts[8], 1);
     }
 
+    // QUIRK D-292: kept
     #[test]
     fn ships_take_flags_too() {
         // D-292: every object with a walk module, ships too (walk flag NOTHUMAN).
@@ -489,6 +495,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-160, D-294: kept
     #[test]
     fn animal_takes_a_flag_with_message_228_for_everyone() {
         // D-294: color 8, the counter of slot 8 stays (-1 +1), every slot gets 228.
@@ -507,6 +514,7 @@ mod tests {
         assert_eq!(messages(&sim), expected);
     }
 
+    // QUIRK D-294: kept
     #[test]
     fn messages_go_to_every_slot() {
         // 228 to the captor, 220 + p to the others, location the tile of the flag, flag QUEUE.
@@ -531,6 +539,7 @@ mod tests {
         assert_eq!(messages(&sim), expected);
     }
 
+    // QUIRK D-299: kept
     #[test]
     fn white_counter_may_go_negative() {
         // D-299: slot 5 is white (color 8). An animal takes the neutral flag
@@ -552,6 +561,7 @@ mod tests {
         assert_eq!(sim.state.flag_leader, 2);
     }
 
+    // QUIRK D-300: kept
     #[test]
     fn empty_lower_slot_owns_a_borrowed_colour() {
         // D-300: slot 3 carries the color 1 of the unoccupied slot 1. Its unit in the surroundings

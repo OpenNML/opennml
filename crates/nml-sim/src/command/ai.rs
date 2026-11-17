@@ -393,6 +393,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         );
     }
 
+    // QUIRK E-106: deviation
     #[test]
     fn die_kills_own_units_and_rejects_foreign_quartered_and_dead() {
         let rules = rules();
@@ -495,6 +496,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         );
     }
 
+    // QUIRK E-104: kept
     #[test]
     fn occupancy_border_shrinks_the_rectangle() {
         let rules = rules();
@@ -585,6 +587,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         );
     }
 
+    // QUIRK E-104: kept
     #[test]
     fn occupancy_border_keeps_the_rectangle_inside_the_map() {
         let rules = rules();
@@ -622,6 +625,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         assert_eq!(before, checksum(sim.state));
     }
 
+    // QUIRK E-101: kept
     #[test]
     fn ai_attack_mode_reaches_every_object_of_the_slot() {
         let rules = rules();
@@ -696,6 +700,8 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         assert_eq!(attack_fields(&sim, other), (2, 3, 1));
     }
 
+    // QUIRK E-100: kept
+    // QUIRK E-99: deviation
     #[test]
     fn ai_behavior_differs_from_set_behavior() {
         let rules = rules();
@@ -758,6 +764,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         assert_eq!(sim.state.combat.behavior_mode[1], 3);
     }
 
+    // QUIRK E-102: kept
     #[test]
     fn ai_walk_flags_set_follow_home_tether_abort() {
         let rules = rules();
@@ -841,6 +848,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
     /// The limit `MAX_AI_TETHER` keeps `dist ± tether` in `module/walk/seek.rs` within `i32`: `dist` comes
     /// from `Fixed_Hypot`, and its result stays below `MAX_SEEK_DISTANCE` for all inputs
     /// (`fixed_div(hi, 0x1000)` lies in `[−2²¹, 2²¹]` because of the wrap).
+    // QUIRK E-102: kept
     #[test]
     fn max_ai_tether_keeps_the_seek_arithmetic_in_range() {
         use crate::module::walk::MAX_SEEK_DISTANCE;
@@ -907,6 +915,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         assert!(MAX_AI_TETHER.checked_add(MAX_SEEK_DISTANCE).is_some());
     }
 
+    // QUIRK E-101, E-103: kept
     #[test]
     fn ai_object_commands_reach_only_their_object() {
         let rules = rules();
@@ -996,6 +1005,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         assert_rejected_with(go(&mut sim, 0, flag_kind(human, 0)), "human");
     }
 
+    // QUIRK E-105: kept
     #[test]
     fn add_resource_credits_without_limit() {
         let rules = rules();
@@ -1042,6 +1052,7 @@ PROPID 17\nVALUEID 180001 6 1 256\nVALUEID 180002 6 1 0\n";
         assert_eq!(before, checksum(sim.state));
     }
 
+    // QUIRK E-227: deviation
     #[test]
     fn debug_destroy_kills_own_units_and_destroys_own_buildings() {
         use crate::module::building::destroy::destroy;

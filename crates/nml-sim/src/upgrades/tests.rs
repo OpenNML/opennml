@@ -508,6 +508,7 @@ fn assert_loads(state: &SimState, rules: &Rules) {
         .expect("savegame valid");
 }
 
+// QUIRK K-300: kept
 #[test]
 fn an_upgrade_during_dying_leaves_the_colonist_corpse_standing() {
     // K-300 ticked: a colonist (modules with the variants 6/7, also dying 16) dies (HP 0 -> `0x110` in

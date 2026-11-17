@@ -344,6 +344,7 @@ mod tests {
         assert_eq!(offset_dock_pos_by_radius(&lot(0), 0), (10_000, 20_000));
     }
 
+    // QUIRK W-99: kept
     #[test]
     fn registering_overwrites_foreign_claims_and_unregistering_frees_only_the_first() {
         let mut b = Building {
@@ -401,6 +402,7 @@ mod tests {
         (r, m.args)
     }
 
+    // QUIRK W-99: kept
     #[test]
     fn the_nearest_free_dock_wins_ties_by_index_and_releases_the_own_claim() {
         let rules = rules();

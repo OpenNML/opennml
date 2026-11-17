@@ -13,6 +13,7 @@ fn prefix_of(text: &str) -> Option<char> {
         .and_then(|(_, rest)| rest.chars().next())
 }
 
+// QUIRK E-119: kept
 #[test]
 fn abl_corpus_matches_the_analysis() {
     let Some(dir) = corpus_game_dir() else {
@@ -132,6 +133,7 @@ fn abl_corpus_matches_the_analysis() {
 
 /// All scripts pass the load check; dialog script = no `.lvl` of the same name next to the file. The
 /// shipped-data counts per number (run-time view) match the analysis.
+// QUIRK E-127: deviation
 #[test]
 fn abl_corpus_passes_the_load_check() {
     let Some(dir) = corpus_game_dir() else {

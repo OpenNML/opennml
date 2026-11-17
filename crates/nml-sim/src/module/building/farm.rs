@@ -129,6 +129,7 @@ mod tests {
         send_mut(sim, id, &mut Message::new(code, args))
     }
 
+    // QUIRK W-52: kept
     #[test]
     fn slots_go_round_robin_and_stay_until_released() {
         let rules = Rules::synthetic(TYPES, 32);

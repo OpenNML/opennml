@@ -302,6 +302,7 @@ mod tests {
         parse_text_file(&utf16(text)).unwrap()
     }
 
+    // QUIRK O-83: kept
     #[test]
     fn text_file_follows_the_original() {
         // Without BOM: abort.
@@ -330,6 +331,7 @@ mod tests {
         assert_eq!(table("1=a\\nb")[&1], "a\\nb");
     }
 
+    // QUIRK O-83: kept
     #[test]
     fn a_line_without_a_number_overwrites_the_previous_one() {
         // O-83: `swscanf` fails, the number of the previous line applies.
@@ -341,6 +343,7 @@ mod tests {
         assert_eq!(table("1=a\r\n1=b")[&1], "b");
     }
 
+    // QUIRK O-83: kept
     #[test]
     fn long_lines_are_split_after_4096_characters() {
         let long = "9=".to_string() + &"a".repeat(5000);
@@ -365,6 +368,7 @@ mod tests {
         assert_eq!(parse_text_file(&bytes).unwrap()[&1], "ab");
     }
 
+    // QUIRK O-64: kept
     #[test]
     fn localisation_follows_the_reader() {
         let text = "# Comment\r\nTextDatei data\\txt\\a.deu\r\nTextDatei data\\txt\\b.deu\r\n\
@@ -412,6 +416,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-85: kept
     #[test]
     fn relative_bit_stays_until_font_resets_it() {
         // O-85: `FontSize` and `RelativeFontSize` write the same field, only `RelativeFontSize` sets
@@ -436,6 +441,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-85: kept
     #[test]
     fn keys_are_prefixes_with_case_and_column_zero() {
         let l = parse_localisation(
@@ -452,6 +458,7 @@ mod tests {
         assert_eq!(l.text_files, [" data\\x"]);
     }
 
+    // QUIRK O-85: kept
     #[test]
     fn weight_needs_its_space_and_long_face_names_fall_back_to_arial() {
         let l = parse_localisation("Font A\nWeight5 6\nWeight 7\nFontName X\n");

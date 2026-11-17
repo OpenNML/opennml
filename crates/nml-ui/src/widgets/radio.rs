@@ -93,6 +93,7 @@ mod tests {
     use super::*;
     use crate::widgets::testkit::{Harness, center};
 
+    // QUIRK O-16, O-17: kept
     #[test]
     fn radio_toggles_and_reports_without_group_logic() {
         // O-17: two RadioButtons, A checked. A click on B checks B and leaves A alone; no sound.

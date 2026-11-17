@@ -181,6 +181,7 @@ mod tests {
         assert!(ogg_info(&page(7, 0, 2, b"\x03vorbis")).is_err());
     }
 
+    // QUIRK E-171: kept
     #[test]
     fn fmod_length_vectors() {
         let info = |channels, rate, pcm_total| OggInfo {

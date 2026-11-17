@@ -146,6 +146,7 @@ fn init_reads_the_rob_animations() {
     }
 }
 
+// QUIRK C-321: kept
 #[test]
 fn robbing_loops_until_the_last_corpse() {
     // re/headhunter-robbing 9.3, C-321: every corpse with `CANROBBED`, without list filter - the
@@ -179,6 +180,7 @@ fn robbing_loops_until_the_last_corpse() {
     assert_eq!(gold(&sim), 1075);
 }
 
+// QUIRK C-325: kept
 #[test]
 fn an_emptied_corpse_yields_nothing() {
     // C-325: arrival does not check `CANROBBED`. A second robber (Sanders, next to the corpse)
@@ -239,6 +241,7 @@ fn an_emptied_corpse_yields_nothing() {
     assert_eq!(rob_timer(&sim, first), None);
 }
 
+// QUIRK C-322: kept
 #[test]
 fn an_unreachable_corpse_ends_the_loop() {
     // C-322: the walk failure is forced via `Walk.can_move = false` - test hook instead of
@@ -280,6 +283,7 @@ fn an_unreachable_corpse_ends_the_loop() {
     assert_eq!(heading_for(&sim, u), Some(c1));
 }
 
+// QUIRK C-321: kept
 #[test]
 fn robbing_stays_in_its_region() {
     // C-321: with a layer, robbing searches only in the own region (inner area of
@@ -305,6 +309,7 @@ fn robbing_stays_in_its_region() {
     assert_eq!(gold(&sim), 1025);
 }
 
+// QUIRK K-322, C-320: kept
 #[test]
 fn robbing_leaves_the_attack_module_off() {
     // C-320, K-322: the natural end calls no `abort` - the attack module stays out of the tick list

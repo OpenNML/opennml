@@ -89,6 +89,7 @@ fn digest_bytes(map: &RandomMap) -> Vec<u8> {
 mod tests {
     use super::*;
 
+    // QUIRK E-82: kept
     #[test]
     fn level_island_flag_needs_the_exact_last_11_characters() {
         assert!(is_island_script(r"data\RandomMapScripts\Islands.rnd"));

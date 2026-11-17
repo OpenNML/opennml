@@ -782,6 +782,7 @@ mod tests {
         assert_eq!(root.rect, [0, 0, 1280, 1024]);
     }
 
+    // QUIRK O-87: kept
     #[test]
     fn modal_frames_hang_under_a_blocker_at_the_desktop() {
         let mut f = fixture();
@@ -822,6 +823,7 @@ mod tests {
         assert_eq!(tree.node(desktop).children, [tree.dialog_root(), blocker]);
     }
 
+    // QUIRK O-87: kept
     #[test]
     fn childless_modal_frame_is_not_modal() {
         // O-87: only the construction at the first child creates the ModalBlocker.
@@ -882,6 +884,7 @@ mod tests {
         assert_eq!(tree.node(ok).bkg_set, 0);
     }
 
+    // QUIRK O-90: kept
     #[test]
     fn prefix_removal_takes_neighbours() {
         // O-90: removing SOUNDOPTIONS also hits SOUNDOPTIONS2 and its elements.
@@ -922,6 +925,7 @@ mod tests {
         assert_eq!(tree.remove_names_with_prefix("SOUNDOPTIONS"), None);
     }
 
+    // QUIRK O-15: kept
     #[test]
     fn broadcast_ignores_visibility_and_stops_at_the_first_taker() {
         let mut f = fixture();

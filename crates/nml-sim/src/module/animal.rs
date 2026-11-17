@@ -377,6 +377,7 @@ mod tests {
         crate::module::walk::walk(sim, id).and_then(|w| w.find_to.clone())
     }
 
+    // QUIRK C-36, C-170: kept
     #[test]
     fn init_derives_the_flags_only_on_slot_8_and_posts_the_timers() {
         // re/animals 6.1.
@@ -410,6 +411,7 @@ mod tests {
         assert_eq!(send(&mut sim, w, &Message::new(0xA14, &[])), 0);
     }
 
+    // QUIRK C-171: kept
     #[test]
     fn roaming_draws_two_table_values_and_walks_around_home() {
         // re/animals 6.2: first draws 18467, 6334 -> 1 tile at -146 degrees -> (-3395, -2290).
@@ -528,6 +530,7 @@ mod tests {
         }
     }
 
+    // QUIRK C-174: kept
     #[test]
     fn workers_and_moving_goats_cause_no_flight_and_flight_ends_with_a_new_home() {
         let rules = rules();
@@ -560,6 +563,7 @@ mod tests {
         assert!(codes.contains(&0x614) && codes.contains(&0x714));
     }
 
+    // QUIRK C-171, C-173: kept
     #[test]
     fn fleeing_after_30_failures_sends_the_last_point() {
         // C-173: all 30 attempts lie outside the map (negative position) -> the last point goes out.
@@ -574,6 +578,7 @@ mod tests {
         assert!(m.arg(0) < 0, "flee point outside: {:?}", m.args);
     }
 
+    // QUIRK C-172: kept
     #[test]
     fn a_roam_without_a_valid_cell_sends_nothing_and_ends_the_chain() {
         // C-172: without a valid cell (all 30 attempts invalid) no order and no new 0x714.
@@ -601,6 +606,7 @@ mod tests {
         assert!(!codes.contains(&0x714), "chain dead");
     }
 
+    // QUIRK C-175: kept
     #[test]
     fn an_aggressive_wolf_attacks_a_settler_who_fights_back() {
         // re/animals 3.2: after 100 ms stance 4; target search only human player walkers; the unit retaliates (C-34,

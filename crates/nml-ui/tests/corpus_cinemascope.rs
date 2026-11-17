@@ -111,6 +111,7 @@ fn draw_all(
 
 /// The scenes draw with the data of the installation without missing images; the command lists are stable (drawn
 /// twice the same) and, on the German edition, equal to the measured checksums.
+// QUIRK O-351: kept
 #[test]
 fn cinemascope_draw_checksums_are_stable() {
     let Some(dir) = corpus_game_dir() else { return };

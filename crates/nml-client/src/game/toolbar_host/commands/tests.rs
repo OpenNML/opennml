@@ -119,6 +119,7 @@ fn enqueued(cmds: &[CommandKind], building: ObjectId) -> usize {
         .count()
 }
 
+// QUIRK O-224: kept
 #[test]
 fn double_click_make_orders_four_and_twelve_with_shift() {
     // O-224: double-click on MAKE gives 1 + 1 + 2 = 4 orders, with Shift 5 + 5 + 2 = 12; all to the head of the list.
@@ -152,6 +153,7 @@ fn double_click_make_orders_four_and_twelve_with_shift() {
     }
 }
 
+// QUIRK O-225: kept
 #[test]
 fn queue_double_click_cancels_three_with_the_same_index() {
     // O-225: a double-click on a waiting order gives three cancels with the same index (kind & 0xFF) and the GUID as
@@ -186,6 +188,7 @@ fn queue_double_click_cancels_three_with_the_same_index() {
     assert_eq!(pending(&host), vec![cancel; 3]);
 }
 
+// QUIRK K-88: kept
 #[test]
 fn head_only_commands_take_the_first_object() {
     // K-88: `0x0E` (MAKE) and `0x2D` (pack tent) go only to the head of the list, also with three objects; with an
@@ -231,6 +234,7 @@ fn head_only_commands_take_the_first_object() {
     assert_eq!(pending(&host), [CommandKind::PackTent { tent: tents[0] }]);
 }
 
+// QUIRK K-88, O-272: kept
 #[test]
 fn group_and_targets_only_matching_objects() {
     // O-272: if the BUTTONMSG hits a GROUP_AND list, the command takes only it (head or list), otherwise the whole
@@ -456,6 +460,7 @@ fn defense_point_moves_then_queues_mode_4() {
     assert!(pending(&host).is_empty());
 }
 
+// QUIRK O-237: kept
 #[test]
 fn target_decal_only_for_walk_targets() {
     // O-237: the target point decal only for 427, 448, 530 (ground, y = 0) and 529, 533 (object with height); not for
@@ -564,6 +569,7 @@ fn button_413_on_own_building_is_repair_not_attack() {
     );
 }
 
+// QUIRK K-88: kept
 #[test]
 fn same_command_as_sim_unit_bar() {
     // For every button of the unit bar with an unchanged form (not the gates 430/431, whose form K-88 corrects; not
@@ -640,6 +646,7 @@ fn same_command_as_sim_unit_bar() {
     assert!(with_commands.len() >= 12, "{with_commands:?}");
 }
 
+// QUIRK K-88: kept
 #[test]
 fn unquarter_all_goes_to_each_object() {
     // K-88: 416 sends one `0x15` per object of the list (`Toolbar_SubmitUnquarterAll`); the "Economy" window of the

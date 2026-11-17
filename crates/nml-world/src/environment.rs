@@ -322,6 +322,8 @@ mod tests {
     /// A random map (`randommap:<seed>`) matches no start table (D-363) - no start light, no weather, no
     /// start music; its scene does not set the fog
     /// (corpus test `random_rules_load_without_lvl` in `nml-randommap`).
+    // QUIRK D-26: kept
+    // QUIRK D-363: deviation
     #[test]
     fn random_map_has_no_start_environment() {
         for label in [
@@ -343,6 +345,7 @@ mod tests {
 
     /// The random map is free play (game type >= 0) - the nation music starts like on fixed
     /// multiplayer maps.
+    // QUIRK D-363: deviation
     #[test]
     fn random_map_is_multiplayer_mode() {
         for label in ["randommap:ZKA", "randommap:", "RandomMap:Ä b/c"] {

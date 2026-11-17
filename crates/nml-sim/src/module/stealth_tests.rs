@@ -501,6 +501,7 @@ fn expected_pilgrim_filter(i: usize) -> MessageFilter {
     }
 }
 
+// QUIRK K-53, K-79, C-241, C-242, C-245: kept
 #[test]
 fn the_stealth_scene_shows_every_state() {
     // Counter-check before the golden (all times are `step` calls, measured): 1402 camouflaged after 34

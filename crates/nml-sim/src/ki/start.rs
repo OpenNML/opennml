@@ -266,6 +266,7 @@ mod tests {
         state.ki.engines[slot].as_ref().expect("Engine")
     }
 
+    // QUIRK E-12, E-19, E-23: kept
     #[test]
     fn start_follows_the_original_loop() {
         let (_, state) = ai_match(0, ON);
@@ -302,6 +303,7 @@ mod tests {
         assert!(state.events.is_empty());
     }
 
+    // QUIRK E-23: kept
     #[test]
     fn king_of_the_hill_starts_with_level_five() {
         let (_, state) = ai_match(3, ON);
@@ -361,6 +363,8 @@ mod tests {
         );
     }
 
+    // QUIRK E-12, E-16: kept
+    // QUIRK E-21: deviation
     #[test]
     fn start_api_follows_n0_and_n1() {
         let (rules, mut state) = ai_match(0, ON);
@@ -398,6 +402,7 @@ mod tests {
         assert!(!sim.in_ki_step);
     }
 
+    // QUIRK E-221: kept
     #[test]
     fn delete_engine_removes_the_engine_and_later_starts_do_nothing() {
         let (rules, mut state) = ai_match(0, ON);
@@ -428,6 +433,7 @@ mod tests {
         assert_eq!(sim.state.ki, before);
     }
 
+    // QUIRK E-220: deviation
     #[test]
     fn set_global_writes_only_inside_the_list() {
         let (rules, mut state) = ai_match(0, ON);
@@ -453,6 +459,7 @@ mod tests {
         assert!(sim.state.ki.engines[2].is_none(), "creates no engine");
     }
 
+    // QUIRK E-221: kept
     #[test]
     fn ki_state_with_a_deleted_engine_loads() {
         // A savegame in which an occupied slot (lobby: AI in slot 1) no longer has an engine.

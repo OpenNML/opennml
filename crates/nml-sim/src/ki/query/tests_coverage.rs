@@ -58,6 +58,7 @@ fn every_world_builtin_is_a_query_or_a_command() {
     assert_eq!((queries.len(), commands.len()), (264, 98));
 }
 
+// QUIRK E-36: kept
 #[test]
 fn query_rows_match_the_e1a_signatures() {
     // Where a signature exists (corpus IDs), the handler normally has the same pops, push, output positions and pause;
@@ -307,6 +308,7 @@ fn builtin_args(id: u16, pops: u8, entries: &[i32], pairs: bool) -> Vec<Vec<i32>
     out
 }
 
+// QUIRK E-34: deviation
 #[test]
 fn hostile_arguments_never_panic() {
     // Handler runs through SimKiWorld: no panic, stack height and pause as in the table or the documented exception,
@@ -718,6 +720,7 @@ fn combined_args(id: u16, n: usize, objects: &[i32], values: &[i32]) -> Vec<Vec<
     out
 }
 
+// QUIRK E-34: deviation
 #[test]
 fn hostile_command_arguments_never_panic() {
     // Each of the 98 command IDs with the values from re/ki-queries 6.6 at every position, with the object IDs of the

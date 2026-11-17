@@ -98,6 +98,7 @@ fn run(rules: &Rules, mut on_step: impl FnMut(usize, &SimState)) -> (Vec<u64>, S
     (samples, state)
 }
 
+// QUIRK O-446: kept
 #[test]
 fn menu_level_runs_deterministically() {
     let Some(rules) = menu_level_rules() else {
@@ -115,6 +116,7 @@ fn menu_level_runs_deterministically() {
     assert_eq!(first, MENU_LEVEL_GOLDEN, "{first:#018x?}");
 }
 
+// QUIRK O-446: kept
 #[test]
 fn menu_level_turns_cinemascope_on_in_the_first_step() {
     let Some(rules) = menu_level_rules() else {
@@ -131,6 +133,7 @@ fn menu_level_turns_cinemascope_on_in_the_first_step() {
     assert!(off_at.is_empty(), "cinemascope off in ticks {off_at:?}");
 }
 
+// QUIRK O-446: kept
 #[test]
 fn menu_level_has_no_rule_result() {
     let Some(rules) = menu_level_rules() else {

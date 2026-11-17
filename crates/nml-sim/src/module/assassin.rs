@@ -506,6 +506,7 @@ mod tests {
         a
     }
 
+    // QUIRK K-308, W-167, C-234, C-239: kept
     #[test]
     fn a_dug_in_assassin_stabs_once_and_rests() {
         // re/masking 9 V6. Timers from `send` before tick N fall in N + floor(d/100) + 1, those from a handler in
@@ -589,6 +590,7 @@ mod tests {
         assert_eq!(st(&sim, a) & DUG, status::WAITING4KILLING);
     }
 
+    // QUIRK C-235: kept
     #[test]
     fn the_search_ignores_fog_and_buildings() {
         // C-235, re/masking 3.7: filter `0x414` (walk, enemy, not dead, not quartered) without `MM_CHECKFOG`; edge
@@ -645,6 +647,7 @@ mod tests {
         assert_eq!(hp(&sim, house), house_hp, "never the building");
     }
 
+    // QUIRK K-308: kept
     #[test]
     fn posted_orders_are_dropped_while_dug_in() {
         // re/masking 9 V7, K-308: mode 0 with `[0x21C, 0x110]` lets only dig-out and dying through.
@@ -715,6 +718,7 @@ mod tests {
         assert_ne!(sim.object(a).unwrap().tile, (20, 20));
     }
 
+    // QUIRK W-167, C-236: kept
     #[test]
     fn digging_out_during_the_stab_masks_again() {
         // C-236, re/masking 8 no. 13: `0x71C` camouflages the dug-out one as well (without `WAITING4KILLING`).
@@ -744,6 +748,7 @@ mod tests {
         assert_eq!(st(&sim, a) & DUG, status::MASKED, "stays camouflaged");
     }
 
+    // QUIRK K-308, C-237: kept
     #[test]
     fn two_search_chains_stab_twice() {
         // C-237, re/masking 8 no. 14: two `0x11C` posted before the filter, both run in the same tick (`m_IsDown` not
@@ -843,6 +848,7 @@ mod tests {
         assert_eq!(raw_hp_or_corpse(&sim, c2, tk::COLONIST), colonist_after(1));
     }
 
+    // QUIRK C-234: kept
     #[test]
     fn a_zombie_stabs_for_nothing() {
         // re/masking 9 V11, C-234: zombie (slot 8, enemy of all) with damage 0. Animation 5 has only marker 1 (33 ms):
@@ -873,6 +879,7 @@ mod tests {
         assert_eq!(st(&sim, c) & status::DIED, 0);
     }
 
+    // QUIRK C-238: kept
     #[test]
     fn death_keeps_the_dug_in_marks() {
         // C-238, re/masking 4 "Dying": `StartDying` clears only `MASKED`.
@@ -896,6 +903,7 @@ mod tests {
         );
     }
 
+    // QUIRK K-307: kept
     #[test]
     fn a_disabled_dig_in_variant_freezes_the_marks() {
         // K-307, dig-in part: module 28 off (variant loss, K-300) -> `WAITING4KILLING`, `MASKED` and the filter stay,

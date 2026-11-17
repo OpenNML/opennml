@@ -177,6 +177,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-194: kept
     #[test]
     fn checksum_changes_with_every_field() {
         let (assets, a, b) = assets();

@@ -64,6 +64,7 @@ mod tests {
 
     /// The choice of the three readers: set gives `blood.pef`, otherwise `no_blood.pef`; other effects (muzzle flash)
     /// stay.
+    // QUIRK O-392: kept
     #[test]
     fn blood_switch_picks_no_blood_only_for_blood() {
         assert_eq!(effect_path(BLOOD, true), BLOOD);
@@ -74,6 +75,7 @@ mod tests {
     }
 
     /// Corpus: both effects are in the archives, and all language files switch blood on (initial value).
+    // QUIRK O-392: kept
     #[test]
     fn corpus_has_both_blood_effects_and_blood_on() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {

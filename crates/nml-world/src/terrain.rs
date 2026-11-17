@@ -644,6 +644,7 @@ pub(crate) mod tests {
         );
     }
 
+    // QUIRK D-217: kept
     #[test]
     fn the_cursor_point_over_water_lies_on_the_water_surface() {
         let (mut terrain, _) = test_terrain(4, |_, _| 1); // flat at 0
@@ -664,6 +665,7 @@ pub(crate) mod tests {
         );
     }
 
+    // QUIRK D-217: kept
     #[test]
     fn the_cursor_point_outside_the_map_is_the_water_surface_only_for_downward_rays() {
         let (terrain, _) = test_terrain(4, |_, _| 1); // water level 0 = terrain height

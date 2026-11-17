@@ -75,6 +75,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-219: kept
     #[test]
     fn a_missionary_credits_2840_in_the_next_phase_0_step() {
         let rules = rules();

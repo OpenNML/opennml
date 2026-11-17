@@ -376,6 +376,7 @@ mod tests {
         ]
     }
 
+    // QUIRK D-238, C-309, C-310: kept
     #[test]
     fn hiring_follows_the_price_table() {
         // re/headhunter-robbing 9.1 (C-309): new 300, +50 per hire, refund to the predecessor.
@@ -448,6 +449,7 @@ mod tests {
         assert_eq!(gold(&sim), [0, 1000]);
     }
 
+    // QUIRK D-238: kept
     #[test]
     fn missing_gold_only_tells_the_payer() {
         // re/headhunter-robbing 3.1 `fail_message`: 10002 red, 4000 ms, only to the payer; otherwise nothing.
@@ -479,6 +481,7 @@ mod tests {
         assert_eq!(gold(&sim), [299, 1000]);
     }
 
+    // QUIRK C-311: kept
     #[test]
     fn a_failed_spawn_keeps_the_gold() {
         // C-311: without type 4100 `0x2D03` fails (-> 1); the price (config 12 from
@@ -497,6 +500,7 @@ mod tests {
         assert!(announcements(&ev).is_empty(), "{ev:?}");
     }
 
+    // QUIRK C-309: kept
     #[test]
     fn a_takeover_by_the_same_player_costs_fifty() {
         // re/headhunter-robbing 8 no. 1, 3.2: even the same customer gets his price back, a change of
@@ -513,6 +517,7 @@ mod tests {
         assert_eq!(terms(&sim, hh), (0, 350, 400, 1, 2615));
     }
 
+    // QUIRK C-339: kept
     #[test]
     fn two_hires_in_one_tick_pay_the_old_price() {
         // C-339: `0x122` waits in the FIFO until the object tick of the headhunter; the second hire in
@@ -599,6 +604,7 @@ mod tests {
         assert!(d(o.grid) < d(start), "walks to the rally point");
     }
 
+    // QUIRK C-338: kept
     #[test]
     fn hiring_a_dead_hunter_is_free() {
         // C-338: `FUN_00477100` also returns the dead headhunter; its module 34 is off, `0x222`
@@ -633,6 +639,7 @@ mod tests {
         assert_eq!(gold(&sim), [700, 1000]);
     }
 
+    // QUIRK E-164: kept
     #[test]
     fn script_button_lock_removes_the_colour_button_from_the_hire_menu() {
         // `FUN_0044A8C0` queries `Player_IsGuidDisabled`: the script lock 207 (global) hides the color
@@ -656,6 +663,7 @@ mod tests {
         assert_eq!(hire_players(&sim, B), [A]);
     }
 
+    // QUIRK D-239, C-228: kept
     #[test]
     fn hire_menus_follow_the_original() {
         // re/headhunter-robbing 9.4, C-228, D-239: target players only enemies that are still playing and whose
@@ -705,6 +713,8 @@ mod tests {
         assert_eq!(hire_targets(&sim, 0, B), Vec::<u32>::new());
     }
 
+    // QUIRK C-228: kept
+    // QUIRK K-316: deviation
     #[test]
     fn hire_commands_follow_the_menu() {
         // Deviates from K-316 (A8): the command checks like the command bar.

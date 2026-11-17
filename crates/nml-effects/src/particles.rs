@@ -725,6 +725,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-276: kept
     #[test]
     fn set_target_stretches_life_and_key_times() {
         let mut e = instance(desc(), 1.0);
@@ -749,6 +750,7 @@ mod tests {
         assert_eq!(p.curves.alphas.slopes[2], [-255.0]);
     }
 
+    // QUIRK D-276: kept
     #[test]
     fn zero_distance_counts_as_128() {
         let mut e = instance(desc(), 1.5);
@@ -775,6 +777,7 @@ mod tests {
         yaw: 0.4,
     };
 
+    // QUIRK D-276: kept
     #[test]
     fn particles_land_on_the_target_after_the_flight_time() {
         let mut emitter = ParticleEmitter::new(&light());
@@ -793,6 +796,7 @@ mod tests {
         assert!(emitter.particles().iter().all(|p| p.age <= 2.0));
     }
 
+    // QUIRK D-276: kept
     #[test]
     fn spread_lands_unrotated_around_the_target() {
         // `q * SPREAD` unrotated in the target term, the start position rotated.
@@ -816,6 +820,7 @@ mod tests {
         assert!((p.position - landing).length() < 0.01, "{:?}", p.position);
     }
 
+    // QUIRK D-276: kept
     #[test]
     fn target_mode_ignores_gravity_accel_attract_and_roty() {
         let plain = light();
@@ -879,6 +884,7 @@ mod tests {
         assert_eq!(free, spin(Some(Vec3::new(256.0, 0.0, 0.0))));
     }
 
+    // QUIRK D-95: kept
     #[test]
     fn spin_ignores_accel() {
         // The rotation takes the raw `dt` (`0x00595178`), not `dt * ACCEL`: same rotation with
@@ -913,6 +919,7 @@ mod tests {
         assert_eq!(flying, spin(2.0, target));
     }
 
+    // QUIRK D-276: kept
     #[test]
     fn started_particles_keep_their_target() {
         let d = ParticleDesc {

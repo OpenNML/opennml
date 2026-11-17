@@ -623,6 +623,7 @@ mod tests {
         panic!("not finished");
     }
 
+    // QUIRK W-69: kept
     #[test]
     fn construction_follows_the_step_table() {
         let rules = rules();
@@ -658,6 +659,7 @@ mod tests {
         assert_eq!(run(&mut sim, house, |_| 1, 300), (67, 66, (48, 47)));
     }
 
+    // QUIRK W-69: kept
     #[test]
     fn house_steps_match_the_reference_rows() {
         let rules = rules();
@@ -709,6 +711,7 @@ mod tests {
         assert_eq!(progress_scale(9000, 9000).to_bits(), 0x3DCC_CCCD);
     }
 
+    // QUIRK W-12: kept
     #[test]
     fn completion_books_counts_living_space_and_the_quarter() {
         let rules = rules();
@@ -764,6 +767,7 @@ mod tests {
         assert!(quarter_free(&sim));
     }
 
+    // QUIRK W-70: kept
     #[test]
     fn the_next_own_site_within_ten_tiles_is_handed_over() {
         let rules = rules();
@@ -789,6 +793,7 @@ mod tests {
         assert_eq!(build_tick(&mut sim, lone, 100).0, 0);
     }
 
+    // QUIRK W-13: kept
     #[test]
     fn repairs_cost_the_owner_wood_and_announce_once_when_poor() {
         let rules = rules();
@@ -831,6 +836,7 @@ mod tests {
         assert!(!building(&sim, house).unwrap().repair_msg_shown);
     }
 
+    // QUIRK W-78: kept
     #[test]
     fn an_animated_building_draws_exactly_one_table_random_on_completion() {
         let rules = rules();
@@ -852,6 +858,7 @@ mod tests {
         assert_eq!(sim.object(mill).unwrap().anim.wanted, expected);
     }
 
+    // QUIRK W-77: kept
     #[test]
     fn the_first_building_tick_takes_a_site_out_of_the_tile_map() {
         let rules = rules();
@@ -915,6 +922,7 @@ mod tests {
         assert_eq!(stamped(&sim), vec![site.as_i32(); 5]);
     }
 
+    // QUIRK W-80: kept
     #[test]
     fn damaged_buildings_burn_down_below_forty_or_ten_percent_in_campaigns() {
         let rules = rules();
@@ -1017,6 +1025,7 @@ mod tests {
         assert_eq!((m.master, m.slaves.len()), (a, 0));
     }
 
+    // QUIRK W-75: deviation
     #[test]
     fn a_link_whose_master_is_gone_answers_finished() {
         // Exception A7 (reachable only via a savegame; the original calls `SendMessage` on a null

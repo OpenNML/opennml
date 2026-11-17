@@ -164,6 +164,7 @@ mod tests {
         r
     }
 
+    // QUIRK W-16: kept
     #[test]
     fn masks_follow_upgrades_and_filters_and_switch_module_variants() {
         let rules = rules();

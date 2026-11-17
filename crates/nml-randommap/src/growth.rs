@@ -347,6 +347,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-335: deviation
     #[test]
     fn rough_border_wraps_inside_and_rejects_outside() {
         // Seed 18: row draws 97, 4582, 15113, 9592 -> `% 10` = 7, 2, 3, 2; with `x_min = −2`
@@ -404,6 +405,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-331: kept
     #[test]
     fn first_tile_is_set_without_checks() {
         let mut grid = Grid::new(4, 4);
@@ -423,6 +425,7 @@ mod tests {
         assert_eq!(rng.counts().preprocessor, 2);
     }
 
+    // QUIRK D-332: kept
     #[test]
     fn edge_entry_keeps_direction_and_tries() {
         let mut grid = Grid::new(3, 3);
@@ -459,6 +462,7 @@ mod tests {
         assert_eq!(&grid.id_grid[..], &[0, 5, 0, 0, 0, 0, 0, 5, 0]);
     }
 
+    // QUIRK D-332: kept
     #[test]
     fn failed_entry_falls_back_to_the_list_head() {
         let mut grid = Grid::new(5, 5);
@@ -541,6 +545,7 @@ mod tests {
         assert_eq!(rng.counts().preprocessor, 0);
     }
 
+    // QUIRK D-335, D-352: deviation
     #[test]
     fn avoid_ok_checks_the_square_around_the_tile() {
         let mut grid = Grid::new(5, 5);
@@ -576,6 +581,7 @@ mod tests {
         assert!(format!("{error:#}").contains("AvoidRoughness"), "{error:#}");
     }
 
+    // QUIRK D-331: kept
     #[test]
     fn start_outside_the_mask_is_an_error() {
         let mut grid = Grid::new(3, 3);
@@ -654,6 +660,7 @@ mod tests {
         assert_eq!(a.cursor, None);
     }
 
+    // QUIRK D-335: deviation
     #[test]
     fn clump_target_rejects_bad_divisors() {
         let grid = Grid::new(4, 4);

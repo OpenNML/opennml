@@ -200,6 +200,7 @@ mod tests {
     /// E-118 in `Fixed_Atan2Deg`: if the divisor becomes 0 (larger component congruent to 0...3 or to
     /// 2^22 - 3...2^22 - 1 modulo 2^22, or larger component 0 after `wrapping_abs`, i.e. `dx` or `dz = i32::MIN`
     /// against 0), the index becomes 4096 (for `lo != 0`) or 0, like the clamping of `lo / s` to 4096.
+    // QUIRK E-118: deviation
     #[test]
     fn atan2_deg_with_divisor_zero_does_not_divide_by_zero() {
         let t45 = ATAN_TABLE[4096];

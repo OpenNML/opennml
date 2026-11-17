@@ -391,6 +391,7 @@ mod tests {
         });
     }
 
+    // QUIRK O-20: kept
     #[test]
     fn editfield_takes_cp1252_and_drops_control_chars() {
         // The character 0xE4 (a-umlaut) is inserted, Tab (0x09) is not, and without a message.
@@ -423,6 +424,7 @@ mod tests {
         assert_eq!(h.codes("e"), [code::EDIT_KEY, code::EDIT_CHANGED]);
     }
 
+    // QUIRK O-94: kept
     #[test]
     fn editfield_cursor_advances_even_when_rejected() {
         // O-94: `size` 4 -> at most 3 characters. With the caret in the middle of the text it still advances on the
@@ -454,6 +456,7 @@ mod tests {
         assert_eq!(h.codes("e"), [code::EDIT_CHANGED]);
     }
 
+    // QUIRK O-20: kept
     #[test]
     fn editfield_length_is_size_minus_one_and_width_bound() {
         // O-20 (corrected): length `size - 1`, also for the text of the logic ...
@@ -474,6 +477,7 @@ mod tests {
         assert_eq!(text(&h), "abcdefghijklmnop");
     }
 
+    // QUIRK O-94: kept
     #[test]
     fn escape_goes_to_every_editfield() {
         // O-94: the ESC broadcast reaches every EditField in the tree (without a focus check) with code 0xB, key 27.
@@ -500,6 +504,7 @@ mod tests {
         assert_eq!(h.codes("e2"), [code::EDIT_KEY]);
     }
 
+    // QUIRK O-94: kept
     #[test]
     fn last_attached_editfield_has_focus() {
         let mut h = Harness::new();

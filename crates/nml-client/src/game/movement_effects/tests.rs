@@ -161,6 +161,7 @@ fn rings(fx: &Fake) -> usize {
     fx.effects.surf_ring_count()
 }
 
+// QUIRK D-268: kept
 #[test]
 fn counter_runs_every_second_tick_or_at_a_change() {
     let mut t = UnitTrack::default();
@@ -177,6 +178,7 @@ fn counter_runs_every_second_tick_or_at_a_change() {
     assert!(t.due(false), "halt at once");
 }
 
+// QUIRK D-268: kept
 #[test]
 fn footprint_kind_table() {
     let mut host = host();
@@ -219,6 +221,7 @@ fn footprint_kind_table() {
     );
 }
 
+// QUIRK D-268: kept
 #[test]
 fn marks_only_on_track_textures_and_on_land() {
     let mut host = host();
@@ -267,6 +270,7 @@ fn marks_only_on_track_textures_and_on_land() {
     assert_eq!(fx.footprints().len(), 6, "only the sand runner");
 }
 
+// QUIRK D-268: kept
 #[test]
 fn rider_leaves_none_and_horse_leaves_hooves() {
     let mut host = host();
@@ -288,6 +292,7 @@ fn rider_leaves_none_and_horse_leaves_hooves() {
     assert_eq!(m.track(rider).unwrap().footprint_kind(), None);
 }
 
+// QUIRK D-269: kept
 #[test]
 fn stealthed_unit_leaves_marks() {
     // D-269: no stealth check.
@@ -322,6 +327,7 @@ fn siege_crew_bit_blocks_footprints_only() {
     assert_eq!(rings(&fx), 1);
 }
 
+// QUIRK D-273: deviation
 #[test]
 fn wading_unit_rings_and_sounds() {
     let mut host = host();
@@ -511,6 +517,7 @@ impl Wagon {
     }
 }
 
+// QUIRK D-274: deviation
 #[test]
 fn wagon_dust_on_start_and_stop_and_treads_with_gaps() {
     let mut w = Wagon::new();
@@ -572,6 +579,7 @@ fn wagon_dust_on_start_and_stop_and_treads_with_gaps() {
     }
 }
 
+// QUIRK D-274: deviation
 #[test]
 fn trailer_releases_all_its_effects_on_stop() {
     let mut w = Wagon::new();
@@ -587,6 +595,7 @@ fn trailer_releases_all_its_effects_on_stop() {
     assert_eq!(w.fx.effects.counts().world, world_before + 3);
 }
 
+// QUIRK D-274: deviation
 #[test]
 fn dust_list_is_cleared_per_stop() {
     let mut w = Wagon::new();
@@ -606,6 +615,7 @@ fn dust_list_is_cleared_per_stop() {
     assert_eq!(w.owned(0), [false; 4]);
 }
 
+// QUIRK D-270: deviation
 #[test]
 fn quality_change_clears_marks_and_gates_new_ones() {
     let mut w = Wagon::new();
@@ -652,6 +662,7 @@ fn quality_change_clears_marks_and_gates_new_ones() {
     assert_eq!(w.fx.effects.tread_points(), 4);
 }
 
+// QUIRK D-268: kept
 #[test]
 fn mark_count_is_bounded_by_the_lifetime() {
     let mut host = host();
@@ -679,6 +690,7 @@ fn mark_count_is_bounded_by_the_lifetime() {
     }
 }
 
+// QUIRK D-270: deviation
 #[test]
 fn movement_effects_restart_after_load() {
     let mut host = host();
@@ -741,6 +753,7 @@ fn owner_change_keeps_the_track_and_vanished_objects_release_their_treads() {
     }
 }
 
+// QUIRK D-270: deviation
 #[test]
 fn movement_effects_leave_the_checksum_alone() {
     let run = |with_effects: bool| -> (Vec<u64>, usize) {
@@ -776,6 +789,7 @@ fn movement_effects_leave_the_checksum_alone() {
 /// Foot and wheel nodes rotate only around the yaw (`GameWorld_LocalOffsetToGridPos` `0x00479490` gets only
 /// `GO+0x1C0` from `0x0046D190`): an x/z tilt of the object lays the track exactly as without tilt; the yaw rotates
 /// it along.
+// QUIRK D-268: kept
 #[test]
 fn node_frame_ignores_tilt() {
     let mut plain = GameObject::new(ObjectId(1), 0);

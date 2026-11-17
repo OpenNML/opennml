@@ -508,6 +508,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-89: kept
     #[test]
     fn credits_roll_with_the_clock_and_switch_images() {
         // O-89: scrolling with the program clock, image change at the remembered height; duration max(120000,
@@ -572,6 +573,7 @@ mod tests {
         assert_eq!(roll(&h).speed, f64::from(total) / 120_000.0);
     }
 
+    // QUIRK O-105: kept
     #[test]
     fn credits_end_broadcasts_escape_once() {
         // O-105: `pos > end` -> broadcast 0x17E from the root (taken by the `OK` with CHECKESCAPE), then `end^2`.
@@ -594,6 +596,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-89: kept
     #[test]
     fn deleting_the_credits_label_fades_out_its_image() {
         // Destructor `FUN_004622A0`: with the credits bit broadcast `0x15F {2, 500, +0x168}` from the top root (the
@@ -688,6 +691,7 @@ mod tests {
         assert!(h.tree.node(bar).visible);
     }
 
+    // QUIRK O-93: kept
     #[test]
     fn wheel_falls_through_the_modal_blocker() {
         // O-93: under a modal dialog the wheel reaches the label with `AUTOHSCROLL`; its nameless scroll bar reports

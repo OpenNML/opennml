@@ -151,6 +151,7 @@ fn build_menus() -> Menus {
     )])
 }
 
+// QUIRK O-235: kept
 #[test]
 fn build_click_over_free_bar_area_places_at_the_last_world_point() {
     // O-235 corrected: no rectangle comparison; the click is placed at the world point of the last frame.
@@ -244,6 +245,7 @@ fn dragging_more_than_10_px_rotates_and_blocks_placing() {
     );
 }
 
+// QUIRK O-279: kept
 #[test]
 fn types_with_the_gate_bit_do_not_rotate() {
     // `+0x44 & 0x10000003` (the constructor clears the low byte): the client reports it as `rotatable`.
@@ -489,6 +491,7 @@ fn fort_cursor_sizes_the_ring_by_two_clicks_and_places_with_the_third() {
     assert_eq!(bar.cursor, None);
 }
 
+// QUIRK O-265: kept
 #[test]
 fn cursor_gets_button_clicks_first_after_a_silent_rebuild() {
     // O-265: `{0x10, 0}` recreates the buttons, they sit behind the cursor.

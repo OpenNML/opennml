@@ -283,6 +283,7 @@ mod tests {
     }
 
     /// `key` with `repeat` presses once and then sends `repeat` repeats (O-300); without `repeat` as before.
+    // QUIRK O-300: kept
     #[test]
     fn key_repeat_sends_extra_presses_marked_as_repeat() {
         let press = |repeat| InputEvent::Key {

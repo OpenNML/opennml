@@ -147,6 +147,7 @@ mod tests {
     }
 
     /// New line: the old one fades out over 2000 ms and stops, then `data/sprache/{text}.ogg` plays.
+    // QUIRK O-363: kept
     #[test]
     fn new_line_fades_the_old_one_over_2000_ms() {
         let (_dir, vfs) = world();
@@ -166,6 +167,7 @@ mod tests {
     }
 
     /// End of a line: if the channel is still playing, it fades out over 1000 ms; a second end does nothing.
+    // QUIRK O-363: kept
     #[test]
     fn line_end_fades_over_1000_ms() {
         let (_dir, vfs) = world();
@@ -194,6 +196,7 @@ mod tests {
 
     /// Missing OGG (in the shipped data `24021 .ogg` with a space, never found): silent, no line, no error; an end
     /// afterwards does nothing, a line before it fades out anyway.
+    // QUIRK E-141: deviation
     #[test]
     fn missing_ogg_is_silent() {
         let (_dir, vfs) = world();
@@ -238,6 +241,7 @@ mod tests {
     /// `n213` interrupts a line: `info_window` reports `InfoFrameClose{B}`, `InfoFrameClose{A}` (the running one),
     /// then `Speech{B}`. Closing does not touch the channel (`FUN_004401C0`); `Dialog_PlaySpeech`
     /// (`0x00436A50`) fades A out exactly once over 2000 ms.
+    // QUIRK E-240, O-363: kept
     #[test]
     fn interrupting_213_fades_the_old_line_once_over_2000_ms() {
         let (_dir, vfs) = world();
@@ -268,6 +272,7 @@ mod tests {
 
     /// `n169` on the window of a running 213 line closes only the window: the sound continues, and the real end of
     /// the line fades out later.
+    // QUIRK O-363: kept
     #[test]
     fn closing_the_window_of_a_running_line_keeps_the_sound() {
         let (_dir, vfs) = world();
@@ -283,6 +288,7 @@ mod tests {
     }
 
     /// Tip: `SFX_TEXT` 2D, flags `0x14`, category 1 (sound effects), without loop; a running line stays.
+    // QUIRK O-356: kept
     #[test]
     fn tip_plays_sfx_text_2d_category_1() {
         let (_dir, vfs) = world();
@@ -302,6 +308,7 @@ mod tests {
 
     /// A frame without presentation events (pause and game menu generate none, O-363) leaves the line untouched:
     /// no fade-out, no stop. The effect at session level is checked by `game_session::tests::paused_session_...`.
+    // QUIRK O-363: kept
     #[test]
     fn a_frame_without_events_leaves_the_line_alone() {
         let (_dir, vfs) = world();
@@ -318,6 +325,8 @@ mod tests {
     }
 
     /// Loading: `forget` forgets the line without sound (deviation from the original); an end afterwards does nothing.
+    // QUIRK O-363: kept
+    // QUIRK E-239: deviation
     #[test]
     fn loading_starts_no_speech() {
         let (_dir, vfs) = world();
@@ -331,6 +340,7 @@ mod tests {
     }
 
     /// Replacing the session fades out the running line over 1000 ms.
+    // QUIRK O-363: kept
     #[test]
     fn replacing_the_session_fades_the_running_line() {
         let (_dir, vfs) = world();

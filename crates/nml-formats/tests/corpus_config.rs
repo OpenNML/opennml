@@ -163,6 +163,7 @@ fn economy_control_files_parse_like_the_game() {
     }
 }
 
+// QUIRK O-115: kept
 #[test]
 fn mouse_pointer_seven_is_the_normal_pointer() {
     use nml_formats::gifcon::{MOUSE_POINTER_PATH, POINTER_NORMAL, parse_mouse_pointers};
@@ -204,6 +205,7 @@ fn gifcon_text(path: &str) -> Option<String> {
     ))
 }
 
+// QUIRK O-307: kept
 #[test]
 fn corpus_keys_ini_has_652_lines_and_the_known_commands() {
     use nml_formats::keys_ini::{KEYS_INI_PATH, parse_keys_ini};
@@ -233,6 +235,7 @@ fn corpus_keys_ini_has_652_lines_and_the_known_commands() {
     assert_eq!(lines.iter().filter(|l| l.selection != 0).count(), 446);
 }
 
+// QUIRK O-307: kept
 #[test]
 fn corpus_default_keys_have_no_edge_spaces() {
     use nml_formats::keys::{DEFAULT_KEYS_PATH, parse_default_keys};
@@ -252,6 +255,7 @@ fn corpus_default_keys_have_no_edge_spaces() {
     assert_eq!(keys.iter().filter(|(_, k)| k.is_empty()).count(), 10);
 }
 
+// QUIRK O-307: kept
 #[test]
 fn corpus_keys_ini_against_default_keys() {
     use nml_formats::keys::{DEFAULT_KEYS_PATH, parse_default_keys};
@@ -362,6 +366,7 @@ fn corpus_bindings2_has_36_bindings() {
     }
 }
 
+// QUIRK O-115: kept
 #[test]
 fn corpus_mouse_pointers_all_twelve() {
     use nml_formats::gifcon::{MOUSE_POINTER_PATH, parse_mouse_pointers};
@@ -422,6 +427,7 @@ fn game_ui_text(path: &str) -> Option<String> {
     ))
 }
 
+// QUIRK O-38: kept
 #[test]
 fn installation_statusbar_matches_the_documented_layout() {
     use nml_formats::statusbar::{STATUSBAR_PATH, StatusEntry, parse_statusbar};
@@ -570,6 +576,7 @@ fn installation_icons_ini_has_nation_portraits() {
     assert_eq!(c.guids.len(), 743);
 }
 
+// QUIRK O-48: kept
 #[test]
 fn installation_cinemascope_ini_matches_d6_1() {
     use nml_formats::cinemascope_ini::{CINEMASCOPE_INI_PATH, DialogArea, parse_cinemascope_ini};

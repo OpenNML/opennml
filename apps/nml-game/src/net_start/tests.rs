@@ -97,6 +97,7 @@ fn build_id_is_set() {
 
 /// On 4 slots with N 2 and K 1 -> human, human, AI, closed; network flag, seed and the values of the settings of the
 /// host.
+// QUIRK E-262: deviation
 #[test]
 fn host_setup_fills_humans_then_ai_then_closed() {
     let setup = host_setup(&rules(4), &settings(), 2, 1, 0xDEAD_BEEF, &names(2)).unwrap();
@@ -149,6 +150,7 @@ fn host_setup_rejects_too_many_players() {
 }
 
 /// `--host` without a value = `NetPort`, 0 = 2302, a value is used.
+// QUIRK E-254: deviation
 #[test]
 fn host_port_follows_net_port_and_2302() {
     assert_eq!(host_port(None, 0), 2302);
@@ -159,6 +161,7 @@ fn host_port_follows_net_port_and_2302() {
     assert_eq!(host_port(Some(4711), 23020), 4711);
 }
 
+// QUIRK E-254: deviation
 #[test]
 fn join_addr_defaults_to_the_game_port() {
     assert_eq!(
@@ -189,6 +192,7 @@ fn step(net: &MemNet, t: u64, launches: &mut [&mut NetLaunch]) {
 /// end, but with a log entry and a free main menu; `net_status` reports `ended` with the reason. Until then the join
 /// waits in the event loop (phase `connecting`, input locked). Played time over `MemTransport`: the test does not
 /// wait for real.
+// QUIRK E-288: deviation
 #[test]
 fn join_without_host_returns_to_the_main_menu() {
     assert_eq!(JOIN_TIMEOUT_MS, 10_000);
@@ -263,6 +267,7 @@ fn join_without_host_returns_to_the_main_menu() {
 /// set themselves ready after the first lobby state, and the host starts without a click via `start_from_lobby` as
 /// soon as all `N` humans are there and ready - not earlier. Slots in row order, raster of the host; a late machine
 /// finds no host any more and returns to the main menu.
+// QUIRK E-298: deviation
 #[test]
 fn cli_host_starts_when_full() {
     let dir = tempfile::tempdir().unwrap();
@@ -459,6 +464,7 @@ fn cli_host_abort_before_go_frees_the_input() {
 
 /// Slots in row order - host on the first active slot, clients afterwards; AI without a machine with the lobby name,
 /// closed ones empty. Each machine gets its slot, all the same package with seed and network flag.
+// QUIRK E-262: deviation
 #[test]
 fn start_infos_follow_join_order() {
     let plan = plan(4, 3, 1, TurnConfig::default());
@@ -509,6 +515,7 @@ fn start_infos_follow_join_order() {
 /// Run over TCP on loopback (`SystemTransport` with `loopback`): the host listens on a free port, the client connects
 /// in the event loop; as soon as it is there and ready, the host distributes the start. Both then have their start
 /// information and wait in `Loading` - no tick before `Go`.
+// QUIRK E-254, E-298: deviation
 #[test]
 fn launch_gathers_and_starts_over_tcp() {
     let dir = tempfile::tempdir().unwrap();

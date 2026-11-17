@@ -140,6 +140,7 @@ mod tests {
         assert_eq!(scan_i("0xFFFFFFFF"), Some(-1));
     }
 
+    // QUIRK D-351: kept
     #[test]
     fn integers_overflow_modulo_2_pow_32() {
         assert_eq!(scan_i("99999999999"), Some(1_215_752_191));
@@ -149,6 +150,7 @@ mod tests {
         assert_eq!(scan_d("-2147483648"), Some(i32::MIN));
     }
 
+    // QUIRK D-351: kept
     #[test]
     fn scan_d_is_decimal_only() {
         assert_eq!(scan_d("010"), Some(10));

@@ -126,6 +126,7 @@ fn announcements(n: &mut Lan) -> Vec<Announcement> {
 /// of its slot (`local_slot`), the others open; the announcement carries `MapId::Saved` with the checksum of the
 /// simulation part, map name = savegame name, number of players = number of rows, raster from `NetTurnRaster`; `LAN4`
 /// is open, `LAN3` and the lobby `LAN2` are not.
+// QUIRK E-327: deviation
 #[test]
 fn host_loads_a_net_save_into_lan4() {
     let Some(saves) = played_net_saves() else {
@@ -199,6 +200,7 @@ fn host_loads_a_net_save_into_lan4() {
 }
 
 /// An eliminated human slot (result != 0) gets no row (deviation from quirk E-327).
+// QUIRK E-327: deviation
 #[test]
 fn defeated_human_slots_get_no_row() {
     let Some(saves) = played_net_saves() else {
@@ -218,6 +220,7 @@ fn defeated_human_slots_get_no_row() {
 }
 
 /// A damaged savegame (checksum of the container) shows 99 106 via `LAN3` (deviation from quirk E-330).
+// QUIRK E-330: deviation
 #[test]
 fn damaged_save_shows_99106_and_reopens_lan3() {
     let Some(saves) = played_net_saves() else {
@@ -232,6 +235,7 @@ fn damaged_save_shows_99106_and_reopens_lan3() {
 }
 
 /// A single-player savegame (without network part and network flag) in the network folder shows 99 106.
+// QUIRK E-330: deviation
 #[test]
 fn single_player_save_is_refused_with_99106() {
     let Some(bytes) = changed_save(0, |f| {
@@ -247,6 +251,7 @@ fn single_player_save_is_refused_with_99106() {
 }
 
 /// If only one human is left in the game, the host does not host (message 99 107).
+// QUIRK E-330: deviation
 #[test]
 fn one_remaining_human_shows_99107() {
     let Some(saves) = played_net_saves() else {
@@ -265,6 +270,7 @@ fn one_remaining_human_shows_99107() {
 }
 
 /// If the host's own slot is eliminated, it does not host (message 99 108), even if two other humans still play.
+// QUIRK E-330: deviation
 #[test]
 fn own_slot_out_shows_99108() {
     let Some(saves) = played_net_saves() else {
@@ -281,6 +287,7 @@ fn own_slot_out_shows_99108() {
 /// re/multiplayer-saves S.2.2 step 2 (deviation from quirk E-330): Without a savegame the name buffer is empty,
 /// `{0x12}` opens `LAN3` again (with the page frame `loadsavednetworkgame`) instead of the original's dead end -
 /// without a message, no session, no port, no `LAN4`.
+// QUIRK E-330: deviation
 #[test]
 fn empty_name_reopens_lan3() {
     let Some(mut n) = loading_host(None) else {
@@ -416,6 +423,7 @@ impl Lan {
 /// Only whoever has the same network savegame sees the loaded session (Bert: his own file of the same match). Without
 /// a file (Cara), with a different state of the same name (Dora) or a single-player savegame of the same name (Emil)
 /// it stays silently hidden.
+// QUIRK E-275: deviation
 #[test]
 fn saved_session_is_listed_only_with_the_same_file() {
     let Some(saves) = played_net_saves() else {
@@ -462,6 +470,7 @@ fn saved_session_is_listed_only_with_the_same_file() {
 
 /// Bert and Carl join with their own files (deviation from quirks E-275, E-325); each is in the row of his slot
 /// ("Occupied" with his name), sees the host's state and has `LAN4` open (not `LAN2`).
+// QUIRK E-275, E-325: deviation
 #[test]
 fn client_joins_into_lan4_on_its_own_row() {
     let Some(saves) = played_net_saves() else {
@@ -498,6 +507,7 @@ fn client_joins_into_lan4_on_its_own_row() {
 
 /// Bert has a copy of the host's file (same slot): he sees the session, `JOIN` is rejected, he stays silently in
 /// `LAN1`; the host's rows stay.
+// QUIRK E-325: deviation
 #[test]
 fn client_with_the_hosts_slot_is_refused() {
     let Some(saves) = played_net_saves() else {
@@ -517,6 +527,7 @@ fn client_with_the_hosts_slot_is_refused() {
 
 /// Bert and Cara have copies of the same file (Bert's slot) and click `JOIN` at the same time; Bert (shorter
 /// connection) gets the row, Cara is rejected and stays silently in `LAN1`.
+// QUIRK E-325: deviation
 #[test]
 fn two_clients_with_the_same_slot_only_first_joins() {
     let Some(saves) = played_net_saves() else {
@@ -554,6 +565,7 @@ fn two_clients_with_the_same_slot_only_first_joins() {
 
 /// Bert's file changes after the list showed the session (new save under the same name); `JOIN` reports the new
 /// checksum, the host rejects (before the deadline), Bert stays silently in `LAN1`.
+// QUIRK E-275: deviation
 #[test]
 fn changed_file_after_listing_is_refused_by_the_host() {
     let Some(saves) = played_net_saves() else {
@@ -578,6 +590,7 @@ fn changed_file_after_listing_is_refused_by_the_host() {
 
 /// The cache follows length and modification time: Bert's file is overwritten with a different state of the same
 /// length -> the session disappears; the right file again -> it reappears.
+// QUIRK E-275: deviation
 #[test]
 fn listing_rereads_a_rewritten_file() {
     let Some(saves) = played_net_saves() else {
@@ -596,6 +609,7 @@ fn listing_rereads_a_rewritten_file() {
 
 /// Bert is rejected when joining a savegame (the host's slot); his next join to a new lobby (Cara, fixed map) carries
 /// no slot claim anymore and succeeds.
+// QUIRK E-275: deviation
 #[test]
 fn join_after_a_saved_session_sends_no_claim() {
     let Some(saves) = played_net_saves() else {
@@ -687,6 +701,7 @@ fn full_lan4_listening(listen: bool) -> Option<(Lan, &'static [Vec<u8>])> {
 /// Carl presses ESC in `LAN4` (deviation from quirk E-326): he is in the main menu without a message, his session is
 /// closed. On the host his row becomes "Open" again (nation, team, color, handicap stay) and `START` disappears; host
 /// and Bert stay in `LAN4`.
+// QUIRK E-326: deviation
 #[test]
 fn escape_in_lan4_takes_the_client_to_the_main_menu() {
     let Some((mut n, saves)) = full_lan4() else {
@@ -716,6 +731,7 @@ fn escape_in_lan4_takes_the_client_to_the_main_menu() {
 /// Anna (host) presses ESC in `LAN4`: she is in the main menu, `Bye { HOST_LEFT }` goes to all; Bert and Carl see
 /// 15212 exactly once. ESC over the message has no effect (`MSGBOX` does not take ESC, quirk O-103); "OK" closes `LAN4`
 /// (the session is already reset by then) and leads to the main menu.
+// QUIRK E-326: deviation
 #[test]
 fn host_escape_closes_the_session_and_clients_see_15212_once() {
     let Some((mut n, _)) = full_lan4() else {
@@ -865,6 +881,7 @@ fn loaded_match_listening(listen: bool) -> Option<(Lan, &'static [Vec<u8>])> {
 /// Anna and Bert play 300 ticks, Anna saves via `SAVEGAME2`, ends, both go to the main menu. Anna loads the savegame
 /// in `LAN3` (`CREATE`), Bert joins, `START`: both continue their own file and compute 400 ticks with equal checksums;
 /// the sequence begins at the tick of the savegame, turn 0 there (deviation from quirk E-275, loading path).
+// QUIRK E-275: deviation
 #[test]
 fn saved_game_resumes_with_equal_hashes() {
     let Some((mut n, _)) = ready_pair() else {
@@ -954,6 +971,7 @@ fn saved_game_resumes_with_equal_hashes() {
 
 /// Every machine continues camera and masks of its own file (the camera is not set to the start of the slot); the
 /// slot is the own one.
+// QUIRK E-275: deviation
 #[test]
 fn each_machine_keeps_its_own_camera_and_masks() {
     let camera = |i: usize| CameraSave {
@@ -999,6 +1017,7 @@ fn each_machine_keeps_its_own_camera_and_masks() {
 
 /// After loading, every machine waits at the tick of the savegame for `Go` as long as one is still loading (Carl
 /// halts; start lock, deviation from quirk E-328); nobody computes until then.
+// QUIRK E-328: deviation
 #[test]
 fn loaded_start_waits_for_go() {
     let Some((mut n, saves)) = full_lan4() else {
@@ -1038,6 +1057,7 @@ fn loaded_start_waits_for_go() {
 
 /// The start of a loaded network match shows the loading screen of savegame loading on every machine
 /// (`ldg_path_for(..., true, ...)`, without an own `.ldg` `default.ldg`), not `multiplayer.ldg` of the network start.
+// QUIRK E-275: deviation
 #[test]
 fn loaded_start_uses_the_load_screen_of_saved_games() {
     let Some((n, saves)) = loaded_match() else {
@@ -1062,6 +1082,7 @@ fn loaded_start_uses_the_load_screen_of_saved_games() {
 }
 
 /// The game speed comes from the host's file, not from the own host part.
+// QUIRK E-275: deviation
 #[test]
 fn loaded_game_takes_the_hosts_speed() {
     let speeds = [7, 15, 3];
@@ -1089,6 +1110,7 @@ fn loaded_game_takes_the_hosts_speed() {
 }
 
 /// If the host's file carries a game speed above the protocol rule (30), all machines start with 20.
+// QUIRK O-153: deviation
 #[test]
 fn loaded_game_clamps_the_hosts_speed_to_the_net_limit() {
     let Some(files) = (0..3)
@@ -1116,6 +1138,7 @@ fn loaded_game_clamps_the_hosts_speed_to_the_net_limit() {
 
 /// If a client drops out after loading (Carl crashes, without `Bye`; deviation from quirk E-324), his slot loses as in
 /// every network match: result 1 on host and Bert, message 17200 + p on the host; the others compute on.
+// QUIRK E-324: deviation
 #[test]
 fn lost_client_after_load_loses_its_slot() {
     let Some((mut n, saves)) = loaded_match() else {
@@ -1147,6 +1170,7 @@ fn lost_client_after_load_loses_its_slot() {
 /// If the host drops out after loading, each client writes its network savegame `netz_YYYY_MM_DD_hhmm` with the same
 /// simulation part at the tick where it stands (after the origin) and shows the abort message. The clients do not
 /// listen: without candidates no host migration.
+// QUIRK E-324: deviation
 #[test]
 fn host_loss_after_load_ends_with_a_net_save() {
     let Some((mut n, saves)) = loaded_match_listening(false) else {
@@ -1181,6 +1205,7 @@ fn host_loss_after_load_ends_with_a_net_save() {
 
 /// Giving up after loading goes through the turn: Bert's end screen shows the defeat, on the host his slot is
 /// eliminated (message 17200 + p); host and Carl compute on.
+// QUIRK E-324: deviation
 #[test]
 fn surrender_after_load_works() {
     let Some((mut n, saves)) = loaded_match() else {
@@ -1234,6 +1259,7 @@ fn assert_all_back_in_the_main_menu(n: &mut Lan) {
 
 /// Bert's file changes after joining (new save under the same name). On `START` his loading fails with
 /// `Loaded { error }`, the start aborts for all, all land in the main menu.
+// QUIRK E-275: deviation
 #[test]
 fn changed_file_before_start_aborts_the_start() {
     let Some((mut n, _)) = full_lan4() else {
@@ -1285,6 +1311,7 @@ fn changed_host_file_before_start_reopens_lan4() {
 
 /// Carl leaves `LAN4` while loading after `START` (host has loaded, Carl not yet): the start aborts for all, no match
 /// hangs, all land in the main menu.
+// QUIRK E-328: deviation
 #[test]
 fn client_gone_while_loading_a_saved_game_aborts_for_all() {
     let Some((mut n, _)) = full_lan4() else {
@@ -1306,6 +1333,7 @@ fn client_gone_while_loading_a_saved_game_aborts_for_all() {
 
 /// The loaded match is saved again (the origin is not on the raster of tick 0) and loaded again; all compute equally
 /// from the new savegame (second generation).
+// QUIRK E-328: deviation
 #[test]
 fn a_reloaded_save_can_be_saved_and_loaded_again() {
     const AGAIN: &str = "again";
@@ -1358,6 +1386,7 @@ fn a_reloaded_save_can_be_saved_and_loaded_again() {
 /// If Carl deviates in the loaded match (`debug_corrupt`), he takes over the host's state on resync; afterwards all
 /// compute equally. The replay stays complete after loading (the log is in the savegame and the resync takes over the
 /// host's).
+// QUIRK E-328: deviation
 #[test]
 fn resync_after_load_keeps_equal_hashes() {
     let Some((mut n, saves)) = loaded_match() else {
@@ -1393,6 +1422,7 @@ fn resync_after_load_keeps_equal_hashes() {
 
 /// Every network savegame carries the command log from the start of the match, the same on all machines; after
 /// loading the replay is complete and begins with this log.
+// QUIRK E-329: deviation
 #[test]
 fn net_save_carries_the_log_and_the_reload_replays() {
     let Some((mut n, saves)) = loaded_match() else {
@@ -1420,6 +1450,7 @@ fn net_save_carries_the_log_and_the_reload_replays() {
 
 /// If the start of a loaded lobby fails on the host (Bert leaves between `{0x14}` and `{0x0D}`), `LAN4` opens again
 /// (not `LAN2`), and nothing loads.
+// QUIRK E-328: deviation
 #[test]
 fn rejected_loaded_start_reopens_lan4() {
     let Some((mut n, _)) = full_lan4() else {
@@ -1453,6 +1484,7 @@ fn rejected_loaded_start_reopens_lan4() {
 /// `LAN4`. Every machine begins a new recording with the whole log of its savegame from tick 0 (switch from the own
 /// host part, not from the session of the loaded lobby); both files carry the same commands, and the replay equals the
 /// match across the load point.
+// QUIRK E-329: deviation
 #[test]
 fn loaded_net_game_records_from_the_start() {
     use crate::game_flow::replay_tests::{

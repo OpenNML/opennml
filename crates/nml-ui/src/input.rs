@@ -398,6 +398,7 @@ mod tests {
         (d.to_string(), e.to_string())
     }
 
+    // QUIRK O-16: kept
     #[test]
     fn click_sends_code_8_with_one_click_sound() {
         let mut h = Harness::new();
@@ -459,6 +460,7 @@ mod tests {
         assert!(triggered(&h).is_empty());
     }
 
+    // QUIRK O-21: kept
     #[test]
     fn release_return_of_slot_7_is_ignored() {
         // O-21 corrected: a refused click (transition running, `0x12F` != 0) does not fall through.
@@ -482,6 +484,7 @@ mod tests {
         assert!(h.fx.is_empty());
     }
 
+    // QUIRK O-15, O-16: kept
     #[test]
     fn escape_triggers_the_first_attached_checkescape_button_without_sound() {
         // O-14, O-15, O-16: two buttons with CHECKESCAPE; the one attached first wins, even hidden and under
@@ -524,6 +527,7 @@ mod tests {
         assert!(h.fx.is_empty());
     }
 
+    // QUIRK O-14: kept
     #[test]
     fn escape_with_shift_is_not_escape() {
         let mut h = Harness::new();
@@ -540,6 +544,7 @@ mod tests {
         assert_eq!(triggered(&h), [pair("dlg", "cancel")]);
     }
 
+    // QUIRK O-106: kept
     #[test]
     fn double_click_sequence_is_4_5_4_5_11() {
         // O-106, 12.8: mouse source with `DoubleClickTimeout` 200 ms; the second click is a full click.
@@ -593,6 +598,7 @@ mod tests {
         assert_eq!(h.fx, [click_sfx(), click_sfx()]);
     }
 
+    // QUIRK O-106: kept
     #[test]
     fn click_timer_restarts_on_every_release() {
         let mut t = ClickTimer::default();
@@ -747,6 +753,7 @@ mod tests {
         assert!(h.tree.node(ok).hover);
     }
 
+    // QUIRK O-93: kept
     #[test]
     fn blocker_swallows_clicks_and_keeps_the_wheel() {
         let mut h = Harness::new();

@@ -137,6 +137,7 @@ fn pending_orders_add_to_the_count_only_for_guids() {
     assert_eq!(run(&mut sim, 0xAF, &[W]), [-5]);
 }
 
+// QUIRK E-66: kept
 #[test]
 fn unit_count_skips_quartered_guid_count_does_not() {
     // E-66: 0x4E49 (0xA9/0xAA, module 0) and 0x4E48 (0xA7/0xA8, module 3) count via the filter:
@@ -195,6 +196,7 @@ fn rect_scene(sim: &mut Sim) {
     put(sim, WARRIOR, ME_I, (30, 30));
 }
 
+// QUIRK E-65: kept
 #[test]
 fn rect_counts_ignore_the_owner_without_list_mode() {
     // E-65: 0x4E4B counts objects of all owners in the inclusive rectangle; only the list mode of the filter restricts
@@ -299,6 +301,7 @@ fn explicit_rect_counts_use_the_corners_directly() {
     );
 }
 
+// QUIRK E-30, E-64: kept
 #[test]
 fn sum_over_players_counts_an_object_once_per_reference_player() {
     // E-64, E-30: 0xB1 `(filter, x, z, r)` -> 0x4F56 sums over the reference players 0-6 (slot 7 is missing): without
@@ -340,6 +343,7 @@ fn sum_over_players_counts_an_object_once_per_reference_player() {
     }
 }
 
+// QUIRK E-37, E-85: kept
 #[test]
 fn code_0x4f92_sums_over_the_reference_players_with_explicit_corners() {
     // `FUN_00430FF0` gets the corners `{[4], [5], [6], [7]}` (like 0xB1 with an explicit rectangle) and checks argc 5
@@ -452,6 +456,8 @@ fn counter_upgrade_queries_match_the_counter_list() {
     assert_eq!(field(&mut sim, Sight::Fog, 0x510E, 2, &[9, ME_I])[2], 1);
 }
 
+// QUIRK E-68: kept
+// QUIRK E-67, E-87: deviation
 #[test]
 fn build_and_make_check_follows_the_original_checks() {
     // 0x132 -> 0x4E8A (`Player_CanBuildOrMakeGuid`, 5.12.4): cost, lock, toolbar entry, one-time types,

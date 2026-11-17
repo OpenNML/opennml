@@ -394,6 +394,7 @@ mod tests {
 
     const TYPES: &str = "GUID 1100\nNAME Kolonist\nVALUEID 100 6 1 0\nPROPID 0\nPROPID 2\nVALUEID 30001 1 1 3\nVALUEID 30003 6 1 0\nGUID 1108\nNAME Schiff\nVALUEID 100 6 1 0\nPROPID 0\nPROPID 2\nVALUEID 30001 1 1 1 4\nVALUEID 30003 6 1 256\n";
 
+    // QUIRK W-148: kept
     #[test]
     fn int_lists_parse_like_the_game() {
         assert_eq!(parse_int_list(" 3 ", &[]), [3]);
