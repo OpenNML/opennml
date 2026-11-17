@@ -1552,7 +1552,7 @@ fn all_player_group_actions_are_done_in_a_running_script() {
     );
 }
 
-// QUIRK E-155: kept
+// QUIRK E-155: deviation
 #[test]
 fn guarded_world_action_reports_the_real_block_and_ends_it() {
     // Block 1 (file index 1, not 0): 203 with stance 7 is a run-time error. The message carries block 1

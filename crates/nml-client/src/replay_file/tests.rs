@@ -224,7 +224,7 @@ fn recorder_writes_head_the_log_so_far_and_new_commands() {
     assert!(read(&recorder).commands.is_empty());
 }
 
-// QUIRK E-337: kept
+// QUIRK E-337: deviation
 #[test]
 fn recorder_splits_a_long_log_into_chunks_within_the_limit() {
     // A whole log after loading can exceed `MAX_CHUNK_BYTES`; the recorder splits it into chunks.
