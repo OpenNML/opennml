@@ -1,0 +1,11 @@
+[package]
+name = "nml-bink"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Bink 1 decoder (revision i, video and DCT audio), ported from FFmpeg"
+license = "LGPL-2.1-or-later"
+
+[dependencies]
+thiserror.workspace = true
+image.workspace = true

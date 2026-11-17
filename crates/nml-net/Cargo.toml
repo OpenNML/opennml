@@ -1,0 +1,12 @@
+[package]
+name = "nml-net"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+nml-sim.workspace = true
+serde.workspace = true
+postcard.workspace = true
+log.workspace = true

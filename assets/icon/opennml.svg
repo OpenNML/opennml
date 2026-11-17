@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- OpenNML program icon, variant C5 "tin medallion, red N". Large version for 48 px and above.
+     Original artwork; the "N" is a hand-drawn path (no font). Generating: see README.md. -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <path id="n" d="M38 41H57L70 60.5V46H65V41H82V46H77V77H67L50 51.5V72H55V77H38V72H43V46H38Z"/>
+    <pattern id="rust" width="13" height="11" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="3" r="0.9" fill="#8a4a1e"/><circle cx="8" cy="1.5" r="0.6" fill="#6b3a1a"/>
+      <circle cx="10.5" cy="7" r="1.1" fill="#9a5424"/><circle cx="5" cy="8.5" r="0.5" fill="#4a2a18"/>
+      <circle cx="6.5" cy="4.5" r="0.4" fill="#b06a30"/>
+    </pattern>
+    <pattern id="rust2" width="17" height="19" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+      <circle cx="3" cy="4" r="1.4" fill="#7a3e18"/><circle cx="12" cy="11" r="0.8" fill="#a85a26"/>
+      <circle cx="7" cy="16" r="1" fill="#5a2e14"/><circle cx="14" cy="2" r="0.5" fill="#c07a3a"/>
+    </pattern>
+    <pattern id="redspeck" width="6" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(-20)">
+      <circle cx="1" cy="2" r="0.5" fill="#6a1410"/><circle cx="4" cy="5" r="0.4" fill="#7a2a14"/>
+    </pattern>
+    <clipPath id="n-clip"><use xlink:href="#n"/></clipPath>
+    <g id="screw">
+      <circle r="4.6" fill="#2a2420"/><circle r="3.6" fill="#b3afa6"/>
+      <circle cx="-0.8" cy="-0.8" r="1.6" fill="#d6d2ca"/>
+      <line x1="-2.6" y1="1.2" x2="2.6" y2="-1.2" stroke="#3a3530" stroke-width="1.2"/>
+    </g>
+  </defs>
+
+  <!-- Grund und rostiger Rand -->
+  <rect width="120" height="120" rx="22" fill="#2a2420"/>
+  <circle cx="60" cy="60" r="50.5" fill="#3a1e10"/>
+  <circle cx="60" cy="60" r="48.5" fill="#9a4a1a"/>
+  <circle cx="60" cy="60" r="48.5" fill="url(#rust2)"/>
+
+  <!-- Blechring -->
+  <circle cx="60" cy="60" r="45.5" fill="#3a2a20"/>
+  <circle cx="60" cy="60" r="44.5" fill="#807d77"/>
+  <ellipse cx="60" cy="40" rx="38" ry="22" fill="#a3a09a" opacity="0.55"/>
+  <circle cx="60" cy="60" r="44.5" fill="url(#rust)"/>
+  <circle cx="60" cy="60" r="44.5" fill="url(#rust2)" opacity="0.7"/>
+  <g fill="#9a4a1a" opacity="0.65">
+    <ellipse cx="28" cy="34" rx="7" ry="4" transform="rotate(-40 28 34)"/>
+    <ellipse cx="95" cy="82" rx="6" ry="3" transform="rotate(50 95 82)"/>
+    <ellipse cx="70" cy="102" rx="8" ry="2.5"/>
+    <ellipse cx="88" cy="26" rx="4" ry="2" transform="rotate(35 88 26)"/>
+  </g>
+  <use xlink:href="#screw" x="60" y="20"/><use xlink:href="#screw" x="100" y="60"/>
+  <use xlink:href="#screw" x="60" y="100"/><use xlink:href="#screw" x="20" y="60"/>
+
+  <!-- Blechscheibe innen -->
+  <circle cx="60" cy="60" r="34.5" fill="#2a1a12"/>
+  <circle cx="60" cy="60" r="32" fill="#6f6c66"/>
+  <ellipse cx="60" cy="46" rx="26" ry="15" fill="#8c8a84" opacity="0.6"/>
+  <circle cx="60" cy="60" r="32" fill="url(#rust)"/>
+  <circle cx="60" cy="60" r="32" fill="url(#rust2)" opacity="0.6"/>
+
+  <!-- red N with ember gradient: shadow, outline, fill, ember inside the outline of the N -->
+  <use xlink:href="#n" x="2" y="3" fill="#1a0e0a"/>
+  <use xlink:href="#n" fill="#b5221c" stroke="#1a0e0a" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round"/>
+  <g clip-path="url(#n-clip)">
+    <rect x="30" y="62" width="60" height="18" fill="#c8381a"/>
+    <rect x="30" y="68" width="60" height="12" fill="#d9561c"/>
+    <rect x="30" y="73" width="60" height="7" fill="#e6782a"/>
+    <rect x="30" y="76" width="60" height="4" fill="#f0a030"/>
+    <g fill="#d9561c">
+      <polygon points="42,70 44,56 46,70"/><polygon points="56,70 58,60 60,70"/><polygon points="72,70 74,52 76,70"/>
+    </g>
+    <g fill="#e6782a"><polygon points="48,75 50,64 52,75"/><polygon points="66,75 68,62 70,75"/></g>
+    <rect x="30" y="38" width="60" height="42" fill="url(#redspeck)"/>
+  </g>
+</svg>

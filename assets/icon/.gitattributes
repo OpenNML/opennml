@@ -1,0 +1,3 @@
+# Erzeugte Icons bytegleich halten (Test assets_are_current von nml-icon).
+*.png binary
+*.ico binary

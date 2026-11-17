@@ -1,0 +1,67 @@
+[workspace]
+resolver = "3"
+members = ["crates/nml-rda", "crates/nml-formats", "crates/nml-world", "crates/nml-export", "tools/nml-extract", "crates/nml-render", "apps/nml-viewer", "crates/nml-control", "apps/nml-viewer-mcp", "crates/nml-effects", "crates/nml-audio", "crates/nml-bink", "crates/nml-sim", "crates/nml-ui", "crates/nml-client", "apps/nml-game", "crates/nml-randommap", "crates/nml-net", "tools/nml-icon"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "GPL-3.0-or-later"
+repository = "https://github.com/OpenNML/opennml"
+
+[workspace.dependencies]
+nml-rda = { path = "crates/nml-rda" }
+winreg = "0.56"
+rfd = "0.18"
+nml-formats = { path = "crates/nml-formats" }
+nml-world = { path = "crates/nml-world" }
+nml-export = { path = "crates/nml-export" }
+nml-render = { path = "crates/nml-render" }
+nml-control = { path = "crates/nml-control" }
+nml-effects = { path = "crates/nml-effects" }
+nml-audio = { path = "crates/nml-audio" }
+nml-bink = { path = "crates/nml-bink" }
+nml-sim = { path = "crates/nml-sim" }
+nml-net = { path = "crates/nml-net" }
+nml-ui = { path = "crates/nml-ui" }
+nml-client = { path = "crates/nml-client" }
+nml-randommap = { path = "crates/nml-randommap" }
+glam = "0.34"
+serde_json = "1"
+gltf = "1.4"
+flate2 = "1.1"
+encoding_rs = "0.8"
+thiserror = "2"
+anyhow = "1"
+tempfile = "3"
+clap = { version = "4.6", features = ["derive"] }
+glob = "0.3"
+image = { version = "0.25", default-features = false, features = ["tga", "png"] }
+wgpu = "30"
+winit = "0.30"
+pollster = "1"
+serde = { version = "1", features = ["derive"] }
+bytemuck = { version = "1", features = ["derive"] }
+toml = "1"
+log = "0.4"
+env_logger = "0.11"
+rmcp = { version = "=3.5.1", features = ["server", "transport-io", "macros"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-std", "io-util", "net", "process", "time", "sync"] }
+schemars = "1"
+symphonia = { version = "0.6", default-features = false, features = ["ogg", "vorbis"] }
+cpal = "0.18"
+# DirectSound driver list of the sound options; same version as in cpal.
+windows = "0.62"
+postcard = { version = "1.1", default-features = false, features = ["use-std"] }
+egui = { version = "0.36.2", default-features = false, features = ["default_fonts"] }
+egui-wgpu = { version = "0.36.2", default-features = false }
+egui-winit = { version = "0.36.2", default-features = false }
+embed-resource = "3"
+
+# Optimize dependencies in the debug build too: zlib is otherwise very slow in corpus tests.
+[profile.dev.package."*"]
+opt-level = 2
+
+# The Bink decoder also runs optimized in debug tests and in the debug game.
+[profile.dev.package.nml-bink]
+opt-level = 2

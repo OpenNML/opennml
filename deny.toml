@@ -1,0 +1,32 @@
+# Dependency check with cargo-deny. Run: `cargo deny check licenses`.
+# Rationale for the list: docs/licensing.md.
+
+# Without `[graph] targets`, cargo-deny checks the dependencies of all platforms, not only those of Windows.
+
+[licenses]
+# Every license here must be compatible with GPL-3.0-or-later, because the programs link the whole tree.
+allow = [
+    "GPL-3.0-or-later",
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "0BSD",
+    "Unlicense",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "OFL-1.1",
+    "Ubuntu-font-1.0",
+]
+confidence-threshold = 0.9
+# Only the video decoder is under the LGPL (port from FFmpeg, crates/nml-bink/README.md).
+exceptions = [
+    { allow = ["LGPL-2.1-or-later"], crate = "nml-bink" },
+]
+
+[licenses.private]
+# The project's own crates (publish = false) are checked too.
+ignore = false

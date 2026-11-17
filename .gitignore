@@ -1,0 +1,6 @@
+/target
+*.extracted/
+/out/
+/nml-viewer.toml
+# F12 in the viewer writes screenshots (game content) to the working directory
+/nml-viewer-*.png

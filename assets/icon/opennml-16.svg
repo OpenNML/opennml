@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- OpenNML program icon C5, simplified version for 16 px: rust rim, tin disc, red N without pattern,
+     screws and outline, grid 16 x 16. Generating: see README.md. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <defs>
+    <linearGradient id="glut" x1="0" y1="4" x2="0" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0.6" stop-color="#b5221c"/>
+      <stop offset="1" stop-color="#e6782a"/>
+    </linearGradient>
+  </defs>
+  <rect width="16" height="16" rx="3" fill="#2a2420"/>
+  <circle cx="8" cy="8" r="8" fill="#3a1e10"/>
+  <circle cx="8" cy="8" r="7.5" fill="#9a4a1a"/>
+  <circle cx="8" cy="8" r="6.5" fill="#807d77"/>
+  <ellipse cx="8" cy="5.5" rx="5" ry="3" fill="#a3a09a" opacity="0.55"/>
+  <!-- N auf ganzen Pixeln ohne Kontur (bei 16 px verschwimmt sie), Schatten um 1 px versetzt -->
+  <path d="M3 4H8L10 7.5V5H9V4H13V5H12V12H9.6L6 5.75V11H7V12H3V11H4V5H3Z" transform="translate(1 1)" fill="#1a0e0a"/>
+  <path d="M3 4H8L10 7.5V5H9V4H13V5H12V12H9.6L6 5.75V11H7V12H3V11H4V5H3Z" fill="url(#glut)"/>
+</svg>

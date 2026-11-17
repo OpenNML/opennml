@@ -1,0 +1,38 @@
+[package]
+name = "nml-game"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+nml-audio.workspace = true
+nml-client.workspace = true
+nml-control.workspace = true
+nml-formats.workspace = true
+nml-net.workspace = true
+nml-rda.workspace = true
+nml-render.workspace = true
+nml-sim.workspace = true
+nml-ui.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+env_logger.workspace = true
+image.workspace = true
+log.workspace = true
+serde_json.workspace = true
+wgpu.workspace = true
+winit.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+# Folder dialog when the search does not find the game directory.
+rfd.workspace = true
+
+[dev-dependencies]
+# Setup of the test match (`game::sim_host::testkit::default_setup`) for `ui_focus_lost_pauses`.
+nml-client = { workspace = true, features = ["testkit"] }
+tempfile.workspace = true
+
+[build-dependencies]
+# Program icon of the exe on Windows (`build.rs`).
+embed-resource.workspace = true
