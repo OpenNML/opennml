@@ -83,6 +83,7 @@ fn new_checks_session_and_rows() {
     assert_eq!((host.kind, host.peer, host.ready), (999, Some(0), false));
 }
 
+// QUIRK E-282: kept
 #[test]
 fn join_takes_the_first_free_index() {
     let mut b = book();
@@ -103,6 +104,7 @@ fn join_takes_the_first_free_index() {
     assert_eq!(b.state().rows[2].kind, 999);
 }
 
+// QUIRK E-282: kept
 #[test]
 fn full_lobby_rejects() {
     let mut b = book();
@@ -132,6 +134,7 @@ fn leave_opens_the_row() {
     assert_eq!(b.leave(0), None);
 }
 
+// QUIRK E-280: deviation
 #[test]
 fn foreign_row_wish_is_dropped() {
     let mut b = book();
@@ -267,6 +270,7 @@ fn kick_returns_the_peer() {
     );
 }
 
+// QUIRK E-302: kept
 #[test]
 fn computer_kind_sets_ready_and_handicap() {
     let mut b = book();
@@ -323,6 +327,7 @@ fn handicap_locked_for_easy_to_hard() {
     assert_eq!(b.state().rows[2].handicap, 3);
 }
 
+// QUIRK E-280: deviation
 #[test]
 fn rules_reject_keeps_the_host_state() {
     let mut b = book();
@@ -341,6 +346,7 @@ fn rules_reject_keeps_the_host_state() {
     assert_eq!(*b.state(), snap);
 }
 
+// QUIRK E-280: deviation
 #[test]
 fn rules_swap_sets_the_other_row() {
     let mut b = book();
@@ -354,6 +360,7 @@ fn rules_swap_sets_the_other_row() {
     assert_eq!(*b.state(), snap);
 }
 
+// QUIRK E-302: kept
 #[test]
 fn ready_is_kept_on_race_team_color() {
     let mut b = book();
@@ -365,6 +372,7 @@ fn ready_is_kept_on_race_team_color() {
     assert!(r.ready);
 }
 
+// QUIRK E-302: kept
 #[test]
 fn start_needs_all_ready_and_two_rows() {
     let mut b = book();
@@ -415,6 +423,7 @@ fn start_needs_all_ready_and_two_rows() {
 /// A random map whose seed consists only of spaces or brackets has an empty map name after cleaning; `START` still
 /// applies (the original starts with such a seed, the UI shows `START`). A fixed map without a name still does not
 /// start.
+// QUIRK E-313: kept
 #[test]
 fn random_map_with_a_blank_seed_can_start() {
     for seed in [" ", "[ ]"] {
@@ -511,6 +520,7 @@ fn set_session_resizes_rows_and_cleans_names() {
 
 /// E-307 deviation: A computer on a row that drops out prevents the switch to a map with fewer players; state and
 /// `revision` stay. If the row is open, it drops out.
+// QUIRK E-307: deviation
 #[test]
 fn set_session_refuses_dropped_rows_with_computers() {
     let mut b = book();
@@ -531,6 +541,7 @@ fn set_session_refuses_dropped_rows_with_computers() {
 }
 
 /// Teams `≥ n` of the remaining rows are set to the row number, smaller ones stay.
+// QUIRK E-307: deviation
 #[test]
 fn set_session_clamps_teams() {
     let mut b = book();
@@ -563,6 +574,7 @@ fn set_session_clamps_teams() {
 }
 
 /// E-302: Ready flags stay when the map is switched.
+// QUIRK E-307: deviation
 #[test]
 fn set_session_keeps_ready_flags() {
     let mut b = book();
@@ -590,6 +602,7 @@ fn set_session_keeps_ready_flags() {
 }
 
 /// [`rows_fit`] judges like [`LobbyBook::set_session`] (host and core use the same rule).
+// QUIRK E-307: deviation
 #[test]
 fn rows_fit_matches_set_session() {
     let kind = |b: &mut LobbyBook, row: u8, kind: i32| {
@@ -684,6 +697,7 @@ fn seat_of(b: &LobbyBook, row: usize) -> (i32, Option<u8>, bool, String) {
 
 /// The host stands in the row of its slot (E-325 deviation), the other rows are open without machine and name; nation,
 /// team, color and handicap come from the savegame, nobody is ready.
+// QUIRK E-325: deviation
 #[test]
 fn loaded_book_puts_the_host_on_his_seat() {
     let b = loaded_book();
@@ -776,6 +790,7 @@ fn join_seat_takes_the_row_of_the_seat() {
 
 /// Slot without a row (no human or dropped out), occupied slot (also the host's), duplicate machine and a new lobby
 /// are rejected; the state stays.
+// QUIRK E-325, E-327: deviation
 #[test]
 fn join_seat_refuses_unknown_and_taken_seats() {
     let mut b = loaded_book();
@@ -870,6 +885,7 @@ fn loaded_lobby_ignores_wishes_and_edits() {
 }
 
 /// `START` in the loaded lobby as soon as every row has a machine (without Ready).
+// QUIRK E-327: deviation
 #[test]
 fn loaded_can_start_needs_every_row_taken() {
     let mut b = loaded_book();

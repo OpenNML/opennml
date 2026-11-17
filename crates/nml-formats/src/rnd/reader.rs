@@ -415,6 +415,7 @@ mod tests {
         assert_eq!(out, ["\u{E4}\u{20AC}"]);
     }
 
+    // QUIRK D-321: kept
     #[test]
     fn cut_at_first_slash_semicolon_or_star() {
         assert_eq!(lines("numTiles 5 ; x", &[]), ["numTiles 5 "]);
@@ -424,6 +425,7 @@ mod tests {
         assert_eq!(lines("x ;y*z", &[]), ["x "]);
     }
 
+    // QUIRK D-321: kept
     #[test]
     fn block_comment_rules() {
         assert_eq!(
@@ -436,6 +438,7 @@ mod tests {
         assert_eq!(lines("a */ b\nnext", &[]), ["a ", "next"]);
     }
 
+    // QUIRK D-322: kept
     #[test]
     fn block_comment_swallows_directives_and_random_draws() {
         let mut host = Host::new(
@@ -448,6 +451,7 @@ mod tests {
         assert_eq!(host.draws, 1, "lines in the comment draw nothing (D-322)");
     }
 
+    // QUIRK D-321: kept
     #[test]
     fn const_replaces_only_the_first_dollar() {
         let mut host = Host::new(&[("m.rnd", b"v $A\nv $B\nw $A $A\n$A\n")], &[]);
@@ -457,6 +461,7 @@ mod tests {
         assert_eq!(out, ["v  5", "v $B", "w $A $A", " 5"]);
     }
 
+    // QUIRK D-321: kept
     #[test]
     fn const_lookup_is_exact_and_first_match_wins() {
         let mut host = Host::new(&[("m.rnd", b"x $a\nx $A\n")], &[]);
@@ -479,6 +484,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-323: kept
     #[test]
     fn elsif_is_no_directive() {
         // `#elsif` contains neither `#elseif` nor `#else` as a substring (Ghidra: `0x00628144` is
@@ -512,6 +518,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-350: deviation
     #[test]
     fn define_match_is_exact_and_missing_name_is_empty() {
         assert_eq!(
@@ -543,6 +550,7 @@ mod tests {
         assert_eq!(lines("#endrandom\nx\n", &[]), ["#endrandom", "x"]);
     }
 
+    // QUIRK D-322: kept
     #[test]
     fn random_draws_in_inactive_branches() {
         let mut host = Host::new(&[("m.rnd", b"#ifdef NEVER\n#random\nx\n#endif\n")], &[40]);
@@ -561,6 +569,7 @@ mod tests {
         assert_eq!(host.draws, 2, "no draw in the block comment");
     }
 
+    // QUIRK D-322: kept
     #[test]
     fn random_roll_is_taken_modulo_100() {
         // Roll 150 -> 50: `#chance 50` hits (roll afterwards 101), `#chance 1` (sum 51) no longer does.
@@ -571,6 +580,7 @@ mod tests {
         assert_eq!(out, ["#random", "#chance 0", "a"]);
     }
 
+    // QUIRK D-322: kept
     #[test]
     fn chance_favours_the_first_branch() {
         let script = "#random\n#chance 50\na\n#chance 50\nb\n#endrandom\nc\n";
@@ -617,6 +627,7 @@ mod tests {
         assert_eq!(out, ["#random", "#chance 0x10", "a"]);
     }
 
+    // QUIRK D-322: kept
     #[test]
     fn negative_chance_wraps_unsigned() {
         // Sum -1 is unsigned 0xFFFFFFFF: every roll hits (`JA` unsigned).
@@ -624,6 +635,7 @@ mod tests {
         assert_eq!(out, ["#random", "#chance -1", "a"]);
     }
 
+    // QUIRK D-326: kept
     #[test]
     fn unset_flags_start_at_zero() {
         // D-326: branch chosen, roll and sum are 0 (heap leftovers in the original).
@@ -632,6 +644,7 @@ mod tests {
         assert_eq!(lines("#chance 5\na\n", &[]), ["#chance 5", "a"]);
     }
 
+    // QUIRK D-343: kept
     #[test]
     fn include_resets_flags_and_does_not_restore_them() {
         let mut host = Host::new(
@@ -646,6 +659,7 @@ mod tests {
         assert_eq!(out, ["a", "", "", ""]);
     }
 
+    // QUIRK D-343: kept
     #[test]
     fn include_keeps_the_chosen_flag() {
         // `#ifdef A` sets "branch chosen"; the include only resets "active", so its `#else` switches off
@@ -661,6 +675,7 @@ mod tests {
         assert_eq!(out, ["#ifdef A", "", "", ""]);
     }
 
+    // QUIRK D-321: kept
     #[test]
     fn include_ending_in_a_block_comment_leaves_no_comment() {
         // End of file in an open block comment switches it off (`0x00542537`).
@@ -676,6 +691,7 @@ mod tests {
         assert_eq!(out, ["a", "", "b"]);
     }
 
+    // QUIRK D-344: deviation
     #[test]
     fn include_depth_is_limited() {
         let mut host = Host::new(&[("d/x.rnd", b"#include \"x.rnd\"\n")], &[]);
@@ -685,6 +701,7 @@ mod tests {
         assert!(text.contains("d/x.rnd"), "{text}");
     }
 
+    // QUIRK D-344: deviation
     #[test]
     fn sixteen_levels_are_allowed() {
         // Main + 15 includes = depth 16.

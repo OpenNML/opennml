@@ -613,6 +613,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-254: deviation
     #[test]
     fn tcp_round_trip_both_ways() {
         let (mut h, mut c) = pair();
@@ -645,6 +646,7 @@ mod tests {
         assert!(h.peer_addr().is_some());
     }
 
+    // QUIRK E-270: deviation
     #[test]
     fn tcp_close_is_reported() {
         let (mut h, mut c) = pair();
@@ -663,6 +665,7 @@ mod tests {
         wait_threads_gone(&shared, 3_000);
     }
 
+    // QUIRK E-270: deviation
     #[test]
     fn tcp_drop_without_bye_is_reported() {
         let (h, mut c) = pair();
@@ -677,6 +680,7 @@ mod tests {
         wait_threads_gone(&c_shared, 3_000);
     }
 
+    // QUIRK E-270: deviation
     #[test]
     fn heartbeats_continue_without_polling() {
         let (h, c) = pair();
@@ -706,6 +710,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK E-271: deviation
     #[test]
     fn chunked_state_interleaves_pings() {
         let (mut h, mut c) = pair();
@@ -759,6 +764,7 @@ mod tests {
         wait_threads_gone(&shared, 3_000);
     }
 
+    // QUIRK E-270: deviation
     #[test]
     fn broken_frame_closes_with_reason() {
         let listener = std::net::TcpListener::bind(local()).unwrap();
@@ -777,6 +783,7 @@ mod tests {
         wait_threads_gone(&shared, 3_000);
     }
 
+    // QUIRK E-270: deviation
     #[test]
     fn drop_stops_threads_with_silent_peer() {
         // Peer that never sends anything and never closes.
@@ -793,6 +800,7 @@ mod tests {
         drop(raw);
     }
 
+    // QUIRK E-254: deviation
     #[test]
     fn host_accepts_several_and_stops() {
         let mut host = TcpHost::bind(local()).unwrap();

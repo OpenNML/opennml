@@ -69,6 +69,7 @@ fn run_on_equal(n: &mut Lan, a: usize, b: usize, steps: u64) {
 /// "End current game" of the host is, as for the client, its own defeat through the turn (`SetPlayerResult` of the
 /// own slot; re/multiplayer M.10.4): end screen `GAMEEND_DEFEAT` on the host, message 17200 + p on the clients, no
 /// `MSGBOX` on anyone. The host stays host until it leaves the end screen; the match goes on.
+// QUIRK E-268: deviation
 #[test]
 fn host_surrender_shows_defeat_and_stays_host() {
     let Some(mut n) = three_match(|_| true, 10) else {
@@ -109,6 +110,7 @@ fn host_surrender_shows_defeat_and_stays_host() {
 /// computes up to the execution tick of the handover bundle and goes into the accounting without a message
 /// (`NetFinish::HandedOver`), whose "Main menu" leads to the main menu. Bert becomes host (network role of the UI
 /// host), Cara stays client; both compute on equally, no message, the defeat of the old host arrives exactly once.
+// QUIRK E-268: deviation
 #[test]
 fn host_leaving_the_end_screen_hands_over() {
     let Some(mut n) = three_match(|_| true, 10) else {
@@ -219,6 +221,7 @@ fn host_ended_message() -> String {
 /// Bert gives up and stays connected on his end screen; Anna wins as a result. If she leaves her victory screen
 /// (`END_VICTORY`), nobody is playing anymore: no silent handover to the defeated one, but the end for all - message
 /// "The host has ended the match ..." and network savegame on both; "OK" leads Anna through the accounting.
+// QUIRK E-268: deviation
 #[test]
 fn host_victory_with_a_defeated_client_ends_for_all() {
     let Some((mut n, _)) = ready_pair() else {
@@ -254,6 +257,7 @@ fn host_victory_with_a_defeated_client_ends_for_all() {
 /// bundle is formed. The bundle carries the end for all: network savegame at Anna and Cara, message "The host has
 /// ended the match ..." at Cara, in (a) also at Anna with "OK" -> accounting; in (b) the program waits until the end
 /// bundle is executed.
+// QUIRK E-268: deviation
 #[test]
 fn handover_falls_back_to_end_when_the_candidate_crashes() {
     for closing in [false, true] {
@@ -316,6 +320,7 @@ fn handover_falls_back_to_end_when_the_candidate_crashes() {
 /// (`GameInfo::net`, [`MenuApp::set_net_role`]): `GAMEPLAYOPTIONS2` shows him the game speed slider `GAMESPEED`, Cara
 /// not. His game speed key requests `Speed(v)` through his core ([`NetDriver::change_game_speed`]), the game speed
 /// changes on both at the same tick with message 9; Cara's key has no effect.
+// QUIRK E-269: deviation
 #[test]
 fn new_host_gets_the_speed_slider_and_keys() {
     let Some(mut n) = three_match(|_| true, 10) else {
@@ -361,6 +366,7 @@ fn new_host_gets_the_speed_slider_and_keys() {
 /// Deviation from quirk E-346: After the migration pause and chat run over the new host instead of into the void.
 /// Cara's pause halts both (network pause visible), lifting it lets both compute on; a chat from Cara to all and one
 /// from Bert arrive on both at the same tick.
+// QUIRK E-346: deviation
 #[test]
 fn pause_and_chat_run_over_the_new_host() {
     let Some(mut n) = three_match(|_| true, 10) else {
@@ -476,6 +482,7 @@ fn host_alone_with_ai_still_ends_for_all() {
 /// If the host drops out in the lobby (connection cut, no `Bye`; quirk E-268, part "Lobby", as in the
 /// original), nothing migrates: both clients show 15212 exactly once, "OK" leads to the main menu, nobody has a
 /// driver.
+// QUIRK E-268: deviation
 #[test]
 fn lobby_host_loss_still_shows_15212() {
     let Some(mut n) = Lan::corpus(&["Anna", "Bert", "Cara"]) else {

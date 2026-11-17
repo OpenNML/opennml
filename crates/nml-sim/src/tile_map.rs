@@ -353,6 +353,7 @@ mod tests {
     use crate::rules::{BuildingShape, Rules};
     use crate::state::SimState;
 
+    // QUIRK C-48: deviation
     #[test]
     fn the_map_serializes_only_occupied_cells_and_reads_them_back() {
         let mut m = BuildingTileMap::new(16, 8);
@@ -413,6 +414,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK C-46: kept
     #[test]
     fn a_building_is_stamped_from_its_half_hull_and_turns_in_the_odd_window() {
         // Half hull 300/50/100 world units -> hx = 9600, hy = 1600, hz = 3200 (ftol(f*4096)/128); height 2*hy.
@@ -518,6 +520,8 @@ mod tests {
         assert!(has_line_of_sight(&sim, b, house));
     }
 
+    // QUIRK C-43: kept
+    // QUIRK C-44: deviation
     #[test]
     fn line_of_sight_survives_vertical_and_degenerate_rays() {
         let (rules, mut state) = world([100.0, 50.0, 100.0]);
@@ -566,6 +570,7 @@ mod tests {
         assert_eq!(rasterize((3, 3), (3, 3)), vec![(3, 3)]);
     }
 
+    // QUIRK C-48: deviation
     #[test]
     fn stamped_maps_survive_saving_and_loading() {
         // Stamping and removal write height and ID together; "occupied" of the thin

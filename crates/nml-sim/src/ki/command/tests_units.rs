@@ -288,6 +288,7 @@ fn single_move_skips_dead_units_and_sends_flags() {
     assert_eq!(checksum(sim.state), before);
 }
 
+// QUIRK E-26: deviation
 #[test]
 fn foreign_actor_is_rejected_and_reported() {
     let (rules, base, [_, _, _, foreign]) = unit_scene();
@@ -315,6 +316,7 @@ pub(super) fn list_thread(entries: &[(i32, i32)], args: &[i32]) -> Thread {
     t
 }
 
+// QUIRK E-90: kept
 #[test]
 fn group_move_filters_and_still_sends_an_empty_move() {
     let (rules, mut base, [a, b, dead, foreign]) = unit_scene();
@@ -376,6 +378,7 @@ fn group_move_filters_and_still_sends_an_empty_move() {
     assert_eq!(t.stack, [FLOOR]);
 }
 
+// QUIRK E-90, E-107: kept
 #[test]
 fn group_move_reads_missing_list_entries_as_zero() {
     let (rules, base, [a, ..]) = unit_scene();
@@ -428,6 +431,7 @@ fn economy() -> Economy {
     }
 }
 
+// QUIRK E-91: deviation
 #[test]
 fn production_pushes_hundred() {
     let e = economy();
@@ -748,6 +752,8 @@ fn searched(rules: &Rules, base: &SimState, guid: u32, w: ObjectId, tile: i32) -
     (fx, fz)
 }
 
+// QUIRK D-288, E-36: kept
+// QUIRK E-89: deviation
 #[test]
 fn ki_places_a_building_like_the_original() {
     // Position from the building site search, rotation 0, height 0.
@@ -858,6 +864,7 @@ fn ki_builds_on_land_it_has_not_seen() {
     );
 }
 
+// QUIRK E-24: kept
 #[test]
 fn ki_command_events_come_from_the_same_step() {
     // A thread of slot [`ME`] halts its unit in the first AI tick (`CALLB 0x191`); the event is in the return value of

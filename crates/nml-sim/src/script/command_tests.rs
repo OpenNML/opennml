@@ -89,6 +89,7 @@ fn start_walking(sim: &mut Sim, unit: ObjectId) {
     assert_eq!(outcome, Outcome::Accepted);
 }
 
+// QUIRK E-214: kept
 #[test]
 fn script_path_owns_any_existing_object() {
     let rules = testkit::rules();
@@ -140,6 +141,7 @@ fn walking_foreign_unit(actions: &[&str]) -> (Rules, SimState, ObjectId, Vec<Scr
     (rules, state, unit, traces)
 }
 
+// QUIRK E-152: kept
 #[test]
 fn script_halt_stops_a_foreign_unit_and_is_traced() {
     // Counter-check: a script without halt lets the unit march.
@@ -188,6 +190,7 @@ fn script_halt_stops_a_foreign_unit_and_is_traced() {
     assert!(!moving(&sim, unit), "modules aborted");
 }
 
+// QUIRK E-162: deviation
 #[test]
 fn script_commands_leave_no_entry_in_the_command_log() {
     // Script commands run in the script tick of the simulation and are never in the command list that the
@@ -395,6 +398,7 @@ fn grid(sim: &Sim, id: ObjectId) -> (i32, i32) {
     (g.x.0, g.z.0)
 }
 
+// QUIRK E-148, E-215: kept
 #[test]
 fn move_153_sends_one_group_move_with_raw_count_and_clears_bit_1() {
     let rules = rules_with_areas(&[("ziel", [20, 10, 22, 12]), ("blick", [20, 20, 22, 22])]);
@@ -452,6 +456,7 @@ fn move_153_sends_one_group_move_with_raw_count_and_clears_bit_1() {
     assert_eq!(sim.origin, Origin::External);
 }
 
+// QUIRK E-215: kept
 #[test]
 fn move_with_one_dead_id_still_takes_the_group_path() {
     // E-215: n is the raw number of IDs. With the dead ID n = 2 (group path, one group of the one living
@@ -527,6 +532,7 @@ fn move_flags_follow_the_action() {
     }
 }
 
+// QUIRK E-148: kept
 #[test]
 fn unknown_area_or_name_sends_nothing_and_keeps_bit_1() {
     // Ghidra pre-check: `FUN_00436710` looks up both areas before clearing bit 1.
@@ -557,6 +563,7 @@ fn unknown_area_or_name_sends_nothing_and_keeps_bit_1() {
     assert!(sim.object(u).unwrap().fifo.is_empty());
 }
 
+// QUIRK E-151: kept
 #[test]
 fn same_centre_gives_direction_minus_1() {
     // E-151: same center of both areas -> direction -1 (a real target direction, tolerance 0): the unit
@@ -623,6 +630,7 @@ fn same_centre_gives_direction_minus_1() {
     );
 }
 
+// QUIRK E-151: kept
 #[test]
 fn turn_154_moves_each_unit_onto_itself() {
     let rules = rules_with_areas(&[("blick", [10, 10, 10, 10])]);
@@ -704,6 +712,7 @@ fn turn_154_moves_each_unit_onto_itself() {
     assert!(plan_turn_named(&sim, "trupp", Look::Area("nirgends")).is_empty());
 }
 
+// QUIRK E-148: kept
 #[test]
 fn move_181_targets_the_tile_of_the_first_object() {
     let rules = rules_with_areas(&[]);
@@ -820,6 +829,7 @@ fn move_8_selects_by_filter_and_uses_no_direction() {
     assert!(plan_move_area(&mut sim, 0, 999, "von", "nach", 2).is_empty());
 }
 
+// QUIRK E-215: kept
 #[test]
 fn move_of_a_foreign_unit_is_accepted() {
     // E-214: the script path does not ask for the owner; the verdict is `Accepted`, the unit walks.
@@ -868,6 +878,7 @@ fn start_level(state: &mut SimState, rules: &Rules) {
     start_match(&mut sim, &setup, 7).expect("script start");
 }
 
+// QUIRK E-148: kept
 #[test]
 fn train_163_clears_bit_1_and_waits_for_bit_0() {
     use crate::module::train::status as train_status;
@@ -987,6 +998,7 @@ fn gate_state(sim: &Sim, id: ObjectId) -> (bool, bool) {
     )
 }
 
+// QUIRK E-216: kept
 #[test]
 fn gate_165_opens_a_foreign_gate_and_id_0_is_rejected_with_reason() {
     use crate::module::building::fort_testkit as fk;
@@ -1060,6 +1072,7 @@ fn gate_165_opens_a_foreign_gate_and_id_0_is_rejected_with_reason() {
     assert_eq!(checksum(sim.state), before, "ID 0 changes nothing");
 }
 
+// QUIRK E-216: kept
 #[test]
 fn gate_165_on_a_building_without_gate_flag_works_like_the_original() {
     // E-216: the original opens and closes every building (`PropertyBuilding_OpenDoor` checks only "already
@@ -1142,6 +1155,7 @@ fn accepted(code: u32) -> Issued {
     }
 }
 
+// QUIRK E-214: kept
 #[test]
 fn attack_167_uses_the_first_target_id_and_unknown_target_sends_nothing() {
     let rules = ck::rules();
@@ -1209,6 +1223,7 @@ fn attack_167_uses_the_first_target_id_and_unknown_target_sends_nothing() {
     );
 }
 
+// QUIRK E-214: kept
 #[test]
 fn behavior_179_per_id_and_mode_5_is_rejected_with_reason() {
     let rules = ck::rules();
@@ -1262,6 +1277,7 @@ fn behavior_179_per_id_and_mode_5_is_rejected_with_reason() {
     assert!(call(&mut sim, 179, vec![MsgValue::Int(1), txt("niemand")]).is_empty());
 }
 
+// QUIRK E-149: kept
 #[test]
 fn kill_34_sends_one_die_for_the_area_selection() {
     let rules = with_script(ck::rules(), "", &[("feld", [2, 2, 8, 8])]);
@@ -1314,6 +1330,7 @@ fn kill_34_sends_one_die_for_the_area_selection() {
     assert!(none(&mut sim, 3, 5, "feld").is_empty());
 }
 
+// QUIRK E-149: kept
 #[test]
 fn kill_193_reaches_a_dying_foreign_unit() {
     let rules = ck::rules();
@@ -1385,6 +1402,7 @@ fn walk_all(state: &mut SimState, rules: &Rules, units: &[ObjectId]) {
     }
 }
 
+// QUIRK E-156: kept
 #[test]
 fn halt_174_aborts_all_owners_but_not_dying_quartered_or_hidden() {
     let rules = with_script(ck::rules(), "", &[("feld", [8, 8, 20, 20])]);
@@ -1460,6 +1478,7 @@ fn ability_world() -> (Rules, SimState) {
     (rules, state)
 }
 
+// QUIRK E-214: kept
 #[test]
 fn special_189_codes_follow_the_table() {
     use crate::module::{arming, assassin, evoke_animal, ghosts, masking};
@@ -1581,6 +1600,7 @@ fn special_189_codes_follow_the_table() {
     assert_eq!(msgs(&sim, ghost).len(), 1, "no further message");
 }
 
+// QUIRK E-222: kept
 #[test]
 fn unmask_189_code_6_reads_the_count_as_id() {
     use crate::module::masking;
@@ -1626,6 +1646,8 @@ fn unmask_189_code_6_reads_the_count_as_id() {
     assert_eq!(fifo_messages(&sim, first).len(), before);
 }
 
+// QUIRK E-214: kept
+// QUIRK E-224: deviation
 #[test]
 fn special_190_codes_follow_the_table() {
     use crate::module::gather::{harvest, lumber, mining};
@@ -1827,6 +1849,7 @@ fn hammer_economy(
     assert_saves_and_loads(state, rules, what);
 }
 
+// QUIRK E-149, E-214, E-217, E-225: kept
 #[test]
 fn script_commands_survive_any_target() {
     // 1. Economy and combat: every target against units of all kinds.
@@ -2203,6 +2226,7 @@ fn expectation(number: i32, code: i32, target: Target) -> (bool, bool) {
     }
 }
 
+// QUIRK E-214: kept
 #[test]
 fn script_commands_reach_module_work_at_any_target() {
     // One run per action and target with the target next to the actor, without further commands, with so
@@ -2268,6 +2292,7 @@ fn script_commands_reach_module_work_at_any_target() {
     assert_saves_and_loads(&state, &rules, "killing");
 }
 
+// QUIRK E-224: deviation
 #[test]
 fn chop_continuation_stops_for_units_of_slot_8() {
     // E-224: the cyclic sequence "next tree" of 190 code 6 carries the slot of the unit (0 to 7) so that it
@@ -2343,6 +2368,7 @@ fn quartered(sim: &Sim, id: ObjectId) -> bool {
         .is_some_and(|o| o.status & status::QUARTERED != 0)
 }
 
+// QUIRK E-217: kept
 #[test]
 fn quarter_334_into_a_foreign_container_without_owner_checks() {
     let rules = with_script(ck::rules(), "", &[]);
@@ -2428,6 +2454,7 @@ fn quarter_334_into_a_foreign_container_without_owner_checks() {
     assert_saves_and_loads(&state, &rules, "quartering into foreign containers");
 }
 
+// QUIRK E-148, E-154: kept
 #[test]
 fn quarter_334_with_unknown_container_does_nothing_and_waits_on_bit_1() {
     // E-154: the dispatcher sends the command also with container 0; the handler then does nothing (no
@@ -2506,6 +2533,7 @@ fn quarter_334_with_unknown_container_does_nothing_and_waits_on_bit_1() {
     assert!(responses(&sim).is_empty(), "no sound");
 }
 
+// QUIRK E-154: kept
 #[test]
 fn board_336_with_boat_0_aborts_and_clears() {
     // E-154: 336 sends the boarding also with boat 0 - an effect, no rejection: the running modules of the
@@ -2553,6 +2581,7 @@ fn board_336_with_boat_0_aborts_and_clears() {
     assert_saves_and_loads(&state, &rules, "boarding with boat 0");
 }
 
+// QUIRK E-154: kept
 #[test]
 fn mount_337_swaps_the_fields() {
     // 337 `{0x0A, 3, horse = ID from name 1, 1, rider = first ID of name 2}`: one command per horse for the
@@ -2627,6 +2656,7 @@ fn mount_337_swaps_the_fields() {
     assert_eq!(fifo_messages(&sim, rider).len(), before);
 }
 
+// QUIRK E-154: kept
 #[test]
 fn dismount_338_per_id() {
     // 338 `{0x0B, 2, 1, id}` per ID: dismount with abort, without module test; direct only empties (no sound).
@@ -2680,6 +2710,8 @@ fn dismount_338_per_id() {
     assert!(matches!(outcome, Outcome::Rejected(_)), "{outcome:?}");
 }
 
+// QUIRK E-148: kept
+// QUIRK E-219: deviation
 #[test]
 fn action_402_has_no_effect_but_waits() {
     // E-219 (deviation from the original): 402 crews a siege engine in the original; the reimplementation has no
@@ -3243,6 +3275,7 @@ fn hammer_riding() {
     assert!(all_accepted(&seen.out) && seen.on_boat, "{seen:?}");
 }
 
+// QUIRK E-217, E-223: kept
 #[test]
 fn quarter_334_treats_a_container_with_disabled_walk_as_a_building() {
     // On the script path a container is mobile only with the walk module **switched on** (`HasModule(0, 0)`,
@@ -3355,6 +3388,7 @@ fn steps_until_bit_3(
     None
 }
 
+// QUIRK E-186: kept
 #[test]
 fn lock_0x42_aborts_modules_sets_animation_and_time() {
     let rules = testkit::rules();
@@ -3391,6 +3425,7 @@ fn lock_0x42_aborts_modules_sets_animation_and_time() {
     assert_eq!(lock_of(&sim, u), (0, false), "lock expired");
 }
 
+// QUIRK E-186, E-211: kept
 #[test]
 fn lock_minus_1_is_permanent_until_0x43() {
     // E-211: `seconds < 0` is a permanent lock: the modules stand, bit 3 never comes.
@@ -3434,6 +3469,7 @@ fn lock_minus_1_is_permanent_until_0x43() {
     );
 }
 
+// QUIRK E-212: kept
 #[test]
 fn lock_0_takes_label_1_and_without_label_keeps_the_bit() {
     // E-212: `seconds == 0` takes time marker 1 of the animation; without a marker the status bit stays, the
@@ -3478,6 +3514,7 @@ fn lock_0_takes_label_1_and_without_label_keeps_the_bit() {
     assert_eq!(queue_len(&sim, without_label), 0, "queue runs");
 }
 
+// QUIRK E-186, E-213: kept
 #[test]
 fn stop_0x43_clears_a_foreign_setter_bit_and_sets_no_event_bit() {
     // E-213: `0x43` clears the shared bit also for foreign setters (trance, banishing, assassin, ...) and
@@ -3506,6 +3543,7 @@ fn stop_0x43_clears_a_foreign_setter_bit_and_sets_no_event_bit() {
     assert_eq!(steps_until_bit_3(&mut state, &rules, u, 30), None);
 }
 
+// QUIRK E-211: kept
 #[test]
 fn lock_overwrites_a_running_lock() {
     let rules = testkit::rules();
@@ -3534,6 +3572,7 @@ fn lock_overwrites_a_running_lock() {
     assert_eq!(lock_of(&sim, u), (1000, true));
 }
 
+// QUIRK E-213: kept
 #[test]
 fn external_lock_needs_an_own_unit() {
     // A8: the input (and the AI) locks only own, living, not quartered units.
@@ -3569,6 +3608,7 @@ fn external_lock_needs_an_own_unit() {
     assert_eq!(lock_of(&sim, own), (0, false));
 }
 
+// QUIRK E-213: kept
 #[test]
 fn script_lock_reaches_a_quartered_foreign_unit() {
     // Script path (E-214): every existing object, also quartered, dying or foreign.
@@ -3654,6 +3694,7 @@ fn action_157_locks_each_id_of_the_name() {
     assert_eq!(lock_of(&Sim::new(&mut state, &rules), id), (0, false));
 }
 
+// QUIRK E-211: kept
 #[test]
 fn lock_survives_saving_and_loading_mid_lock() {
     // Saving/loading in the middle of the lock - permanent and temporary.
@@ -3717,6 +3758,7 @@ fn result_events(events: &[SimEvent]) -> Vec<(u8, i32)> {
         .collect()
 }
 
+// QUIRK E-161: kept
 #[test]
 fn n13_lets_every_non_mutual_friend_lose() {
     // E-161: slot 6 wins; slot 1 is a mutual ally (stays 0), slot 2 only a one-sided ally, slot 3 neutral
@@ -3765,6 +3807,7 @@ fn n4_loses_only_the_named_slot() {
     assert_eq!(result_events(&sim.state.events), [(2, DEFEAT)]);
 }
 
+// QUIRK E-161: kept
 #[test]
 fn n4_does_not_overwrite_a_decided_slot() {
     // A won slot stays won, an empty slot (3) stays empty; no event.
@@ -3786,6 +3829,7 @@ fn n4_does_not_overwrite_a_decided_slot() {
     assert_eq!(sim.state.players[4].result, DEFEAT);
 }
 
+// QUIRK E-161: kept
 #[test]
 fn n13_with_slot_9_is_rejected_and_the_block_goes_on() {
     // A slot outside 0 to 7 -> rejected without execution, no `Guarded`; the rest runs.
@@ -3837,6 +3881,7 @@ fn n13_with_slot_9_is_rejected_and_the_block_goes_on() {
     assert_eq!(results(&sim), [0; 8]);
 }
 
+// QUIRK E-161: kept
 #[test]
 fn n13_mid_block_runs_the_rest() {
     // Victory of slot 6 in the middle of the block: result set, the following action runs in the same tick.

@@ -185,6 +185,7 @@ mod tests {
         rally_flag(&host.state, &host.rules, selection, host.active_player)
     }
 
+    // QUIRK D-257, D-260: kept
     #[test]
     fn flag_for_the_single_own_hq_at_its_stored_meeting_point() {
         let mut host = host_with_flag();
@@ -226,6 +227,7 @@ mod tests {
         assert_eq!(flag(&host, &[plain]).unwrap().position.y, 7.0 * 128.0);
     }
 
+    // QUIRK D-259: kept
     #[test]
     fn flag_colour_for_slot_zero_and_neutral() {
         let three = |c: [f32; 3]| c.map(|v| (v * 1000.0).round() / 1000.0);
@@ -254,6 +256,7 @@ mod tests {
         assert_eq!(flag(&host, &[hq]).unwrap().color, FLAG_COLORS[3]);
     }
 
+    // QUIRK D-257: kept
     #[test]
     fn no_flag_for_mixed_foreign_allied_or_storage_selection() {
         let mut host = host_with_flag();
@@ -280,6 +283,7 @@ mod tests {
         assert!(rally_flag(&host.state, &host.rules, &[foreign], 1).is_some());
     }
 
+    // QUIRK D-257: kept
     #[test]
     fn flag_at_an_own_construction_site() {
         let mut host = host_with_flag();
@@ -296,6 +300,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-262: kept
     #[test]
     fn flag_at_the_unrasterized_click_point_and_at_water_level() {
         let mut host = host_with_flag();
@@ -343,6 +348,7 @@ mod tests {
 
     /// Shipped data: 38 types with button 447 (German edition with patch; HQ yes, storage no) and the
     /// flag model with animation.
+    // QUIRK D-257: kept
     #[test]
     fn corpus_flag_types_have_button_447() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {

@@ -95,6 +95,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-338: deviation
     #[test]
     fn numbers_read_like_atol_and_double_spaces_do_not_advance() {
         // `_atol`: leading digits, otherwise 0.

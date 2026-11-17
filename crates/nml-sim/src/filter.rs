@@ -747,6 +747,7 @@ MM_MODE MM_CHECKFOG",
         assert!(!matches_target(&mut sim, unit, &fog, 1, 1));
     }
 
+    // QUIRK E-57: kept
     #[test]
     fn bit_0x80000_excludes_objects_marked_by_the_fog_player() {
         use crate::command::testkit as kit;
@@ -842,6 +843,7 @@ MM_MODE MM_CHECKFOG",
         (rules, state)
     }
 
+    // QUIRK W-169, C-41, C-42: kept
     #[test]
     fn combat_bits_check_weapon_range_sight_third_and_angle() {
         let (rules, mut state) = combat_world();
@@ -884,6 +886,7 @@ MM_MODE MM_CHECKFOG",
         assert!(!matches(&mut sim, a, &angle, -1));
     }
 
+    // QUIRK C-8: kept
     #[test]
     fn is_attacking_follows_the_target_of_the_attack_module() {
         use crate::combat::testkit as ck;

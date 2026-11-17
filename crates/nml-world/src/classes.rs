@@ -435,6 +435,7 @@ mod tests {
         types().class(guid).unwrap()
     }
 
+    // QUIRK D-77: kept
     #[test]
     fn shadow_kind_follows_the_quality_table() {
         let kinds = |guid| [0, 1, 2, 3, 4].map(|q| class(guid).shadow_kind(q, false).number());
@@ -471,6 +472,7 @@ mod tests {
         assert_eq!(class(2006).render_bits(), 3);
     }
 
+    // QUIRK D-75: kept
     #[test]
     fn object_shadow_picks_decals_groundplanes_and_textures() {
         let types = types();

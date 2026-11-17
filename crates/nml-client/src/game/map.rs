@@ -3265,6 +3265,7 @@ mod tests {
     /// (`GameEngine_InitLevelView` `0x004458B0` -> `GameEngine_CenterCameraOnStart` `0x00439190` with the local
     /// player), on the HQ of the own slot 0 - the first object of the player -, not in the center of the map.
     /// Lobby as in the reference run: human on 0, computer on 1, rest open.
+    // QUIRK D-366: kept
     #[test]
     fn random_map_start_camera_looks_at_the_own_hq() {
         use nml_sim::setup::{LobbyEntry, SlotKind};
@@ -3314,6 +3315,7 @@ mod tests {
     /// Fixed maps keep their start camera ([`start_focus`] from the `.lvl` with the objects of the
     /// simulation), in free play as in the campaign. The positions were measured before the start camera change
     /// (German edition with patch); other editions only check equality with [`start_focus`].
+    // QUIRK D-366: kept
     #[test]
     fn fixed_map_start_camera_is_unchanged() {
         use nml_rda::testutil::{GameVersion, game_version};
@@ -3508,6 +3510,7 @@ mod tests {
         assert_eq!(carry_over(&old, &new, &[])[2], None);
     }
 
+    // QUIRK D-250: kept
     #[test]
     fn effects_move_with_their_object_and_world_effects_with_its_id() {
         let old = [
@@ -3532,6 +3535,7 @@ mod tests {
         assert_eq!(carriers, [Some(0), None, None, Some(1)]);
     }
 
+    // QUIRK D-263: kept
     #[test]
     fn own_effects_stop_only_for_stealthed_and_quartered_objects() {
         // `GameObject_RenderPass` `0x0046B890`: stealthed without a real drawing bit (silhouette `0x80`, shadow
@@ -3550,6 +3554,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-263: kept
     #[test]
     fn objects_without_render_bits_keep_their_own_effects() {
         // Fishing basket (3505, `level_entries`: render bits 0, only the fish effect): neither stealthed
@@ -3699,6 +3704,7 @@ mod tests {
         assert!(rebuilt.is_empty());
     }
 
+    // QUIRK C-116: kept
     #[test]
     fn arrows_draw_their_mesh_from_its_model_with_fading_ghosts_where_seen() {
         use crate::game::projectiles::Ghost;

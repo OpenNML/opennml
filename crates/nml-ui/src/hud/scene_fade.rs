@@ -131,6 +131,7 @@ mod tests {
 
     /// O-362: `n145;5000` is black immediately; after 1000 ms the value is 51 (step 255/5000 per ms), the alpha 204
     /// and the color `~51 << 24 = 0xCC00_0000`. After 5000 ms the fade ends and draws nothing any more.
+    // QUIRK O-362: kept
     #[test]
     fn fade_145_starts_black_and_is_204_after_1000_ms() {
         let mut fade = SceneFade::default();
@@ -168,6 +169,7 @@ mod tests {
     }
 
     /// O-362: 146 fades out to black (alpha 0 -> 255) and then stays black in state 1.
+    // QUIRK O-362: kept
     #[test]
     fn fade_146_ends_black_and_stays() {
         let mut fade = SceneFade::default();
@@ -206,6 +208,7 @@ mod tests {
     }
 
     /// `ms <= 0`: step 0 and remaining time 0, the final value applies after the first tick (also with `dt = 0`).
+    // QUIRK O-362: kept
     #[test]
     fn fade_with_zero_ms_ends_in_the_first_frame() {
         let mut fade = SceneFade::default();
@@ -222,6 +225,7 @@ mod tests {
 
     /// `FUN_004BAA10` and the deviation: `reset` is the default state (state 0, value 255, nothing drawn);
     /// `set_black` stays black without a fade and keeps it.
+    // QUIRK O-376: deviation
     #[test]
     fn reset_and_set_black() {
         let mut fade = SceneFade::default();

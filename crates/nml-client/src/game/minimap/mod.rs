@@ -273,6 +273,7 @@ mod tests {
         map.fog().front().get_pixel(0, 0).0
     }
 
+    // QUIRK O-287: kept
     #[test]
     fn rebuild_now_only_with_fog_on() {
         let explored = |_: u32, _: u32| 1;
@@ -342,6 +343,7 @@ mod tests {
 
     /// re/game-ui D5.1, section "Input" (slot 2 `0x0044A4C0`, slot 3 `0x0044A630`) without a lock: what is consumed
     /// and which click results.
+    // QUIRK O-40, O-285: kept
     #[test]
     fn mouse_follows_the_d5_1_table() {
         use HudEventKind as K;
@@ -417,6 +419,7 @@ mod tests {
     /// O-290 (`0x0044A550`/`0x0044A56F` -> `0x0044A5E2`): under the lock 2, 3, 5 and `0x12` are consumed everywhere,
     /// without effect; 5 does not set the flag; 4 only with an already set flag (which falls in the process);
     /// `0x13` and the move as without the lock.
+    // QUIRK O-290: kept
     #[test]
     fn the_lock_takes_clicks_before_the_rect_check() {
         use HudEventKind as K;
@@ -460,6 +463,7 @@ mod tests {
     }
 
     /// O-291: the hidden map (`+0x4D = 0`) keeps calculating with the last drawn position.
+    // QUIRK O-291: kept
     #[test]
     fn hidden_map_keeps_the_last_layout_for_clicks() {
         let mut m = drawn_minimap();

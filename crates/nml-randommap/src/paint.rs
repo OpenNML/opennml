@@ -281,6 +281,7 @@ pub(crate) mod tests {
         grid
     }
 
+    // QUIRK D-333: kept
     #[test]
     fn connection_is_a_ring() {
         // Three centers: (1, 1) -> (6, 1) horizontal, (6, 1) -> (1, 6) diagonal, (1, 6) -> (1, 1)
@@ -317,6 +318,7 @@ pub(crate) mod tests {
             .collect()
     }
 
+    // QUIRK D-333: kept
     #[test]
     fn two_players_paint_the_same_line_twice() {
         // Horizontal: A -> B and B -> A are the same segment, the result equals one segment.
@@ -376,6 +378,8 @@ pub(crate) mod tests {
         assert_eq!(grid.tiles.iter().filter(|&&v| v == -1).count(), 63);
     }
 
+    // QUIRK D-333: kept
+    // QUIRK D-335: deviation
     #[test]
     fn identical_centers_and_huge_distances_are_errors() {
         let script = connect_script(0);

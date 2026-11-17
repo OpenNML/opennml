@@ -50,6 +50,7 @@ fn blocked(sim: &Sim, id: ObjectId) -> bool {
     building(sim, id).expect("building").blocked
 }
 
+// QUIRK E-153: kept
 #[test]
 fn deactivate_removes_from_tick_collision_and_area_queries_keeps_tables_and_counts() {
     let rules = ck::rules();
@@ -119,6 +120,8 @@ fn deactivate_removes_from_tick_collision_and_area_queries_keeps_tables_and_coun
     assert!(t.contains(&other));
 }
 
+// QUIRK K-28, E-153: kept
+// QUIRK E-209: deviation
 #[test]
 fn objects_created_while_hidden_are_listed_ticked_in_phase_1_and_destroyed_on_activate() {
     let rules = ck::rules();
@@ -153,6 +156,7 @@ fn objects_created_while_hidden_are_listed_ticked_in_phase_1_and_destroyed_on_ac
     assert!(sim.state.slot_running[1]);
 }
 
+// QUIRK E-198: kept
 #[test]
 fn activate_flushes_the_whole_destroy_queue_immediately() {
     let rules = ck::rules();
@@ -175,6 +179,7 @@ fn activate_flushes_the_whole_destroy_queue_immediately() {
     assert_eq!(sim.state.destroy_queue, [late]);
 }
 
+// QUIRK E-153: kept
 #[test]
 fn activate_reinserts_remaining_objects_in_table_order() {
     let rules = ck::rules();
@@ -206,6 +211,7 @@ fn activate_reinserts_remaining_objects_in_table_order() {
     assert!(!is_hidden(sim.state, a));
 }
 
+// QUIRK E-198: kept
 #[test]
 fn dead_ids_stay_in_the_list_and_are_skipped() {
     let rules = ck::rules();
@@ -239,6 +245,7 @@ fn dead_ids_stay_in_the_list_and_are_skipped() {
     assert!(sim.state.destroy_queue.is_empty());
 }
 
+// QUIRK E-198: kept
 #[test]
 fn owner_change_into_and_out_of_hidden_slots() {
     let rules = ck::rules();
@@ -279,6 +286,7 @@ fn owner_change_into_and_out_of_hidden_slots() {
     assert!(in_collision(sim.state, r3) && !in_groups(sim.state, r3));
 }
 
+// QUIRK E-153: kept
 #[test]
 fn add_inactive_needs_hidden_owner_slot_and_no_duplicates() {
     let rules = ck::rules();
@@ -320,6 +328,7 @@ fn add_inactive_needs_hidden_owner_slot_and_no_duplicates() {
     assert_eq!(checksum(sim.state), before, "not listed: nothing");
 }
 
+// QUIRK E-206: deviation
 #[test]
 fn remove_inactive_advances_the_fog_cursor() {
     let rules = ck::rules();
@@ -353,6 +362,7 @@ fn remove_inactive_advances_the_fog_cursor() {
     assert_eq!(sim.state.fog.inactive_pos, 0);
 }
 
+// QUIRK E-153, E-198: kept
 #[test]
 fn fog_cycle_of_hidden_slot_reads_only_its_list() {
     let rules = ck::rules();
@@ -432,6 +442,8 @@ fn assert_same_after_reload(state: &SimState, rules: &Rules) {
     }
 }
 
+// QUIRK E-198: kept
+// QUIRK E-207: deviation
 #[test]
 fn save_and_load_during_hide_keeps_checksums() {
     let (rules, mut state) = hidden_scene();
@@ -449,6 +461,7 @@ fn save_and_load_during_hide_keeps_checksums() {
     assert_same_after_reload(&state, &rules);
 }
 
+// QUIRK E-206: deviation
 #[test]
 fn save_and_load_after_fog_leaves_hidden_slot_for_running_slot() {
     let (rules, mut state) = hidden_scene();

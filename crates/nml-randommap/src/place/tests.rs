@@ -310,6 +310,7 @@ fn general_draws_two_per_single_attempt() {
     assert_eq!(run.draws, 3 + 2 * run.attempts[0]);
 }
 
+// QUIRK D-338: kept
 #[test]
 fn member_draws_three_per_attempt() {
     // re/random-map ZK-b.3: center 2 draws per attempt, member 3 (% 361, % (R+1), % (R+1)).
@@ -330,6 +331,7 @@ fn member_draws_three_per_attempt() {
     assert_eq!(run.centres.len(), 2);
 }
 
+// QUIRK D-338: kept
 #[test]
 fn centre_in_attempt_101_stands_without_members() {
     // D-338: seed 442 hits the only free tile (3, 3) not until the 101st attempt. The center
@@ -352,6 +354,7 @@ fn centre_in_attempt_101_stands_without_members() {
     assert_eq!(run.attempts, [202, 0]);
 }
 
+// QUIRK D-338: kept
 #[test]
 fn failed_centre_drops_the_group() {
     // D-338: if the center fails in all 101 attempts, the whole group is omitted - no member
@@ -374,6 +377,7 @@ fn failed_centre_drops_the_group() {
     assert_eq!(run.centre, Some(last));
 }
 
+// QUIRK D-354: kept
 #[test]
 fn members_scatter_around_the_previous_centre() {
     // D-354: group 1 places its center P1 (128, 896); group 2 fails the group distance check (8) in
@@ -392,6 +396,7 @@ fn members_scatter_around_the_previous_centre() {
     assert_eq!(run.centres, vec![[128.0, 0.0, 896.0]]);
 }
 
+// QUIRK D-354: kept
 #[test]
 fn first_group_without_centre_is_an_error() {
     // D-354: seed 2 chooses the GUID without a project object for j = 0, the model for j = 1 - the
@@ -409,6 +414,7 @@ fn first_group_without_centre_is_an_error() {
     assert_eq!(run.draws, 0);
 }
 
+// QUIRK D-359: deviation
 #[test]
 fn zero_divisors_are_errors_negative_divisors_are_c_remainders() {
     // D-359: maxGroupRadius -1 -> divisor 0 -> message as soon as a member draws.
@@ -468,6 +474,7 @@ fn unknown_object_name_draws_nothing() {
     assert_eq!((run.draws, run.attempts), (0, [0, 0]));
 }
 
+// QUIRK D-355: kept
 #[test]
 fn unloadable_model_draws_only_the_guid() {
     // D-355: unloadable model -> only R1, no attempts, nothing placed; the cache remembers the
@@ -500,6 +507,7 @@ fn geometry_is_cached_across_objects() {
     assert_eq!(w.reads.get(), [1, 0]);
 }
 
+// QUIRK D-325: kept
 #[test]
 fn scaling_matches_fun_0053fb20() {
     // `FUN_0053FB20` with n = 3 players, 128-tile map (map factor 2.0).
@@ -584,6 +592,7 @@ fn ring_coordinate_matches_hand_values() {
     assert_eq!(ring_coord(128, 1, sin_deg(deg(270)), 4), 384.0);
 }
 
+// QUIRK D-338: kept
 #[test]
 fn for_all_players_draws_two_plus_two() {
     // re/random-map ZK-b.3: per attempt R8/R9 (`% (max − min + 1)`, `% 361`), a member additionally
@@ -641,6 +650,7 @@ fn for_all_players_draws_two_plus_two() {
     assert_eq!(positions(&run.objects)[..2], [centre, [x, z]]);
 }
 
+// QUIRK D-339: kept
 #[test]
 fn failed_town_center_draws_202() {
     // re/random-map ZK-b.3, D-339: `TOWN_CENTER` (min = max = 0, IsPlayer) on a steep area center:
@@ -663,6 +673,7 @@ fn failed_town_center_draws_202() {
     assert_eq!(run.slots_used, slots);
 }
 
+// QUIRK D-338, D-339: kept
 #[test]
 fn is_player_counts_loop_bodies_not_areas() {
     // D-339: three areas, number 2 -> owners 0 ... 5 (one counter across all areas), not
@@ -739,6 +750,7 @@ fn is_player_counts_loop_bodies_not_areas() {
     assert_eq!(owners, [1]);
 }
 
+// QUIRK D-354: kept
 #[test]
 fn group_centres_span_all_player_areas() {
     // The list of group centers (8) applies across all areas of the block. Area 1 places its
@@ -758,6 +770,7 @@ fn group_centres_span_all_player_areas() {
     assert_eq!(run.draws, 2 + 3 * 202);
 }
 
+// QUIRK D-354: kept
 #[test]
 fn members_of_the_next_area_scatter_around_the_previous_centre() {
     // D-354 with `ForAllPlayers` (`0x00544E6C…0x00544E83`): the center applies across all areas.
@@ -777,6 +790,8 @@ fn members_of_the_next_area_scatter_around_the_previous_centre() {
     assert_eq!(run.draws, 8 + 2 + 4 + 4);
 }
 
+// QUIRK D-354: kept
+// QUIRK D-359: deviation
 #[test]
 fn ring_divisor_zero_is_an_error() {
     // D-359: maxDist - minDist + 1 == 0 -> message instead of a division by zero.
@@ -892,6 +907,7 @@ fn fill_draws_guid_only_on_passing_tiles() {
     assert_eq!(run.objects.len() as u32, outside);
 }
 
+// QUIRK D-362: kept
 #[test]
 fn ground_texture_is_visible_to_the_next_fill_tile() {
     // D-362: `PutOnto G` with `AvoidOther 1`, `GroundTexture F`: every placed object paints its

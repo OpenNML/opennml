@@ -633,6 +633,7 @@ mod tests {
         (a - b).abs() < 1e-4
     }
 
+    // QUIRK D-214: kept
     #[test]
     fn dead_objects_keep_a_ground_shadow_only_with_a_per_frame_texture() {
         use ShadowKind::*;

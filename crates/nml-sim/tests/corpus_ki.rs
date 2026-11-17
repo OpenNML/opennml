@@ -28,6 +28,7 @@ fn load_rules(vfs: &Vfs) -> Rules {
     Rules::load(vfs, &scene).unwrap_or_else(|e| panic!("{LEVEL}: {e:#}"))
 }
 
+// QUIRK E-16: kept
 #[test]
 fn catalog_holds_the_280_database_modules() {
     let Some(dir) = corpus_game_dir() else {
@@ -92,6 +93,7 @@ fn corpus_builtin_ids(vfs: &Vfs) -> BTreeSet<u32> {
     ids
 }
 
+// QUIRK E-4: kept
 #[test]
 fn every_corpus_builtin_is_local_or_has_a_signature() {
     let Some(dir) = corpus_game_dir() else {
@@ -153,6 +155,7 @@ fn call(id: u16, args: &[i32]) -> StubCall {
     }
 }
 
+// QUIRK E-12, E-46: kept
 #[test]
 fn setschwierigkeitsgrad_sets_the_level_values() {
     let Some(dir) = corpus_game_dir() else {
@@ -200,6 +203,7 @@ fn setschwierigkeitsgrad_sets_the_level_values() {
     }
 }
 
+// QUIRK E-20: kept
 #[test]
 fn stopki_sets_value_255_only() {
     let Some(dir) = corpus_game_dir() else {
@@ -500,6 +504,7 @@ fn dry_run_line(out: &mut String, rules: &Rules, module: u32, r: &DryRun) {
 /// Every `nml.db` module alone against the stand-in game, without a limit and with at most a
 /// quarter of each limit. Statistics to `$NML_SHOTS_OUT/dryrun.txt`, to stderr without the
 /// variable.
+// QUIRK E-46, E-47: kept
 #[test]
 fn all_reachable_modules_run_dry_against_the_stub() {
     let Some(dir) = corpus_game_dir() else {
@@ -692,6 +697,7 @@ fn assert_survives_saving(
 
 /// Deviation from E-10 (re/ki-vm 12.7): saving and loading changes neither the thread sequence nor
 /// remaining pauses nor running children.
+// QUIRK E-10: deviation
 #[test]
 fn kivm_checksums_survive_saving_and_loading() {
     let Some(dir) = corpus_game_dir() else {

@@ -478,6 +478,7 @@ mod tests {
         assert_eq!(send(sim, unit, &Message::new(msg::DEST_REACHED, &[])), 1);
     }
 
+    // QUIRK W-23: kept
     #[test]
     fn a_farmer_claims_his_slot_on_arrival_and_takes_the_first_unit_after_one_wait() {
         let rules = econ_rules();
@@ -549,6 +550,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-52: kept
     #[test]
     fn the_sixth_farmer_at_a_full_farm_gives_up() {
         let rules = econ_rules();
@@ -580,6 +582,7 @@ mod tests {
         assert_eq!(slots(&sim, farm)[..], units[..5]);
     }
 
+    // QUIRK W-52: kept
     #[test]
     fn without_a_slot_the_farmer_walks_to_the_farm_and_asks_once_more() {
         for freed in [false, true] {
@@ -627,6 +630,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-56: kept
     #[test]
     fn harvesters_answer_the_animation_queries_and_the_step_returns_minus_one() {
         let rules = econ_rules();
@@ -684,6 +688,7 @@ mod tests {
         assert_eq!(slots(&sim, farm)[0], new);
     }
 
+    // QUIRK W-62: kept
     #[test]
     fn resuming_work_picks_the_nearest_job_and_prefers_wood_then_harvest_then_gold() {
         // Jobs per case: (tree, farm, mine) as a tile or none -> expected start command.
@@ -749,6 +754,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-27, W-50: kept
     #[test]
     fn find_farm_searches_a_quarter_of_the_sight_and_moves_the_cursor() {
         let rules = econ_rules();

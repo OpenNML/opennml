@@ -248,6 +248,7 @@ fn desktop_children(d: &Driver<impl World>) -> Vec<NodeId> {
 
 const PAT: &str = "DATA/MENÜ/BACKGROUND_1024X1024_PAT.TGA";
 
+// QUIRK O-90: kept
 #[test]
 fn start_opens_logo_above_it() {
     // 12.1.1, 12.1.6: `open("start")` opens `logo` with flag 0; LOGO is built after START, so it lies on top.
@@ -378,6 +379,7 @@ fn triggers_are_refused_while_transitions_run() {
     );
 }
 
+// QUIRK O-21: kept
 #[test]
 fn double_click_on_a_button_during_the_flight_triggers_nothing() {
     // Two clicks within `DoubleClickTimeout` (12.8, O-106) on `OPTIONS` during the fly-in - both ask `0x12F` before
@@ -427,6 +429,7 @@ fn double_click_on_a_button_during_the_flight_triggers_nothing() {
     assert!(d.find("OPTIONS").is_none());
 }
 
+// QUIRK O-97: kept
 #[test]
 fn close_then_open_waits_with_flag_1() {
     // Flag 1: `Open options` waits until START **and** LOGO are done; it is built in the `0x136` of LOGO
@@ -497,6 +500,7 @@ fn parallel_open_with_flag_0() {
     );
 }
 
+// QUIRK O-97: kept
 #[test]
 fn closing_deletes_and_reopening_rebuilds() {
     // O-97: closing deletes the dialog; the ComboBox selection comes from the logic after reopening.
@@ -550,6 +554,7 @@ fn closing_deletes_and_reopening_rebuilds() {
     );
 }
 
+// QUIRK O-96: kept
 #[test]
 fn reopening_an_open_dialog_restarts_the_flight() {
     // O-96: no rebuild, no `OnAttach`; fly-in from EXTENT and fade-in from alpha 0 anew, name twice.
@@ -639,6 +644,7 @@ fn open_combo_list(d: &mut Driver<Fixture>, name: &str) -> (NodeId, NodeId, Node
     (popup, p.blocker.unwrap(), p.list_box.unwrap())
 }
 
+// QUIRK O-109: deviation
 #[test]
 fn closing_with_an_open_combo_list_removes_popup_and_blocker() {
     // Popup, list and blocker fall with the dialog in the same deletion pass - non-modal (the frame falls while
@@ -674,6 +680,7 @@ fn closing_with_an_open_combo_list_removes_popup_and_blocker() {
     }
 }
 
+// QUIRK O-109: deviation
 #[test]
 fn escape_with_an_open_combo_list_triggers_checkescape() {
     // The popup does not take ESC (slot 19 = base `0x0045A380`), the blocker does not lock the keyboard -
@@ -991,6 +998,7 @@ fn start_sequence_plays_three_videos_then_start() {
 /// Quirk E-295: The network start via the command line skips the startup sequence like a direct start
 /// (`MenuOptions::skip_intro`), also with `IsIntro`: no video, the pointer stays on, `start` in the first frame. The
 /// setting itself stays unchanged (it is not remembered as `IsIntro 0`).
+// QUIRK E-295: kept
 #[test]
 fn skip_intro_opens_start_without_videos() {
     let library = DialogLibrary::from_sources(&[("start", START_DLG)]);
@@ -1027,6 +1035,7 @@ fn video_index_above_two_is_ignored() {
     assert!(d.app.queue.is_empty());
 }
 
+// QUIRK O-68: kept
 #[test]
 fn any_key_aborts_including_escape_and_return() {
     // O-68: without a receiver every key goes as event `0xF` to the menu root, whose `0x0045CAB0` does not check the
@@ -1088,6 +1097,7 @@ fn any_key_aborts_including_escape_and_return() {
     assert_eq!(stops, 1);
 }
 
+// QUIRK O-68: kept
 #[test]
 fn mouse_never_aborts_a_video() {
     // The click slots of the menu root return 0 (`0x004527C0`): movement, clicks, double clicks and wheel over the
@@ -1124,6 +1134,7 @@ fn mouse_never_aborts_a_video() {
     assert_eq!(stops, [128]);
 }
 
+// QUIRK O-68: kept
 #[test]
 fn escape_is_taken_by_a_checkescape_button_first() {
     // re/video, section "Abort": ESC first goes through the tree as broadcast `0x17E`; if a button with
@@ -1153,6 +1164,7 @@ fn escape_is_taken_by_a_checkescape_button_first() {
     assert_eq!(d.triggered("cancel"), 1);
 }
 
+// QUIRK O-68: kept
 #[test]
 fn focused_edit_field_takes_the_key_and_the_video_runs_on() {
     // The video start sets only the focus of the menu root itself (`0x0045D6A6` -> `FUN_00459400`, without clearing the
@@ -1610,6 +1622,7 @@ const FLYING_DIALOG: &str = "FRAME FLY\n FLAGS MENUFRAME_MOVE /FLAGS\n EXTENT -5
 const STILL_DIALOG: &str = "FRAME STILL\n EXTENT 700 100 1100 500\n\
      BUTTON GO FLAGS MENUBUTTON_TEXT /FLAGS EXTENT 10 10 200 50 /BUTTON\n/FRAME\n";
 
+// QUIRK O-21: kept
 #[test]
 fn escape_during_the_closing_flight_is_refused() {
     // ESC triggers the button with `CHECKESCAPE` (`FUN_0045E0C0`), the logic closes the dialog with a
@@ -1658,6 +1671,7 @@ fn escape_during_the_closing_flight_is_refused() {
     assert_eq!(d.triggered("back"), 1);
 }
 
+// QUIRK O-110: kept
 #[test]
 fn close_then_parallel_open_of_the_same_dialog_hangs_the_stack() {
     // O-110: `Open X` with flag 0 while `Close X` runs -> running `[Close X, Open X]`. The `0x136` of X

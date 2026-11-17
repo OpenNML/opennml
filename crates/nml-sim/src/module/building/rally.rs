@@ -233,6 +233,7 @@ mod tests {
             .expect("unit created")
     }
 
+    // QUIRK W-62: kept
     #[test]
     fn new_units_appear_at_the_exit_and_resume_work_at_the_meeting_point() {
         SEEN.with(|s| s.borrow_mut().clear());

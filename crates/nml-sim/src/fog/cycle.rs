@@ -371,6 +371,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-163: kept
     #[test]
     fn foreign_area_view_stamps_last_taken_rect_with_its_own_clear_flag() {
         // re/vision 3.4: the rectangle variable is overwritten only for a matching player, but every entry is
@@ -410,6 +411,7 @@ mod tests {
         assert_eq!(f.explored.count(0xFF), 1 + 1 + 1 + 4);
     }
 
+    // QUIRK E-163: kept
     #[test]
     fn area_views_stamp_inclusive_with_swapped_corners_and_clip_to_the_map() {
         let rules = kit::rules();
@@ -432,6 +434,7 @@ mod tests {
         assert_eq!(f.cleared.get(3, 2), Some(0));
     }
 
+    // QUIRK E-163: kept
     #[test]
     fn area_views_of_a_hidden_slot_are_stamped_independently_of_the_slot_flag() {
         // `0x00486FC2...0x00487346` stamp independently of the slot flag.

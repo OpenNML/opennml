@@ -264,6 +264,7 @@ mod tests {
         (before, checksum(sim.state))
     }
 
+    // QUIRK W-245: kept
     #[test]
     fn trade_command_code() {
         let kind = CommandKind::TradeWithPlayer {
@@ -277,6 +278,7 @@ mod tests {
         assert_eq!(postcard::from_bytes::<Command>(&bytes).unwrap(), command);
     }
 
+    // QUIRK W-239: deviation
     #[test]
     fn trade_command_checks_like_the_menu() {
         // Check like the partner menu: kind 0...3, target 0...8, target != sender, the target owns a
@@ -330,6 +332,7 @@ mod tests {
         assert_eq!(posted_trades(&sim, cart), [(3, 2, true), (0, 8, true)]);
     }
 
+    // QUIRK K-289: deviation
     #[test]
     fn trade_command_skips_foreign_units_and_units_without_module_43() {
         // K-289 (deviation): the foreign cart (slot 2) and the own colonist without module 43
@@ -373,6 +376,7 @@ mod tests {
         assert_eq!(trade_of(&sim, cart), (0, 2));
     }
 
+    // QUIRK K-289: deviation
     #[test]
     fn trade_command_aborts_the_current_order_when_executed() {
         // re/trading 2.2: `PostMessage(.., abort)` - the unit gets `0x12B` only when the FIFO is
@@ -482,6 +486,8 @@ mod tests {
         );
     }
 
+    // QUIRK C-225, C-227, C-231: kept
+    // QUIRK C-226: deviation
     #[test]
     fn tribute_follows_the_original() {
         // re/heroes-resources 3.7, 9.3: directly via `execute_tribute` (without command check).
@@ -590,6 +596,7 @@ mod tests {
         assert_eq!(events, [sent(0, 5)]);
     }
 
+    // QUIRK C-226: deviation
     #[test]
     fn tribute_commands_check_amount_resource_and_sender() {
         // re/heroes-resources (A8): amount > 0, resource 0...2, `from` = sender; when rejected

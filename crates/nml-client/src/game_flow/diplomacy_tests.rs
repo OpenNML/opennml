@@ -31,6 +31,7 @@ fn started(real_levels: bool) -> Option<Run> {
 /// Game type 0, no lock - the request (key `SHIFT D` = `xbutton(572)`, button 580) opens at once (state 10,
 /// `DIPLOMATIE`), the match stands still; the same request closes. Under the lock (`Engine+0x600`) nothing opens, and
 /// an open dialog stays open when toggled; "Back" closes.
+// QUIRK O-323: kept
 #[test]
 fn open_close_d5() {
     let Some(mut r) = started(false) else {
@@ -91,6 +92,7 @@ fn open_close_d5() {
 /// Dialog open (match stopped), set shared vision, status and tribute - the commands are in the state and in the log at
 /// once, quicksave (F1) stays locked; dialog closed, play on; the replay of the log gives the same checksum as the
 /// live run.
+// QUIRK O-323: kept
 #[test]
 fn diplomacy_commands_while_halted_replay_like_live() {
     let Some(mut r) = started(true) else {
@@ -180,6 +182,7 @@ fn diplomacy_commands_while_halted_replay_like_live() {
 }
 
 /// Masks (bits of dropped-out slots included), locked teams and the fog switch survive saving and loading.
+// QUIRK O-324: kept
 #[test]
 fn mask_bits_survive_save_and_load() {
     let Some(mut r) = Run::corpus() else {

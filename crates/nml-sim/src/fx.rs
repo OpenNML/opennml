@@ -210,6 +210,7 @@ impl FxVec3 {
 mod tests {
     use super::*;
 
+    // QUIRK K-255: deviation
     #[test]
     fn fixed_sqrt_int_matches_the_table_of_the_exe() {
         // The first 16 entries of 0x00628600 (re/groups-formations 12.5).
@@ -284,6 +285,7 @@ mod tests {
     /// E-118: if the divisor `Fixed_Div(hi, 0x1000)` or `Fixed_Div(0x1000, hi)` becomes 0, `fixed_hypot` ends with 0
     /// instead of dividing by zero (larger difference congruent to 0-3 or 2^22 - 3 ... 2^22 - 1 modulo 2^22,
     /// plus `(MIN, MIN)`).
+    // QUIRK E-118: deviation
     #[test]
     fn fixed_hypot_with_divisor_zero_ends_with_zero() {
         let mut his = Vec::new();
@@ -310,6 +312,7 @@ mod tests {
         assert_ne!(fixed_hypot((1 << 22) - 4, 0), 0);
     }
 
+    // QUIRK K-324: deviation
     #[test]
     fn fixed_mul_with_int_min_ends_with_zero() {
         for a in [-1, -5, -4096, i32::MIN + 1, i32::MIN, 0, 1, 4096, i32::MAX] {

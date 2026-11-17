@@ -450,6 +450,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-254: kept
     #[test]
     fn start_position_matches_the_documented_values() {
         // re/renderer: distance ~ 18,447, pitch ~ 38.5 degrees with the target at height 0.
@@ -462,6 +463,7 @@ mod tests {
         assert!(camera.is_valid_eye(camera.eye));
     }
 
+    // QUIRK D-254: kept
     #[test]
     fn the_target_stays_at_height_0_over_hills_and_water() {
         // `Camera+0x70` (terrain) stays 0 in the original: `Camera_SetTarget` never lifts the target to
@@ -484,6 +486,7 @@ mod tests {
 
     /// `GameEngine_MoveCameraTo(x, z, 0)` (`0x004322A0`): the eye - target offset stays, the
     /// target is clamped to the map as with `move_to`; `move_to` still sets the default offset.
+    // QUIRK O-43: kept
     #[test]
     fn move_keeping_offset_keeps_the_current_offset() {
         let (mut camera, terrain) = camera();
@@ -567,6 +570,7 @@ mod tests {
 
     /// `Camera_Yaw(+a)` rotates the offset like the game's `Matrix_RotationY` from +x to +z (top view
     /// counterclockwise), distance and pitch stay; `Camera_Pitch(+a)` makes it steeper (O-331).
+    // QUIRK O-306: kept
     #[test]
     fn yaw_turns_like_the_game_matrix_and_pitch_positive_is_steeper() {
         let (mut camera, terrain) = camera();
@@ -790,6 +794,7 @@ mod tests {
 
     /// `start_focus_of` takes the passed player, even if the `.lvl` has no human
     /// (random map): area of its color, otherwise its first game object, otherwise the map center.
+    // QUIRK D-366: kept
     #[test]
     fn start_focus_of_uses_the_given_player() {
         let area = "[AREA]\r\n{\r\n\tAREA_NAME \"start green\"\r\n\tAREA_RECT 2 4 6 8\r\n}\r\n";

@@ -32,6 +32,7 @@ fn timer(state: &SimState) -> Option<i32> {
     state.countdowns.get(&LEADER_COUNTDOWN).copied()
 }
 
+// QUIRK D-295: kept
 #[test]
 fn domination_leader_needs_more_than_half_with_neutral_flags() {
     let rules = Rules::synthetic("", 4);
@@ -77,6 +78,7 @@ fn leader_is_the_first_slot_over_half_and_other_slot_restarts_the_timer() {
     assert_eq!(timer(sim.state), Some(LIMIT_S * 1000));
 }
 
+// QUIRK D-295: kept
 #[test]
 fn same_leader_keeps_the_remaining_time() {
     let rules = Rules::synthetic("", 4);
@@ -99,6 +101,7 @@ fn same_leader_keeps_the_remaining_time() {
     assert_eq!(timer(sim.state), Some(60_000 - 100 * 50));
 }
 
+// QUIRK D-295, O-180: kept
 #[test]
 fn lost_majority_removes_timer_and_leader() {
     // V6: slot 0 leads with 3 of 4; if it loses a flag to slot 1 (deduction, then gain), it stands
@@ -118,6 +121,7 @@ fn lost_majority_removes_timer_and_leader() {
     assert_eq!(timer(sim.state), Some(60_000));
 }
 
+// QUIRK D-295: kept
 #[test]
 fn decrement_alone_does_not_reevaluate() {
     let rules = Rules::synthetic("", 4);
@@ -135,6 +139,7 @@ fn decrement_alone_does_not_reevaluate() {
     assert_eq!(timer(sim.state), Some(60_000 - 30 * 50));
 }
 
+// QUIRK D-295: kept
 #[test]
 fn allies_with_half_each_do_not_lead() {
     // V7, D-295: the majority counts per slot. Two allies with half of the four flags each
@@ -168,6 +173,7 @@ fn koth_first_slot_with_a_flag_leads() {
     assert_eq!(timer(sim.state), Some(60_000));
 }
 
+// QUIRK W-160: kept
 #[test]
 fn koth_animal_holder_removes_the_timer() {
     let rules = Rules::synthetic("", 4);
@@ -183,6 +189,7 @@ fn koth_animal_holder_removes_the_timer() {
     assert_eq!((sim.state.flag_leader, timer(sim.state)), (NO_LEADER, None));
 }
 
+// QUIRK W-160: kept
 #[test]
 fn koth_branch_for_nobody_is_only_reachable_by_hand() {
     // W-160: the branch "nobody has a flag" (value 9) needs all-zero counters, but a check happens

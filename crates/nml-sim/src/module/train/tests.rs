@@ -8,6 +8,7 @@ use crate::module::multipart::{self, MultiHead, MultiPart};
 use crate::sim::Sim;
 use crate::world::{object_event_bits, set_object_event_bit};
 
+// QUIRK K-243: deviation
 #[test]
 fn train_and_multipart_states_are_created_with_their_defaults() {
     // Only permanent things: module kind, flags, render bits, direction, module distribution. What
@@ -150,6 +151,7 @@ fn sound(events: &[SimEvent], id: ObjectId, action: i32) -> usize {
         .count()
 }
 
+// QUIRK K-240: kept
 #[test]
 fn the_locomotive_snaps_to_the_nearest_track_and_couples_tender_and_wagon() {
     let rules = rules();
@@ -197,6 +199,7 @@ fn the_locomotive_snaps_to_the_nearest_track_and_couples_tender_and_wagon() {
     }
 }
 
+// QUIRK E-146: kept
 #[test]
 fn train_parts_get_tender_and_wagon() {
     // `GameWorld_CreateObject` enters the name at `0x00486414`, before `GameObject_ApplyPlacement`
@@ -247,6 +250,7 @@ fn a_locomotive_without_track_keeps_its_place() {
     assert_eq!((g(wagon).x.0, g(wagon).z.0), (lx, lz - 9600));
 }
 
+// QUIRK K-241: kept
 #[test]
 fn departure_accelerates_along_the_curve_and_moves_the_whole_train() {
     // From (30, 20) the look-ahead does not brake until after the start-up.
@@ -289,6 +293,7 @@ fn departure_accelerates_along_the_curve_and_moves_the_whole_train() {
     assert_eq!((t.acc_time, t.next_speed), (0, 2304));
 }
 
+// QUIRK K-245: kept
 #[test]
 fn the_train_brakes_before_the_track_end_and_sets_bit_0() {
     let (rules, mut state, loco) = scene((40, 20));
@@ -324,6 +329,7 @@ fn the_train_brakes_before_the_track_end_and_sets_bit_0() {
     }
 }
 
+// QUIRK K-241: kept
 #[test]
 fn stopping_uses_the_brake_curve_and_a_second_stop_restarts_it() {
     let (rules, mut state, loco) = scene((30, 20));
@@ -382,6 +388,7 @@ fn stopping_uses_the_brake_curve_and_a_second_stop_restarts_it() {
     assert_eq!(speeds, expected);
 }
 
+// QUIRK K-245: kept
 #[test]
 fn a_target_tile_stops_the_train_without_a_step() {
     let (rules, mut state, loco) = scene((30, 20));
@@ -413,6 +420,7 @@ fn a_target_tile_stops_the_train_without_a_step() {
     assert_eq!((o.tile, o.grid.x.0), ((32, 20), 135_129), "halt tile");
 }
 
+// QUIRK K-245: kept
 #[test]
 fn departing_without_track_stops_in_the_next_tick() {
     // Locomotive on the last track, direction of travel into the void (re/train-multipart 9.1).
@@ -435,6 +443,7 @@ fn departing_without_track_stops_in_the_next_tick() {
     assert_eq!(object_event_bits(&sim, loco) & 1, 1);
 }
 
+// QUIRK K-242: kept
 #[test]
 fn units_on_the_track_are_neither_pushed_nor_hurt() {
     let rules = rules();
@@ -538,6 +547,7 @@ fn leave_the_map(backward: bool) {
     panic!("the locomotive does not leave the map");
 }
 
+// QUIRK K-244: kept
 #[test]
 fn leaving_the_map_backwards_holds_outside_and_sets_bit_9() {
     leave_the_map(true);
@@ -545,6 +555,7 @@ fn leaving_the_map_backwards_holds_outside_and_sets_bit_9() {
     leave_the_map(false);
 }
 
+// QUIRK K-240, K-250: kept
 #[test]
 fn slaves_ignore_departure_and_unknown_codes_answer_0() {
     let (rules, mut state, loco) = scene((40, 20));
@@ -583,6 +594,7 @@ fn slaves_ignore_departure_and_unknown_codes_answer_0() {
     assert_eq!(q.args, [4096, 0, 0]);
 }
 
+// QUIRK K-246: kept
 #[test]
 fn removing_the_locomotive_leaves_its_slaves() {
     let (rules, mut state, loco) = scene((40, 20));
@@ -597,6 +609,7 @@ fn removing_the_locomotive_leaves_its_slaves() {
     }
 }
 
+// QUIRK K-275: kept
 #[test]
 fn the_whistle_repeats_every_900_ms_while_moving() {
     let (rules, mut state, loco) = scene((30, 20));
@@ -679,6 +692,7 @@ fn scene_with(tile: (i32, i32), prepare: impl FnOnce(&mut Sim)) -> (Rules, SimSt
     (rules, state, loco)
 }
 
+// QUIRK K-207: kept
 #[test]
 fn init_blocks_twelve_tiles_without_flush() {
     // re/train-multipart 9.2 with r = (1, 0) and locomotive at (40, 20): blocked x = 31 ... 42 (+2 ... -9).
@@ -738,6 +752,7 @@ fn tick_to_next_tile(state: &mut SimState, rules: &Rules, loco: ObjectId) -> (i3
     panic!("the locomotive does not change the tile (stays on {from:?})");
 }
 
+// QUIRK K-207: kept
 #[test]
 fn moving_forward_keeps_a_window_of_thirteen_and_frees_a_never_blocked_tile() {
     // K-207: obstacle (e.g. a tree) on (20, 20) = T - 10, never blocked by the train. Init blocks
@@ -786,6 +801,7 @@ fn moving_forward_keeps_a_window_of_thirteen_and_frees_a_never_blocked_tile() {
     );
 }
 
+// QUIRK K-207: kept
 #[test]
 fn moving_backward_keeps_a_window_of_twelve() {
     // Backward: blocks T' - 9r, frees T' + 3r. Init at 35: 26 ... 37; tile 34: 25 ... 36.
@@ -870,6 +886,7 @@ fn block_near_the_edge(west: bool, along_x: bool) {
     assert_eq!(state.path.dirty, DirtyRect::default());
 }
 
+// QUIRK K-207: kept
 #[test]
 fn blocking_outside_the_map_is_ignored() {
     // re/train-multipart 13.1: cells outside write nothing (no panic, the rest as above) - at
@@ -880,6 +897,7 @@ fn blocking_outside_the_map_is_ignored() {
     }
 }
 
+// QUIRK K-207: kept
 #[test]
 fn loading_does_not_block_twice() {
     // Deviation from the original: the path grid is in the savegame; loading does not block again and the last
@@ -1045,6 +1063,7 @@ fn count_of(state: &SimState, guid: u32) -> usize {
         .count()
 }
 
+// QUIRK K-35: kept
 #[test]
 fn leaving_backwards_in_mode_4_loads_supply_and_returns_after_180_s() {
     let rules = supply_rules();
@@ -1124,6 +1143,7 @@ fn leaving_backwards_in_mode_4_loads_supply_and_returns_after_180_s() {
     );
 }
 
+// QUIRK K-35: kept
 #[test]
 fn supply_objects_are_placed_without_snapping_or_0x3303() {
     let rules = supply_rules();
@@ -1165,6 +1185,7 @@ fn supply_objects_are_placed_without_snapping_or_0x3303() {
     assert_eq!(sim.state.tables[0].count, count);
 }
 
+// QUIRK K-35: kept
 #[test]
 fn mode_5_and_forward_exits_load_no_supply() {
     let rules = supply_rules();
@@ -1186,6 +1207,7 @@ fn mode_5_and_forward_exits_load_no_supply() {
     }
 }
 
+// QUIRK K-35: kept
 #[test]
 fn braking_outside_the_map_keeps_the_supply() {
     // "Locomotive in the map" is the unclamped grid position; the clamped tile would always lie in
@@ -1214,6 +1236,7 @@ fn braking_outside_the_map_keeps_the_supply() {
     assert_eq!(count_of(&state, STATION), 0);
 }
 
+// QUIRK K-35: kept
 #[test]
 fn a_save_during_the_supply_wait_continues_identically() {
     // Supply loaded, counter running: saving and loading change neither the departure after 180 s
@@ -1251,6 +1274,7 @@ fn a_save_during_the_supply_wait_continues_identically() {
     assert_eq!(count_of(&state, STATION), 1);
 }
 
+// QUIRK K-35: kept
 #[test]
 fn unloading_uses_the_same_outside_check_as_the_tick_at_the_map_edge() {
     // The original checks `0 <= grid >> 12 < size` (`0x004F69C0`), not `IsGridPosInMap`

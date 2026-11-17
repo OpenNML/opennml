@@ -412,6 +412,7 @@ mod tests {
 
     /// The pure row choice (`pick_target_entry`) is the same as that of the command, but also yields
     /// a row without a command and does not check the ownership of the selection (`0x00453790` -> `0x00480E80`).
+    // QUIRK O-296: kept
     #[test]
     fn pick_target_entry_is_the_row_of_the_right_click() {
         let rules = rules();
@@ -565,6 +566,7 @@ mod tests {
         assert_eq!(b, button::CHOP_WOOD);
     }
 
+    // QUIRK K-224, W-195: kept
     #[test]
     fn right_click_403_and_404_mount_and_board() {
         // re/riding 2.5: 403 applies to colonists (module 13) on every free saddle horse, also a
@@ -658,6 +660,7 @@ mod tests {
         assert_eq!(crate::save::checksum(&*sim.state), before);
     }
 
+    // QUIRK W-198: kept
     #[test]
     fn right_click_414_boards_own_vehicles() {
         // re/ships 2.4: the entry 414 "into vehicles" applies to own visible containers with quarters and

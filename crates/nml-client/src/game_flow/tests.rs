@@ -263,6 +263,7 @@ impl Run {
     }
 }
 
+// QUIRK O-139: kept
 #[test]
 fn start_match_shows_loading_phases_then_runs() {
     let Some(mut r) = Run::corpus() else {
@@ -301,6 +302,7 @@ fn desktop_images(r: &Run) -> Vec<(String, u8)> {
     state_data(&r.host.app, S1024, r.now).images
 }
 
+// QUIRK D-255: kept
 #[test]
 fn starting_a_level_drops_the_desktop_images() {
     // `Game_StartLevel` step 2 (`MenuManager_CloseAllAndStopMusic` `0x0045D0F0`): the image table of the desktop is
@@ -374,6 +376,7 @@ fn failed_start_reopens_the_singleplayer_menu() {
     assert_eq!(r.dialogs(), ["singleplayermenu"]);
 }
 
+// QUIRK O-143, O-152: kept
 #[test]
 fn escape_opens_the_menu_one_step_later_and_pauses() {
     let Some(mut r) = Run::corpus() else {
@@ -454,6 +457,7 @@ fn flow_tells_the_session_game_type_and_menu_state() {
     assert_eq!(c.view.match_info.map(|(t, _)| t), Some(-1));
 }
 
+// QUIRK O-143: kept
 #[test]
 fn paused_game_takes_no_commands() {
     let Some(mut r) = Run::corpus() else {
@@ -506,6 +510,7 @@ fn paused_game_takes_no_commands() {
     assert_eq!(r.view.inputs, [events[1]]);
 }
 
+// QUIRK O-152: kept
 #[test]
 fn keys_during_loading_are_ignored() {
     let Some(mut r) = Run::corpus() else {
@@ -539,6 +544,7 @@ fn keys_during_loading_are_ignored() {
     assert!(r.flow.key("ESCAPE", &mut r.host.app, &mut r.view, r.now));
 }
 
+// QUIRK O-31, O-151: kept
 #[test]
 fn quicksave_alternates_names_and_overwrites() {
     let Some(mut r) = Run::corpus() else {
@@ -707,6 +713,7 @@ fn broken_save_shows_message_and_stays_in_menu() {
     assert!(!r.files.exists(SaveDir::Main, 0, "broken"));
 }
 
+// QUIRK O-149: deviation
 #[test]
 fn save_failure_resumes_the_game() {
     let Some(mut r) = Run::corpus() else {
@@ -736,6 +743,7 @@ fn save_failure_resumes_the_game() {
 }
 
 /// O-153: `GameSpeed` of the settings applies from 0 to 255; negative gives 0 (K-325).
+// QUIRK K-325, O-153: deviation
 #[test]
 fn config_speed_keeps_0_to_255() {
     let speeds = [-10, -1, 0, 20, 30, 255, 256, i32::MAX, i32::MIN];
@@ -752,6 +760,7 @@ fn config_speed_keeps_0_to_255() {
     assert_eq!(got, [0, 0, 0, 20, 30, 255, 255, 255, 0]);
 }
 
+// QUIRK O-153: deviation
 #[test]
 fn resume_and_reload_keep_the_match() {
     let Some(mut r) = Run::corpus() else {
@@ -829,6 +838,7 @@ fn option_changes_reach_the_running_match_in_the_next_frame() {
 
 /// A start, a load and `0x1F` take over the settings of just now - also a change in the same frame (`VIDEOOPTIONS
 /// ACCEPT` queues `{0x1F}` behind the qualities), the qualities only this way (`Game_StartLevel`).
+// QUIRK O-98: kept
 #[test]
 fn start_and_reload_take_the_current_settings() {
     let Some(mut r) = Run::corpus() else {
@@ -857,6 +867,7 @@ fn start_and_reload_take_the_current_settings() {
 
 /// Real session without a window (corpus and graphics card, otherwise silently skipped): start match, 40 steps, save,
 /// 40 steps, load -> steps and checksum as at saving, loading screen `default.ldg` (O-139).
+// QUIRK O-139: kept
 #[test]
 fn save_then_load_restores_checksum() {
     let Some(dir) = nml_rda::testutil::corpus_game_dir() else {
@@ -1199,6 +1210,7 @@ fn local_defeat_opens_gameend_defeat_and_pauses() {
     assert_eq!(r.view.steps(), steps);
 }
 
+// QUIRK D-302: kept
 #[test]
 fn timer_stays_after_the_game_end() {
     // After the end window (state 6/7) the single-player match makes no steps any more (`running` demands state 0), so
@@ -1312,6 +1324,7 @@ fn quitgame_surrenders_and_shows_defeat() {
     assert_eq!(r.view.music.last(), Some(&"stop-game"));
 }
 
+// QUIRK O-165: deviation
 #[test]
 fn end_match_builds_accounting_and_ends_the_match() {
     // `END_DEFEAT` -> `{4}`, `{0x15}`, `{0x0E}` (re/accounting 6): table from the simulation, game time, match closed,
@@ -1443,6 +1456,7 @@ fn ui_state_reports_result_and_accounting() {
     assert!(r.host.app.data().accounting.is_some());
 }
 
+// QUIRK O-164: kept
 #[test]
 fn play_time_shows_hours_and_minutes() {
     // O-164 (`0x004C9FAD`...`0x004CA001`): `t = steps * 50` ms, `%s %d:%02d` with hours and minutes (seconds cut off);
@@ -1497,6 +1511,7 @@ fn table_wraps_on_overflow_and_fits_twelve_chars() {
     assert_eq!(accounting_view(&host, texts).rows[0].0, "29081 RED");
 }
 
+// QUIRK K-5: kept
 #[test]
 fn no_rule_check_while_paused() {
     // re/ingame-menus 0 point 1: in single player every open game menu halts the whole engine, also
@@ -1804,6 +1819,7 @@ fn free_game_end_books_nothing() {
     assert_eq!(end_reports(&r), [K::GameEnd { victory: true }]);
 }
 
+// QUIRK O-30, O-147: kept
 #[test]
 fn defeat_restart_reloads_without_booking() {
     // `GAMEEND_DEFEAT RESTART` in the campaign (`{4}`, `{0x15}`, `{0x1F}`, `FUN_004D9030`) starts the level from the
@@ -1865,6 +1881,7 @@ fn defeat_restart_reloads_without_booking() {
     );
 }
 
+// QUIRK O-208: deviation
 #[test]
 fn failed_load_from_the_defeat_screen_reopens_it() {
     // From `GAMEEND_DEFEAT`, `LOAD` leads to `INGAMELOADGAME`; if loading fails (file missing), the match stays stopped
@@ -1929,6 +1946,7 @@ fn named_host(mode: i32) -> crate::game::sim_host::SimHost {
     host
 }
 
+// QUIRK O-250: kept
 #[test]
 fn display_name_prefers_the_profile_name_for_the_local_slot() {
     // O-250 (`Game_SelectLocalPlayer` `0x004BB446`): the first active human slot is named like the profile, even if the
@@ -1946,6 +1964,7 @@ fn display_name_prefers_the_profile_name_for_the_local_slot() {
     assert_eq!(player_display_name(&host, texts, 1), texts.display(29081));
 }
 
+// QUIRK O-250: kept
 #[test]
 fn campaign_names_resolve_their_text_id() {
     // `PlayerSetup_ParseLvl`: number >= 1 except 29320 -> text of the number, truncated to 39 characters; outside 0...7
@@ -1969,6 +1988,7 @@ fn campaign_names_resolve_their_text_id() {
     assert!(player_display_name(&host, texts, 0).chars().count() <= 39);
 }
 
+// QUIRK O-250: kept
 #[test]
 fn lobby_names_stay_raw() {
     // Free play (game type >= 0): the names come raw from the lobby, also with a leading number.
@@ -1986,6 +2006,7 @@ fn lobby_names_stay_raw() {
     assert_eq!(player_display_name(&host, texts, 0), "29081 RED");
 }
 
+// QUIRK O-250: kept
 #[test]
 fn accounting_view_is_unchanged() {
     // The accounting reads the names from the statistics log: the profile record stays raw, the other records resolve
@@ -2020,6 +2041,7 @@ fn speed(r: &Run) -> u8 {
     r.view.sim().unwrap().game_speed
 }
 
+// QUIRK E-169, E-238: kept
 #[test]
 fn cinemascope_tempo_follows_the_original() {
     // E-238 (`FUN_00430920`): 147 remembers the speed and sets 10, 148 restores the memory; a double 147 overwrites the
@@ -2112,6 +2134,7 @@ fn cinemascope_tempo_follows_the_original() {
     assert_eq!(part.cinemascope_speed, Some(18));
 }
 
+// QUIRK E-246, O-56, O-305: kept
 #[test]
 fn f1_and_f4_blocked_under_the_lock_but_escape_opens_the_menu() {
     // E-246, O-56, re/campaign-ui D6.10 (`0x0043C7DC`, `FUN_004C6050` `0x004C61FD`): the lock 18 keeps left click and
@@ -2193,6 +2216,7 @@ fn f1_and_f4_blocked_under_the_lock_but_escape_opens_the_menu() {
     );
 }
 
+// QUIRK O-151: kept
 #[test]
 fn quick_save_uses_the_autosave_name() {
     // re/script-actions C.13 (`FUN_0042FA00`): 508 in the campaign saves after the step through the save path of the UI
@@ -2232,6 +2256,7 @@ fn quick_save_uses_the_autosave_name() {
     assert_eq!(r.flow.quicksave_counter, 0);
 }
 
+// QUIRK E-166: deviation
 #[test]
 fn profile_var_updates_the_current_profile() {
     // 382 (`FUN_004BD900` -> `FUN_0040DAA0`, E-166): the variable goes into the active profile (name lowercased, an
@@ -2293,6 +2318,7 @@ impl Run {
 
 /// O-304: The UI lock blocks only `keys.ini` (also F1/F4 and `+`) and the screenshot; the bindings from
 /// `bindings2.ini` and ESC continue to work.
+// QUIRK O-14, O-152, O-304: kept
 #[test]
 fn lock_blocks_keys_ini_but_not_bindings_or_escape() {
     use HotkeyCommand as C;
@@ -2342,6 +2368,7 @@ fn lock_blocks_keys_ini_but_not_bindings_or_escape() {
 /// O-301: With the left mouse button held the chord is `LBUTTON F1` or `LBUTTON 1` and hits neither the quicksave nor
 /// a binding. The mouse button is not in the table until the next round (`HeldVk::begin_round` at the end of
 /// `frame_cmds`).
+// QUIRK O-116, O-301: kept
 #[test]
 fn mouse_button_in_the_chord_blocks_every_shortcut() {
     use winit::keyboard::KeyCode as K;
@@ -2388,6 +2415,7 @@ fn mouse_button_in_the_chord_blocks_every_shortcut() {
 
 /// O-300: Every auto-repeat is an event of its own (`0x00414B70` does not read `lParam`), without a release event.
 /// `+` (game speed, `keys.ini`) reaches the key path three times; `1` (binding) selects three times.
+// QUIRK O-300: kept
 #[test]
 fn every_repeat_is_an_event() {
     use winit::keyboard::KeyCode as K;
@@ -2421,6 +2449,7 @@ fn every_repeat_is_an_event() {
 
 /// A held key across a focus loss. `MenuHost::release_keys` empties the table (winit does not report the release);
 /// after that the key belongs to no chord any more and repeats nothing.
+// QUIRK O-300: kept
 #[test]
 fn held_key_stops_repeating_after_focus_loss() {
     use HotkeyCommand as C;
@@ -2456,6 +2485,7 @@ fn held_key_stops_repeating_after_focus_loss() {
 
 /// O-305: TAB (`KD_SPEEDUP_GAME`) and `KD_STOP_DIALOG` are in `keymap.ini`, the code never queries them: TAB does
 /// nothing, ESC only opens the game menu.
+// QUIRK O-152, O-305: kept
 #[test]
 fn tab_does_nothing_and_escape_only_opens_the_menu() {
     let Some(mut r) = Run::corpus() else {
@@ -2479,6 +2509,7 @@ fn tab_does_nothing_and_escape_only_opens_the_menu() {
 /// (`GameApp+0xD698`), except under the lock. The request is assigned per event (O-326): a further key in the same
 /// frame clears it. Windows reports the print key only on release (`0x0042C357`): `MenuHost::on_key` makes an event of
 /// it.
+// QUIRK O-304, O-326: kept
 #[test]
 fn snapshot_in_the_chord_requests_a_hardcopy() {
     let Some(mut r) = Run::corpus() else {
@@ -2512,6 +2543,7 @@ fn snapshot_in_the_chord_requests_a_hardcopy() {
 
 /// O-308 (hypothesis, to be checked against the original): ESC opens the game menu also with an open build cursor,
 /// the cursor stays (`0x00458510` has no ESC branch). Real `GameSession` without a window.
+// QUIRK O-308: kept
 #[test]
 fn escape_with_an_open_build_cursor_opens_the_menu_and_keeps_the_cursor() {
     use nml_ui::hud::toolbar::{BuildCursor, Cursor};
@@ -2658,6 +2690,7 @@ fn escape_with_an_open_build_cursor_opens_the_menu_and_keeps_the_cursor() {
 // ---- `keys.ini` with context (`FUN_0049D110`, re/game-ui D5.3) ------------------------------------------------------
 
 /// O-307: The numpad (`ADD`, `SUBTRACT`) triggers nothing, only `+`/`-` of the main field (assignment 113/114).
+// QUIRK O-307: kept
 #[test]
 fn numpad_plus_does_nothing() {
     use HotkeyCommand as C;
@@ -2681,6 +2714,7 @@ fn numpad_plus_does_nothing() {
 
 /// Quicksave and quickload come from `keys.ini` (578/581, context 0/0/0, so in every context); `GameFlow` executes
 /// them, the match does not see them. Without the two lines F1/F4 do nothing.
+// QUIRK O-302: kept
 #[test]
 fn f1_and_f4_come_from_keys_ini() {
     let Some(mut r) = Run::corpus() else {
@@ -2762,6 +2796,7 @@ fn own_walker(r: &Run) -> nml_sim::id::ObjectId {
 
 /// O-316, O-152: `CONTROL P` toggles the pause of the match; during the pause no steps run, but engine ticks without a
 /// world tick - so ESC opens the game menu also during the pause, in the next tick.
+// QUIRK O-317: kept
 #[test]
 fn escape_opens_the_menu_in_the_pause() {
     let Some(mut r) = Run::corpus() else {
@@ -2796,6 +2831,7 @@ fn escape_opens_the_menu_in_the_pause() {
 
 /// re/ingame-menus 4 (`0x27`): giving up lifts the pause (`togglepause` at `+0x24E4`) and gives the defeat at once,
 /// without a tick.
+// QUIRK O-316: kept
 #[test]
 fn surrender_resumes() {
     let Some(mut r) = Run::corpus() else {
@@ -2835,6 +2871,7 @@ fn surrender_resumes() {
 /// O-318: pause, movement command (executed at once), quicksave during the pause, resume; the replay gives the same
 /// checksum as the match. The savegame has the state with the command, but no pause: after loading the match runs and
 /// arrives at the same state as the replay.
+// QUIRK O-318: kept
 #[test]
 fn paused_commands_survive_save_load_and_replay() {
     use nml_sim::save::{Replay, checksum};
@@ -2900,6 +2937,7 @@ fn paused_commands_survive_save_load_and_replay() {
 
 /// F1 at tick 100, play on, F4/load: the log is in the savegame, the replay stays complete and leads to the state of
 /// the match.
+// QUIRK E-329: deviation
 #[test]
 fn quick_save_and_load_keep_the_replay() {
     let Some(mut r) = Run::corpus() else {
@@ -2977,6 +3015,8 @@ impl Run {
 /// O-320: In cinemascope the keys act on the speed 10 and the setting, the memory (`cinemascope_speed`) stays 14; the
 /// end restores the memory (14), the setting keeps the key value (11), and the next closing of the game menu takes it
 /// over (O-153).
+// QUIRK O-320: kept
+// QUIRK O-153: deviation
 #[test]
 fn speed_keys_in_cinemascope_keep_the_memory() {
     use nml_sim::script::Presentation::Cinemascope;
@@ -3012,6 +3052,7 @@ fn speed_keys_in_cinemascope_keep_the_memory() {
 
 /// The speed keys check neither pause nor game menu; during the pause and with the game menu open they change game
 /// speed and setting, the world stays still.
+// QUIRK O-319: kept
 #[test]
 fn speed_key_works_in_pause_and_with_the_game_menu_open() {
     use winit::keyboard::KeyCode as K;
@@ -3044,6 +3085,7 @@ fn speed_key_works_in_pause_and_with_the_game_menu_open() {
 
 // --- Pointer ---------------------------------------------------------------------------------------------------------
 
+// QUIRK O-299: kept
 #[test]
 fn pointer_hidden_only_in_campaign_cinemascope() {
     // re/game-ui D5.2 (`0x004309FF`): cinemascope hides the pointer only in the campaign (game type -1), its end shows
@@ -3118,6 +3160,7 @@ fn open_and_close_menu(r: &mut Run, menu: &str) -> (bool, bool) {
     (open, r.host.app.pointer_hidden())
 }
 
+// QUIRK O-299, O-379: kept
 #[test]
 fn pointer_follows_the_menu_only_under_the_lock() {
     // O-371, O-379, re/campaign-ui D6.17: ESC switches the pointer on (`FUN_0042E150` `0x0042E183`), closing the game
@@ -3161,6 +3204,7 @@ fn pointer_follows_the_menu_only_under_the_lock() {
     assert!(!hidden(&r), "never off outside the campaign");
 }
 
+// QUIRK O-56, O-371: kept
 #[test]
 fn escape_in_a_scene_opens_the_game_menu_and_holds_the_script() {
     // O-56, re/campaign-ui D6.10: scenes cannot be skipped; ESC opens the game menu also in cinemascope under the lock
@@ -3258,6 +3302,7 @@ fn loading_inside_the_campaign_cinemascope_hides_the_pointer() {
     );
 }
 
+// QUIRK O-53: kept
 #[test]
 fn mission_follows_the_simulation_each_frame_and_ends_with_the_match() {
     // `refresh_lock` gives main objectives and `m_InfoHistory` per frame to the UI (`MenuApp::set_mission`), `0x0E`
@@ -3307,6 +3352,7 @@ fn mission_follows_the_simulation_each_frame_and_ends_with_the_match() {
     );
 }
 
+// QUIRK O-305: kept
 #[test]
 fn f10_opens_nothing() {
     // O-364: `KD_CHECK_QUESTMENU` is unassigned in the original; F10 opens neither `QUESTMENU` nor any other dialog,
@@ -3464,6 +3510,7 @@ fn write_random_save(
 /// O-431: A savegame of a random map loads with `default.ldg`; the map is regenerated from the map description of the
 /// start package - `start.level` (`randommap:ZKB`) is not read as a file (the fake with a real simulation reads fixed
 /// maps via `load_level`, which would fail here).
+// QUIRK D-341, O-431: deviation
 #[test]
 fn load_of_a_random_map_save_shows_default_ldg() {
     let Some(mut r) = Run::corpus() else {
@@ -3498,6 +3545,7 @@ fn load_of_a_random_map_save_shows_default_ldg() {
 
 /// `0x1F` restarts a random map from its description (not via the map path, which is not a file) - with the same
 /// setup, bit-identical to the first start, loading screen of the restart `randommap.ldg` (`FUN_00547560`, O-431).
+// QUIRK O-431: deviation
 #[test]
 fn reload_level_restarts_a_random_map() {
     let Some(mut r) = Run::corpus() else {
@@ -3583,6 +3631,7 @@ fn random_request(spec: &nml_randommap::RandomMapSpec) -> MatchRequest {
 /// O-431 (restart): `0x0D` with `LevelType 1` starts the random map from the map description of the session (not via
 /// the map path) with the loading screen `randommap.ldg`; the match is called `randommap:<seed>`, the simulation has
 /// the rules without `.lvl`.
+// QUIRK O-431, O-433: deviation
 #[test]
 fn random_map_start_uses_randommap_ldg() {
     let Some(mut r) = Run::corpus() else {
@@ -3619,6 +3668,7 @@ fn random_map_start_uses_randommap_ldg() {
 
 /// D-327: if the generator fails (here a map type that `randommaptypes.ini` does not know), the start aborts with a
 /// message - no match, menu music on again, `singleplayermenu` open.
+// QUIRK D-327: deviation
 #[test]
 fn random_map_start_failure_reopens_the_menu() {
     let Some(mut r) = Run::corpus() else {

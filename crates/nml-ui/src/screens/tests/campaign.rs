@@ -219,6 +219,7 @@ fn campaign_button_switches_list_and_selects_highest_entry() {
     assert_eq!((f.current_campaign, f.current_level), (1, 1));
 }
 
+// QUIRK O-161: kept
 #[test]
 fn list_stops_before_first_locked_entry() {
     // 4.2 `dir` code 2: entries of the current campaign (not of the dialog number) in file order, with a profile up to
@@ -252,6 +253,7 @@ fn list_stops_before_first_locked_entry() {
     assert_eq!(list.selection, Some(1));
 }
 
+// QUIRK O-206: deviation
 #[test]
 fn headline_selection_opens_no_detail() {
     // 4.2 `dir` code 4: close the detail of the old entry (`{4}`), entry = i, open the detail of the new one (`{5}`); a
@@ -323,6 +325,7 @@ fn level_entry_opens_campaignlevel_campaign_0_opens_campaignlevel2() {
     assert!(element(&d, LEVEL, "levelstart").visible);
 }
 
+// QUIRK O-156: kept
 #[test]
 fn three_levels_only_after_a_loss_and_resets_to_easy() {
     // 4.3 code 5 of the frame: without a profile or after a defeat (`m_TrialCount > 0`) flag 1 and
@@ -397,6 +400,7 @@ fn three_levels_only_after_a_loss_and_resets_to_easy() {
     assert_eq!(d.app.data().campaign_difficulty, 0);
 }
 
+// QUIRK O-46, O-157: kept
 #[test]
 fn two_levels_show_normal_for_difficulty_0() {
     // 4.3 `levellevel` with flag 0: texts 15771, 15772; code 0 shows `v - 1` or 0 for v = 0 ("Normal" although
@@ -498,6 +502,7 @@ fn levelstart_closes_three_frames_waits_and_starts() {
     assert_eq!(d.app.data().draft.settings.game_type, -1);
 }
 
+// QUIRK O-206: deviation
 #[test]
 fn start_without_level_entry_reopens_selectcampaign() {
     // Reimplementation (O-206): `0x0C` with an entry outside the list (an exception when copying the path in the
@@ -563,6 +568,7 @@ fn cancel_closes_list_and_detail() {
     assert_eq!(d.app.menu().open_names(), ["singleplayermenu"]);
 }
 
+// QUIRK O-162: kept
 #[test]
 fn locked_level_startable_after_profile_switch() {
     // O-162: campaign/entry are global. Anna has `kamp1-3` (campaign 1, entry 4) free and selected; after switching
@@ -605,6 +611,7 @@ fn locked_level_startable_after_profile_switch() {
     );
 }
 
+// QUIRK O-46: kept
 #[test]
 fn campaignvideo_shows_no_title() {
     // 4.4: `videotitel` code 7 returns the video text (text field +8), the element is in no `.dlg` (O-46);
@@ -698,6 +705,8 @@ fn play(path: &str) -> UiEffect {
     }
 }
 
+// QUIRK O-33: kept
+// QUIRK O-206: deviation
 #[test]
 fn videostart_books_plays_and_returns_once() {
     // 4.4 `videostart` code 8: `{4,"selectcampaign"}`, `{4,"kampagne<campaign>"}`, `{4, frame}`, `{0x15}`, `{0x1C}`,
@@ -759,6 +768,7 @@ fn videostart_books_plays_and_returns_once() {
     assert!(d.app.queue().is_empty());
 }
 
+// QUIRK O-158: kept
 #[test]
 fn video_auto_continues_into_a_level_without_dialog() {
     // 6.1: `0x28` with automatic continue (flag "newly free" from the booking, no `STOP`) and a level as successor:
@@ -791,6 +801,7 @@ fn video_auto_continues_into_a_level_without_dialog() {
     assert!(d.app.queue().is_empty());
 }
 
+// QUIRK O-33, O-158: kept
 #[test]
 fn video_never_auto_continues_into_a_video() {
     // O-158 (6.1 branch "true and kind != 0"): if a newly free video follows a video, `0x28` does not start it but
@@ -823,6 +834,7 @@ fn video_never_auto_continues_into_a_video() {
     );
 }
 
+// QUIRK O-158: kept
 #[test]
 fn accounting_continue_starts_the_next_level() {
     // re/accounting 5, re/menu-flow section "Game end" (`0x004D9506`...`0x004D95AE`): `QUIT` code 8 -> `{3, frame}`,
@@ -867,6 +879,7 @@ fn accounting_continue_starts_the_next_level() {
     assert!(d.app.menu().open_names().is_empty());
 }
 
+// QUIRK O-158, O-207: kept
 #[test]
 fn accounting_continue_plays_the_next_video() {
     // `QUIT` with automatic continue to a video (`0x004D95B3`...`0x004D9614`): `{0x15}`, `{0x1C}`, `{0x1D, path}`,
@@ -922,6 +935,7 @@ fn accounting_continue_plays_the_next_video() {
     );
 }
 
+// QUIRK O-158: kept
 #[test]
 fn stop_entry_returns_to_selectcampaign() {
     // O-47: `STOP` on the newly free entry prevents the automatic continue. `QUIT` then opens `selectcampaign`
@@ -999,6 +1013,7 @@ fn book_campaign_reports_and_writes_profiles() {
     );
 }
 
+// QUIRK O-207: kept
 #[test]
 fn accounting_routes_leave_the_music_to_the_dialogs() {
     // Open point (O-207): neither `0x0E` (`FUN_004BAF40`) nor `ACCOUNTING` touch the menu music; it only follows the

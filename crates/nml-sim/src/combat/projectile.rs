@@ -740,6 +740,7 @@ mod tests {
         )
     }
 
+    // QUIRK C-102: kept
     #[test]
     fn an_arrow_over_four_tiles_hits_in_the_eighth_effect_tick() {
         let rules = rules();
@@ -783,6 +784,7 @@ mod tests {
         assert!(sim.state.events.iter().any(|e| matches!(e, SimEvent::EffectAttached { object, path, .. } if *object == t && path.ends_with("blood.pef"))));
     }
 
+    // QUIRK C-100, C-101: kept
     #[test]
     fn an_arrow_needs_shooter_and_target_until_the_owner_change() {
         let rules = rules();
@@ -812,6 +814,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-101: kept
     #[test]
     fn a_target_quartered_in_flight_is_still_hit() {
         // C-101: arrows hit as long as shooter and target exist - also a target quartered in flight.
@@ -846,6 +849,7 @@ mod tests {
         )
     }
 
+    // QUIRK C-104: kept
     #[test]
     fn splash_falls_off_with_the_edge_distance() {
         // re/combat-projectiles 9.3: amount -70, radius 512: -70/-52/-29/-5 at 0/0.5/1/1.5 tiles.
@@ -921,6 +925,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-105: kept
     #[test]
     fn a_ball_without_target_splashes_at_the_old_aim() {
         let rules = rules();
@@ -942,6 +947,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-106, C-107: kept
     #[test]
     fn an_empty_splash_hits_a_hostile_building_beside_the_shooter_or_nothing() {
         let rules = rules();
@@ -986,6 +992,8 @@ mod tests {
         );
     }
 
+    // QUIRK C-100, C-112: kept
+    // QUIRK C-89: deviation
     #[test]
     fn hard_targets_take_a_direct_hit_and_orphans_sound_like_the_warship() {
         let rules = rules();
@@ -1028,6 +1036,7 @@ mod tests {
         )));
     }
 
+    // QUIRK C-104: kept
     #[test]
     fn splash_at_the_map_edge_counts_only_inside() {
         let rules = rules();
@@ -1067,6 +1076,7 @@ mod tests {
         std::mem::take(&mut sim.state.events)
     }
 
+    // QUIRK D-283: kept
     #[test]
     fn cannon_crater_only_on_the_splash_land_branch() {
         // D-283, `CannonBall_Impact` `0x004EF7C2`: crater `0x430` only in the splash branch on land, at the
@@ -1153,6 +1163,7 @@ mod tests {
         assert!(craters(&events).is_empty(), "water: no crater");
     }
 
+    // QUIRK D-248, D-283: kept
     #[test]
     fn destruction_events_leave_the_checksum_alone() {
         // Real flow: cannonball with splash on land and destruction of an HQ, then 120 engine ticks
@@ -1289,6 +1300,7 @@ mod world_effect_tests {
             .collect()
     }
 
+    // QUIRK C-301: kept
     #[test]
     fn the_explosion_hits_enemy_units_only() {
         // re/spells 9.1, C-301: -75 % max on all enemy units <= 5 tiles (center distance).
@@ -1416,6 +1428,7 @@ mod world_effect_tests {
         panic!("{creation:?}: no damage");
     }
 
+    // QUIRK C-301: kept
     #[test]
     fn the_explosion_waits_five_effect_ticks() {
         // Effect tick k = object tick N+k-1 (the effect tick runs in the second step of the
@@ -1435,6 +1448,7 @@ mod world_effect_tests {
         r
     }
 
+    // QUIRK C-302: kept
     #[test]
     fn the_storm_hits_enemy_buildings_in_35_pulses() {
         // re/spells 9.2, C-302: pulses at -2 % in effect ticks 2, 4, ..., 70; entry gone in the 71st.
@@ -1514,6 +1528,7 @@ mod world_effect_tests {
         events
     }
 
+    // QUIRK C-329, C-330: kept
     #[test]
     fn dynamite_hits_its_target_once() {
         // re/special-attacks 9 T1/T2, C-329, C-330: -4000 via `0x17F` with the living demolition expert
@@ -1552,6 +1567,7 @@ mod world_effect_tests {
         );
     }
 
+    // QUIRK C-329: kept
     #[test]
     fn a_charge_without_its_bomber_hits_harder() {
         // re/special-attacks 9 T3, C-329: without the demolition expert no attacker calculation -> -4000.
@@ -1573,6 +1589,7 @@ mod world_effect_tests {
         assert_eq!(hp(&sim, w.neighbour), 10_000);
     }
 
+    // QUIRK C-330: kept
     #[test]
     fn the_dynamite_spares_a_vanished_target() {
         // re/special-attacks 3.3: explosion effect always, damage only to an existing target.
@@ -1601,6 +1618,7 @@ mod world_effect_tests {
         assert_eq!(rank_and_fraction(&sim, w.bomber), (0, 0));
     }
 
+    // QUIRK C-301, C-302: kept
     #[test]
     fn the_effect_keeps_the_casters_slot() {
         // re/spells 4: explosion and storm hit the enemies of the slot at the time of
@@ -1680,6 +1698,7 @@ mod world_effect_tests {
         (under_attack(&events), shot, blasted)
     }
 
+    // QUIRK C-301: kept
     #[test]
     fn world_effects_tick_in_creation_order() {
         let (order, shot, blasted) = damage_order(true);

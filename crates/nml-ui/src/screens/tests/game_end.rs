@@ -226,6 +226,7 @@ fn end_with_message_closes_menus_and_ends_the_match_on_ok() {
     );
 }
 
+// QUIRK O-179: kept
 #[test]
 fn free_game_disables_load_and_restart() {
     // O-179 (`0x004D931B`...`0x004D935C`): code 5 for `load`/`restart` -> `DISABLE` if `Engine+0x108 != -1`; in the
@@ -267,6 +268,7 @@ fn free_game_disables_load_and_restart() {
     assert!(element(&report, VICTORY, "end_victory").enabled);
 }
 
+// QUIRK E-319: kept
 #[test]
 fn net_end_screen_greys_load_and_restart() {
     // E-319 (`FUN_004D9030` `0x004D919F`/`0x004D91B9`): On the network (host as well as client) `LOAD`/`RESTART` are
@@ -322,6 +324,7 @@ fn net_end_screen_greys_load_and_restart() {
     }
 }
 
+// QUIRK E-273: kept
 #[test]
 fn end_button_and_end_message_end_once() {
     // The end with a message carries its own `0x0E`. (a) If the message is pending (`info_ok` = `{0x0E}`), `END_*`
@@ -363,6 +366,7 @@ fn end_button_and_end_message_end_once() {
     assert_eq!(app.screen_state().info_ok, Some(AppCmd::EndMatch));
 }
 
+// QUIRK E-273: kept
 #[test]
 fn end_message_blocks_the_end_screen_and_ends_with_the_match() {
     // The message for the end of the network match is pending (`info_ok` = `{0x0E}`): `show_game_end` opens no end
@@ -396,6 +400,7 @@ fn end_message_blocks_the_end_screen_and_ends_with_the_match() {
     );
 }
 
+// QUIRK O-208: deviation
 #[test]
 fn defeat_load_returns_to_the_defeat_screen_on_cancel() {
     // `load` (`0x004D91E5`...`0x004D9232`): `{3, frame}`, `{5,"ingameloadgame"}`, return command `{5, frame}`; the
@@ -449,6 +454,7 @@ fn defeat_load_returns_to_the_defeat_screen_on_cancel() {
     assert_eq!(queued(&app), expected);
 }
 
+// QUIRK O-30, O-147: kept
 #[test]
 fn campaign_restart_waits_then_reloads() {
     // `restart` (`0x004D9255`...`0x004D9294`): `{4, frame}`, `{0x15}`, `{0x1F}` - in the campaign, without a
@@ -579,6 +585,7 @@ fn quitgame_surrenders_and_shows_defeat() {
     assert_eq!(d.app.game_menu_state(), 7);
 }
 
+// QUIRK O-166: kept
 #[test]
 fn accounting_opens_on_military_tab_each_time() {
     // O-166 (`0x004D9749`...`0x004D978B`): code 5 of the frame sets the flag to `account1` and opens it; another tab
@@ -629,6 +636,7 @@ fn accounting_opens_on_military_tab_each_time() {
     assert_eq!(names, ["account1", "accounting"]);
 }
 
+// QUIRK O-167, O-202: kept
 #[test]
 fn continue_shown_only_in_campaign() {
     // O-167 corrected (`0x004D97AD`...`0x004D97EC`, `FUN_004BA5C0` = start parameter `GameApp+0xD650 -> +0x1F4`, in
@@ -698,6 +706,7 @@ fn mainmenu_returns_to_start() {
     assert!(l.effects.is_empty());
 }
 
+// QUIRK O-163: kept
 #[test]
 fn hidden_rows_beyond_active_count() {
     // `FUN_004CF8C0`: `name<z>`/`value<c><z>` code 5 -> `HIDE` from `z >= rows`, otherwise 1 without `status`; code 7

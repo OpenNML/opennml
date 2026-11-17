@@ -236,6 +236,7 @@ mod tests {
         sim.object(id).unwrap().attributes.raw_fraction(28)
     }
 
+    // QUIRK K-77, K-238: kept
     #[test]
     fn diving_descends_in_six_ticks_and_surfaces_in_six() {
         let rules = lake_rules(-80.0);
@@ -287,6 +288,7 @@ mod tests {
 
     /// Diver in shallow water: ground -40 (fixed -1280) is above the swim limit W - 1800, a
     /// swimmer would have walked here long ago (K-271); layer 8 is free anyway.
+    // QUIRK K-271, K-272: kept
     #[test]
     fn layer_8_has_no_depth_limit_and_the_height_stays_at_the_surface_after_surfacing() {
         let rules = lake_rules(-40.0);
@@ -325,6 +327,7 @@ mod tests {
         assert_eq!(surface_height(&mut sim, d), -1280);
     }
 
+    // QUIRK K-272: kept
     #[test]
     fn a_diver_without_swimming_keeps_onwater_and_the_surface_height_after_surfacing() {
         // K-234 + K-272: If the unit dove without SWIMMING, ONWATER stays after surfacing;
@@ -353,6 +356,7 @@ mod tests {
         assert_eq!(surface_height(&mut sim, d), 0);
     }
 
+    // QUIRK K-236: kept
     #[test]
     fn a_fresh_diver_surfaces_in_the_same_tick() {
         // K-236, re/swim-dive 9.3: Stamina starts at 0 (fraction 28: tick 1 -> 80, tick 2 -> 160, current 1).
@@ -376,6 +380,7 @@ mod tests {
         assert_eq!(air(&sim, d), 40);
     }
 
+    // QUIRK K-77, K-236: kept
     #[test]
     fn a_full_diver_surfaces_after_832_ticks() {
         // re/swim-dive 9.4: max 500, full supply -> automatic surfacing in the 832nd dive tick; no drowning.
@@ -402,6 +407,7 @@ mod tests {
         assert_eq!(diving(&sim, d).unwrap().status, 3);
     }
 
+    // QUIRK K-235, K-239: kept
     #[test]
     fn dive_is_refused_without_air_in_a_boat_or_outside_open_water() {
         let rules = lake_rules(-80.0);
@@ -453,6 +459,7 @@ mod tests {
         assert_eq!(dive_at(&mut sim, edge), (false, 0, 1));
     }
 
+    // QUIRK K-235: kept
     #[test]
     fn diving_twice_restarts_the_descent() {
         // K-235: A second 0x118 in state 1 sets state 2 and the layer again. The
@@ -474,6 +481,7 @@ mod tests {
         assert_eq!(view(&sim, d), (1, -1024, -1024, 8));
     }
 
+    // QUIRK K-237: kept
     #[test]
     fn surfacing_restores_the_init_layer_over_the_combat_swim_ban() {
         // K-237: GoUp restores the init layer, the combat swim ban stays set.
@@ -504,6 +512,7 @@ mod tests {
         assert!(!is_diving(&sim, d));
     }
 
+    // QUIRK C-220: kept
     #[test]
     fn a_dead_diver_stays_submerged_after_two_ticks() {
         // C-220 (re/swim-dive 13.1): Swim and Diving tick after death only in the death tick T and
@@ -538,6 +547,7 @@ mod tests {
         assert!(air(&sim, d) >= frozen);
     }
 
+    // QUIRK K-151: kept
     #[test]
     fn diving_answers_its_animations_and_remembers_the_walk_layer() {
         let rules = rules();

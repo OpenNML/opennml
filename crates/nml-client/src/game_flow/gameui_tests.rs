@@ -675,6 +675,7 @@ fn upgrade_menu(sim: &SimHost, o: &GameObject) -> Option<i32> {
 /// On the real shipped data: a cancelled upgrade appears again at once among the normal buttons, as a waiting
 /// (`queue:1`) and as a running order (`queue:0`). Original: `0x00507960` reports `{0x10, 0}`, the silent rebuild
 /// checks the hiding of the one-time buttons anew (`0x004557C0`).
+// QUIRK O-395: kept
 #[test]
 fn cancelled_upgrade_returns_to_the_toolbar() {
     let Some(mut m) = Match::start() else {
@@ -772,6 +773,7 @@ fn cancelled_upgrade_returns_to_the_toolbar() {
 /// (`SimHost::execute_now`, O-318), without a tick; the pause frame gives the bar the events of the immediate command
 /// (`SimHost::take_immediate_events`). Original: `0x00507960` calls `NotifyUiIfSelected(0)` synchronously, the bar is
 /// operable in the pause (re/game-ui N.4). After resuming the button stays.
+// QUIRK O-395: kept
 #[test]
 fn cancelled_upgrade_returns_to_the_toolbar_in_the_pause() {
     let Some(mut m) = Match::start() else {

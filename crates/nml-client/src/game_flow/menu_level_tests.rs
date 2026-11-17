@@ -70,6 +70,7 @@ fn back_to_start(r: &mut Run) {
     );
 }
 
+// QUIRK O-439: kept
 #[test]
 fn start_build_loads_the_menu_level() {
     // re/menu-level ML.2, O-439: Building `START` sends `0x21`; without an engine, `FUN_004C9140` loads `menü2.lvl`
@@ -111,6 +112,7 @@ fn start_build_loads_the_menu_level() {
     );
 }
 
+// QUIRK O-439: kept
 #[test]
 fn load_time_counts_for_the_menus_only_after_the_menu_level_load() {
     // re/menu-level ML.15 no. 1: In the original, `START` stands at its destination right after the loading screen;
@@ -147,6 +149,7 @@ fn load_time_counts_for_the_menus_only_after_the_menu_level_load() {
     );
 }
 
+// QUIRK O-435: kept
 #[test]
 fn menu_level_steps_like_a_match() {
     let Some(mut r) = started() else {
@@ -165,6 +168,7 @@ fn menu_level_steps_like_a_match() {
     assert_eq!(r.view.match_info, Some((-2, false)));
 }
 
+// QUIRK O-437: kept
 #[test]
 fn submenu_hides_and_halts() {
     // re/menu-level ML.4, O-437: `SINGLEPLAYERMENU`/`SELECTPROFILE` carry `BACKGROUND` -> `0x20`: invisible and
@@ -211,6 +215,7 @@ fn end_menu_level_closes_the_session() {
     assert_eq!(frames(&mut r, 10), 0);
 }
 
+// QUIRK O-437: kept
 #[test]
 fn resume_does_not_catch_up() {
     // re/menu-level ML.4 (`GameEngine_Update` `0x00445650`): at most 2 ticks in the first frame after resuming, the
@@ -266,6 +271,7 @@ fn resume_does_not_catch_up() {
     );
 }
 
+// QUIRK O-447: kept
 #[test]
 fn script_camera_catches_up_after_resume() {
     // O-447 (re/menu-level ML.15 no. 4): `GameEngine_Update` gives the script camera (`GameEngine_UpdateCameraFollow`
@@ -317,6 +323,7 @@ fn script_camera_catches_up_after_resume() {
     );
 }
 
+// QUIRK O-437: kept
 #[test]
 fn options_keep_it_running() {
     // `OPTIONS` carries `LEVELBACKGROUND` (again `0x21`), the subpages only flag `0x80`: the world keeps running.
@@ -346,6 +353,7 @@ fn options_keep_it_running() {
     }
 }
 
+// QUIRK O-437: kept
 #[test]
 fn second_start_build_does_not_reload() {
     // re/menu-level ML.2 step 5: if an engine is running, `0x21` only sets bit `0x1`.
@@ -368,6 +376,7 @@ fn second_start_build_does_not_reload() {
     assert!(r.view.steps() > steps, "the same session keeps running");
 }
 
+// QUIRK O-439: kept
 #[test]
 fn failed_menu_level_load_keeps_the_menu() {
     // If loading fails: warning, no menu level, the menu stays; the next build tries again.
@@ -414,6 +423,7 @@ fn last_ldgs(r: &Run, n: usize) -> Vec<&str> {
         .collect()
 }
 
+// QUIRK O-439: kept
 #[test]
 fn campaign_start_ends_the_paused_menu_level() {
     // Starting a campaign map (`FUN_004BAF40` in `Game_StartLevel`) ends the (stopped) menu level before loading:
@@ -445,6 +455,7 @@ fn campaign_start_ends_the_paused_menu_level() {
     );
 }
 
+// QUIRK O-439: kept
 #[test]
 fn match_end_restarts_it_on_start() {
     // Match -> game end `0x0E` -> accounting -> `MAINMENU` -> `START`: loading screen `default.ldg` again, new session
@@ -491,6 +502,7 @@ fn match_end_restarts_it_on_start() {
     assert!(frames(&mut r, 50) > 0);
 }
 
+// QUIRK O-439: kept
 #[test]
 fn load_game_ends_the_menu_level() {
     // Loading (`0x0A`) ends the menu level before loading, like every level start.
@@ -520,6 +532,7 @@ fn load_game_ends_the_menu_level() {
     assert_eq!(last_ldgs(&r, 4), [DEFAULT_LDG; 4]);
 }
 
+// QUIRK O-439: kept
 #[test]
 fn failed_start_restarts_the_menu_level_on_start() {
     // If the start fails after the end (empty map path), there is no menu level any more and no match; the way back
@@ -573,6 +586,7 @@ fn toggle_menulevel_and_back(r: &mut Run) {
     );
 }
 
+// QUIRK O-438: kept
 #[test]
 fn menulevel_switch_takes_effect_on_the_next_start_build() {
     // re/menu-level ML.15 no. 6, O-438: `IsMenuLevel` does not take effect until the next build (`start.dlg`
@@ -609,6 +623,7 @@ fn menulevel_switch_takes_effect_on_the_next_start_build() {
     assert!(frames(&mut r, 50) > 0);
 }
 
+// QUIRK O-436: deviation
 #[test]
 fn net_start_ends_the_menu_level() {
     // Deviates from O-436: `START` -> `LAN1` (stopped) -> `LAN3` -> `LAN2` -> start: starting the network match ends
@@ -674,6 +689,7 @@ fn finish_video(r: &mut Run) {
     panic!("video does not end");
 }
 
+// QUIRK O-437: kept
 #[test]
 fn video_keeps_the_old_state() {
     // re/menu-level ML.4: Every menu video fades out the menu level and stops it, afterwards the old state is back.
@@ -863,6 +879,7 @@ fn assert_untouched(r: &Run, what: &str) {
     assert_eq!(r.flow.menu_level(), Some((LEVEL, true)), "{what}");
 }
 
+// QUIRK O-441, O-442: kept
 #[test]
 fn menu_level_blocks_game_keys() {
     // O-441 (re/menu-level ML.6, ML.8): In the menu level, ESC (game menu `FUN_0042E150` not until -1), Ctrl+P and
@@ -961,6 +978,7 @@ fn focus_loss_does_not_pause_the_menu_level() {
     assert!(frames(&mut r, 20) > 0, "ticks keep running");
 }
 
+// QUIRK O-442: kept
 #[test]
 fn speed_keys_do_not_reach_the_menu_level() {
     // re/menu-level ML.15 no. 5 (B): `+`/`−` change neither the game speed nor `GameSpeed` (slider, `Engine.ini`) in
@@ -979,6 +997,7 @@ fn speed_keys_do_not_reach_the_menu_level() {
     assert_untouched(&r, "speed keys");
 }
 
+// QUIRK O-442: kept
 #[test]
 fn shift_d_does_not_reach_the_menu_level() {
     // re/menu-level ML.15 no. 5 (B): `SHIFT D` opens no `DIPLOMATIE`, the world keeps running.
@@ -992,6 +1011,7 @@ fn shift_d_does_not_reach_the_menu_level() {
     assert_untouched(&r, "SHIFT D");
 }
 
+// QUIRK O-442: kept
 #[test]
 fn group_keys_do_not_reach_the_menu_level() {
     // The bindings from `bindings2.ini` do not reach the world in the key path, like `keys.ini` (the speed keys have no
@@ -1006,6 +1026,7 @@ fn group_keys_do_not_reach_the_menu_level() {
     assert_untouched(&r, "group keys");
 }
 
+// QUIRK O-442: kept
 #[test]
 fn snapshot_requests_a_hardcopy_in_the_menu_level() {
     // re/menu-level ML.15 no. 5 (B): The Print key works (`ScreenShots/screenshot0000.jpg` with menu and world); the
@@ -1046,6 +1067,7 @@ fn left_clicks_beside_the_menu(r: &mut Run, i: usize) {
     }
 }
 
+// QUIRK O-442: kept
 #[test]
 fn click_beside_the_menu_does_not_reach_the_menu_level() {
     // re/menu-level ML.15 no. 5, O-442: A left click and a selection box beside the START frame show nothing in the
@@ -1060,6 +1082,7 @@ fn click_beside_the_menu_does_not_reach_the_menu_level() {
     assert!(!a.view.input_gate().world_click());
 }
 
+// QUIRK O-442: kept
 #[test]
 fn right_click_does_not_reach_the_menu_level() {
     // re/menu-level ML.15 no. 5, O-442: A right-click beside the START frame has no effect (like the left click).
@@ -1076,6 +1099,7 @@ fn right_click_does_not_reach_the_menu_level() {
     assert!(!r.view.input_gate().right_click_command());
 }
 
+// QUIRK O-442: kept
 #[test]
 fn minimap_click_does_not_reach_the_menu_level() {
     // re/menu-level ML.15 no. 5 (B): A click at the bottom right on the hidden minimap (935/679, 870/620) does not move
@@ -1093,6 +1117,7 @@ fn minimap_click_does_not_reach_the_menu_level() {
     assert!(!r.view.input_gate().minimap_input());
 }
 
+// QUIRK O-442: kept
 #[test]
 fn hover_keeps_the_normal_pointer_in_the_menu_level() {
     // re/menu-level ML.15 no. 5 (B): Mouse over units and buildings: the arrow stays (pointer 7/0), no target pointer.
@@ -1110,6 +1135,7 @@ fn hover_keeps_the_normal_pointer_in_the_menu_level() {
     assert_untouched(&r, "pointer");
 }
 
+// QUIRK O-443: deviation
 #[test]
 fn local_result_halts_the_menu_level() {
     // O-443: A result of the local slot (script `0x56`, no trigger in the shipped data) stops the menu level and goes

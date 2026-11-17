@@ -84,6 +84,7 @@ fn people_query_accepts_slots_0_to_7_only() {
     assert_eq!(run(&mut sim, 0x84, &[8]), [-1]);
 }
 
+// QUIRK E-75: kept
 #[test]
 fn single_player_is_mode_below_zero() {
     // E-75: campaign/direct start (-1) and menu level (-2) -> 1, free play and LAN (0...6) -> 0.
@@ -96,6 +97,7 @@ fn single_player_is_mode_below_zero() {
     }
 }
 
+// QUIRK E-76: kept
 #[test]
 fn defined_slots_count_the_level_slots_not_the_participants() {
     // E-76: `Player+0x218` over 8 slots, whatever the control kind.
@@ -120,6 +122,7 @@ fn control_query_maps_the_control_type() {
     }
 }
 
+// QUIRK E-83: kept
 #[test]
 fn water_share_is_percent_of_the_counted_tiles() {
     let (mut rules, mut state) = scene();
@@ -140,6 +143,7 @@ fn map_size_queries_read_the_terrain_dimensions() {
     assert_eq!(run(&mut sim, 0x8B, &[]), [rules.map.dim_z]);
 }
 
+// QUIRK E-41: deviation
 #[test]
 fn difficulty_maps_only_in_the_campaign_and_clamps_negative_to_one() {
     let (rules, mut state) = scene();
@@ -173,6 +177,7 @@ fn difficulty_maps_only_in_the_campaign_and_clamps_negative_to_one() {
     }
 }
 
+// QUIRK E-82: kept
 #[test]
 fn constant_parity_and_island_queries() {
     let (rules, mut state) = scene();
@@ -188,6 +193,7 @@ fn constant_parity_and_island_queries() {
 }
 
 /// `0x5130` reads the island flag of the random map (`GameEngine+0x30C`, E-82).
+// QUIRK E-82: kept
 #[test]
 fn island_query_reads_the_random_map_flag() {
     use crate::random_map::{RandomMapRules, RandomMapSpec};
@@ -239,6 +245,7 @@ fn resource_queries_read_own_and_any_player() {
     assert_eq!(run(&mut sim, 0xD6, &[-1]), [0]);
 }
 
+// QUIRK E-81: kept
 #[test]
 fn relation_bits_include_self_five_and_slot_eight_enemy() {
     // E-81: defaults of `GameWorld_InitDiplomacy`: p == q -> friend + sight = 5, p != q -> enemy = 2, slot 8 is an
@@ -264,6 +271,7 @@ fn relation_bits_include_self_five_and_slot_eight_enemy() {
     }
 }
 
+// QUIRK E-33: deviation
 #[test]
 fn headhunter_query_without_hunter_writes_addresses() {
     // E-33: no headhunter -> push -1, the output variables get their own address.
@@ -338,6 +346,8 @@ fn headhunter_query_reads_target_customer_guid_and_price() {
     assert_eq!(sim.state.events, events);
 }
 
+// QUIRK E-80: kept
+// QUIRK E-34: deviation
 #[test]
 fn nation_tables_follow_the_own_nation() {
     let (rules, mut state) = scene();
@@ -386,6 +396,7 @@ fn nation_tables_follow_the_own_nation() {
     }
 }
 
+// QUIRK E-27: kept
 #[test]
 fn wrong_argc_leaves_the_own_player() {
     // E-27: wrong argument count or unknown code -> field unchanged, `[2]` stays `me`.
@@ -406,6 +417,7 @@ fn wrong_argc_leaves_the_own_player() {
     }
 }
 
+// QUIRK E-27, E-37: kept
 #[test]
 fn codes_without_counterpart_push_the_own_player() {
     // E-37: the handler pushes the unchanged `[2] = me` (0x196: argc 2 instead of 3, 0xB9: 6 instead of 5).
@@ -426,6 +438,7 @@ fn codes_without_counterpart_push_the_own_player() {
     assert_eq!(checksum(&state), before);
 }
 
+// QUIRK E-37: kept
 #[test]
 fn codes_without_counterpart_push_nothing() {
     // E-37, push column of re/ki-builtins; 0xD0 (weather) pops its argument without effect (E-39).
@@ -496,6 +509,7 @@ fn peek_module(slot: i32, key: i32) -> crate::ki::catalog::KiCatalog {
     testkit::catalog(vec![proto(7, &[(0, 8)], &[(0, slot), (1, key)], &code)])
 }
 
+// QUIRK E-38: deviation
 #[test]
 fn engine_value_reads_own_and_foreign_engines() {
     // Own slot from the own memory, foreign ones through `Peers`; slot without an engine -1, slot outside 0-7 -1 with

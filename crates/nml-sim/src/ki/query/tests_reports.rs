@@ -34,6 +34,7 @@ fn take(sim: &mut Sim, x: i32, z: i32) -> (i32, i32, i32) {
     (t.stack[1], t.vars.get(int(0)), t.vars.get(int(1)))
 }
 
+// QUIRK E-35, E-62: kept
 #[test]
 fn nearest_attack_report_wins_and_ties_follow_mfc_order() {
     // re/ki-queries 5.11.3, E-62: `Fixed_Hypot` on whole tiles, (5, 0), (5, 3), (4, 4) -> 5 each; strictly smaller
@@ -130,6 +131,7 @@ fn report_query_reads_only_slots_0_to_7_without_argc_check() {
     }
 }
 
+// QUIRK E-60: kept
 #[test]
 fn report_of_a_removed_victim_is_still_returned() {
     // E-60: death and removal delete no report; it returns the last tile of the victim.
@@ -147,6 +149,7 @@ fn report_of_a_removed_victim_is_still_returned() {
     assert!(keys(&sim).is_empty());
 }
 
+// QUIRK E-55, E-60: kept
 #[test]
 fn dead_object_after_owner_change_to_slot_8() {
     // E-55, E-60: a dead object of a player changes to slot 8 and gets a new ID. The old one is missing, the new one is

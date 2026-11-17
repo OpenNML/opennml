@@ -614,6 +614,7 @@ VALUEID 60002 6 1 256
         assert_eq!(o.command_cursor, 1);
     }
 
+    // QUIRK C-102: kept
     #[test]
     fn projectiles_tick_once_per_double_tick_after_the_objects() {
         use crate::combat::testkit as ck;
@@ -654,6 +655,7 @@ VALUEID 60002 6 1 256
         );
     }
 
+    // QUIRK E-186: kept
     #[test]
     fn anim_lock_expiry_sets_bit_3_and_stop_does_not() {
         // `GameObject_Tick` `0x00473899`: when the animation lock `+0x174` expires (rest < 1), status

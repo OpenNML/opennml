@@ -38,6 +38,7 @@ fn count_macros(items: &[Item], counts: &mut [usize; 3]) {
     }
 }
 
+// QUIRK O-1: kept
 #[test]
 fn all_dlg_files_round_trip_without_diagnostics() {
     let Some(dir) = corpus_game_dir() else {
@@ -164,6 +165,8 @@ impl CorpusStats {
     }
 }
 
+// QUIRK O-6, O-7: kept
+// QUIRK O-9: deviation
 #[test]
 fn all_dialogs_expand_to_the_documented_counts() {
     let Some(dir) = corpus_game_dir() else {
@@ -302,6 +305,7 @@ fn corpus_paths(vfs: &Vfs, suffix: &str) -> BTreeSet<String> {
         .collect()
 }
 
+// QUIRK O-12: kept
 #[test]
 fn all_bkg_files_round_trip() {
     let Some(dir) = corpus_game_dir() else {
@@ -437,6 +441,7 @@ fn dialog_maps_have_60_entries() {
     );
 }
 
+// QUIRK O-64: kept
 #[test]
 fn localisation_deu_defines_the_menu_fonts() {
     let Some(dir) = corpus_game_dir() else {
@@ -492,6 +497,7 @@ fn localisation_deu_defines_the_menu_fonts() {
     assert_eq!(icon("rdlogo").size, [256, 130]);
 }
 
+// QUIRK O-83: kept
 #[test]
 fn text_files_parse_like_the_old_reader() {
     let Some(dir) = corpus_game_dir() else {
@@ -515,6 +521,7 @@ fn text_files_parse_like_the_old_reader() {
     }
 }
 
+// QUIRK O-83: kept
 #[test]
 fn dialog_text_ids_exist() {
     let Some(dir) = corpus_game_dir() else {

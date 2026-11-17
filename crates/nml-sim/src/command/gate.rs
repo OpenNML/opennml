@@ -202,6 +202,7 @@ mod tests {
         r
     }
 
+    // QUIRK W-269: deviation
     #[test]
     fn gate_commands_check_owner_state_and_button() {
         let (rules, mut first) = fresh();

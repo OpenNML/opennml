@@ -53,6 +53,7 @@ fn chat(mask: u32, text: &str) -> SimCommand {
 /// friends of the sender including the sender itself - in single player only slot 0, mask `0x01` - and close the
 /// window; ENTER opens window 1 (all), Ctrl+ENTER window 3 (chat mask). `GameSession` shows the line "Name: hello"
 /// (`chat_line_name_text_8_s`).
+// QUIRK O-325: kept
 #[test]
 fn shift_return_chats_to_friends_d6() {
     let Some(mut r) = started() else {
@@ -102,6 +103,7 @@ fn shift_return_chats_to_friends_d6() {
 
 /// `FUN_0042EA20`: in cinemascope and with an open menu (game menu, diplomacy) ENTER opens no chat window; the
 /// binding is taken anyway.
+// QUIRK O-291, O-325: kept
 #[test]
 fn no_chat_window_in_cinemascope_or_with_menu_open() {
     let Some(mut r) = started() else {
@@ -136,6 +138,7 @@ fn no_chat_window_in_cinemascope_or_with_menu_open() {
 
 /// ESC with an open chat window closes only the window - no game menu, menu state 0, the game keeps running; the typed
 /// text does not go out. The next ESC opens the game menu again.
+// QUIRK O-325, O-393: kept
 #[test]
 fn escape_closes_only_the_chat_window_t13() {
     let Some(mut r) = started() else {
@@ -168,6 +171,7 @@ fn escape_closes_only_the_chat_window_t13() {
 
 /// Hypothesis: A mouse button press within the frame of the open chat window does not go to the match, nor does the
 /// matching release; outside and without a window as before.
+// QUIRK O-325: kept
 #[test]
 fn clicks_on_the_chat_window_stay_out_of_the_match() {
     let Some(mut r) = started() else {
@@ -272,6 +276,7 @@ fn chat_window_swallow_state_ends_with_the_match() {
 /// The input field takes at most 79 characters (`size 0x50`); umlauts and `[...]` tags go unchanged into the command.
 /// A cheat in capital letters is a chat line, `goldenmonkey` with one character `U+0167` (low byte `g`) is a cheat
 /// (the rest is tested in `command::chat` and `hud::screen_text`).
+// QUIRK O-390: kept
 #[test]
 fn chat_text_limits_tags_and_low_byte_cheats() {
     let Some(mut r) = started() else {

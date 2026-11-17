@@ -174,6 +174,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-196: kept
     #[test]
     fn list_name_cuts_exactly_three_digit_extensions() {
         assert_eq!(list_name("castle.00A").as_deref(), Some("castle"));

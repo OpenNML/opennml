@@ -99,6 +99,7 @@ mod tests {
         Thread::from_prototype(&proto(7, &[(0, 4)], &[], &[]), 2, 1, Vec::new())
     }
 
+    // QUIRK E-36: kept
     #[test]
     fn signature_pops_writes_outputs_pushes_and_pauses() {
         let mut world = StubWorld {

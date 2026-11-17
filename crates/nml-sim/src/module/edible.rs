@@ -165,6 +165,7 @@ mod tests {
         assert_eq!((m.arg(0), m.arg(1)), (0, 0));
     }
 
+    // QUIRK W-64, C-183: kept
     #[test]
     fn a_dead_wolf_becomes_a_corpse_at_t_plus_18_and_rots_every_20_ticks() {
         // re/combat-death 2.4: 0x215 in T+18 (dying animation 1000 -> max(1000, 1500)); meat -1 in
@@ -214,6 +215,7 @@ mod tests {
         assert_eq!(meat_scale(10, -10), 0.0);
     }
 
+    // QUIRK C-211: kept
     #[test]
     fn a_hunter_can_take_meat_before_the_corpse_is_ready_and_0x215_resets_the_scale() {
         // Quirk C-211: `TakeMeat` does not check ISROT; `0x215` then sets the scale

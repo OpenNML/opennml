@@ -228,6 +228,7 @@ mod tests {
         assert_eq!(resource.value_int(1), None);
     }
 
+    // QUIRK E-178: kept
     #[test]
     fn atol_reads_like_the_c_library() {
         assert_eq!(atol("  -42abc"), -42);

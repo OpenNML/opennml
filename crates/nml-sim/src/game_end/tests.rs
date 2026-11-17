@@ -116,6 +116,7 @@ fn headquarters(state: &mut SimState, rules: &Rules, players: u8, without: &[u8]
         .collect()
 }
 
+// QUIRK K-5: kept
 #[test]
 fn no_check_before_one_second() {
     let (rules, mut state) = world(0, 2, NO_BUILDINGS, NO_ENEMY);
@@ -153,6 +154,7 @@ fn game_end_messages_carry_priority_4() {
     assert_eq!(messages(&events), to_others(1, 201));
 }
 
+// QUIRK K-5: kept
 #[test]
 fn normal_mode_defeat_without_buildings() {
     let (rules, mut state) = world(0, 3, NO_BUILDINGS, NO_ENEMY);
@@ -211,6 +213,7 @@ fn defeat_runs_before_victory_in_slot_order() {
     );
 }
 
+// QUIRK O-181: kept
 #[test]
 fn allies_win_together_and_others_lose() {
     // Slots 0 and 1 are mutual friends without enmity; slot 2 is the enemy of both and has
@@ -238,6 +241,7 @@ fn allies_win_together_and_others_lose() {
     assert_eq!(results(&state)[..4], [2, 2, 1, 1]);
 }
 
+// QUIRK O-181: kept
 #[test]
 fn set_player_result_keeps_mutual_friends_and_one_sided_friends_lose() {
     let (rules, mut state) = world(0, 4, NO_BUILDINGS, NO_ENEMY);
@@ -303,6 +307,7 @@ fn kill_hero_defeat_when_the_hero_dies() {
     assert_eq!(player_results(&events), [(0, DEFEAT), (1, VICTORY)]);
 }
 
+// QUIRK O-180: kept
 #[test]
 fn check_timer_without_timer_is_true() {
     // Game type 4: without an entry in the timer list, `CHECKTIMER 0` is true at once (O-180).
@@ -316,6 +321,7 @@ fn check_timer_without_timer_is_true() {
     assert_eq!(countdown_seconds(&sim, 0), 0);
 }
 
+// QUIRK O-201: kept
 #[test]
 fn countdown_runs_out_and_check_timer_turns_true_one_second_before() {
     let defeat = "AND\nCHECKTIMER 0\nCHECKPLAYERID 1\n/AND\n";
@@ -489,6 +495,7 @@ fn messages_depend_on_the_mode() {
     assert_eq!(player_results(&events), [(2, VICTORY)]);
 }
 
+// QUIRK O-180: kept
 #[test]
 fn check_flag_owner_reads_the_leader() {
     // `FUN_0042E970`: `m_FlagOwner == slot`. Without a leader (8) it holds for nobody.
@@ -503,6 +510,7 @@ fn check_flag_owner_reads_the_leader() {
     assert_eq!(player_results(&events), [(0, DEFEAT), (1, VICTORY)]);
 }
 
+// QUIRK O-180: kept
 #[test]
 fn defeated_leader_never_wins_by_the_flag() {
     // Slot 0 leads, then loses everything (result 1) and stays leader; its timer

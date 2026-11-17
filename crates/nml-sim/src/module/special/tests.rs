@@ -44,6 +44,7 @@ fn init_reads_the_bomberman_values() {
     assert_eq!((b.extra_energy, b.return_point, b.busy), (0, [0; 3], false));
 }
 
+// QUIRK D-240: deviation
 #[test]
 fn init_reads_the_killer_values() {
     let rules = tk::spell_rules();
@@ -209,6 +210,7 @@ fn until_blast(sim: &mut Sim) -> usize {
 /// explosion (100th effect tick).
 const BLAST_AFTER: usize = 99;
 
+// QUIRK K-91, K-320, C-326, C-327: kept
 #[test]
 fn dynamite_follows_its_timeline() {
     // T1, K-320, C-326, C-327: patriot (mana 100, button 454 costs 70) against an enemy,
@@ -276,6 +278,7 @@ fn dynamite_follows_its_timeline() {
     assert_eq!(sim.object(p).unwrap().tile, start_tile);
 }
 
+// QUIRK K-320: kept
 #[test]
 fn too_little_mana_does_nothing() {
     // T6: 60 < 70 -> silently 0: no run, no target, no message.
@@ -302,6 +305,7 @@ fn too_little_mana_does_nothing() {
     assert!(mana(&sim, p) >= 60, "no deduction (regeneration only)");
 }
 
+// QUIRK K-318, C-326: kept
 #[test]
 fn a_stop_while_laying_still_blows_and_runs_back() {
     // T7, K-318: Halt 1 s after the start of placing aborts walk but not the demolition expert.
@@ -335,6 +339,7 @@ fn a_stop_while_laying_still_blows_and_runs_back() {
     assert_eq!(hp(&sim, monastery), 6800);
 }
 
+// QUIRK K-318, C-327: kept
 #[test]
 fn a_new_order_while_laying_redirects_the_charge() {
     // C-327 (re/special-attacks 4.1, hypothesis in the interplay): a second order during
@@ -381,6 +386,7 @@ fn a_new_order_while_laying_redirects_the_charge() {
     assert!(charges(&sim).is_empty());
 }
 
+// QUIRK C-327: kept
 #[test]
 fn an_unreached_building_hangs_without_abort() {
     // C-327: "could not reach target" does not abort for a building.
@@ -416,6 +422,7 @@ fn ship(sim: &mut Sim, tile: (i32, i32)) -> ObjectId {
     tk::spawn(sim, tk::SHIP, 1, tile)
 }
 
+// QUIRK K-320, C-329: kept
 #[test]
 fn a_ship_target_takes_4000() {
     // T4, C-329 (ship part): button 455 costs 40; damage -4000 without building reduction, 4000
@@ -464,6 +471,7 @@ fn a_ship_target_takes_4000() {
     assert_eq!(rank_and_fraction(&sim, p), (1, 0), "+4000 experience");
 }
 
+// QUIRK C-328: kept
 #[test]
 fn the_ship_charge_needs_the_ship_close() {
     // T5, C-328: ship moved > 1 tile before triggering -> charge without target, no
@@ -496,6 +504,7 @@ fn the_ship_charge_needs_the_ship_close() {
     assert_eq!(rank_and_fraction(&sim, p), (0, 0));
 }
 
+// QUIRK K-319: kept
 #[test]
 fn the_abort_clears_the_exempt_bit() {
     // K-319: the abort clears EXEMPT_ZONE as soon as a target is set - also after the
@@ -522,6 +531,7 @@ fn the_abort_clears_the_exempt_bit() {
     assert!(status_on(&sim, p, status::EXEMPT_ZONE));
 }
 
+// QUIRK K-321: kept
 #[test]
 fn unknown_queries_answer_zero() {
     // K-321: module 36 answers unknown codes with 0 (not -1).
@@ -535,6 +545,7 @@ fn unknown_queries_answer_zero() {
     assert_eq!(bomber(&sim, p).target, ObjectId::NONE);
 }
 
+// QUIRK K-322: kept
 #[test]
 fn no_counterattack_while_laying() {
     // K-322 (observation; the only test with behavior 2 = default): retaliation during
@@ -581,6 +592,7 @@ fn no_counterattack_while_laying() {
     assert_eq!(attack_target(&sim, q), sabre);
 }
 
+// QUIRK C-329: kept
 #[test]
 fn the_dynamite_survives_its_bomber() {
     // re/special-attacks 4.4, C-329: a laid charge also explodes after the death of the
@@ -626,6 +638,7 @@ fn follow(sim: &mut Sim, mut id: ObjectId, n: usize) -> ObjectId {
     id
 }
 
+// QUIRK K-318: kept
 #[test]
 fn a_bomber_dying_while_laying_lays_only_in_the_tick_after() {
     // A demolition expert that dies while `busy` (re/special-attacks 3.9, C-150, K-318): death
@@ -778,6 +791,7 @@ fn stab(sim: &mut Sim, k: ObjectId, v: ObjectId, button: i32, anim: i32, hit: us
     assert!(!status_on(sim, k, status::ANIM_LOCKED) && attack_on(sim, k));
 }
 
+// QUIRK K-320, C-331, C-336: kept
 #[test]
 fn the_shadow_warrior_kills_with_the_bonus() {
     // T8: shadow warrior 1714 (mana 200, button 548 costs 50) against the pure ranged fighter
@@ -796,6 +810,7 @@ fn the_shadow_warrior_kills_with_the_bonus() {
     assert_eq!(rank_and_fraction(&sim, k), (0, 45_000));
 }
 
+// QUIRK K-91, K-320, C-331, C-336: kept
 #[test]
 fn the_trapper_stabs_a_walker() {
     // T9: trapper 2015 (mana 150, button 456 costs 60) against an enemy unit without a
@@ -901,6 +916,7 @@ fn snipe(
     paid
 }
 
+// QUIRK K-320, C-332, C-336: kept
 #[test]
 fn the_pistolero_snipes_after_turning() {
     // T10: pistoleer 1115 (mana 200, button 546 costs 40) against the missionary 1113: shot
@@ -916,6 +932,7 @@ fn the_pistolero_snipes_after_turning() {
     assert_eq!(kil(&sim, k).extra_energy, 40);
 }
 
+// QUIRK C-332, C-336: kept
 #[test]
 fn the_sharpshooter_gets_the_melee_bonus() {
     // T11, re/special-attacks 8 no. 8: sharpshooter 2616 (mana 250, button 457 costs 50) with
@@ -961,6 +978,7 @@ fn a_swimming_killer_does_nothing() {
     assert!(mana(&sim, p) >= 200 && mana(&sim, s) >= 200, "no deduction");
 }
 
+// QUIRK K-320: kept
 #[test]
 fn a_runaway_victim_is_not_hit() {
     // re/special-attacks 3.4: if the victim at arrival (`0x225`, also as fault of the aborted
@@ -990,6 +1008,7 @@ fn a_runaway_victim_is_not_hit() {
     assert_eq!(kil(&sim, k).target, v, "target stays");
 }
 
+// QUIRK C-331: kept
 #[test]
 fn the_hit_ignores_a_late_escape() {
     // C-331: the hit checks no distance - the victim is far away after the animation start and
@@ -1014,6 +1033,7 @@ fn the_hit_ignores_a_late_escape() {
     assert_eq!(mana(&sim, k), 150);
 }
 
+// QUIRK K-320: kept
 #[test]
 fn an_aborted_kill_costs_nothing() {
     // re/special-attacks 4.1, 3.9: a Halt between arrival and hit aborts - no hit, mana full,
@@ -1036,6 +1056,7 @@ fn an_aborted_kill_costs_nothing() {
     assert!(mana(&sim, k) >= 200, "no deduction");
 }
 
+// QUIRK K-320: kept
 #[test]
 fn a_vanished_snipe_target_aborts() {
     // re/special-attacks 3.5, 3.9: target destroyed before marker 3 -> "target is dead", `abort`:
@@ -1062,6 +1083,7 @@ fn a_vanished_snipe_target_aborts() {
     assert!(mana(&sim, k) >= 200, "no deduction");
 }
 
+// QUIRK C-332: kept
 #[test]
 fn snipe_ignores_range_and_sight() {
     // C-332: the order directly at the module shoots without range, sight and fog check.
@@ -1082,6 +1104,7 @@ fn snipe_ignores_range_and_sight() {
     assert_eq!(mana(&sim, k), 160);
 }
 
+// QUIRK K-322: kept
 #[test]
 fn no_counterattack_while_killing() {
     // K-322 (observation; the only killer test with behavior 2 = default): as with the demolition
@@ -1238,6 +1261,7 @@ const SECTORS: [(i32, i32); 8] = [
 const WHIRL_TICKS: [usize; 8] = [13, 14, 15, 15, 16, 17, 18, 18];
 const WHIRL_END: usize = 33;
 
+// QUIRK K-320, C-333: kept
 #[test]
 fn the_whirlwind_hits_three_enemies_in_sectors() {
     // T13, C-333: three enemies on the neighboring tiles at 0, 45 and 90 degrees -> hits
@@ -1287,6 +1311,7 @@ fn the_whirlwind_hits_three_enemies_in_sectors() {
     assert!(!status_on(&sim, s, status::ANIM_LOCKED) && attack_on(&sim, s));
 }
 
+// QUIRK C-333: kept
 #[test]
 fn a_whirlwind_without_enemies_loses_nothing_but_time() {
     // T14: no enemy within radius 2 (one 3 tiles away, an own one next to it) -> "Get Nearest
@@ -1310,6 +1335,7 @@ fn a_whirlwind_without_enemies_loses_nothing_but_time() {
     assert_eq!((hp(&sim, far), hp(&sim, own)), (1000, 1000));
 }
 
+// QUIRK C-333: kept
 #[test]
 fn same_tick_hits_land_in_reverse_sector_order() {
     // T16, C-333: eight enemies all around -> eight hits. The timers of a handler are in
@@ -1347,6 +1373,7 @@ fn same_tick_hits_land_in_reverse_sector_order() {
     assert!(!smove(&sim, s).busy);
 }
 
+// QUIRK K-318: kept
 #[test]
 fn a_stop_during_the_whirlwind_keeps_the_hits() {
     // K-318: Halt after the first hit - the abort is refused (`busy`): timers, lock and `busy`
@@ -1374,6 +1401,7 @@ fn a_stop_during_the_whirlwind_keeps_the_hits() {
     assert!(crate::module::abort(&mut sim, s, special_move::INDEX));
 }
 
+// QUIRK K-318: kept
 #[test]
 fn a_smith_dying_in_the_whirlwind_hits_only_in_the_tick_after() {
     // A smith dying while `busy` after object tick N+d (hits in N+13/14/15; re/special-attacks
@@ -1414,6 +1442,7 @@ fn hammer_order(sim: &mut Sim, s: ObjectId, target: ObjectId) {
     assert!(post_message(sim, s, m, true));
 }
 
+// QUIRK K-91, K-314, K-320, C-334: kept
 #[test]
 fn the_hammer_hits_the_building_after_arrival() {
     // T15, C-334: mana 100, order against an enemy monastery (HP 10,000): run FINDTO argc 3
@@ -1479,6 +1508,7 @@ fn the_hammer_hits_the_building_after_arrival() {
     assert!(damage_numbers(&events).is_empty());
 }
 
+// QUIRK K-320: kept
 #[test]
 fn hammering_without_mana_after_the_walk_does_nothing() {
     // K-320: hammering checks again after the run. Mana set to 50 (< 60) during the run ->
@@ -1509,6 +1539,7 @@ fn hammering_without_mana_after_the_walk_does_nothing() {
     assert_eq!(hp(&sim, monastery), 10_000);
 }
 
+// QUIRK C-125: kept
 #[test]
 fn percent_hits_give_experience_only_against_enemies() {
     // C-125: `0x27F` with attacker gives -d experience only for an enemy relation to
@@ -1555,6 +1586,7 @@ fn percent_hits_give_experience_only_against_enemies() {
     assert_eq!(xp, (0, 0), "neutral: no experience (C-125)");
 }
 
+// QUIRK K-322: kept
 #[test]
 fn no_counterattack_while_whirling() {
     // K-322 (observation; the only smith test with behavior 2 = default): as with demolition

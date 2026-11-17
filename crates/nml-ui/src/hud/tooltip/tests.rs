@@ -234,6 +234,7 @@ fn s(text: &str, color: u32) -> (String, u32) {
     (text.to_string(), color)
 }
 
+// QUIRK O-44: kept
 #[test]
 fn tooltip_lives_one_frame() {
     // O-44: The request applies from one frame start to the next; without a new `0xC` it is gone.
@@ -253,6 +254,7 @@ fn tooltip_lives_one_frame() {
     assert_eq!(rig.draw(&w, &game, false), (Vec::new(), None));
 }
 
+// QUIRK O-264: kept
 #[test]
 fn last_request_wins() {
     // O-264, re/game-ui N.14.6: areas report before the buttons; the button overrides.
@@ -273,6 +275,7 @@ fn last_request_wins() {
     assert_eq!(rig.text(&w, &game, false), "Kaserne\n[DEFAULTCOLOR]");
 }
 
+// QUIRK O-242, O-264: kept
 #[test]
 fn box_sits_left_with_bottom_h_minus_200_and_no_padding() {
     // O-242/O-264: box (0, H - 200 - h, w, H - 200) without padding, area semi-transparent 0x80000080, text
@@ -315,6 +318,7 @@ fn box_sits_left_with_bottom_h_minus_200_and_no_padding() {
     assert_eq!(quads[5], ([0, 553, 16, 569], WHITE, true));
 }
 
+// QUIRK O-264: kept
 #[test]
 fn width_can_exceed_300_after_a_long_word() {
     // O-264: line break before the long word; afterwards it extends beyond W = 300, the box becomes that wide.
@@ -326,6 +330,7 @@ fn width_can_exceed_300_after_a_long_word() {
     assert_eq!(rect, Some([0, 568 - 30, 350, 568]));
 }
 
+// QUIRK O-243: kept
 #[test]
 fn resources_turn_red_when_lacking_including_icon() {
     // re/game-ui N.8, O-243: Wood 150 with stock 100 -> `[COLOR 0xFFFF0000]` for icon and number; Gold 50 <= 100 in
@@ -363,6 +368,7 @@ fn resources_turn_red_when_lacking_including_icon() {
     assert_eq!(rig.runs(&w, &game, false), [s("Kaserne", WHITE)]);
 }
 
+// QUIRK O-243: kept
 #[test]
 fn ability_shows_mana_of_the_first_selected_even_at_zero() {
     // O-243: GUID < 1000 shows only the mana costs (also 0) against the mana of the first selected object, icon
@@ -424,6 +430,7 @@ fn requirements_list_red_or_grey() {
     );
 }
 
+// QUIRK O-245: kept
 #[test]
 fn progress_prints_floor_percent() {
     // O-245: `floor(f * 100)` (`0x00458B96`) with switch 0x20; 0.756 -> 75, 0.29 -> 29 (product rounded to `f32`, x87
@@ -445,6 +452,7 @@ fn progress_prints_floor_percent() {
     );
 }
 
+// QUIRK O-241: kept
 #[test]
 fn shortcut_tooltip_shows_302_and_formation_5_shows_516() {
     // O-241: missing texts appear as their number (`FUN_0055FFE0`): text 302 of the SHORTCUT row, text 516 of the
@@ -467,6 +475,7 @@ fn shortcut_tooltip_shows_302_and_formation_5_shows_516() {
     assert_eq!(rig.text(&w, &game, false), "1999");
 }
 
+// QUIRK O-241: kept
 #[test]
 fn enhanced_text_only_with_the_switch() {
     // re/game-ui N.8: text GUID + 10000 only with `EnhancedTooltips`, in 0xFFFFFF96 and only if it exists (no number).
@@ -548,6 +557,7 @@ fn without_game_values_the_window_shows_numbers() {
     assert_eq!(w.content(&Bare), None);
 }
 
+// QUIRK O-245: kept
 #[test]
 fn kinds_map_to_the_tooltip_arts() {
     // `0x00458A80`: kind by `kind & 0xFF000000`; selection, occupant and hero show the type of the object.

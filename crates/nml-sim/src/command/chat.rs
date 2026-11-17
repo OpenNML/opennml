@@ -189,6 +189,7 @@ mod tests {
     }
 
     /// In network play (`SimState::network`) a cheat text is a chat line without a cheat effect.
+    // QUIRK E-276, O-325: kept
     #[test]
     fn network_turns_cheats_into_chat() {
         let rules = testkit::rules();
@@ -213,6 +214,7 @@ mod tests {
     }
 
     /// Every cheat with its effect on the sender, without a chat line.
+    // QUIRK O-390, O-392: kept
     #[test]
     fn all_cheats_by_table() {
         let rules = testkit::rules();
@@ -305,6 +307,7 @@ mod tests {
     /// the slots 0-7 in table order, own ones included; buildings without module 1 and objects with module 1 switched
     /// off stay. The dying itself is the path of `0x10` (`{0x110}` with abort, tests in `command::ai`); the colonists
     /// of the test world have no dying module.
+    // QUIRK O-391: kept
     #[test]
     fn wheelofmayhem_kills_all_builders_too() {
         let rules = testkit::rules();
@@ -347,6 +350,7 @@ mod tests {
 
     /// Comparison on the low bytes and up to before the first null byte, case-sensitive. `U+0167` has the low byte
     /// `0x67` ("g"), `U+0100` ends the comparison as a null byte; umlauts stay preserved in the chat text.
+    // QUIRK O-390: kept
     #[test]
     fn chat_text_limits_tags_and_low_byte_cheats_in_the_sim() {
         assert_eq!(cheat_bytes(&units("Goldenmonkey")), b"Goldenmonkey");

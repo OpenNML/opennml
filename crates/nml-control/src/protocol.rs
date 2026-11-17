@@ -1795,6 +1795,7 @@ mod tests {
     }
 
     /// `pointer` with and without the field; old scripts (without the field) read unchanged.
+    // QUIRK O-297: kept
     #[test]
     fn screenshot_pointer_flag_round_trip() {
         let old: Request =
@@ -2022,6 +2023,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-332: deviation
     #[test]
     fn replay_steps_limit_is_eight_hours() {
         assert_eq!(MAX_REPLAY_STEPS, 576_000);
@@ -3230,6 +3232,7 @@ mod tests {
         assert_eq!(TIME_LIMIT_RANGE, 1..=35_791);
     }
 
+    // QUIRK E-40: kept
     #[test]
     fn sim_setup_rejects_inconsistent_slots() {
         let ai = |ki_kind, handicap| SlotSetup {

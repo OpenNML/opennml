@@ -29,6 +29,7 @@ fn image_size(vfs: &Vfs, path: &str) -> [i32; 2] {
     [image.width() as i32, image.height() as i32]
 }
 
+// QUIRK O-273: deviation
 #[test]
 fn toolbar_data_reads_the_installation() {
     let Some(vfs) = open() else { return };
@@ -88,6 +89,7 @@ fn toolbar_data_reads_the_installation() {
     assert_eq!(d.colors[2], 0xEEF5_562E);
 }
 
+// QUIRK O-280: kept
 #[test]
 fn toolbar_sheets_have_the_documented_tile_sizes() {
     let Some(vfs) = open() else { return };
@@ -148,6 +150,7 @@ fn toolbar_sheets_have_the_documented_tile_sizes() {
 
 /// O-263: The reimplementation omits a button with a negative icon where the original aborts. The shipped data has
 /// no negative value; the strict and the clamping lookup return the same for every GUID.
+// QUIRK O-263: deviation
 #[test]
 fn icons_ini_has_no_negative_icon_in_the_installation() {
     let Some(vfs) = open() else { return };
@@ -171,6 +174,7 @@ fn icons_ini_has_no_negative_icon_in_the_installation() {
 /// O-227 in the shipped data: The colonist (menu 1100) shows "Mount" (403) in slot 4 and "Arm" (485, locked without a
 /// weapon smithy) in slot 12; "Dismount" (405) and "Disarm" (486) come after them and never appear, because locks do
 /// not let later entries move up. Empty stocks: 485 is locked, but present.
+// QUIRK O-227: kept
 #[test]
 fn colonist_menu_never_shows_405_and_486() {
     let Some(vfs) = open() else { return };

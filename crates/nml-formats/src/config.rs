@@ -524,6 +524,7 @@ mod tests {
 
     const LVL: &str = "LEVELFILE V1.08e\r\nPROJECT_FILE \"Data\\Projects\\nml-wiese.prj\"\r\n[RESOURCES]\r\n{\r\n\tCONFIG_GUID 0\r\n\t{\r\n\t\tCONFIG_ENABLE\tFALSE\r\n\t\tCONFIG_VALUE\t\"500\"\r\n\t}\r\n\tCONFIG_GUID 2\r\n\t{\r\n\t\tCONFIG_VALUE\t\"700\"\r\n\t}\r\n}\r\n[NEUTRAL]\r\n{\r\n[CONFIGDATA]\r\n{\r\n\tOBJECT_GUID 3409\r\n\t{\r\n\t}\r\n}\r\n}\r\n[PLAYER]\r\n{\r\n\tPLAYER_NAME\t\"29081 RED\"\r\n\tPLAYER_PLAYER\t\"SPA\"\r\n\tPLAYER_TYPE\t1\r\n\tPLAYER_COLOR\t3\r\n\tPLAYER_LINETOOL 0 128 128 0\r\n\t[RESOURCES]\r\n\t{\r\n\t\tCONFIG_GUID 1\r\n\t\t{\r\n\t\t\tCONFIG_VALUE\t\"250\"\r\n\t\t}\r\n\t}\r\n\t[CONFIGDATA]\r\n\t{\r\n\t\tOBJECT_GUID 1100\r\n\t\t{\r\n\t\t\tCONFIG_GUID 14\r\n\t\t\t{\r\n\t\t\t\tCONFIG_ENABLE\tFALSE\r\n\t\t\t\tCONFIG_VALUE\t\"200\"\r\n\t\t\t}\r\n\t\t}\r\n\t}\r\n\t[UPGRADES]\r\n\t{\r\n\t}\r\n\t[PATTERNS]\r\n\t{\r\n\t}\r\n}\r\n";
 
+    // QUIRK W-183: kept
     #[test]
     fn level_setup_reads_players_resources_and_copies_defaults() {
         let d = parse_dropdowns(DROPDOWN);

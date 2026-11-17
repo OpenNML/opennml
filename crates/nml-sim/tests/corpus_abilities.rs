@@ -1150,6 +1150,7 @@ fn print_configs(rules: &Rules, guids: &[u32]) {
     }
 }
 
+// QUIRK C-308: kept
 #[test]
 fn spell_type_params_match_the_analysis() {
     let Some((_, rules)) = corpus() else {
@@ -1240,6 +1241,7 @@ fn spell_type_params_match_the_analysis() {
     assert_eq!(wolf.category() & 0x400, 0, "not neutral");
 }
 
+// QUIRK W-278: kept
 #[test]
 fn special_attack_type_params_match_the_analysis() {
     let Some((_, rules)) = corpus() else {
@@ -1717,6 +1719,7 @@ fn hunter_type_params_match_the_analysis() {
     }
 }
 
+// QUIRK C-149: kept
 #[test]
 fn robbing_type_params_match_the_analysis() {
     let Some((vfs, rules)) = corpus() else {

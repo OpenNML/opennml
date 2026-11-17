@@ -132,6 +132,7 @@ fn address_parts_and_range_keys() {
     assert_eq!(vars::range_key(addr(1, 10, 0)), None);
 }
 
+// QUIRK E-1: kept
 #[test]
 fn vars_outside_ranges_read_zero_and_ignore_writes() {
     let mut table = VarTable::from_module(&[(addr(0, 0, 0), 3)], &[(addr(0, 0, 1), 42)]);
@@ -161,6 +162,7 @@ fn vars_outside_ranges_read_zero_and_ignore_writes() {
     assert_eq!(table.get(addr(0, 0, 0)), 9);
 }
 
+// QUIRK E-1: kept
 #[test]
 fn references_into_the_caller_are_dead() {
     // Kind 1 (reference, type 0, length 2) and kind 3 (list reference, type 3, length 1).
@@ -288,6 +290,7 @@ fn var_table_survives_a_serde_round_trip() {
     assert_eq!(back, a);
 }
 
+// QUIRK E-45: kept
 #[test]
 fn address_bits_28_to_31_are_ignored_like_in_the_original() {
     // FUN_00413840/FUN_004137f0 mask the kind with 0xF (`AND EAX,0xF`); "kind < 16" is always true.
@@ -468,6 +471,7 @@ fn opcodes_follow_the_original() {
     assert!(rig.world.calls.is_empty() && rig.world.notes.is_empty());
 }
 
+// QUIRK E-2: kept
 #[test]
 fn store_right_after_pusha_resolves_the_address() {
     // Reference variable &rx = kind 1, index 0; x = int(0), y = int(1).
@@ -499,6 +503,7 @@ fn store_right_after_pusha_resolves_the_address() {
     assert_eq!(t.vars.get(int(1)), rx as i32, "STORE3 stores the address");
 }
 
+// QUIRK E-3: kept
 #[test]
 fn empty_stack_pops_zero() {
     let code = [word(op::CALLB, 1), word(op::STORE, int(0)), word(op::JZ, 0)];
@@ -512,6 +517,7 @@ fn empty_stack_pops_zero() {
     assert_eq!(t.pc, 0, "JZ on an empty stack jumps");
 }
 
+// QUIRK E-4: kept
 #[test]
 fn builtins_without_case_clear_the_stack() {
     assert_eq!((1..=757).filter(|&id| has_case(id)).count(), 502);
@@ -544,6 +550,7 @@ fn world_builtins_get_the_running_instance() {
     assert_eq!(t.stack, [1, 42]);
 }
 
+// QUIRK E-5: deviation
 #[test]
 fn arithmetic_wraps_and_guards_division() {
     assert_eq!(binary(0x01, 2, 3), 5);
@@ -623,6 +630,7 @@ fn comparisons_pop_b_then_a() {
     }
 }
 
+// QUIRK E-7: kept
 #[test]
 fn callm_passes_the_whole_stack_and_returns_the_rest() {
     // Child: x = int(0), c9 = int(1) = 9; "STORE x; LOAD c9".
@@ -675,6 +683,7 @@ fn callm_passes_the_whole_stack_and_returns_the_rest() {
     assert!(t.child.as_deref().expect("child missing").stop);
 }
 
+// QUIRK E-6: deviation
 #[test]
 fn callm_to_a_missing_module_does_nothing() {
     let mut rig = Rig::new(vec![module(1, &[], &[word(op::CALLM, 99)])]);
@@ -697,6 +706,7 @@ fn callm_to_a_missing_module_does_nothing() {
     );
 }
 
+// QUIRK E-7: kept
 #[test]
 fn spawn_copies_the_stack_and_the_caller_keeps_it() {
     let mut rig = Rig::new(vec![
@@ -725,6 +735,7 @@ fn spawn_copies_the_stack_and_the_caller_keeps_it() {
     assert!(rig.world.notes.is_empty());
 }
 
+// QUIRK E-6: deviation
 #[test]
 fn spawn_of_a_missing_module_is_silent() {
     let mut rig = Rig::new(vec![module(1, &[], &[word(op::SPAWN, 99)])]);
@@ -861,6 +872,7 @@ fn callm_depth_limit_notes_and_continues() {
     assert_eq!(t.stack, [8], "the stack travels back through all levels");
 }
 
+// QUIRK E-42: kept
 #[test]
 fn step_takes_semaphores_and_counts_pauses_down() {
     let code = [word(op::PUSHA, 1), word(op::PUSHA, 2), word(op::PUSHA, 3)];

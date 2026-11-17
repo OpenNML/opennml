@@ -62,6 +62,7 @@ fn decor(h: &mut Harness, id: NodeId, offset: [i32; 2]) -> Vec<DrawCmd> {
     out
 }
 
+// QUIRK O-23, O-108: kept
 #[test]
 fn start_flies_in_with_integer_steps() {
     // re/menu-system 12.2 with the values of `start.dlg`: x = ex + rem*(sx-ex)/dur (IDIV), after 0/75/150/299/300 ms
@@ -136,6 +137,7 @@ fn start_flies_in_with_integer_steps() {
     );
 }
 
+// QUIRK O-108: kept
 #[test]
 fn closing_ends_at_extent_with_bar_minus_500() {
     // Closing: back from ZIELPOSITION to EXTENT, bar offset in the second half
@@ -203,6 +205,7 @@ fn duration_zero_ends_in_the_first_tick() {
     assert_eq!(h.tree.node(frame).rect, [10, 10, 20, 20]);
 }
 
+// QUIRK O-92: kept
 #[test]
 fn images_paint_in_cmap_order() {
     // re/menu-system 12.3, O-92: opening without MOVE with MENUFRAME_BACKGROUND -> 0x15E with 500 ms; drawn in CMap
@@ -257,6 +260,7 @@ fn images_paint_in_cmap_order() {
     assert!(h.paint().iter().any(|c| texture(c) == Some(bg)));
 }
 
+// QUIRK O-91: kept
 #[test]
 fn disabled_text_color_with_the_normal_set() {
     // O-91: at run time DISABLE from the file locks at the first query; the button shows set 0
@@ -352,6 +356,7 @@ fn combo_text_comes_from_the_selection() {
     assert_eq!(uv0(&g[2]), uv_of(b'A'));
 }
 
+// QUIRK O-18: kept
 #[test]
 fn open_combo_list_draws_its_entries_at_the_moved_client() {
     // Ghidra FUN_00464400: the entries sit at the current client (FUN_00459B30), the text window +0x10C...
@@ -482,6 +487,7 @@ fn listbox_entries_show_selection_bar_and_hover_mix() {
     assert!(cmds.contains(&bar));
 }
 
+// QUIRK O-23: kept
 #[test]
 fn editfield_caret_blinks_with_the_clock() {
     // re/menu-system 8.4.7: caret only with focus, visible as long as `+0xC8 > now`; if `+0xC8 + 500 < now`, `+0xC8 =

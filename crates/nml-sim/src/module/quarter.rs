@@ -1003,6 +1003,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK W-130: kept
     #[test]
     fn the_spiral_walks_square_rings_and_stops_left_of_the_radius() {
         // Step width 2048 (hard radius 1024), unit 1024.
@@ -1035,6 +1036,7 @@ mod tests {
         assert_eq!(n, 1680);
     }
 
+    // QUIRK W-125: kept
     #[test]
     fn the_headquarters_takes_five_units_and_flags_its_state() {
         let rules = rules(false);
@@ -1092,6 +1094,7 @@ mod tests {
         assert_eq!(q(&sim, hq).occupants, units[..5]);
     }
 
+    // QUIRK W-124: kept
     #[test]
     fn free_for_quarter_is_set_on_capacity_changes_but_never_cleared() {
         // `PropertyQuarter_OnPlayerDataChanged` (`0x0051FC90`): sets the flag with free places,
@@ -1251,6 +1254,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-133, C-138: kept
     #[test]
     fn a_destroyed_building_releases_its_occupants_with_random_damage() {
         let rules = rules(true);

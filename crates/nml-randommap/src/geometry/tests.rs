@@ -59,6 +59,7 @@ fn box_geometry(h: f32, blocking01: bool) -> ModelGeometry {
     }
 }
 
+// QUIRK D-356: kept
 #[test]
 fn ground_rect_shrinks_by_an_eighth() {
     let m = generator_world_matrix([640.0, 0.0, 384.0], [0.0; 3]);
@@ -71,6 +72,7 @@ fn ground_rect_shrinks_by_an_eighth() {
     }
 }
 
+// QUIRK D-356: kept
 #[test]
 fn negative_rect_rounds_down_only_with_blocking01() {
     // x = 32: -32 ... 96 -> -16 ... 80; ftol(-16)/128 = 0, with `blocking01` -1 (D-356).
@@ -99,6 +101,7 @@ fn negative_rect_rounds_down_only_with_blocking01() {
     assert_eq!(ground_rect(&box_geometry(64.0, false), &m, 128)[0], -1);
 }
 
+// QUIRK D-356: kept
 #[test]
 fn narrow_rect_swaps_its_bounds() {
     // Hull -8 ... 8: x0 = 16 + 632 = 648, x1 = 648 - 16 = 632 -> swapped: 632 ... 648 -> 4 ... 5.
@@ -109,6 +112,7 @@ fn narrow_rect_swaps_its_bounds() {
     );
 }
 
+// QUIRK D-356: kept
 #[test]
 fn snap_hull_takes_the_instance_box_without_blocking01() {
     let m = generator_world_matrix([640.0, 0.0, 384.0], [0.0; 3]);
@@ -144,6 +148,7 @@ fn snap_hull_takes_the_instance_box_without_blocking01() {
     }
 }
 
+// QUIRK D-356: kept
 #[test]
 fn radius_is_the_file_value() {
     let mut file = bounds([-1.0; 3], [1.0; 3]);
@@ -163,6 +168,7 @@ fn radius_is_the_file_value() {
     assert_eq!(geo.blocking01, None);
 }
 
+// QUIRK D-356: kept
 #[test]
 fn instance_box_follows_0x0058ac40() {
     let mut files = BTreeMap::new();
@@ -296,6 +302,7 @@ fn unloadable_model_has_no_geometry() {
     assert_eq!(load(&files, "missing.rdo"), None);
 }
 
+// QUIRK D-356: kept
 #[test]
 fn blocking01_corners_follow_0x0058e790() {
     // Identity rotation as w = -1 (shipped data): corners = stored corner + node position, in
@@ -346,6 +353,7 @@ fn blocking01_corners_follow_0x0058e790() {
     );
 }
 
+// QUIRK D-356, D-365: kept
 #[test]
 fn blocking01_corners_apply_the_node_scale() {
     // D-365: `Vector3_ApplyNodeTransform` (`0x00578180`) first multiplies by the node scale
@@ -376,6 +384,7 @@ fn blocking01_corners_apply_the_node_scale() {
     );
 }
 
+// QUIRK D-356, D-365: kept
 #[test]
 fn corpus_blocking01_applies_the_node_scale() {
     // palme05 (GUID 3638) carries the scale 20/29 on the node `blocking01`, palme01 (3634) none;
@@ -463,6 +472,7 @@ fn corpus_project() -> Option<(nml_rda::Vfs, nml_formats::prj::Project)> {
     Some((vfs, project))
 }
 
+// QUIRK D-356: kept
 #[test]
 fn corpus_instance_box_against_the_glam_approximation() {
     use nml_rda::testutil::{GameVersion, game_version};

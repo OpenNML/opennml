@@ -422,6 +422,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-133: kept
     #[test]
     fn match_request_converts_to_match_setup() {
         // Mode = game type, lobby in key order (999 -> human, 1...4 -> AI, handicap = slot value),
@@ -459,6 +460,7 @@ mod tests {
         assert_eq!(setup.lobby.len(), 2);
     }
 
+    // QUIRK K-277: kept
     #[test]
     fn railroad_puts_each_entry_on_the_slot_of_its_team() {
         // K-277: game type 4 puts each entry on the slot of its team (`GetPlayer(team)`); `nml-sim` occupies the active
@@ -502,6 +504,7 @@ mod tests {
         assert_eq!(setup.lobby[0].kind, SlotKind::Human);
     }
 
+    // QUIRK O-192: kept
     #[test]
     fn computers_are_named_only_below_the_slot_bound() {
         // `SetupPlayersFromLobby` names type 1...4 "Computer (color)" only for the keys -1 ... n - 2,
@@ -532,6 +535,7 @@ mod tests {
         assert_eq!(setup.lobby[1].name, "Computer (15157)");
     }
 
+    // QUIRK O-134: kept
     #[test]
     fn computer_named_white() {
         // O-134: color 8 is called 15158 "White", the computer name "Computer (White)" (15195 and 15158).
@@ -542,6 +546,7 @@ mod tests {
         assert_eq!(setup.mode, 2);
     }
 
+    // QUIRK K-277, O-192: kept
     #[test]
     fn railroad_slots_follow_teams_in_the_simulation() {
         // Corpus: railroad map in game type 4, the human (row 0) in team 1, the computer in team 0 -> in the game
@@ -601,6 +606,7 @@ mod tests {
 
     /// The menu level is set up like the campaign, only with game type -2 (`FUN_004C9140` `0x004C9140`), difficulty 0
     /// as a leftover and `NetName` as the local name.
+    // QUIRK O-446: kept
     #[test]
     fn menu_level_setup_is_campaign_like() {
         let vars = vec![("seen".to_owned(), 3)];
@@ -626,6 +632,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-142: kept
     #[test]
     fn campaign_setup_uses_mode_minus_1_and_difficulty() {
         // `0x0C` (re/singleplayer-menus part 1, 6.2): game type -1, no lobby (the slots come from the `.lvl`), "map
@@ -683,6 +690,8 @@ mod tests {
     /// the German sense in the file: `FUN_0040C780` writes the name it looks up in lowercase and compares in `m_VarMap`
     /// with `_mbscmp` (case matters); "Gold" and "ÄRGER" (written into the file only by hand) stay invisible. If the
     /// same name appears twice in the file, the later one applies (`CMap::operator[]` when loading).
+    // QUIRK E-252: kept
+    // QUIRK E-166: deviation
     #[test]
     fn campaign_setup_takes_profile_vars() {
         let vars = vec![
@@ -709,6 +718,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-134: kept
     #[test]
     fn errors_are_german_messages() {
         // Draft without a map (O-188): empty path -> error message instead of a crash.
@@ -749,6 +759,7 @@ mod tests {
         req
     }
 
+    // QUIRK O-430: kept
     #[test]
     fn random_map_request_becomes_a_spec() {
         // The menu values are in `Info` (seed text, size, player count, map type, landscape, time of day), the game

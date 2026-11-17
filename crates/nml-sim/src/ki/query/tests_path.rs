@@ -62,6 +62,7 @@ fn reach_field(sim: &mut Sim, x: i32, z: i32) -> (i32, i32) {
     (req[5], req[6])
 }
 
+// QUIRK E-77: kept
 #[test]
 fn reachable_cell_query_returns_its_input() {
     // E-77: start = goal of the ring search in layer 4; the goal cell always fits, even blocked and outside the map.
@@ -98,6 +99,7 @@ fn object_reach(sim: &mut Sim, id: u16, obj: i32, x: i32, z: i32) -> (i32, i32, 
     (t.stack[1], t.vars.get(int(0)), t.vars.get(int(1)))
 }
 
+// QUIRK E-33: deviation
 #[test]
 fn object_reachable_cell_handles_missing_dead_and_walkless() {
     let (rules, mut state) = walled(20);
@@ -145,6 +147,7 @@ fn object_reachable_cell_handles_missing_dead_and_walkless() {
     assert_eq!(object_reach(&mut sim, 0x88, walker, 12, 14), (1, 20, 14));
 }
 
+// QUIRK E-33: deviation
 #[test]
 fn failed_ring_search_writes_zero_instead_of_stack_leftovers() {
     // E-33: the ring search fails if no map cell carries the region of the object's tile. The original would then write
@@ -199,6 +202,7 @@ fn path_len(sim: &mut Sim, obj: i32, s: (i32, i32), g: (i32, i32)) -> i32 {
     t.stack[1]
 }
 
+// QUIRK E-27, E-78: kept
 #[test]
 fn tile_path_length_counts_cells_and_zero_means_none() {
     let (rules, mut state) = walled(20);
@@ -234,6 +238,7 @@ fn tile_path_length_counts_cells_and_zero_means_none() {
     assert_eq!(req[2], ME_I);
 }
 
+// QUIRK E-78: kept
 #[test]
 fn tile_path_start_is_not_checked_for_freedom() {
     // E-78: the start cell moves to the nearest free cell; the original does not check whether that succeeded. The
@@ -280,6 +285,7 @@ fn tile_path_length_survives_hostile_cells() {
     }
 }
 
+// QUIRK E-78: kept
 #[test]
 fn very_long_paths_count_as_none() {
     // Over 1000 cells the original overflows the buffer; the reimplementation reports 0. Serpentine path: wall rows z =
@@ -317,6 +323,7 @@ fn fog_hit(sim: &mut Sim, code: u32, p: i32, x: i32, z: i32, r: i32) -> i32 {
     query_once(sim, ME, Sight::Omniscient, code, &[ME_I, p, x, z, r]).0[2]
 }
 
+// QUIRK E-79: kept
 #[test]
 fn fog_square_is_inclusive_and_clamped_to_the_map() {
     let (rules, mut state) = fog_world();
@@ -395,6 +402,7 @@ fn fog_square_is_inclusive_and_clamped_to_the_map() {
     assert_eq!(req[2], 1);
 }
 
+// QUIRK E-25: kept
 #[test]
 fn fog_bits_follow_explored_and_seen() {
     let (rules, mut state) = fog_world();

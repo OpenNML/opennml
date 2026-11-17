@@ -20,6 +20,7 @@ fn channel(color: u32, shift: u32) -> u32 {
     (color >> shift) & 0xFF
 }
 
+// QUIRK E-237: kept
 #[test]
 fn fog_506_fades_in_game_time_and_swaps() {
     // E-237 (`FUN_0042F200`/`FUN_0042F380`): 506 crossfades in game time (frame time * (speed + 10) / 20) and writes
@@ -116,6 +117,7 @@ fn frame(host: &mut SimHost, p: &mut ScriptPresentation, selection: &mut Selecti
     }
 }
 
+// QUIRK E-238, E-246: kept
 #[test]
 fn cinemascope_and_lock_clear_the_host_selection() {
     // E-230: 147/148 and 18 without cinemascope clear the selection of the game host together with the mirror;
@@ -237,6 +239,7 @@ fn music_nation_follows_the_lobby_choice_not_the_level_file() {
     }
 }
 
+// QUIRK E-239: deviation
 #[test]
 fn viewer_load_does_not_stick_at_cinemascope_speed() {
     // The viewer loads without a tempo memory in the savegame (`reset_view`); the memory follows from the loaded state.
@@ -287,6 +290,7 @@ fn viewer_load_does_not_stick_at_cinemascope_speed() {
     );
 }
 
+// QUIRK O-287: kept
 #[test]
 fn the_cinemascope_end_rebuilds_the_minimap_fog_at_once() {
     // The end of cinemascope sets the alpha table at once (`0x00479160(1)`), the minimap rebuilds its fog with it; the
@@ -319,6 +323,7 @@ fn hud_words(event: Presentation, campaign: bool, screen_h: i32) -> Vec<(u32, Ve
         .collect()
 }
 
+// QUIRK O-350, O-356: kept
 #[test]
 fn presentation_events_follow_fun_00430920() {
     // `FUN_00430920`: on -> `{0x11, 1}`, `{0x1D, 0}`, `{0x1C, 0}`, only with game type -1 additionally `{0x1B, H/6}`;
@@ -408,6 +413,7 @@ fn presentation_events_follow_fun_00430920() {
     assert!(hud_words(Presentation::Music { id: 3 }, true, 768).is_empty());
 }
 
+// QUIRK E-240: kept
 #[test]
 fn speech_frame_213_sends_no_text_slot() {
     // 213 plays the line on slot + 4 (`Dialog_PlaySpeech` with type >= 4): no `{0x20}`, and its end closes the info
@@ -452,6 +458,7 @@ fn cinemascope_hud() -> crate::game::hud::Hud {
     hud
 }
 
+// QUIRK O-355, O-356: kept
 #[test]
 fn portrait_speech_and_tip_reach_the_view() {
     // The game host distributes (`Hud::present`): `0x1B`, `0x1E` ... `0x21` to the area, `0x1C` to the status bar,
@@ -721,6 +728,8 @@ fn channels(session: &GameSession, audio: &AudioEngine) -> Channels {
     }
 }
 
+// QUIRK E-169, E-237: kept
+// QUIRK E-239: deviation
 #[test]
 fn restore_rebuilds_all_channels() {
     // Deviation from the original (E-239): a savegame with all channels re-creates the same channel values after
@@ -857,6 +866,7 @@ fn restore_rebuilds_all_channels() {
 
 const SNOWDREAM: &str = "data/levels/multiplayer/[4players]-snowdream.lvl";
 
+// QUIRK D-158: kept
 #[test]
 fn free_play_music_follows_the_lobby_nation_also_after_loading_and_switching() {
     // Snowdream, own slot with map nation SPA, ENG chosen in the start dialog -> ENG music
@@ -939,6 +949,7 @@ fn free_play_music_follows_the_lobby_nation_also_after_loading_and_switching() {
     );
 }
 
+// QUIRK D-289: deviation
 #[test]
 fn corpus_free_play_maps_start_at_slot_0() {
     // Quirk (`Player_Construct` `0x004FAF60` sets `+0x04 = -1` for all slots): in free play the local player is the

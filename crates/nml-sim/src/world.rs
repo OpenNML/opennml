@@ -997,6 +997,7 @@ mod tests {
         sim.state.names.get(name).map(str::to_owned)
     }
 
+    // QUIRK E-146: kept
     #[test]
     fn mounted_type_registers_pferd() {
         let rules = rules();
@@ -1026,6 +1027,7 @@ mod tests {
         assert_eq!(sim.state.names.len(), 2);
     }
 
+    // QUIRK E-145: kept
     #[test]
     fn owner_change_moves_the_name_death_removes_it() {
         let rules = rules();
@@ -1060,6 +1062,7 @@ mod tests {
         assert_eq!(named(&sim, "mitglied"), Some(c.as_i32().to_string()));
     }
 
+    // QUIRK E-145: kept
     #[test]
     fn removal_without_death_keeps_the_stale_id() {
         let rules = rules();
@@ -1089,6 +1092,7 @@ mod tests {
         );
     }
 
+    // QUIRK E-137: kept
     #[test]
     fn kill_count_sums_guid_groups() {
         // `FUN_0047E7F0`: group = sum of the members (recursive), the group's own entry
@@ -1146,6 +1150,7 @@ mod tests {
         BEHAVIOR.with(|b| std::mem::take(&mut *b.borrow_mut()))
     }
 
+    // QUIRK E-100: kept
     #[test]
     fn player_behavior_sends_2100_before_611() {
         // `FUN_0047BA50` (`0x0047BAE0`...`0x0047BAF3`): per object first `0x2100`, then `0x611`, with

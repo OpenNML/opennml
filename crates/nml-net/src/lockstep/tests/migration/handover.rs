@@ -177,6 +177,7 @@ fn results_of(slots: &[u8]) -> [bool; 8] {
 /// both independently of each other. A defeated reachable client may become host for an unreachable client that is
 /// still playing. If all clients have a result, `hand_over` refuses and `end` applies as it does today; the host's own
 /// result does not count.
+// QUIRK E-268: deviation
 #[test]
 fn hand_over_needs_a_client_still_playing() {
     // All clients defeated.
@@ -208,6 +209,7 @@ fn hand_over_needs_a_client_still_playing() {
 /// the last player still playing has a result in the meantime), the bundle carries `End` instead of `Handover` - end
 /// for all as with [`HostCore::end`] - and no dropout command for the host slot. `Bye` with the reason of the end
 /// follows.
+// QUIRK E-268: deviation
 #[test]
 fn hand_over_falls_back_to_end_when_nobody_can_take_over() {
     for case in ["client gone", "client defeated"] {
@@ -245,6 +247,7 @@ fn hand_over_falls_back_to_end_when_nobody_can_take_over() {
 }
 
 /// If the host slot already has a result, the handover bundle carries no dropout command for it.
+// QUIRK E-347: deviation
 #[test]
 fn defeated_host_hands_over_without_a_second_loss() {
     let mut rig = rig_reachable(1);
@@ -296,6 +299,7 @@ fn bye_after_handover_is_a_planned_host_gone() {
 /// After the handover the new host collects only under `peers` (`only`). If all come, collecting is done at once,
 /// without the deadline `W`, even if the successor list still has one who left earlier. The old host is in `lost`,
 /// but gets no second dropout command in bundle `K + 1`.
+// QUIRK E-268: deviation
 #[test]
 fn handover_migration_finishes_without_waiting() {
     let mut rig = rig_reachable(3);

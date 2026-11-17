@@ -125,6 +125,7 @@ impl Peers {
 /// O-143: Client 1 has the game menu open the whole time (`running = false`). In the network that does not stop it:
 /// all three keep computing (the host cannot go on without the contributions of client 1, so they go out empty), its
 /// presentation clock keeps running, and the sequences equal those of a run without a menu.
+// QUIRK O-143: kept
 #[test]
 fn menu_open_keeps_the_rounds_running() {
     const UNTIL: u64 = 200;
@@ -150,6 +151,8 @@ fn menu_open_keeps_the_rounds_running() {
 
 /// E-264, O-316: Client 1 pauses. All machines stop after the same execution tick and show the pause (also those that
 /// did not pause); before that nobody shows it. Host and client 2 cannot lift it, only client 1.
+// QUIRK O-316: kept
+// QUIRK E-264: deviation
 #[test]
 fn net_pause_shows_on_every_peer_and_only_the_pauser_lifts_it() {
     let mut p = Peers::new();
@@ -193,6 +196,7 @@ fn net_pause_shows_on_every_peer_and_only_the_pauser_lifts_it() {
 
 /// O-154: Losing focus becomes a pause wish in the network like the key; another loss of focus does not lift the
 /// pause, the key of the pauser does.
+// QUIRK E-264: deviation
 #[test]
 fn focus_loss_sends_a_pause_wish() {
     let mut p = Peers::new();
@@ -212,6 +216,7 @@ fn focus_loss_sends_a_pause_wish() {
 }
 
 /// E-265 (`FUN_0042F050`): On clients the speed keys have no effect, also no message and no value for the setting.
+// QUIRK E-265: deviation
 #[test]
 fn speed_key_on_client_does_nothing() {
     let mut p = Peers::new();
@@ -230,6 +235,7 @@ fn speed_key_on_client_does_nothing() {
 /// value from the running game speed for the setting and wishes it; the game speed does not change until after the
 /// execution tick, on all machines at the same tick, with the message 9 on each. Two presses in the same round give +1,
 /// not +2. A later lowering reports 10.
+// QUIRK E-294: kept
 #[test]
 fn speed_key_on_host_changes_all_at_the_same_step() {
     let mut p = Peers::new();
@@ -361,6 +367,7 @@ impl NetRuns {
 /// extension after the execution tick, all with the same simulation part and the own slot in the network part. The
 /// single-player folder stays empty, an invalid name is not wished at all, and a second saving under the same name
 /// overwrites without asking.
+// QUIRK E-274: kept
 #[test]
 fn net_save_writes_one_file_per_peer() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -441,6 +448,7 @@ fn read_steps(path: &std::path::Path) -> u64 {
 /// E-267 (event `0x27`): Surrendering in the network goes through the round as its own command, not immediately;
 /// surrendering lifts an own pause beforehand. The defeat comes at the execution tick on all machines, afterwards the
 /// surrendering one shows the end screen (game music off).
+// QUIRK E-267: kept
 #[test]
 fn surrender_goes_through_the_round() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -492,6 +500,8 @@ fn surrender_goes_through_the_round() {
 
 /// "Load game" and "Restart" of the game menu have no effect in the network (log), the game speed from the options
 /// menu when closing the menu likewise (E-265); the match keeps running as before.
+// QUIRK O-143: kept
+// QUIRK E-265: deviation
 #[test]
 fn load_and_restart_are_inert_in_the_net() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -621,6 +631,8 @@ fn read_save(path: &std::path::Path) -> GameSaveFile {
 /// `netz_YYYY_MM_DD_hhmm` (local time of the host) with the same simulation part, stops the game music and shows "The
 /// host has ended the match. It was saved as "<name>"." as `MSGBOX` over the stopped match; "OK" is the game end
 /// `0x0E`: accounting from the own statistics, whose "Main menu" leads to the main menu.
+// QUIRK E-273: kept
+// QUIRK E-268: deviation
 #[test]
 fn host_end_shows_the_message_then_the_accounting() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -674,6 +686,8 @@ fn host_end_shows_the_message_then_the_accounting() {
 /// Abort: The host crashes (its session disappears without `Bye`). Each client writes its state after the last tick it
 /// could compute as `netz_YYYY_MM_DD_hhmm` (own local time), shows "The connection to the host was aborted. The match
 /// was saved as "<name>"."; "OK" leads through the accounting to the main menu.
+// QUIRK E-273: kept
+// QUIRK E-258: deviation
 #[test]
 fn host_crash_shows_the_abort_message_then_the_accounting() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -703,6 +717,7 @@ fn host_crash_shows_the_abort_message_then_the_accounting() {
 /// A client surrenders and closes the end screen ("End current game", `0x0E`): in the network `Bye`, accounting and
 /// its "Main menu". The host treats the `Bye` as a dropout and no longer waits for it; host and client 2 see no
 /// message.
+// QUIRK E-273: kept
 #[test]
 fn client_leaves_with_bye_on_the_way_to_the_main_menu() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -726,6 +741,7 @@ fn client_leaves_with_bye_on_the_way_to_the_main_menu() {
 /// After the third desync all show "The match is no longer in sync (checksum error). It was stopped and saved as
 /// "<name>"."; "OK" leads through the accounting to the main menu (the path via the game menu is dropped: its
 /// "Surrender" would go through rounds that no longer run).
+// QUIRK E-273: kept
 #[test]
 fn third_desync_shows_the_stop_message() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -759,6 +775,7 @@ fn third_desync_shows_the_stop_message() {
 /// savegame; accounting, main menu and `Bye` do not follow on the host until after this end, with its "OK". The
 /// clients of [`NetRuns`] have no address (connections via `MemNet::pair`), so there is nobody to hand over to; with
 /// reachable clients the host hands over (`host_leaving_the_end_screen_hands_over`).
+// QUIRK E-273: kept
 #[test]
 fn host_leaving_from_the_end_screen_ends_the_match_for_all() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -924,6 +941,7 @@ fn run_net_start(run: &mut Run, driver: NetDriver) -> Result<(), Box<NetStartFai
 /// E-262, E-263: If the rules checksum of the start package differs from that of the map just loaded (different game
 /// data or map), the match does not start; the client reports `Loaded { error }` with the reason, the driver comes back
 /// (the game host waits for the abort by the network host), and no match remains.
+// QUIRK E-263: deviation
 #[test]
 fn start_net_match_rejects_foreign_rules() {
     let Some(mut run) = Run::corpus() else {
@@ -985,6 +1003,7 @@ fn start_net_match_rejects_a_slot_without_human() {
 /// Same rules: the match runs with the setup of the start package (seed, network flag), the game speed of the host and
 /// the own slot as local player in turn mode; the driver is in the session, `Loaded` without error goes out. Game type
 /// 0, loading screen up to 100 %.
+// QUIRK E-262: deviation
 #[test]
 fn start_net_match_enters_rounds_on_the_own_slot() {
     let Some(mut run) = Run::corpus() else {
@@ -1031,6 +1050,7 @@ fn start_net_match_enters_rounds_on_the_own_slot() {
 /// with its nation; an earlier version of the reimplementation started it at loading, before `enter_rounds`
 /// set the own slot, thus with the nation of the first human of the map (the host). Real session (corpus and GPU,
 /// otherwise silently skipped) with sound management without output, client on the second slot.
+// QUIRK E-297: kept
 #[test]
 fn net_start_plays_the_nation_music_of_the_own_slot() {
     let Some(mut run) = Run::corpus() else {
@@ -1400,6 +1420,7 @@ fn at_start(n: &Lan, i: usize) -> bool {
 
 /// `{8}` (`0x004CA1B5`) on the host, `{7}` (`0x004CA0FA`) on the client: both have `LAN2`, `LEVELINFO`, `CHATFRAME`
 /// open, the client stands in row 1 (E-282) and sees the state of the host; the session name is "Session - <name>".
+// QUIRK E-300: deviation
 #[test]
 fn menu_host_and_join_reach_the_lobby() {
     let Some(mut n) = Lan::corpus(&["Anna", "Bert"]) else {
@@ -1474,6 +1495,8 @@ fn lobby_pair_with(adjust: impl Fn(usize, &mut EngineConfig)) -> Option<Lan> {
 /// E-279; deviates from E-312: The client has chosen the game, the host closes the lobby (`EXIT`), then `JOIN`: the
 /// connection setup fails at the deadline, the client silently stands in `LAN1` again (no message), the session is
 /// closed.
+// QUIRK E-279: kept
+// QUIRK E-312: deviation
 #[test]
 fn join_to_a_vanished_host_returns_to_lan1() {
     let Some(mut n) = Lan::corpus(&["Anna", "Bert"]) else {
@@ -1500,6 +1523,8 @@ fn join_to_a_vanished_host_returns_to_lan1() {
 
 /// E-287 (`Reject` "The match is full"), E-279: Bert and Cara click `JOIN` at the same time on a match with two slots;
 /// Bert (shorter delay) gets row 1, Cara is rejected and silently stands in `LAN1` again.
+// QUIRK E-279, E-287: kept
+// QUIRK E-312: deviation
 #[test]
 fn rejected_join_returns_silently() {
     let Some(mut n) = Lan::corpus(&["Anna", "Bert", "Cara"]) else {
@@ -1531,6 +1556,8 @@ fn rejected_join_returns_silently() {
 
 /// Deviates from E-305: The host sets row 1 to "Open" (kick); the client shows 15212 exactly once, "OK" (`{0x2D}`)
 /// leads to the main menu, the session is closed; on the host the row is open.
+// QUIRK E-279: kept
+// QUIRK E-305: deviation
 #[test]
 fn kicked_client_sees_15212_once() {
     let Some(mut n) = lobby_pair() else {
@@ -1555,6 +1582,8 @@ fn kicked_client_sees_15212_once() {
 
 /// Deviates from E-311: The host leaves the lobby (`EXIT`); both clients show 15212 exactly once (`{0x2F}`: `{9}`,
 /// message with `{0x2D}`), "OK" leads to the main menu.
+// QUIRK E-279: kept
+// QUIRK E-311: deviation
 #[test]
 fn host_exit_shows_15212_once_on_clients() {
     let Some(mut n) = Lan::corpus(&["Anna", "Bert", "Cara"]) else {
@@ -1623,6 +1652,7 @@ fn start_from_lobby(n: &mut Lan) {
 
 /// E-321: `START` from the menu; both load the map with `multiplayer.ldg`, compute 400 ticks with equal checksums, in
 /// the raster `LanFast` (2/1) of the setting `NetTurnRaster` of the host.
+// QUIRK E-321: kept
 #[test]
 fn start_from_the_menu_runs_equal_hashes() {
     let Some(mut n) = lobby_pair_with(|i, cfg| {
@@ -1762,6 +1792,7 @@ fn client_without_listener_is_unreachable() {
 }
 
 /// `LockTeams` of the session: `LOCKTEAMS` in `LAN3` of the host applies in the match of both machines.
+// QUIRK E-320: kept
 #[test]
 fn lock_teams_comes_from_the_session() {
     let Some(mut n) = lobby_pair_with(|i, cfg| {
@@ -1856,6 +1887,7 @@ fn failed_start_reopens_the_lobby_with_open_rows() {
 /// The host aborts after the client has loaded the map but before `Go`. The client does not stand still on the map:
 /// it shows the message with the reason, the input is free for its "OK", and "OK" leads to the main menu; the network
 /// session is closed afterwards.
+// QUIRK E-273: kept
 #[test]
 fn host_abort_after_loading_before_go_returns_to_the_main_menu() {
     let Some(mut n) = lobby_pair() else {
@@ -2066,6 +2098,7 @@ fn info_of(m: &MapCatalogEntry) -> LevelInfoData {
 /// Deviates from E-281: `CHANGEGAME` of the host makes map, player count and session name of the draft the new session
 /// (raster stays); the client in the lobby receives it, and the announcement that a searcher sees in `LAN1` carries it
 /// afterwards (session name and map filter current).
+// QUIRK E-281, E-322: deviation
 #[test]
 fn change_game_updates_the_announcement() {
     let Some(mut n) = Lan::corpus(&["Anna", "Bert", "Cara"]) else {
@@ -2175,6 +2208,7 @@ fn assert_client_leaves(mut n: Lan, byes: &Byes, map: MapId) {
 }
 
 /// Deviates from E-322: The new fixed map is missing on the client.
+// QUIRK E-322: deviation
 #[test]
 fn client_without_the_new_map_leaves_the_lobby() {
     let Some((n, byes)) = ready_pair() else {
@@ -2189,6 +2223,7 @@ fn client_without_the_new_map_leaves_the_lobby() {
 }
 
 /// The same path, but a different map checksum on the host (the map differs).
+// QUIRK E-322: deviation
 #[test]
 fn changed_checksum_also_leaves() {
     let Some((n, byes)) = ready_pair() else {
@@ -2205,6 +2240,7 @@ fn changed_checksum_also_leaves() {
 }
 
 /// The client does not check random maps (like the game list); it stays in the lobby, no `Bye`.
+// QUIRK E-322: deviation
 #[test]
 fn random_map_change_never_leaves() {
     let Some((mut n, byes)) = ready_pair() else {
@@ -2411,6 +2447,7 @@ fn run_and_compare(n: &mut Lan, steps: u64, path: &str) {
 /// Deviates from E-281: The host opens `LAN31` (the list stands on the session map), selects another map, switches to
 /// random map and closes with `EXITCHANGE`: the session stays, both load the session map at `START` and compute
 /// equally up to tick 200 (the host starts from the session).
+// QUIRK E-281: deviation
 #[test]
 fn exitchange_keeps_the_session_map() {
     let Some(mut n) = lobby_pair() else {
@@ -2473,6 +2510,7 @@ fn exitchange_keeps_the_session_map() {
 /// `CHANGEGAME` from the menu distributes the new map; `LAN31` is closed, the lobby of the host open again; the client
 /// shows the new map in `LEVELINFO`, the ready flags stay (E-302), and `START` loads the new map on both machines with
 /// equal checksums.
+// QUIRK E-281: deviation
 #[test]
 fn change_game_from_the_menu_reaches_the_client() {
     let Some(mut n) = lobby_pair() else {
@@ -2515,6 +2553,7 @@ fn change_game_from_the_menu_reaches_the_client() {
 
 /// Adopts the `LAN31` part of E-310: As long as `LAN31` is open, the chat of the host is closed; the core keeps
 /// collecting the lines of the clients, after `EXITCHANGE` `CHATFRAME` of the host shows them.
+// QUIRK E-310: deviation
 #[test]
 fn host_chat_is_closed_while_lan31_is_open() {
     let Some(mut n) = lobby_pair() else {
@@ -2546,6 +2585,7 @@ fn host_chat_is_closed_while_lan31_is_open() {
 /// If the core occupies a row that falls away between the check in `LAN31` and the switch (here a computer that the
 /// host sets in the same frame, like with a join), it refuses: message 15402, `LAN31` stays open, lobby state and
 /// session stay; "OK" leaves `LAN31` standing.
+// QUIRK E-307: deviation
 #[test]
 fn refused_change_keeps_lan31_open() {
     let Some(mut n) = Lan::corpus(&["Anna", "Bert"]) else {
@@ -2642,6 +2682,8 @@ fn assert_random_ldg(n: &Lan) {
 /// Adopts E-313: The host creates a random map in `LAN3` (session `MapId::Random`, map name = seed text, player count
 /// `RandomPlayers + 2`), the client sees it in the list, joins and shows it in `LEVELINFO`; `START` loads the random
 /// map on both with `randommap.ldg`, the checksums are equal up to tick 200.
+// QUIRK E-313: kept
+// QUIRK E-314: deviation
 #[test]
 fn random_map_from_the_menu_runs_equal_hashes() {
     let Some(mut n) = Lan::corpus_with(&["Anna", "Bert"], |i, cfg| {
@@ -2693,6 +2735,8 @@ fn random_map_from_the_menu_runs_equal_hashes() {
 /// Adopts E-313: `CHANGEGAME` to a random map with an empty seed - the host draws the seed text (first draw "41", not
 /// into `RandomMapSeed`), the session becomes `MapId::Random`, the rows and ready flags stay; the client receives it,
 /// and `START` loads the random map on both with equal checksums.
+// QUIRK E-313: kept
+// QUIRK E-314: deviation
 #[test]
 fn change_to_a_random_map_runs_equal_hashes() {
     let Some(mut n) = lobby_pair_with(|i, cfg| {
@@ -2743,6 +2787,7 @@ fn change_to_a_random_map_runs_equal_hashes() {
 /// generated on the client (different generator data), the match does not start - like
 /// [`start_net_match_rejects_foreign_rules`]: `Loaded { error }`, no match. The host path [`net_rules`] builds the
 /// rules from the request.
+// QUIRK E-314: deviation
 #[test]
 fn random_map_with_other_rules_is_rejected() {
     let Some(mut run) = Run::corpus() else {
@@ -2866,6 +2911,7 @@ fn poke_net(run: &mut Run) {
 /// E-315, O-143, re/multiplayer-menus L.7.1: ESC on the client opens `INGAMEOPTIONS2` (state 2), the ticks keep running
 /// on all machines, on the host also with its own open menu, and all compute equally. The network role comes from the
 /// session (`GameFlow::started`).
+// QUIRK E-315: kept
 #[test]
 fn net_menu_keeps_the_rounds_running() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -2903,6 +2949,7 @@ fn net_menu_keeps_the_rounds_running() {
 /// E-265: `RETURN2` and ESC close `INGAMEOPTIONS2` with `{0x13}` without a speed command - even if the own setting
 /// `GameSpeed` differs from the running game speed, on the host as on the client. The game speed stays on all machines,
 /// no speed message, state 0.
+// QUIRK E-265, E-316: deviation
 #[test]
 fn closing_the_net_menu_sends_no_speed_command() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -2939,6 +2986,8 @@ fn closing_the_net_menu_sends_no_speed_command() {
 /// E-316 (re/multiplayer-menus L.7.1): After "End current game" (confirmation prompt 15780, OK `{0x27}`) the client
 /// stays in state 2 until its defeat is executed: no menu visible, ESC, chat and diplomacy without effect. Then the
 /// end screen (state 7), without a speed command; all compute equally.
+// QUIRK E-320: kept
+// QUIRK E-316: deviation
 #[test]
 fn after_quitgame_escape_chat_and_diplomacy_are_inert() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -2988,6 +3037,7 @@ fn after_quitgame_escape_chat_and_diplomacy_are_inert() {
 /// E-320 (re/multiplayer-menus L.7.2): The diplomacy dialog opens in the network at state 0 (state 10), does not stop
 /// the match, and a status change goes as a command through the round: not immediately, but at the execution tick on
 /// all machines at the same tick; all compute equally.
+// QUIRK E-320: kept
 #[test]
 fn diplomacy_in_the_net_keeps_running_and_goes_through_the_round() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -3077,6 +3127,7 @@ impl Lan {
 /// E-273: The client surrenders; its end screen shows the defeat, `END_DEFEAT` closes the network (exactly one `Bye`),
 /// ends the match and opens the accounting with both slots from the own statistics. The host computes on and has
 /// received the message 200 + p (text 17200 + p "... was eliminated!").
+// QUIRK E-273: kept
 #[test]
 fn own_defeat_ends_with_the_accounting() {
     let Some((mut n, byes)) = ready_pair() else {
@@ -3117,6 +3168,7 @@ fn own_defeat_ends_with_the_accounting() {
 /// `END_VICTORY` leads through the accounting like the defeat, the network is closed. Afterwards the host closes its
 /// end screen while the rounds are running, thus in an orderly way: message "The host has ended the match ...", "OK" ->
 /// accounting -> main menu.
+// QUIRK E-273: kept
 #[test]
 fn victory_ends_with_the_accounting() {
     let Some((mut n, byes)) = ready_pair() else {
@@ -3181,6 +3233,7 @@ fn assert_only_the_main_menu(n: &NetRuns) {
 /// The host ends the match while client 1 has `INGAMEOPTIONS2` and client 2 the diplomacy dialog open; then once more
 /// while client 1 waits for its defeat after `QUITGAME` (state 2, no menu). Each time: menus closed, state 0 under the
 /// message, "OK" -> accounting -> main menu, no hanging frames, state 0 in the main menu.
+// QUIRK E-273: kept
 #[test]
 fn host_end_while_the_client_menu_is_open_shows_the_accounting() {
     let leftovers = |run: &Run| -> Vec<String> {
@@ -3254,6 +3307,7 @@ fn host_end_while_the_client_menu_is_open_shows_the_accounting() {
 /// more `0x0E` without a match - exactly one accounting (unchanged), exactly one `Bye`, no panic. (b) Host with running
 /// rounds: `END_DEFEAT` twice and another `0x0E` during the end finish in an orderly way (no accounting yet); "OK" of
 /// the message opens exactly one accounting, a `0x0E` afterwards has no effect.
+// QUIRK E-273: kept
 #[test]
 fn second_end_in_the_net_is_inert() {
     let count = |run: &Run, name: &str| run.dialogs().iter().filter(|d| *d == name).count();
@@ -3314,6 +3368,7 @@ fn second_end_in_the_net_is_inert() {
 /// load it (`Loaded { error }`); the host aborts the start for all. It stands in the loaded match without `Go`, shows
 /// the message with the reason, and "OK" (`0x0E`) leads without accounting to the main menu (a different failure than
 /// `host_abort_after_loading_before_go_returns_to_the_main_menu`).
+// QUIRK E-273: kept
 #[test]
 fn failure_before_go_still_goes_to_the_main_menu() {
     let Some(mut n) = lobby_pair() else {
@@ -3344,6 +3399,7 @@ fn failure_before_go_still_goes_to_the_main_menu() {
 /// Deviates from E-299: "Main menu" of the accounting leads to `START` after a network match - on the command-line
 /// path (driver directly at the match, next to it the empty network session of the menu path as in `nml-game`) as on
 /// the menu path; no program end, state 0, the network session is free for a new search.
+// QUIRK E-299: deviation
 #[test]
 fn accounting_main_menu_returns_to_start_after_the_net() {
     let Some(mut n) = NetRuns::corpus() else {
@@ -3392,6 +3448,7 @@ fn accounting_main_menu_returns_to_start_after_the_net() {
 
 /// After the own elimination no chat and no diplomacy - an open chat window closes with the end screen, in the end
 /// screen and in the accounting neither chat nor diplomacy open.
+// QUIRK E-273: kept
 #[test]
 fn chat_is_closed_after_own_defeat() {
     let chat_open = |run: &Run| run.dialogs().iter().any(|d| d.starts_with("chatwindow"));
@@ -3497,6 +3554,7 @@ fn assert_one_end_through_the_message(mut n: Lan, byes: &Byes) {
 /// message is queued but not yet open): `END_*` has no effect, the message carries its own `0x0E`. (b) The click
 /// comes before `net_frame` of the same frame (the chain `{4}`, `{0x15}`, `{0x0E}` already stands):
 /// `end_with_message` takes the queued `0x0E` out. Both times: one accounting, one `Bye`, no remainder.
+// QUIRK E-273: kept
 #[test]
 fn end_button_and_end_message_in_the_same_frame_end_once() {
     let Some((mut n, byes, frames)) = end_message_over_the_end_screen(None) else {
@@ -3559,6 +3617,7 @@ fn end_in_the_defeat_frame(lead: u32, crash: bool) -> Option<NetRuns> {
 /// message, `END_*` would stay without effect through the flag of the message, and the player would be stuck).
 /// "OK" -> accounting -> `MAINMENU` -> main menu, afterwards no flag `{0x0E}` remains that would block the `END_*` of
 /// a later match.
+// QUIRK E-273: kept
 #[test]
 fn end_and_own_defeat_in_the_same_frame_show_one_message() {
     let Some(defeat) = frames_to_defeat() else {
@@ -3607,6 +3666,8 @@ mod saved;
 /// E-290: `SAVEREPLAY` in the draft of the host (`LAN3`, session data): both machines record, also the client with
 /// `SaveReplay 0` in its own settings, each in its own folder. Both files carry the same commands of all slots, and
 /// their replay equals the match.
+// QUIRK E-290: kept
+// QUIRK E-329: deviation
 #[test]
 fn both_machines_record_the_net_match() {
     use super::replay_tests::{NAME, live_hash, read_recording, recordings, replayed_hash, walk};
@@ -3654,6 +3715,8 @@ fn both_machines_record_the_net_match() {
 
 /// E-331: The recording of the client replays in single player - without network session, with the view of the host
 /// slot (`first_player`, lobby key -1) and tick by tick the checksums of the network match.
+// QUIRK E-331: kept
+// QUIRK E-333: deviation
 #[test]
 fn client_recording_views_the_host() {
     use super::replay_tests::{Hashes, NAME, collect_hashes, read_recording, walk};
@@ -3711,6 +3774,7 @@ fn client_recording_views_the_host() {
 
 /// The command-line path (`--host`/`--join`, without network session of the menus) never records, even with
 /// `SaveReplay 1` in the settings.
+// QUIRK E-329: deviation
 #[test]
 fn command_line_net_match_does_not_record() {
     let Some(mut run) =

@@ -265,6 +265,7 @@ mod tests {
         );
     }
 
+    // QUIRK E-342: deviation
     #[test]
     fn autoplay_list_is_sorted_by_name_with_full_names() {
         // Deviating from E-342: all files except `.` names, full name (a three-digit suffix stays as well),
@@ -297,6 +298,7 @@ mod tests {
         assert!(files.list(SaveDir::Main, 10).is_empty());
     }
 
+    // QUIRK E-342: deviation
     #[test]
     fn autoplay_path_keeps_the_full_name() {
         let files = FsSaveFiles {

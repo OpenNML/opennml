@@ -204,6 +204,7 @@ mod tests {
         });
     }
 
+    // QUIRK W-266: kept
     #[test]
     fn arming_walks_to_the_nearest_friendly_store_and_switches_variants() {
         // re/arming-gates 9.A2: HQ (finished) 20 tiles away, warehouse (0x3800) 30, construction site 5 -> target HQ.
@@ -249,6 +250,7 @@ mod tests {
         assert_ne!(object_event_bits(&sim, c) & EVENT_BIT, 0, "event bit 6");
     }
 
+    // QUIRK W-266: kept
     #[test]
     fn an_allied_store_counts() {
         // Allied slot 1 with a store 10 tiles away, own HQ 20 away: FRIENDLIST -> its store.
@@ -265,6 +267,7 @@ mod tests {
         assert_walks_to(&Sim::new(&mut state, &rules), c, ally);
     }
 
+    // QUIRK W-265: kept
     #[test]
     fn no_store_aborts_the_work_silently() {
         // W-265: lumberjack without a store - the FIFO abort mark has already ended the work, the search finds nothing
@@ -294,6 +297,7 @@ mod tests {
         assert_eq!(object_event_bits(&sim, c), before);
     }
 
+    // QUIRK W-264: deviation
     #[test]
     fn arming_without_the_upgrade_paralyses_the_unit() {
         // W-264, only via the direct `post_message` (the command rejects): neither bit 6 nor bit 7.
@@ -322,6 +326,7 @@ mod tests {
         assert_eq!(send(&mut sim, c, &Message::new(msg::GO_TO_ARMORY, &[])), -1);
     }
 
+    // QUIRK W-265: kept
     #[test]
     fn toggling_follows_the_current_flag_not_the_command() {
         // W-265: ISARMED set, FightFar off (variant 6) -> "Arm" disarms.
@@ -344,6 +349,7 @@ mod tests {
         assert!(!enabled(&sim, c, fight_far::INDEX));
     }
 
+    // QUIRK W-264: deviation
     #[test]
     fn arming_commands_check_the_upgrade_like_the_bar() {
         let rules = rules();
@@ -382,6 +388,7 @@ mod tests {
         assert_eq!(fifo(&sim, armed), [go_to_armory()]);
     }
 
+    // QUIRK C-224: deviation
     #[test]
     fn arrow_type_commands_are_rejected_for_players() {
         let rules = rules();
@@ -400,6 +407,8 @@ mod tests {
         assert_eq!(prop_bits(&sim, ship, walk::INDEX), 1 << 12);
     }
 
+    // QUIRK C-96: kept
+    // QUIRK C-224: deviation
     #[test]
     fn set_arrow_type_arms_the_transport_ship_without_upgrade() {
         // C-224: ship 1108 without 2823 -> variant 13 (attack, shot on), until the next mask recalculation (upgrade of

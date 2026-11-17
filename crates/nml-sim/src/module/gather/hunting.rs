@@ -458,6 +458,7 @@ mod tests {
         assert_eq!(send(&mut sim, h, &Message::new(0x1F16, &[])), -1);
     }
 
+    // QUIRK W-66, C-180: kept
     #[test]
     fn hunting_a_living_goat_registers_attacks_and_hangs_in_102() {
         // re/animals 4.1 no. 2; W-66/C-180: if the attack ends without a death, the hunter stays in 102.
@@ -522,6 +523,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-63: kept
     #[test]
     fn gutting_takes_one_meat_every_11_ticks_and_delivers_20() {
         // re/gathering A.6, re/animals 6.5 (arrival <= 11 ticks after readiness -> remainder 20; C-183).
@@ -551,6 +553,7 @@ mod tests {
         assert_eq!(loads[20].1, 0);
     }
 
+    // QUIRK W-65: kept
     #[test]
     fn a_trapper_with_rate_0_takes_one_meat_per_601_ticks() {
         // W-65: rate 0 -> max(1) -> 60000 ms -> 601 ticks.
@@ -567,6 +570,7 @@ mod tests {
         assert_eq!(loads[1].0 - loads[0].0, 601);
     }
 
+    // QUIRK W-67, C-184: kept
     #[test]
     fn a_hunter_with_capacity_0_shuttles_with_empty_hands() {
         // C-184/W-67: capacity 0 -> free < 1 -> empty to the store, credit 0, back; shuttling across ticks,
@@ -589,6 +593,7 @@ mod tests {
         assert!(meat(&state, g) > 0, "only the decay takes meat");
     }
 
+    // QUIRK C-181: kept
     #[test]
     fn the_automatic_search_finds_living_goats_or_gives_up() {
         // C-181: search over the whole map, also living animals; nothing found -> with a load to the
@@ -661,6 +666,7 @@ mod tests {
         assert!(m0 - meat(&state, g) <= 2, "only decay");
     }
 
+    // QUIRK W-194: kept
     #[test]
     fn aborting_on_the_way_to_the_store_keeps_the_dock_claimed() {
         // W-194: `PropertyHunting_Abort` sets state 0 before the base stop; the stop no longer sees

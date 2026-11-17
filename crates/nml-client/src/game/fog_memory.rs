@@ -245,6 +245,7 @@ mod tests {
         create_object(&mut Sim::new(state, rules), &mut desc).unwrap()
     }
 
+    // QUIRK D-222: kept
     #[test]
     fn memories_show_what_was_seen_until_the_place_is_seen_again() {
         let mut rules = Rules::synthetic(TYPES, 64);
@@ -345,6 +346,7 @@ mod tests {
         mem.update(state, &rules.map, &FogView::new(state), 0);
     }
 
+    // QUIRK D-229: kept
     #[test]
     fn movable_memories_need_a_first_sighting() {
         let (rules, mut state) = tent_world();
@@ -404,6 +406,7 @@ mod tests {
         assert!(!m.movable && m.seen);
     }
 
+    // QUIRK D-229: kept
     #[test]
     fn a_moved_tent_memory_stays_until_the_new_place_is_seen() {
         let (rules, mut state) = tent_world();
@@ -439,6 +442,7 @@ mod tests {
         assert!(mem.get(tent).unwrap().active, "now active at the new place");
     }
 
+    // QUIRK D-229: kept
     #[test]
     fn a_packed_tent_memory_draws_nothing() {
         let (rules, mut state) = tent_world();
@@ -469,6 +473,7 @@ mod tests {
         assert_eq!(bits(&mem), 0);
     }
 
+    // QUIRK D-229: kept
     #[test]
     fn a_vanished_tent_memory_disappears_when_its_place_is_seen() {
         let (rules, mut state) = tent_world();
@@ -511,6 +516,7 @@ mod tests {
     /// Own tents see themselves; still, a tent just set up at another place must not become unselectable
     /// as long as its memory still stands at the old, explored place
     /// (`SimHost::fog_selectable` reads the tile of the memory, `fog_view::visible_for_selection`).
+    // QUIRK D-229: kept
     #[test]
     fn a_tent_set_up_at_a_new_place_stays_selectable() {
         use crate::game::fog_view::visible_for_selection;

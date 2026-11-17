@@ -40,6 +40,7 @@ fn pose(state: &SimState, id: ObjectId) -> (i32, i32, i32) {
     (o.grid.x.0, o.grid.z.0, o.direction.0)
 }
 
+// QUIRK K-71: kept
 #[test]
 fn riding_reads_its_lists_and_flags_and_the_boat_init_reads_150xxx() {
     let rules = rules();
@@ -64,6 +65,7 @@ fn riding_reads_its_lists_and_flags_and_the_boat_init_reads_150xxx() {
     assert_eq!(sim.module(w, RIDING_BOAT).unwrap().base.flags, 0); // 150001 not read
 }
 
+// QUIRK K-228: deviation
 #[test]
 fn getanim_maps_kinds_returns_0_for_unknown_kinds_and_minus_1_for_empty_lists() {
     // re/riding 9 T11; K-228; deviation from the original (empty list -> -1 instead of division by 0).
@@ -81,6 +83,7 @@ fn getanim_maps_kinds_returns_0_for_unknown_kinds_and_minus_1_for_empty_lists() 
     assert_eq!(send(&mut sim, w, &Message::new(0x50D, &[7])), -1); // Warrior has no module 13
 }
 
+// QUIRK K-71: kept
 #[test]
 fn the_lance_rule_and_the_variant_switch_follow_read_params() {
     // re/riding 1.1 (lance rule) and 13.6 (K-71: both modules read 140001...140015).
@@ -118,6 +121,8 @@ fn the_lance_rule_and_the_variant_switch_follow_read_params() {
     );
 }
 
+// QUIRK K-267: kept
+// QUIRK K-269: deviation
 #[test]
 fn constants_follow_the_module_and_on_message_keeps_the_replies_of_mount_and_dismount() {
     assert_eq!(
@@ -198,6 +203,7 @@ fn a_mounted_rider_moves_only_with_its_mount() {
     assert_eq!(pose(&state, h).1, start.1);
 }
 
+// QUIRK K-231: kept
 #[test]
 fn queries_reach_the_mount_except_0x2000_and_0x2100() {
     // re/walk 2.1, re/riding 4.1; K-231: 0x1A00 to the rider selects the run animation of the horse;
@@ -356,6 +362,7 @@ fn assert_mount_anim(sim: &Sim, id: ObjectId, wanted: i32) {
     assert_eq!((a.wanted, a.current, a.speed), (wanted, 7, 128.0), "{id:?}");
 }
 
+// QUIRK C-72: kept
 #[test]
 fn melee_and_aim_set_the_horse_animation_from_list_140011() {
     // C-72, re/combat-melee 2.1, re/combat-ranged 3.1/3.3: the mount animation comes from the
@@ -526,6 +533,7 @@ fn assert_mounty_bonus(sim: &mut Sim, id: ObjectId) {
     std::mem::swap(&mut o.attributes, &mut probe);
 }
 
+// QUIRK C-136: kept
 #[test]
 fn a_translated_dragoon_is_created_mounted() {
     // re/riding 9 T1: create_object 2008 -> rider 2007 + horse 3410 at the same position, synchronously
@@ -566,6 +574,7 @@ fn mounted(sim: &Sim, r: ObjectId) -> bool {
         .is_some_and(|o| o.status & status::ISMOUNTED != 0)
 }
 
+// QUIRK K-223, K-225, W-205, C-136: kept
 #[test]
 fn a_colonist_walks_to_its_own_horse_and_mounts_on_arrival() {
     // re/riding 9 T3: approach via FINDTO_UNIT, arrival `0x40D` -> link, load gone (W-205),
@@ -605,6 +614,7 @@ fn a_colonist_walks_to_its_own_horse_and_mounts_on_arrival() {
     );
 }
 
+// QUIRK K-224: kept
 #[test]
 fn mounting_a_foreign_horse_takes_it_over_one_engine_half_later() {
     // re/riding 9 T4, K-224: arrival -> `0x47F {0, R, 0x40D}` to the horse; the change of owner in phase 0
@@ -637,6 +647,7 @@ fn mounting_a_foreign_horse_takes_it_over_one_engine_half_later() {
     assert_mounty_bonus(&mut sim, r);
 }
 
+// QUIRK K-226: kept
 #[test]
 fn a_horse_taken_by_another_rider_starts_the_search() {
     // re/riding 9 T5, K-226: target already carries -> DoMount -1, timer 0xA0D (100 ms, group 0x80)
@@ -709,6 +720,7 @@ fn a_horse_taken_by_another_rider_starts_the_search() {
     }
 }
 
+// QUIRK K-269: deviation
 #[test]
 fn mounting_a_rider_or_boarding_a_passenger_fails_like_a_carrying_target() {
     // K-269 (A7, extended): if the target is itself a rider (`0x2000`) or occupant (`0x8000`), DoMount
@@ -764,6 +776,7 @@ fn mounting_a_rider_or_boarding_a_passenger_fails_like_a_carrying_target() {
     }
 }
 
+// QUIRK C-218: kept
 #[test]
 fn a_warrior_boards_its_canoe_and_gets_the_boat_bit_and_the_bonus() {
     // re/riding 9 T6, C-218: `0x10E` -> approach with 0x30E/0x40E -> link with 0x8000; sight +20 %;
@@ -812,6 +825,7 @@ fn a_warrior_boards_its_canoe_and_gets_the_boat_bit_and_the_bonus() {
     assert_eq!(send(&mut sim, w, &Message::new(0x1400, &[])), 6);
 }
 
+// QUIRK K-226: kept
 #[test]
 fn a_pure_boat_type_ignores_the_failed_mount_search() {
     // K-226: the failed-attempt timer is in the own module (14) but always fires `0xA0D` at
@@ -867,6 +881,7 @@ fn a_pure_boat_type_ignores_the_failed_mount_search() {
     assert!(!riding(&sim, pri, RIDING_BOAT).unwrap().going_to_horse);
 }
 
+// QUIRK K-225: kept
 #[test]
 fn a_vanished_target_during_the_approach_aborts_without_a_link() {
     // Target destroyed during the approach -> walk failure or DoMount -1 and unsuccessful search;
@@ -894,6 +909,7 @@ fn a_vanished_target_during_the_approach_aborts_without_a_link() {
     assert!(!riding(&sim, r, RIDING).unwrap().going_to_horse);
 }
 
+// QUIRK K-266: kept
 #[test]
 fn the_owner_change_callback_after_the_riders_death_mounts_the_corpse() {
     // K-266: T4 setup, the rider dies between `0x47F` and phase 0. Its modules are not switched off until
@@ -937,6 +953,7 @@ fn the_owner_change_callback_after_the_riders_death_mounts_the_corpse() {
     assert_eq!(o.status & status::CARRIING, 0, "object tick step 11");
 }
 
+// QUIRK K-229: kept
 #[test]
 fn a_rider_posts_dismount_every_tick_while_its_player_counts_3377() {
     // re/riding 9 T9, K-229: every riding tick of a mounted object posts `{0x20D}` with abort as long as
@@ -976,6 +993,7 @@ fn a_rider_posts_dismount_every_tick_while_its_player_counts_3377() {
     }
 }
 
+// QUIRK K-229: kept
 #[test]
 fn a_counter_upgrade_3377_makes_enemy_riders_dismount() {
     // K-229 with a real counter: slot 1 starts 3377 via `counter::start` (without cost, config 13
@@ -1026,6 +1044,7 @@ fn a_counter_upgrade_3377_makes_enemy_riders_dismount() {
     assert_eq!(state.guid_counts[0].get(&3377).copied().unwrap_or(0), 0);
 }
 
+// QUIRK K-223: kept
 #[test]
 fn the_dead_mount_animation_branch_finishes_through_0x70d() {
     // re/riding 3.1 (dead branch, K-223): with `next_mount_anim` 0 and an animation in 140012
@@ -1080,6 +1099,7 @@ fn assert_loads(state: &SimState, rules: &crate::rules::Rules) {
     }
 }
 
+// QUIRK E-57: kept
 #[test]
 fn mounting_clears_the_marks_of_the_mount() {
     // E-57 (re/ki-queries 5.9, re/riding 3.1): after `AbortAllModules`, `DoMount` clears the whole
@@ -1107,6 +1127,7 @@ fn mounting_clears_the_marks_of_the_mount() {
     assert_eq!(sim.object(r).unwrap().ai_marks, 0b1010);
 }
 
+// QUIRK K-267: kept
 #[test]
 fn mounting_within_reach_ends_synchronously_and_keeps_going_to_horse() {
     // K-267: if the horse is within reach and in view (same position and direction), the walk reports
@@ -1223,6 +1244,7 @@ fn assert_unlinked(sim: &Sim, r: ObjectId, m: ObjectId) {
     assert_eq!((o.target, t.target), (ObjectId::NONE, ObjectId::NONE));
 }
 
+// QUIRK D-215: kept
 #[test]
 fn dismounting_searches_the_circle_from_the_left_side() {
     // re/riding 9 T2: Dragoon (hard 512) on horse (soft 1500), viewing direction 0 -> radius 2012,
@@ -1282,6 +1304,7 @@ fn dismounting_searches_the_circle_from_the_left_side() {
     );
 }
 
+// QUIRK K-268: kept
 #[test]
 fn dismounting_skips_angles_outside_the_map_in_steps_of_ten_degrees() {
     // K-268: viewing direction 90 degrees -> first attempt at 180 degrees (x - 2012). The rider stands at
@@ -1307,6 +1330,7 @@ fn dismounting_skips_angles_outside_the_map_in_steps_of_ten_degrees() {
     assert_unlinked(&sim, r, h);
 }
 
+// QUIRK K-268: kept
 #[test]
 fn dismounting_ignores_obstacles_and_units_at_the_first_angle() {
     // K-268: while searching, the rider still carries `0x2000` and is exempt from collision -
@@ -1332,6 +1356,7 @@ fn dismounting_ignores_obstacles_and_units_at_the_first_angle() {
     assert_unlinked(&sim, r, h);
 }
 
+// QUIRK K-230: kept
 #[test]
 fn dismounting_without_a_free_spot_stays_mounted() {
     // K-230: if all 36 circle points lie outside the map (horse with soft radius
@@ -1348,6 +1373,7 @@ fn dismounting_without_a_free_spot_stays_mounted() {
     assert_eq!(sim.object(r).unwrap().grid, before);
 }
 
+// QUIRK K-232: deviation
 #[test]
 fn leaving_a_pri_canoe_uses_dummy01_and_a_wid_canoe_the_circle() {
     // re/riding 13.1: PRI canoe with `dummy01` (rest pose 0; 11.81; -24.95) -> exit at
@@ -1453,6 +1479,7 @@ fn the_release_goes_through_the_dying_module() {
     );
 }
 
+// QUIRK D-215: kept
 #[test]
 fn the_dead_dismount_animation_branch_finishes_through_0x80d() {
     // re/riding 3.2 (dead branch, 140014 empty in the shipped data): with a dismount animation the
@@ -1578,6 +1605,7 @@ fn a_dying_rider_frees_its_horse() {
     assert!(walks_itself(&mut sim, h), "the horse walks free");
 }
 
+// QUIRK C-153: kept
 #[test]
 fn a_dying_horse_frees_the_rider_and_keeps_bonus_and_link() {
     // T8/C-153: horse dies -> horse CARRIING off, target -1; rider 0x2000 off, rider.target
@@ -1619,6 +1647,7 @@ fn a_dying_horse_frees_the_rider_and_keeps_bonus_and_link() {
     );
 }
 
+// QUIRK K-270: kept
 #[test]
 fn dismounting_after_the_horses_death_jumps_off_the_corpse_until_phase_0() {
     // K-270: `DismountStart` does not check rider bits. Before phase 0 the carcass
@@ -1661,6 +1690,7 @@ fn dismounting_after_the_horses_death_jumps_off_the_corpse_until_phase_0() {
     assert_loads(&state, &rules);
 }
 
+// QUIRK C-148: kept
 #[test]
 fn a_dying_passenger_kills_the_boat() {
     // C-148, re/riding 13.4: `0x110` on the occupant goes to the canoe, the return value is that of the canoe
@@ -1710,6 +1740,7 @@ fn a_dying_passenger_kills_the_boat() {
     );
 }
 
+// QUIRK C-135: kept
 #[test]
 fn damage_to_a_passenger_goes_to_its_canoe() {
     // C-135 with a real canoe: `0x17F` on the occupant goes unchanged to the canoe.
@@ -1725,6 +1756,7 @@ fn damage_to_a_passenger_goes_to_its_canoe() {
     assert!(hp(&sim, c) < 100_000, "the canoe takes the damage");
 }
 
+// QUIRK K-264, K-265, C-153: kept
 #[test]
 fn a_sinking_canoe_leaves_its_passenger_and_a_new_paddler() {
     // K-264/K-265: WID canoe with warrior dies -> canoe: CARRIING off, target -1, queue_destroy, no
@@ -1811,6 +1843,7 @@ fn a_sinking_canoe_leaves_its_passenger_and_a_new_paddler() {
     assert!(!riding(&sim, w, RIDING_BOAT).unwrap().busy);
 }
 
+// QUIRK K-265: kept
 #[test]
 fn an_empty_sinking_canoe_still_creates_a_paddler() {
     // K-265: PRI canoe 1712 without occupant dies -> new 1700 at the canoe position.
@@ -1829,6 +1862,7 @@ fn an_empty_sinking_canoe_still_creates_a_paddler() {
     assert_eq!(count_at(&sim, PRI_CANOE, g.x.0, g.z.0), 0);
 }
 
+// QUIRK K-264: kept
 #[test]
 fn the_dead_passenger_branch_of_sink_canoe_moves_half_a_tile_back() {
     // K-264, dead branch of `0x0050EBA0`: reachable only if the canoe still has a target (never
@@ -1851,6 +1885,7 @@ fn the_dead_passenger_branch_of_sink_canoe_moves_half_a_tile_back() {
     assert!(sim.state.destroy_queue.contains(&c));
 }
 
+// QUIRK W-128, W-204: kept
 #[test]
 fn quartering_dismounts_riders_and_refuses_pure_boat_passengers() {
     // re/riding 4.5/W-204: mounted Dragoon in front of an own building with space -> dismounting
@@ -1906,6 +1941,7 @@ fn quartering_dismounts_riders_and_refuses_pure_boat_passengers() {
     assert_eq!(sim.object(pc).unwrap().status & status::CARRIING, 0);
 }
 
+// QUIRK W-204: kept
 #[test]
 fn reachable_link_states_load() {
     // Saving/loading after: horse death (rider refers to the carcass without a bit, before and after

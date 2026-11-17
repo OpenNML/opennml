@@ -229,6 +229,7 @@ mod tests {
         assert!(assets.missing().is_empty());
     }
 
+    // QUIRK O-284: kept
     #[test]
     fn bmp_files_load_like_the_game() {
         // `Renderer_LoadTextureFile` (`0x00573220`) takes the BMP path by extension: 1 x 2, 24 bit, bottom first.
@@ -314,6 +315,7 @@ mod tests {
         assert_eq!(texts.display(2), "Two new");
     }
 
+    // QUIRK O-4: kept
     #[test]
     fn missing_text_ids_share_one_buffer() {
         // O-4: The original formats a missing ID into a shared buffer; all missing texts show the most recently

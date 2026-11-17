@@ -33,6 +33,7 @@ fn activate(state: &mut SimState) {
     }
 }
 
+// QUIRK O-176: kept
 #[test]
 fn inactive_or_foreign_slots_are_ignored() {
     let rules = Rules::synthetic("", 16);
@@ -83,6 +84,7 @@ fn inactive_or_foreign_slots_are_ignored() {
     );
 }
 
+// QUIRK O-163, O-176, O-177, O-178: kept
 #[test]
 fn table_counts_and_sums_without_time_filter() {
     let mut state = SimState::new(0, 0);
@@ -131,6 +133,7 @@ fn table_counts_and_sums_without_time_filter() {
     assert_eq!(rows[2].values, [0; COLUMNS]);
 }
 
+// QUIRK O-174: kept
 #[test]
 fn dummy_29320_names_are_skipped() {
     for name in ["29320", "29320 Dummy", "  29320", "+29320x", "\t029320"] {
@@ -155,6 +158,7 @@ fn dummy_29320_names_are_skipped() {
     );
 }
 
+// QUIRK O-175: deviation
 #[test]
 fn names_are_cut_to_39_characters() {
     let long: String = "ä".repeat(45);
@@ -181,6 +185,7 @@ fn campaign_rules(players: &[(u8, &str, i32)]) -> Rules {
     r
 }
 
+// QUIRK O-173: kept
 #[test]
 fn local_player_carries_the_profile_name() {
     // Campaign: records from the `.lvl` with color = team = slot (O-173), nation from `PLAYER_PLAYER`; the
@@ -236,6 +241,7 @@ fn local_player_carries_the_profile_name() {
     );
 }
 
+// QUIRK O-175: deviation
 #[test]
 fn accounting_survives_saving_and_loading() {
     let rules = campaign_rules(&[(0, "Held", 0), (1, "Gegner", 1)]);
@@ -304,6 +310,7 @@ fn tick_until(sim: &mut Sim, b: ObjectId, done: impl Fn(&Sim) -> bool) {
     panic!("building {b:?} does not finish");
 }
 
+// QUIRK O-171: kept
 #[test]
 fn kinds_follow_accounting_md_production_and_trade() {
     let rules = combat_rules();
@@ -357,6 +364,7 @@ fn kinds_follow_accounting_md_production_and_trade() {
     );
 }
 
+// QUIRK O-169: kept
 #[test]
 fn kinds_follow_accounting_md_construction_and_destruction() {
     let rules = combat_rules();
@@ -426,6 +434,7 @@ fn kinds_follow_accounting_md_construction_and_destruction() {
     assert_eq!(kinds(sim.state, 2), [(lost, 1001)]);
 }
 
+// QUIRK O-168: kept
 #[test]
 fn kinds_follow_accounting_md_deaths() {
     let rules = combat_rules();
@@ -477,6 +486,7 @@ fn kinds_follow_accounting_md_deaths() {
     assert_eq!(kinds(&state, 3), [(lost, sabre)]);
 }
 
+// QUIRK W-41, O-172: kept
 #[test]
 fn kinds_follow_accounting_md_delivery() {
     let rules = combat_rules();

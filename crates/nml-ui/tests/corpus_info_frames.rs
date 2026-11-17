@@ -134,6 +134,7 @@ fn draw_all(
 /// The scenes draw with the data of the installation; background, frame and portrait are loaded, the position follows
 /// re/campaign-ui D6.5, the command lists are stable (drawn twice the same) and, on the German edition, equal to the
 /// measured checksums.
+// QUIRK O-358, O-359: kept
 #[test]
 fn info_frame_draw_checksums_are_stable() {
     let Some(dir) = corpus_game_dir() else { return };

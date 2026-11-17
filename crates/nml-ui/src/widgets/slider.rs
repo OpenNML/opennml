@@ -306,6 +306,7 @@ mod tests {
         assert!(!slider(&h).1.dragging, "step squares do not drag");
     }
 
+    // QUIRK O-100: kept
     #[test]
     fn slider_reports_code_1_on_every_call() {
         // O-100: code 1 arrives even without a change (clamped at the start).
@@ -318,6 +319,7 @@ mod tests {
         assert_eq!(reported(&h), [0, 0]);
     }
 
+    // QUIRK O-93: kept
     #[test]
     fn wheel_on_named_slider_only_moves_the_thumb() {
         // O-93: the wheel moves a named slider without a report and takes the event.

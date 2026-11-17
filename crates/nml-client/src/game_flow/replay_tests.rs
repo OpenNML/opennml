@@ -167,6 +167,7 @@ fn diplomacy_command(run: &Run) -> Command {
     }
 }
 
+// QUIRK E-329: deviation
 #[test]
 fn replay_name_has_the_original_pattern() {
     // `strftime("%y%m%d-%H%M")` (format `0x0061F0B8`, `FUN_0042B810`), local time to the minute.
@@ -193,6 +194,8 @@ fn replay_name_has_the_original_pattern() {
 /// E-329, E-337: Single-player match with `SAVEREPLAY`, 150 ticks with walk commands, `QUITGAME` -> accounting ->
 /// main menu: exactly one file, header with start package and host data, all commands up to the surrender, and the
 /// replay has the checksum of the match at tick 150.
+// QUIRK E-337: kept
+// QUIRK E-329: deviation
 #[test]
 fn save_replay_records_a_single_player_match() {
     let Some(mut r) = Run::corpus() else {
@@ -244,6 +247,7 @@ fn save_replay_records_a_single_player_match() {
 }
 
 /// The file grows with every frame; read in the middle of the match it reproduces the beginning completely.
+// QUIRK E-329: deviation
 #[test]
 fn the_file_grows_while_playing() {
     let Some(mut r) = Run::corpus() else {
@@ -275,6 +279,7 @@ fn the_file_grows_while_playing() {
 
 /// Commands in the same frame before the end of the match are in the file - the surrender (executed at once) and the
 /// game end `0x0E` in one round of the game effects.
+// QUIRK E-337: kept
 #[test]
 fn last_commands_before_quit_are_in_the_file() {
     let Some(mut r) = Run::corpus() else {
@@ -303,6 +308,7 @@ fn last_commands_before_quit_are_in_the_file() {
 
 /// Deviates from E-335: `savegame/autoplay` is missing and is created when recording begins; the file has the header
 /// already before the first command.
+// QUIRK E-335: deviation
 #[test]
 fn autoplay_folder_is_created_when_recording_begins() {
     let Some(mut r) = Run::corpus() else {
@@ -327,6 +333,7 @@ fn autoplay_folder_is_created_when_recording_begins() {
 }
 
 /// `UiEffect::DeleteSave { dir: Autoplay }` deletes the full name in the recording folder and nothing else.
+// QUIRK E-342: deviation
 #[test]
 fn deleting_an_autoplay_entry_removes_the_file() {
     let Some(mut r) = Run::corpus() else {
@@ -349,6 +356,7 @@ fn deleting_an_autoplay_entry_removes_the_file() {
 }
 
 /// Without `SAVEREPLAY` nothing is created.
+// QUIRK E-329: deviation
 #[test]
 fn without_save_replay_nothing_is_recorded() {
     let Some(mut r) = Run::corpus() else {
@@ -364,6 +372,7 @@ fn without_save_replay_nothing_is_recorded() {
 }
 
 /// E-334: The campaign never records, even with `SaveReplay 1` in the settings.
+// QUIRK E-334: kept
 #[test]
 fn campaign_does_not_record() {
     let Some(mut r) = Run::corpus_configured(MenuOptions::default(), |c| c.save_replay = 1) else {
@@ -384,6 +393,8 @@ fn campaign_does_not_record() {
 }
 
 /// E-334, O-444: The menu level never records, even with `SaveReplay 1`.
+// QUIRK E-334: kept
+// QUIRK O-444: deviation
 #[test]
 fn menu_level_does_not_record() {
     let Some(mut r) = Run::corpus_configured(
@@ -412,6 +423,8 @@ fn menu_level_does_not_record() {
 
 /// E-337: The restart ends the old recording (with the command executed at once before the restart) and begins a new
 /// one with tick 0 of the new match; its replay equals the new match.
+// QUIRK E-337: kept
+// QUIRK E-329: deviation
 #[test]
 fn restart_begins_a_new_recording() {
     let Some(mut r) = Run::corpus() else {
@@ -453,6 +466,8 @@ fn restart_begins_a_new_recording() {
 /// Deviates from E-329: Quicksave at tick 100, on to 150, load the savegame: the old recording ends with everything
 /// up to 150, the new one begins with the whole log of the savegame from tick 0; its replay equals the match up to the
 /// load point + 50.
+// QUIRK E-337: kept
+// QUIRK E-329: deviation
 #[test]
 fn loaded_save_records_the_whole_match_again() {
     let Some(mut r) = Run::corpus() else {
@@ -507,6 +522,7 @@ fn loaded_save_records_the_whole_match_again() {
 }
 
 /// A savegame without a command log (e.g. after eight hours) gives no recording, only a log warning; the match runs.
+// QUIRK E-329: deviation
 #[test]
 fn save_without_log_is_not_recorded() {
     let Some(mut r) = Run::corpus() else {
@@ -543,6 +559,7 @@ fn save_without_log_is_not_recorded() {
 }
 
 /// At the limit of eight hours the log ends and with it the recording; the commands before it are in the file.
+// QUIRK E-332: deviation
 #[test]
 fn recording_ends_at_eight_hours() {
     let tmp = tempfile::tempdir().unwrap();
@@ -585,6 +602,7 @@ fn recording_ends_at_eight_hours() {
 
 /// `savegame/autoplay` is a file - the recording does not begin (log warning), the match runs without a crash to the
 /// main menu.
+// QUIRK E-335: deviation
 #[test]
 fn write_error_ends_the_recording_but_not_the_match() {
     let Some(mut r) = Run::corpus() else {
@@ -712,6 +730,8 @@ fn message(r: &Run) -> Option<i32> {
 /// E-331, E-333: Recording with walk commands and diplomacy, last command at tick 100, match up to 300;
 /// `LOADAUTOPLAY` -> row -> `START` plays it back. The checksum equals the match at every tick 1 ... 300, also after
 /// the end of the file at tick 100: AI and scripts recompute and continue in the replay.
+// QUIRK E-331: kept
+// QUIRK E-333: deviation
 #[test]
 fn playback_repeats_the_recorded_hashes() {
     let Some(mut r) = Run::corpus() else {
@@ -757,6 +777,8 @@ fn playback_repeats_the_recorded_hashes() {
 /// Deviates from E-339 (E-341 as in the original): In the replay the selection is locked and empty; commands of the
 /// input and of the control channel (`sim_command`) have no effect - the checksum stays that of the recording.
 /// `QUITGAME` gives up the view slot: defeat, accounting, main menu.
+// QUIRK E-341: kept
+// QUIRK E-339: deviation
 #[test]
 fn playback_blocks_selection_and_commands_but_not_surrender() {
     let Some(mut r) = Run::corpus() else {
@@ -793,6 +815,7 @@ fn playback_blocks_selection_and_commands_but_not_surrender() {
 /// E-341: A recorded defeat of the view slot (`QUITGAME` of the match, executed at once and in the file with tick S)
 /// comes in the replay from the file at the transition S -> S+1 and shows the end screen as in the game; "Defeat"
 /// leads via the accounting to the main menu.
+// QUIRK E-341: kept
 #[test]
 fn recorded_defeat_ends_the_playback() {
     let Some(mut r) = Run::corpus() else {
@@ -860,6 +883,7 @@ fn recorded_defeat_ends_the_playback() {
 
 /// Deviates from E-339: F1, F4 and the script autosave 508 do nothing in the replay; in the game menu `savegame3` and
 /// `load` are locked, giving up and options are not.
+// QUIRK E-339: deviation
 #[test]
 fn playback_blocks_saving_and_loading() {
     let Some(mut r) = Run::corpus() else {
@@ -961,6 +985,7 @@ fn playback_ignores_load_game_effect() {
 /// E-344: The replay shows everything (fog off, `FOG_OFF`) and hides the command bar (`{0x11, 1}`); the selection is
 /// empty and locked. Flow via the fake, bar and fog of the real session via `GameSession::begin_playback` (graphics
 /// card, otherwise silently skipped).
+// QUIRK E-331, E-344: kept
 #[test]
 fn playback_shows_everything_and_hides_the_command_bar() {
     use crate::game::fog_view::FOG_OFF;
@@ -999,6 +1024,7 @@ fn playback_shows_everything_and_hides_the_command_bar() {
 
 /// Deviates from E-338: In the replay the view slot keeps the recorded name, not the `NetName` of the machine at
 /// replay time.
+// QUIRK E-338: deviation
 #[test]
 fn playback_keeps_the_recorded_name_of_the_local_player() {
     let Some(mut r) = Run::corpus() else {
@@ -1023,6 +1049,7 @@ fn playback_keeps_the_recorded_name_of_the_local_player() {
 
 /// E-340: The replay begins with the speed from the header, not with `GameSpeed` of the settings; after closing the
 /// game menu the own `GameSpeed` applies again (as in the original).
+// QUIRK E-340: kept
 #[test]
 fn playback_starts_with_the_recorded_speed() {
     let Some(mut r) = Run::corpus() else {
@@ -1052,6 +1079,7 @@ fn playback_starts_with_the_recorded_speed() {
 }
 
 /// O-153: A speed above 20 (30) is recorded and replayed without clamping.
+// QUIRK O-153: deviation
 #[test]
 fn playback_keeps_a_speed_above_20() {
     let Some(mut r) = Run::corpus() else {
@@ -1094,6 +1122,7 @@ fn playback_records_nothing() {
 /// On a map with a UI condition (35) the match mirrors the selection as `ScriptSelection`; in the replay the mirror
 /// commands come only from the file - the live selection gives nothing into the simulation, the checksum equals the
 /// recording at every tick.
+// QUIRK E-333, E-339: deviation
 #[test]
 fn playback_does_not_mirror_the_live_selection() {
     use crate::game::options::DEFAULT_GAME_SPEED;
@@ -1148,6 +1177,7 @@ fn playback_does_not_mirror_the_live_selection() {
 }
 
 /// A torn recording (cut in the last section) plays up to the last whole section, with a log warning.
+// QUIRK E-343: deviation
 #[test]
 fn torn_recording_plays_to_the_last_whole_chunk() {
     let Some(mut r) = Run::corpus() else {
@@ -1184,6 +1214,7 @@ fn torn_recording_plays_to_the_last_whole_chunk() {
 /// file each give the message 99 109 over the reopened `LOADAUTOPLAY`, a log entry with the reason, and the menu
 /// level continues. If the start package does not fit the game data, that does not show until after loading the map:
 /// failed start, `LOADAUTOPLAY` with 99 109, the menu level is off and restarts with `START`.
+// QUIRK E-343: deviation
 #[test]
 fn broken_recording_keeps_the_menu_alive() {
     use crate::replay_file::head_bytes;

@@ -577,6 +577,7 @@ mod tests {
         sim.state.attack_reports[slot].get(id.as_i32()).copied()
     }
 
+    // QUIRK E-61: kept
     #[test]
     fn attack_reports_fill_only_for_ai_victims() {
         use crate::state::ReportTile;
@@ -616,6 +617,7 @@ mod tests {
         assert_eq!((o.last_attacker, o.ticks_since_hit), (ai, 0));
     }
 
+    // QUIRK E-61: kept
     #[test]
     fn attack_reports_keep_one_entry_per_victim_in_mfc_order() {
         use crate::mfc::MfcMap;
@@ -661,6 +663,7 @@ mod tests {
         );
     }
 
+    // QUIRK E-61: kept
     #[test]
     fn destroyed_container_reports_every_occupant() {
         use crate::module::quarter;
@@ -707,6 +710,7 @@ mod tests {
         assert_eq!(report(&sim, 1, wagon), None);
     }
 
+    // QUIRK E-148: kept
     #[test]
     fn msg_37f_sets_the_event_bit() {
         // `HandleOwnMessage` `0x37F {id, bit}` (`0x0046DE70`): bit on the ID from the message, always on; the only
@@ -725,6 +729,7 @@ mod tests {
         assert_eq!(world::object_event_bits(&sim, a), 1 << 1);
     }
 
+    // QUIRK E-188: kept
     #[test]
     fn notify_attacked_by_sets_bit_7_without_relation_check() {
         // `GameObject_NotifyAttackedBy` (`0x00466EE1`): bit 7 first, without a relation check.

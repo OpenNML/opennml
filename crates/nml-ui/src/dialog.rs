@@ -736,6 +736,7 @@ pub(crate) mod tests {
         out
     }
 
+    // QUIRK O-57: kept
     #[test]
     fn children_sit_in_the_parent_client_area() {
         // menuframe.bkg CLIENTAREA 15 30 15 30: EXTENT 0 0 ... of the button begins at frame x1 + 15, y1 + 30
@@ -787,6 +788,7 @@ pub(crate) mod tests {
         assert_eq!(f.paint(&[&d], S1280), want);
     }
 
+    // QUIRK O-57: kept
     #[test]
     fn move_frames_paint_at_the_target() {
         // MENUFRAME_MOVE: end position top left corner = ZIELPOSITION, size from EXTENT (re/menu-system 5.3). An empty
@@ -867,6 +869,7 @@ pub(crate) mod tests {
                          ZIELPOSITION 40 212\n DURATION 300\n BAREXTENT 0 140 550 225\n TITLECOLOR ddFFf5bf\n \
                          BACKGROUND data/menü/bg.tga\n TITLEEXTENT -490 50 -50 185\n TITLE 2\n/FRAME\n";
 
+    // QUIRK O-8: kept
     #[test]
     fn start_title_stays_offscreen() {
         // O-8: TITLEEXTENT -490 ... -50 lies outside the screen on the left; tiles and text of the title all end
@@ -1112,6 +1115,7 @@ pub(crate) mod tests {
         assert_eq!(f.paint(&[&d], S1280), want);
     }
 
+    // QUIRK O-75: kept
     #[test]
     fn editfield_text_at_client_origin() {
         // editfield.bkg CLIENTAREA 16: text at C.lt via draw_string, without shadow (8.4.7).
@@ -1145,6 +1149,7 @@ pub(crate) mod tests {
         assert_eq!(color(f.paint(&[&d], s).last().unwrap()), 0xC8A0_A0A0);
     }
 
+    // QUIRK O-74: kept
     #[test]
     fn slider_thumb_and_scale_follow_step() {
         // 8.4.8: strip 42 high at the bottom edge; thumb and scale tile 6 at (A.l+21+o, A.b-42, A.l+63+o,
@@ -1230,6 +1235,7 @@ pub(crate) mod tests {
         }
     }
 
+    // QUIRK O-11: kept
     #[test]
     fn radio_icon_is_a_square_of_pixel_height() {
         // 8.4.9: S(100, 100, 400, 151) at 1024 x 768 = (80, 75, 320, 113), h = 38: icon (80, 75, 118, 113),
@@ -1348,6 +1354,7 @@ pub(crate) mod tests {
         assert_eq!(cmds, want);
     }
 
+    // QUIRK O-92: kept
     #[test]
     fn desktop_image_follows_the_open_order() {
         // re/menu-system 5.3/5.4: opening with MOVE sends 0x15E with BACKGROUND (+0xA0), without MOVE only with
@@ -1394,6 +1401,7 @@ pub(crate) mod tests {
         assert_eq!(f.paint(&[&ignored], S1024), []);
     }
 
+    // QUIRK O-89: kept
     #[test]
     fn credits_show_the_first_lines_before_scrolling() {
         // Credits (bit 0x8, 0x00463120 / FUN_00462AF0): one layout call 0x46 per line in "Credits" 0xC8FFFFFF,
@@ -1520,6 +1528,7 @@ PLAIN data/menü/plain.dlg
         }
     }
 
+    // QUIRK O-4: kept
     #[test]
     fn library_names_follow_the_map_and_the_file_stem() {
         let files: Vec<(&str, Vec<u8>)> = vec![

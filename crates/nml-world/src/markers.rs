@@ -327,6 +327,7 @@ mod tests {
     use super::*;
     use crate::terrain::tests::test_terrain;
 
+    // QUIRK O-288: kept
     #[test]
     fn marker_argb_is_the_d3dcolor_table() {
         // `0x0061C268` (bytes read): 8 player colors, then gray.
@@ -547,6 +548,7 @@ mod tests {
         assert_eq!(helper_box_tile_rect(&boxed(100.0, 120.0), 128, 128)[2], 0);
     }
 
+    // QUIRK D-367: kept
     #[test]
     fn helper_node_corners_apply_the_node_scale() {
         // Cube +-10 as a helper node at (0, 20, 0), scale (3, 0.5, 1) like the `hitbox` of the

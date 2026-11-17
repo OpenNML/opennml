@@ -302,6 +302,7 @@ mod tests {
         (s.expect("swing begun"), hits)
     }
 
+    // QUIRK C-14: kept
     #[test]
     fn sabre_against_warrior_hits_at_s_plus_4_then_every_13_ticks() {
         // re/combat-melee 8.1/8.2: saber End 1200, Hit1 320 -> D = 18*1200/2000 = 10; period 13.
@@ -317,6 +318,7 @@ mod tests {
         }
     }
 
+    // QUIRK C-62: kept
     #[test]
     fn warrior_against_pikeman_splits_hits_with_the_sword_bonus() {
         // Warrior End 1283, Hit1 560, Hit2 1096 -> D = 5: 2 at S+6, 3 at S+11; +40 % SWORD_PEEK.
@@ -335,6 +337,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-61, C-63: kept
     #[test]
     fn every_swing_draws_once_from_the_table_and_bad_labels_abort() {
         let rules = rules();
@@ -359,6 +362,7 @@ mod tests {
         assert!(target.is_some_and(|x| x.is_none() || x == t));
     }
 
+    // QUIRK C-60: kept
     #[test]
     fn a_target_dying_mid_swing_takes_no_more_damage_and_the_attack_ends() {
         let rules = rules();
@@ -392,6 +396,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-69: kept
     #[test]
     fn hits_play_sound_6_or_7_at_the_attacker_with_flags_0x13() {
         let rules = rules();

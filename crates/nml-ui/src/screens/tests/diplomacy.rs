@@ -73,6 +73,7 @@ fn act(a: DiplomacyAction) -> UiEffect {
 
 /// re/game-ui D5.7: the own row shows only name, color and nation; slots with result != 0 (eliminated, unoccupied)
 /// are completely hidden; every row element requeries every 500 ms.
+// QUIRK O-323: kept
 #[test]
 fn rows_hide_self_and_finished_slots() {
     let mut l = logic(view());
@@ -128,6 +129,7 @@ fn rows_hide_self_and_finished_slots() {
 }
 
 /// O-323: With fixed teams (`Engine+0x20`) the status selection is locked, the other columns are not.
+// QUIRK O-323: kept
 #[test]
 fn status_locked_with_fixed_teams() {
     let mut l = logic(DiplomacyView {
@@ -213,6 +215,7 @@ fn hooks_and_buttons_give_their_actions() {
 /// `FUN_0042E060` (UI part): without a match nothing; 0 -> 10 with `{6,"DIPLOMATIE"}`, 10 -> 0 with
 /// `{4,"DIPLOMATIE"}`; in state 1 (game menu) nothing; under the lock it does not open and does not close by toggling
 /// either, "Back" (`open = false`) closes.
+// QUIRK O-323: kept
 #[test]
 fn toggle_diplomacy_follows_0042e060() {
     let mut app = MenuApp::from_library(
@@ -266,6 +269,7 @@ fn toggle_diplomacy_follows_0042e060() {
 
 /// Live (corpus): the dialog opens, "Back" by click and ESC (`MENUBUTTON_CHECKESCAPE`) close via
 /// `FUN_0042E060`.
+// QUIRK O-323: kept
 #[test]
 fn back_and_escape_close_the_dialog() {
     let Some(mut d) = live_with(

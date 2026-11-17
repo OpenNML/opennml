@@ -165,6 +165,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-66: deviation
     #[test]
     fn video_rect_scales_the_640x480_area() {
         let s = |width, height| Screen { width, height };
@@ -180,6 +181,7 @@ mod tests {
         assert!(tall[1] < tall[3]);
     }
 
+    // QUIRK O-66: deviation
     #[test]
     fn video_uv_samples_pixel_centres() {
         // 640 x 480 with 356 rows: 1:1, the texel center per pixel (corners `x - 0.5` of the original).
@@ -194,6 +196,7 @@ mod tests {
         assert_eq!(video_uv([0, 5, 0, 5]), [0.0, 0.0, 1.0, 1.0]);
     }
 
+    // QUIRK O-120: kept
     #[test]
     fn speech_path_cuts_like_mid_and_left() {
         assert_eq!(

@@ -110,6 +110,7 @@ fn handovers(events: &[SimEvent]) -> Vec<SimEvent> {
         .collect()
 }
 
+// QUIRK W-248, W-249: kept
 #[test]
 fn packing_hides_the_tent_and_creates_a_travois() {
     let rules = rules();
@@ -203,6 +204,7 @@ fn packing_hides_the_tent_and_creates_a_travois() {
     );
 }
 
+// QUIRK D-228: kept
 #[test]
 fn the_fade_is_bit_exact() {
     // re/tents 9.1: fade-out via the simulation. Two f32 roundings per tick (24-bit x87);
@@ -320,6 +322,7 @@ fn packing_empties_the_quarter_first() {
     assert!(building::building(&sim, tent).unwrap().is_sleeping);
 }
 
+// QUIRK W-247: deviation
 #[test]
 fn packing_during_a_fade_does_nothing() {
     let rules = rules();
@@ -335,6 +338,8 @@ fn packing_during_a_fade_does_nothing() {
     assert_eq!(travois_count(&sim, 0), 1);
 }
 
+// QUIRK D-228: kept
+// QUIRK W-247: deviation
 #[test]
 fn a_construction_site_can_be_packed() {
     // W-247, D-228: no check of the construction state; the crossfade overwrites the progress.
@@ -373,6 +378,7 @@ fn a_construction_site_can_be_packed() {
     assert_eq!(tent_of(&sim, tent).status, status::REST);
 }
 
+// QUIRK W-256, W-257: kept
 #[test]
 fn packing_keeps_tile_map_and_sight_stamp() {
     // W-256, W-257: the BuildingTileMap and the sight stamp stay at the old position.
@@ -406,6 +412,7 @@ fn packing_keeps_tile_map_and_sight_stamp() {
     assert_eq!(sim.state.fog.seen.get(5, 5).unwrap() & 1, 0);
 }
 
+// QUIRK W-248, W-258: kept
 #[test]
 fn unpacking_on_another_tile_restores_the_tent() {
     // re/tents 9.3 steps 3-4.
@@ -500,6 +507,7 @@ fn unpacking_on_another_tile_restores_the_tent() {
     assert_eq!(tent_of(&sim, tent).travois, travois);
 }
 
+// QUIRK W-89: kept
 #[test]
 fn unpacking_on_the_same_tile_leaves_the_tent_outside_the_collision_manager() {
     // W-89, re/tents 9.3 step 5.
@@ -540,6 +548,7 @@ fn unpacking_on_the_same_tile_leaves_the_tent_outside_the_collision_manager() {
     );
 }
 
+// QUIRK W-252: kept
 #[test]
 fn the_next_pack_clears_the_whole_rect() {
     // W-252: after unpacking the freed list is empty; the next release runs over the whole
@@ -567,6 +576,7 @@ fn the_next_pack_clears_the_whole_rect() {
     assert!(tiles(rect).all(|(x, z)| !sim.state.occupancy.test(x, z)));
 }
 
+// QUIRK W-253: kept
 #[test]
 fn placing_resets_a_widened_occupancy_rect() {
     // W-253: the `0x3303` border is lost on unpacking.
@@ -598,6 +608,7 @@ fn placing_resets_a_widened_occupancy_rect() {
     }
 }
 
+// QUIRK W-254: kept
 #[test]
 fn an_alarm_post_gets_the_model_rect_with_its_init_mask() {
     // W-254: init sets rectangle and mask to the origin tile; `0x2F03` takes the
@@ -624,6 +635,7 @@ fn an_alarm_post_gets_the_model_rect_with_its_init_mask() {
     }
 }
 
+// QUIRK W-255: kept
 #[test]
 fn an_unsnapped_position_keeps_the_init_mask() {
     // W-255, re/tents 9.2: unpacked raw at world (1000, y, 2000) -> rectangle 3 x 3 with the
@@ -646,6 +658,7 @@ fn an_unsnapped_position_keeps_the_init_mask() {
     }
 }
 
+// QUIRK W-256, W-258: kept
 #[test]
 fn unpacking_keeps_the_tile_map_and_resets_the_meeting_point() {
     // W-256: the BuildingTileMap stays at the old position, no stamp at the new one. W-258:
@@ -751,6 +764,7 @@ fn a_failed_walk_only_logs() {
     assert_eq!(tent_of(&sim, tent).status, status::FADE_IN);
 }
 
+// QUIRK W-251: kept
 #[test]
 fn an_occupied_target_moves_the_hidden_tent() {
     // W-251: position set before the place check; "built on" -> -1, the tent stays hidden at the
@@ -789,6 +803,7 @@ fn an_occupied_target_moves_the_hidden_tent() {
     assert!(building::building(&sim, tent).unwrap().is_sleeping);
 }
 
+// QUIRK W-259: kept
 #[test]
 fn a_foreign_travois_hid_fails_once() {
     // W-259: after a change of owner the travois has a new ID; `0x22A` takes it over
@@ -816,6 +831,7 @@ fn a_foreign_travois_hid_fails_once() {
     assert_eq!((flags, tt.tent), (0, ObjectId::NONE));
 }
 
+// QUIRK W-250: kept
 #[test]
 fn unpacking_during_the_fade_loses_the_tent() {
     // W-250, re/tents 9.3 step 6: arrival before the 25th tick -> `0x22A` answers 0 without effect,
@@ -856,6 +872,7 @@ fn unpacking_during_the_fade_loses_the_tent() {
     check(&sim);
 }
 
+// QUIRK W-260: kept
 #[test]
 fn a_dying_travois_removes_the_tent() {
     // W-260, re/tents 9.3 step 7: death -> owner change to 8 in the next phase-0 step -> the
@@ -894,6 +911,7 @@ fn a_dying_travois_removes_the_tent() {
     assert_eq!(living_space(&sim), space - 15);
 }
 
+// QUIRK W-260: kept
 #[test]
 fn an_owner_change_to_another_player_keeps_the_tent() {
     // W-260: owner change != 8 has no effect; the tent stays with slot 0.
@@ -912,6 +930,7 @@ fn an_owner_change_to_another_player_keeps_the_tent() {
     assert_eq!((flags, tt.tent), (transport::TRANSPORTING_TENT, tent));
 }
 
+// QUIRK W-261: kept
 #[test]
 fn a_destroyed_tent_leaves_the_travois_flagged() {
     // W-261: `0x223` does not find the tent -> 0 without effect, the flag stays.
@@ -930,6 +949,7 @@ fn a_destroyed_tent_leaves_the_travois_flagged() {
     }
 }
 
+// QUIRK W-260: kept
 #[test]
 fn a_travois_dying_during_the_fade_in_leaves_the_tent_standing() {
     // re/tents 3.6: `m_TentHID` is already 0, the death does not hit the tent; `finish_unpack` no
@@ -960,6 +980,7 @@ fn a_travois_dying_during_the_fade_in_leaves_the_tent_standing() {
     assert_eq!(tent_of(&sim, tent).travois, travois);
 }
 
+// QUIRK W-247: deviation
 #[test]
 fn packing_a_hidden_tent_creates_a_second_travois() {
     // W-247 (directly via `send`; the player command rejects it, exception A8). The renewed `0x2E03`

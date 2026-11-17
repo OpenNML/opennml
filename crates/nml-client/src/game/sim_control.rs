@@ -3474,6 +3474,7 @@ PROPID 21
         assert!(host.state.objects().all(|o| o.guid != HOUSE));
     }
 
+    // QUIRK D-288: kept
     #[test]
     fn sim_build_sends_the_ground_height_so_the_site_flag_stands_above_ground() {
         use crate::game::rally_flag::{RALLY_POINT_BUTTON, rally_flag};
@@ -4596,6 +4597,7 @@ PROPID 21
         assert_eq!(host.ki_stats, crate::game::sim_host::KiStats::default());
     }
 
+    // QUIRK E-97: deviation
     #[test]
     fn ki_command_is_recorded_and_replayed() {
         use crate::game::sim_control::KiCommandRequest;

@@ -178,6 +178,7 @@ fn select_sets_info_and_texts_or_keeps_them_on_failure() {
     );
 }
 
+// QUIRK O-135: kept
 #[test]
 fn slots_are_read_line_by_line_like_the_original() {
     // `FUN_004BDDA0`: block exactly "[PLAYER]" up to a line exactly "}"; `PLAYER_PLAYER` Mid(15) without the last
@@ -465,6 +466,7 @@ fn levelinfos_show_the_random_map_values() {
     );
 }
 
+// QUIRK O-140: deviation
 #[test]
 fn seed_rand_is_the_msvc_sequence() {
     // Own `rand()` state of the menu, start 1 (`state = state * 214013 + 2531011`, result

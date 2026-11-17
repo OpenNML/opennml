@@ -217,6 +217,8 @@ mod tests {
         (rules, state)
     }
 
+    // QUIRK W-262: kept
+    // QUIRK W-247: deviation
     #[test]
     fn pack_tent_checks_owner_module_selectable_and_button() {
         let (rules, mut state) = fresh();

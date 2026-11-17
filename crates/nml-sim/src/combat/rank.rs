@@ -73,6 +73,7 @@ mod tests {
     use super::*;
     use crate::combat::testkit::*;
 
+    // QUIRK C-130: kept
     #[test]
     fn rank_up_heals_500_with_the_old_max_and_replaces_the_bonus() {
         let rules = rules();
@@ -130,6 +131,7 @@ mod tests {
         assert_eq!(sim.object(s).unwrap().attributes.current_value(14, 0), 840);
     }
 
+    // QUIRK C-126: kept
     #[test]
     fn rank_five_takes_no_experience_and_max_zero_never_ranks() {
         let rules = rules();

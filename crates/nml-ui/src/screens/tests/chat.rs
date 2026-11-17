@@ -35,6 +35,7 @@ fn sent(window: u8, text: &str) -> UiEffect {
 /// `FUN_004CFF80`: code 7 hands out the buffer (`size 0x50`, `inputbuffer 1`); ENTER sends to the frame name and
 /// closes, ESC only closes, other keys -1, without `key` 0; "Send" (code 8) sends and closes; empty text
 /// does not send (`FUN_004B9940`: `wcslen == 0`) but closes; after sending the buffer is empty.
+// QUIRK O-325: kept
 #[test]
 fn chat_handler_follows_004cff80() {
     let mut l = Logic::new();
@@ -75,6 +76,7 @@ fn chat_handler_follows_004cff80() {
 
 /// `FUN_0042EA20`: without a running match, with menu state != 0 and in the menu level (game type -2) nothing;
 /// otherwise empty the buffer (also for `k` not in 1...3) and `{6, "chatwindow..."}`. No menu state.
+// QUIRK O-325: kept
 #[test]
 fn show_chat_window_follows_0042ea20() {
     let mut app = MenuApp::from_library(
@@ -113,6 +115,7 @@ fn show_chat_window_follows_0042ea20() {
 
 /// Live (corpus): ENTER sends at most 79 characters (`size 0x50`) and closes; ESC only closes the window and is
 /// consumed (no game menu, `take_untaken_keys` empty); umlauts arrive; click point in the frame.
+// QUIRK O-325: kept
 #[test]
 fn chat_window_takes_79_chars_and_escape_closes_only_it() {
     let Some(mut d) = live_with(

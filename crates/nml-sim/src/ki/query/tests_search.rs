@@ -65,6 +65,7 @@ fn marks(sim: &Sim, id: i32) -> u8 {
     sim.state.object(oid(id), false).expect("object").ai_marks
 }
 
+// QUIRK E-35: kept
 #[test]
 fn marking_search_marks_the_hit_and_skips_it_next_time() {
     let (rules, mut state) = scene();
@@ -103,6 +104,7 @@ fn two_warriors(a: (i32, i32), b: (i32, i32), a_first: bool) -> (Rules, SimState
     (rules, state, ia, ib)
 }
 
+// QUIRK E-54: kept
 #[test]
 fn searches_start_at_the_tile_corner() {
     // E-54: center `(x << 12, z << 12)`. From the tile center (10.5, 10.5), (9, 10) and (11, 10) are equally far (1
@@ -121,6 +123,7 @@ fn searches_start_at_the_tile_corner() {
     assert_eq!(ask(&mut sim, 0x4E24, &[ME_I, ME_I, 10, 10, 0, W]), a);
 }
 
+// QUIRK E-53: kept
 #[test]
 fn fish_basket_ends_the_search_with_zero() {
     // E-53: a hit with GUID 3505 returns 0, without searching further and without a mark. The basket belongs to slot 10
@@ -139,6 +142,7 @@ fn fish_basket_ends_the_search_with_zero() {
     assert_eq!(marks(&sim, warrior), 1 << ME);
 }
 
+// QUIRK E-49: kept
 #[test]
 fn heads_or_their_list_bits_into_file_filters() {
     // E-49: at the head, `MM_HL_MYLIST` of the dispatcher is OR-ed with `MM_HL_ENEMYLIST` of the file filter: the enemy
@@ -159,6 +163,7 @@ fn heads_or_their_list_bits_into_file_filters() {
     assert_eq!(ask(&mut sim, 0x4F24, &[ME_I, ME_I, 10, 10, W, ENEMY]), 0);
 }
 
+// QUIRK E-50: kept
 #[test]
 fn seven_codes_clear_mode2_of_the_head() {
     // E-50: `0x4E25`-`0x4E27`, `0x4F24`-`0x4F28` clear `mode2` at the head; filter 183 (`MM2_MORETHAN70`) has no effect
@@ -201,6 +206,7 @@ fn seven_codes_clear_mode2_of_the_head() {
     );
 }
 
+// QUIRK E-29: kept
 #[test]
 fn radius_of_0x4f24_with_seven_words_is_raw() {
     // E-29: the center (13.5, 10.5) is about 3.54 tiles from the corner (10, 10).
@@ -234,6 +240,7 @@ fn radius_of_0x4f24_with_seven_words_is_raw() {
     assert_eq!(run(&mut sim, 0x219, &[ME_I, 10, 10, 0, W, 15_000]), [w]);
 }
 
+// QUIRK E-52: kept
 #[test]
 fn unknown_filter_id_as_head_finds_all_of_the_owner() {
     // E-52 and re/ki-queries 5.2: an unknown head (empty filter) becomes "all objects of `[3]`" through the OR-ed bits,
@@ -267,6 +274,7 @@ fn unknown_filter_id_as_head_finds_all_of_the_owner() {
     );
 }
 
+// QUIRK E-25: kept
 #[test]
 fn fog_searches_skip_unseen_objects() {
     // `0x4E26`/`0x4F26` carry `MM_CHECKFOG` for `[2]` (original); under `Sight::Fog` every search sees only what has
@@ -297,6 +305,7 @@ fn fog_searches_skip_unseen_objects() {
     assert_eq!(ask(&mut sim, 0x4F26, &[2, 2, 10, 10, 0, W]), hidden);
 }
 
+// QUIRK E-58: kept
 #[test]
 fn ref_player_nine_searches_trees() {
     // E-58: reference player 9 searches the tree list (list B), otherwise only list A.
@@ -312,6 +321,7 @@ fn ref_player_nine_searches_trees() {
     assert_eq!(ask(&mut sim, 0x4F25, &[ME_I, ME_I, t, 10, 10, 0]), 0);
 }
 
+// QUIRK E-51, E-54: kept
 #[test]
 fn hq_search_uses_the_map_centre_and_finds_unfinished_hqs() {
     // re/ki-queries 5.4, E-51: main house GUID of the nation of `[3]` (nation 2 -> 1000), center = half the map as
@@ -343,6 +353,7 @@ fn hq_search_uses_the_map_centre_and_finds_unfinished_hqs() {
     assert_eq!(ask(&mut sim, 0x4F25, &[ME_I, ME_I, hq, 32, 32, hq]), done);
 }
 
+// QUIRK E-51: kept
 #[test]
 fn building_and_type_searches_use_fresh_filters_and_never_mark() {
     // re/ki-queries 5.3: `0x4E22` = module 3 (`0x80114`, `f[4] = 3`), `0x4E23` = GUID `[4]` (`0x80118`); both carry
@@ -370,6 +381,7 @@ fn building_and_type_searches_use_fresh_filters_and_never_mark() {
     assert_eq!(ask(&mut sim, 0x4E22, &[ME_I, ME_I, 10, 10, 0, 0, 5]), ME_I);
 }
 
+// QUIRK E-86: deviation
 #[test]
 fn production_check_of_0x50d2() {
     // re/ki-queries 5.10: all objects of the filter `[3]` of slot `[2]` (tile 0...1000) have the building flag
@@ -434,6 +446,7 @@ fn run_on(sim: &mut Sim, id: u16, t: &mut Thread) -> Vec<KiNote> {
     w.notes
 }
 
+// QUIRK E-55: kept
 #[test]
 fn mark_codes_touch_dead_objects_but_not_missing_ones() {
     // re/ki-queries 5.9: `FUN_0042DA90` searches with `GetObjectById(id, 0)`: the dead are marked and unmarked, missing
@@ -509,6 +522,7 @@ fn mark_codes_touch_dead_objects_but_not_missing_ones() {
     assert_eq!(t.stack, [FLOOR]);
 }
 
+// QUIRK E-84: kept
 #[test]
 fn triple_search_builtins_read_head_and_centre_from_the_shifted_words() {
     // E-84: at 0x235-0x237 the handler builds `{me, me, a1…a5}`. `0x50C3` (0x235) reads the center from `[4]`/`[5]` and
@@ -537,6 +551,7 @@ fn triple_search_builtins_read_head_and_centre_from_the_shifted_words() {
     assert_eq!(t.pause_ms, 0);
 }
 
+// QUIRK E-57: kept
 #[test]
 fn mark_query_reads_bit_p_and_31() {
     // `0x4F97` reads bit `p & 31`; bits >= 8 do not exist (0). The writers produce `Direct::Mark` only for
@@ -572,6 +587,7 @@ fn mark_query_reads_bit_p_and_31() {
     }
 }
 
+// QUIRK E-35: kept
 #[test]
 fn ki_query_does_not_apply_marks() {
     let (rules, mut state) = scene();
@@ -610,6 +626,7 @@ pub(super) const SEARCH_BUILTINS: [std::ops::RangeInclusive<u16>; 10] = [
     0x235..=0x237,
 ];
 
+// QUIRK E-36: kept
 #[test]
 fn search_pauses_follow_the_signature() {
     // 500 ms after the searches `0x4E24`-`0x4E27`, `0x4F24`-`0x4F28`; otherwise no pause.

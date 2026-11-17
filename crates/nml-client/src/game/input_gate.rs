@@ -171,6 +171,7 @@ mod tests {
 
     /// re/campaign-ui D6.10 (table "Cinemascope alone" / "Lock"), `FUN_0042EA20` (chat), `FUN_0042E3B0` (quest menu
     /// key), O-290/O-299/O-350 (additions of the game UI): every method for every switch alone and together.
+    // QUIRK O-291, O-304, O-441: kept
     #[test]
     fn gate_matches_campaign_ui_d6_10() {
         let none = InputGate::default();
@@ -299,6 +300,7 @@ mod tests {
 
     /// O-441: in the menu level the player camera is off, even without a lock and without the script camera; the
     /// script camera (`n241`) runs unaffected in the simulation.
+    // QUIRK O-441: kept
     #[test]
     fn player_camera_is_off_in_the_menu_level() {
         let free = InputGate::default();

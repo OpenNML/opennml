@@ -869,6 +869,7 @@ mod tests {
         assert!(base.timers_ws.is_empty());
     }
 
+    // QUIRK W-70: kept
     #[test]
     fn finishing_moves_on_to_the_next_site_and_loses_the_replies() {
         let rules = rules();
@@ -895,6 +896,7 @@ mod tests {
         assert_eq!(reply(&sim, obs), ObjectId::NONE.0);
     }
 
+    // QUIRK W-71: kept
     #[test]
     fn a_finished_field_hands_over_to_harvesting_and_keeps_the_replies() {
         let rules = rules();
@@ -919,6 +921,7 @@ mod tests {
         assert_eq!(base.fault, Some(Message::new(0xA7F, &[222])));
     }
 
+    // QUIRK W-112: kept
     #[test]
     fn a_moved_building_ends_the_job_with_success() {
         let rules = rules();
@@ -995,6 +998,7 @@ mod tests {
         let _ = b;
     }
 
+    // QUIRK W-113: kept
     #[test]
     fn a_finished_healthy_target_ends_the_walk_job_early() {
         let rules = rules();
@@ -1116,6 +1120,7 @@ mod tests {
         assert_eq!(steps, 67);
     }
 
+    // QUIRK E-187: kept
     #[test]
     fn builder_bit_5_clears_on_start_and_sets_on_finish() {
         // `OnStartBuilding` `0x0050D158` (off) and `Tick` `0x0050D6B9` (on) - on the construction worker, not

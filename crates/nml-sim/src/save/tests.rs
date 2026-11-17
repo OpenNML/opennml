@@ -1075,6 +1075,7 @@ fn ki_thread(s: &mut SimState, id: i32) -> &mut crate::ki::vm::Thread {
     ki_engine(s).threads.get_mut(id).expect("thread")
 }
 
+// QUIRK E-10: deviation
 #[test]
 fn ki_state_survives_saving_and_loading() {
     let (rules, state) = ki_scene();
@@ -1122,6 +1123,8 @@ fn ki_world_scene() -> (Rules, SimState) {
     (rules, state)
 }
 
+// QUIRK E-57: kept
+// QUIRK E-41, E-59: deviation
 #[test]
 fn ki_world_state_survives_saving_and_loading() {
     let (rules, state) = ki_world_scene();
@@ -1251,6 +1254,7 @@ fn script_state_round_trips() {
     }
 }
 
+// QUIRK E-170: deviation
 #[test]
 fn names_survive_save_load_in_bucket_order() {
     use crate::id::ObjectId;
@@ -1507,6 +1511,7 @@ fn seed_text_round_trips_through_the_save() {
 
 /// Other map description (seed, size, map type ...) or other rules checksum with the same description (other game
 /// data or mods change the generated map) -> message, no loading.
+// QUIRK D-348: deviation
 #[test]
 fn changed_map_data_rejects_the_save() {
     let spec = random_spec("ZKA", 0);
@@ -1547,6 +1552,7 @@ fn changed_map_data_rejects_the_save() {
 
 /// The game mode of the match must be the one of the description from which the map was generated (deviating from
 /// D-348); a savegame with another game mode in the start package is rejected.
+// QUIRK D-348: deviation
 #[test]
 fn game_type_mismatch_is_rejected() {
     let spec = random_spec("KOTH", 3);

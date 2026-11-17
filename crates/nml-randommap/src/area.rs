@@ -141,6 +141,7 @@ mod tests {
         (area.x_min, area.x_max, area.z_min, area.z_max)
     }
 
+    // QUIRK D-325: kept
     #[test]
     fn percent_loses_precision_like_fixed_div() {
         let def = AreaDef {
@@ -180,6 +181,7 @@ mod tests {
         assert_eq!(frame(&area), (0, 256, 0, 64));
     }
 
+    // QUIRK D-325: kept
     #[test]
     fn quantities_apply_players_then_percent_then_map_size() {
         let base = AreaDef {

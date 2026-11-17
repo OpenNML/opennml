@@ -149,6 +149,7 @@ impl RasterStage {
 mod tests {
     use super::*;
 
+    // QUIRK E-255: deviation
     #[test]
     fn stages_have_the_planned_rasters() {
         assert_eq!(RasterStage::Original.config().raw(), (8, 4));
@@ -163,6 +164,7 @@ mod tests {
         assert_eq!(RasterStage::from_index(-1), RasterStage::Original);
     }
 
+    // QUIRK E-255, E-298: deviation
     #[test]
     fn raster_bounds() {
         assert!(TurnConfig::new(2, 1).is_ok());
@@ -179,6 +181,7 @@ mod tests {
         assert_eq!(TurnConfig::from_turn_steps(10).unwrap().raw(), (40, 20));
     }
 
+    // QUIRK E-255: deviation
     #[test]
     fn fine_raster_executes_on_odd_steps() {
         let c = TurnConfig::new(2, 1).unwrap();
@@ -194,6 +197,7 @@ mod tests {
         assert_eq!(TurnConfig::new(40, 20).unwrap().close_ms(0), 7_000);
     }
 
+    // QUIRK E-255: deviation
     #[test]
     fn default_raster_matches_the_original() {
         let c = TurnConfig::default();

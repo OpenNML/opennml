@@ -144,6 +144,7 @@ fn object_types_translations_and_project_shadow_files() {
 }
 
 /// re/upgrades 1.1, W-222: 232 `[UPGRADE]`, types per upgrade from `OBJ_UPGRADES`.
+// QUIRK W-222: kept
 #[test]
 fn nml_wiese_lists_upgrades_and_their_types() {
     let Some(dir) = corpus_game_dir() else {
@@ -212,6 +213,7 @@ fn tempupgrades_ini_has_thirteen_records() {
 }
 
 /// re/heroes-resources 1.2: 38 entries in file order.
+// QUIRK W-273: kept
 #[test]
 fn heroes_ini_lists_38_entries() {
     let Some(dir) = corpus_game_dir() else {

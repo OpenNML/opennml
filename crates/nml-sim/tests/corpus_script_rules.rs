@@ -103,6 +103,7 @@ fn names_of(scripts: &ScriptRules, kind: ParamKind) -> Vec<(String, String)> {
 /// three names `pater nachts ende`, `tor nachtdialog` and `carvines nachtdialog` stand only in
 /// `§` lines of `kamp1-3/nachtdialog.abl`, which the original does not load; they do not occur
 /// here.
+// QUIRK E-179: kept
 #[test]
 fn area_and_dialog_names_resolve() {
     let Some(dir) = corpus_game_dir() else {

@@ -234,6 +234,7 @@ mod tests {
     use crate::save::checksum;
     use crate::tick::step;
 
+    // QUIRK E-22: deviation
     #[test]
     fn the_ki_ticks_inside_step() {
         // re/ki-lifecycle 5.1: per thread and step 3 passes x step size 3 = 9 attempts,
@@ -413,6 +414,8 @@ mod tests {
         CommandKind::KiStep { slot: 1, passes }
     }
 
+    // QUIRK E-19: kept
+    // QUIRK E-21: deviation
     #[test]
     fn ki_start_pause_and_step_are_commands() {
         let (rules, mut state) = ai_match(0, ON);

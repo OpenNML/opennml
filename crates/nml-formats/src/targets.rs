@@ -331,6 +331,7 @@ mod tests {
     const DEFINES: &str =
         "PROP_LUMBERING 8\r\nMID_PROP_ARMING_ISARMED 295\r\nMID_PROP_BUILDING_FARM 515\r\n";
 
+    // QUIRK C-50: kept
     #[test]
     fn entries_parse_with_names_chains_and_the_ineffective_disabler() {
         let d = parse_target_defines(DEFINES);

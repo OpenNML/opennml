@@ -93,6 +93,7 @@ fn list_len(t: &Thread) -> usize {
     t.vars.list_at(L0).expect("list").len()
 }
 
+// QUIRK E-28: kept
 #[test]
 fn all_match_checks_later_objects_for_player_one() {
     // E-28: `[2] = me` is set only before the loop; after the first matching object `[2] = 1`, all further ones are
@@ -117,6 +118,7 @@ fn all_match_checks_later_objects_for_player_one() {
     }
 }
 
+// QUIRK E-28: kept
 #[test]
 fn any_match_checks_later_objects_for_player_zero() {
     // E-28: after the first failure `[2] = 0`, all further ones are checked for player 0.
@@ -139,6 +141,7 @@ fn any_match_checks_later_objects_for_player_zero() {
     }
 }
 
+// QUIRK E-56: kept
 #[test]
 fn any_match_with_a_missing_first_object_is_one() {
     // E-56: if the first object is missing, `[2] = me` stays; for `me ≠ 0` the answer is 1 at once. For `me = 0`,
@@ -185,6 +188,7 @@ fn attacker(sim: &mut Sim, slot: i32, tile: (i32, i32)) -> i32 {
     id
 }
 
+// QUIRK E-56: kept
 #[test]
 fn attacking_check_of_0x114_breaks_like_the_original() {
     // E-56: break with 0 only if the 0xB3 filter fails, the other passes and the object attacks. The player is carried
@@ -240,6 +244,7 @@ fn attacking_check_of_0x114_breaks_like_the_original() {
     }
 }
 
+// QUIRK E-56: kept
 #[test]
 fn pair_asks_the_last_script_argument_first() {
     // Pops `A, B, n, start, list`: the first pop is the **last** script argument and is asked first (`0x004A3BE0`).
@@ -267,6 +272,7 @@ fn pair_asks_the_last_script_argument_first() {
     }
 }
 
+// QUIRK E-28: kept
 #[test]
 fn pair_carries_the_result_of_b_to_the_next_a() {
     // The player of the next query A is the result of B of the previous object (not that of A): script `(…, MINE, B3)`
@@ -346,6 +352,8 @@ fn args_of(id: u16, list_addr: i32, start: i32, n: i32) -> Vec<i32> {
 
 const EVERY: [u16; 8] = [0x112, 0x113, 0x114, 0x115, 0x117, 0x11E, 0x11F, 0x121];
 
+// QUIRK E-56: kept
+// QUIRK E-34: deviation
 #[test]
 fn invalid_list_pushes_nothing_and_n_zero_pushes_zero() {
     let (rules, mut state) = scene();

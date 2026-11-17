@@ -10,6 +10,7 @@ use nml_formats::text::decode_cp1252;
 use nml_rda::testutil::corpus_game_dir;
 use nml_rda::{Vfs, normalize_path};
 
+// QUIRK D-264: kept
 #[test]
 fn all_models_animations_and_object_configs_parse() {
     let Some(dir) = corpus_game_dir() else {

@@ -372,6 +372,7 @@ mod tests {
         )
     }
 
+    // QUIRK K-305: kept
     #[test]
     fn init_reads_anim_time_and_everytimetarned() {
         let rules = tk::rules();
@@ -402,6 +403,7 @@ mod tests {
         assert!(m.never_unmasked);
     }
 
+    // QUIRK K-305: kept
     #[test]
     fn only_the_high_bytes_of_the_flag_word_count() {
         // `Module_HasFlags(0x119)`: only bit `0x100` counts, not the low byte (re/masking 3.1, K-305).
@@ -482,6 +484,7 @@ mod tests {
         }
     }
 
+    // QUIRK K-304: kept
     #[test]
     fn masking_follows_the_energy_automaton() {
         // re/masking 9 V1: 1402 with 2924, energy full, `0x119` in tick N.
@@ -549,6 +552,7 @@ mod tests {
         assert_eq!(energy(&sim, r), FULL, "camouflaged +83, capped");
     }
 
+    // QUIRK C-233: kept
     #[test]
     fn enemy_clear_up_drains_even_the_ranger() {
         // re/masking 9 V3 (numbers from 3.4: +83 before -2000, upper limit 100,000 in the first tick).
@@ -582,6 +586,7 @@ mod tests {
         assert_eq!(flags(&sim, r), (true, true), "re-camouflaging");
     }
 
+    // QUIRK C-233: kept
     #[test]
     fn enemy_clear_up_drains_unmasked_units_too() {
         // C-233: -2000 also without camouflage, after the +83 of the tick.
@@ -604,6 +609,7 @@ mod tests {
         assert_eq!(energy(&sim, b), 0, "scouted: -1917 per tick");
     }
 
+    // QUIRK K-301: kept
     #[test]
     fn masking_with_empty_energy_lasts_one_animation() {
         // K-301: camouflaging does not check the energy.
@@ -630,6 +636,7 @@ mod tests {
         assert!(!masked(&sim, a), "0x419");
     }
 
+    // QUIRK C-240: kept
     #[test]
     fn a_sheriff_upgrade_unmasks_next_tick() {
         // re/masking 9 V4, C-240: extra energy -100 % -> maximum 0 -> the tick uncamouflages.
@@ -664,6 +671,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-232: kept
     #[test]
     fn an_alarm_post_masks_at_once_with_anim_0() {
         // re/masking 9 V5: the building camouflages at once, the simulation always sets `anim[0]`.
@@ -746,6 +754,7 @@ mod tests {
         assert!(!masked(&sim, scout) && flags(&sim, scout) == (false, false));
     }
 
+    // QUIRK K-302: kept
     #[test]
     fn swimming_in_during_the_mask_animation_ends_masked() {
         // re/masking 9 V10, K-302: `0x619` does not clear the pending `0x319`. Contrary to V10
@@ -781,6 +790,7 @@ mod tests {
         assert!(masked(&sim, a));
     }
 
+    // QUIRK K-303: kept
     #[test]
     fn crossing_mask_and_unmask_ends_as_the_original() {
         // K-303 via `send` (script path; posted commands wait during the camouflage animation, see
@@ -819,6 +829,7 @@ mod tests {
         assert_eq!(energy(&sim, b), e - 5 * 55);
     }
 
+    // QUIRK K-303: kept
     #[test]
     fn posted_orders_wait_during_the_mask_animation() {
         // Slot 10 `0x0051D7E0`: `m_IsBusy` holds the FIFO until `0x319` falls.
@@ -848,6 +859,7 @@ mod tests {
         assert!(!masked(&sim, a));
     }
 
+    // QUIRK C-232: kept
     #[test]
     fn nothing_but_the_listed_causes_unmasks() {
         // C-232: walking, hits, `AbortAllModules` and change of owner do not uncamouflage.
@@ -885,6 +897,7 @@ mod tests {
         assert!(masked(&sim, b) && flags(&sim, b) == (true, false));
     }
 
+    // QUIRK K-307: kept
     #[test]
     fn a_disabled_variant_freezes_the_mask() {
         // K-307: module 25 off (K-300) -> no tick, messages -1, `MASKED` stays.

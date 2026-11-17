@@ -892,6 +892,7 @@ mod tests {
         assert!(is_ui_command(&Command::UiState) && !is_ui_command(&Command::State));
     }
 
+    // QUIRK O-107: kept
     #[test]
     fn ui_key_names_follow_parse_chord_and_never_offer_hex() {
         assert_eq!(chord_codes("escape"), Ok(vec![0x1B]));
@@ -1025,6 +1026,7 @@ mod tests {
         assert_eq!(c.host.app.queue().len(), 0);
     }
 
+    // QUIRK O-21: kept
     #[test]
     fn ui_click_during_a_flight_does_nothing() {
         // During the flight-in the button asks `0x12F` before the sound (`MenuButton_OnLeftClick` `0x0045EFD0`,

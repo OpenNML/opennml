@@ -135,6 +135,7 @@ fn move_command(player: u8, units: Vec<ObjectId>, x: i32, z: i32) -> Command {
 
 /// D-293: Domination on `BattleBeach` begins with two neutral flags and two capture messages per
 /// slot.
+// QUIRK D-293: kept
 #[test]
 fn battle_beach_start_flags_turn_to_the_players() {
     let Some(rules) = rules_for(BATTLE_BEACH) else {
@@ -193,6 +194,7 @@ fn battle_beach_start_flags_turn_to_the_players() {
     assert!(flags(&state).iter().all(|f| f.owner() == 8));
 }
 
+// QUIRK D-293: kept
 #[test]
 fn donut_isle_has_four_flags_and_needs_three() {
     let Some(rules) = rules_for(DONUT_ISLE) else {
@@ -308,6 +310,7 @@ fn build_scenario(wild: bool) -> Option<Scenario> {
 /// Finding (D-294 in practice): if the animals of `BattleBeach` are left standing, one takes the
 /// flag of slot 1 before the time limit expires - the leader falls to 8, the timer disappears, and
 /// nobody wins by the flag.
+// QUIRK D-294: kept
 #[test]
 fn wild_animal_takes_the_flag_before_the_time_limit() {
     let Some(scenario) = build_scenario(true) else {
@@ -480,6 +483,7 @@ fn vulcano_island_king_of_the_hill() {
 /// Simulation: a white player (lobby color 8) starts the match. Neutral objects have color 8;
 /// `GameWorld_GetPlayerColor(8) = 8` and `FUN_00478DE0(8)` return the slot of a white player when
 /// there is one, the AI queries `0x511D` and `0x5122` treat them as white (D-298, D-299).
+// QUIRK D-298: kept
 #[test]
 fn white_player_starts_and_neutral_objects_count_as_white() {
     let Some(rules) = rules_for(BATTLE_BEACH) else {
@@ -655,6 +659,7 @@ const KI_REPEAT_STEPS: u64 = KI_FIRST_FOREIGN_STEP + 61;
 /// (AI, kind 3) begin with four neutral start flags; `multi_startplayer` starts the module
 /// `multi_normal_flaggenverwaltung` (1023053) for each AI, which sends units to the flags. The test
 /// records the measured step of the first capture of a foreign flag, like golden checksums.
+// QUIRK D-301: kept
 #[test]
 fn ki_takes_a_foreign_flag_on_donut_isle() {
     let Some(rules) = rules_for(DONUT_ISLE) else {

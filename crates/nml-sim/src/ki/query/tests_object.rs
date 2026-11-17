@@ -201,6 +201,7 @@ fn position_query_returns_the_tile_and_writes_both_outputs() {
     assert_eq!(t.vars.get(int(4)), 12);
 }
 
+// QUIRK E-33, E-73: deviation
 #[test]
 fn position_query_without_object_writes_zero() {
     // E-73: without an object `[2] = 0`, the outputs are 0 instead of the stack leftovers of the original; the
@@ -226,6 +227,7 @@ fn position_query_without_object_writes_zero() {
     assert_eq!((req[2], req[3], req[4]), (ME_I, o.warrior, 7));
 }
 
+// QUIRK E-27: kept
 #[test]
 fn filter_queries_check_the_object_against_a_filter() {
     // re/ki-queries 5.7: filter ID >= 1000 = GUID filter ("belongs to `[2]` and has the GUID"); dead -> 0; missing ->
@@ -282,6 +284,7 @@ fn filter_queries_check_the_object_against_a_filter() {
     }
 }
 
+// QUIRK E-27: kept
 #[test]
 fn sight_range_is_attribute_18_in_whole_tiles() {
     // `GetCurrentValue(0x12) / 4` rounded toward 0; object missing -> `[2]` stays.
@@ -342,6 +345,7 @@ fn type_guid_query_gives_minus_one_for_missing_objects() {
     assert_eq!(ask(&mut sim, 0x4FC9, &[o.warrior, 0]), o.warrior);
 }
 
+// QUIRK E-70: kept
 #[test]
 fn mana_of_an_object_without_mana_is_hundred() {
     // E-70: attribute 15 starts full for every object; object missing -> 0.
@@ -391,6 +395,7 @@ fn stamina_percent_reads_attribute_28() {
     }
 }
 
+// QUIRK E-71: kept
 #[test]
 fn attack_mode_of_the_dead_is_minus_one() {
     // E-71: the dead and objects without a (switched-on) attack module -> -1, only a missing one -> 0.
@@ -472,6 +477,7 @@ fn attack_status_queries_report_the_target_only_while_attacking() {
     }
 }
 
+// QUIRK E-74: kept
 #[test]
 fn commanded_target_is_one_only_for_target_id_one() {
     // E-74: `0x1411` compares the argument counter (1) with the target ID and requires stubbornness > 3; the target
@@ -590,6 +596,7 @@ fn gold_and_food_queries_read_attributes_26_and_24() {
     assert_eq!(ask(&mut sim, 0x50D7, &[3]), 3, "wrong argc");
 }
 
+// QUIRK E-69: kept
 #[test]
 fn production_queries_read_the_building_module() {
     // 0xF03 (`0x4E89` GUID, `0x4F38` percent): running order; without an order or module 0 or `[2]` stays; dead
@@ -634,6 +641,7 @@ fn production_queries_read_the_building_module() {
     assert_eq!(ask(&mut sim, 0x4F38, &[3]), 3, "wrong argc");
 }
 
+// QUIRK E-69: kept
 #[test]
 fn building_list_of_a_unit_is_forty() {
     // E-69: without a building module (or with a switched-off one) the initial `argc` 40 of the buffer stays; dead
@@ -720,6 +728,7 @@ fn container_count_query_has_no_death_check_and_gives_minus_one_without_a_contai
     }
 }
 
+// QUIRK E-72: kept
 #[test]
 fn color_queries_follow_the_display_color() {
     // E-72: the display color `GO+0x2D0` is compared, not the owner.
@@ -790,6 +799,7 @@ fn color_queries_follow_the_display_color() {
     }
 }
 
+// QUIRK E-55: kept
 #[test]
 fn last_attacker_query_counts_dead_attackers() {
     // re/ki-queries 5.14: both objects must be findable under their ID (also dead); otherwise 0.
@@ -837,6 +847,7 @@ fn last_attacker_query_counts_dead_attackers() {
     assert_eq!(ask(&mut sim, 0x50BE, &[3]), 3, "wrong argc");
 }
 
+// QUIRK E-55: kept
 #[test]
 fn object_queries_find_dead_objects_except_alive_check() {
     // E-55: all object queries except `0x4E2A` find a dead (not yet removed) object.

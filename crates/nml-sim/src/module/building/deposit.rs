@@ -228,6 +228,7 @@ mod tests {
             .collect()
     }
 
+    // QUIRK W-45: kept
     #[test]
     fn without_a_deposit_every_take_yields_one_forever() {
         let rules = rules();
@@ -251,6 +252,7 @@ mod tests {
         assert_eq!(amount(&sim), 100);
     }
 
+    // QUIRK W-46: kept
     #[test]
     fn gold_is_accepted_by_edge_distance_and_the_empty_message_comes_once() {
         let rules = rules();
@@ -299,6 +301,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-46: kept
     #[test]
     fn the_init_timer_finds_the_deposit_by_centre_distance_and_the_tick_mirrors_it() {
         let rules = rules();

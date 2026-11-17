@@ -31,6 +31,7 @@ fn world_pos(state: &SimState, rules: &Rules, id: nml_sim::id::ObjectId) -> [f32
     nml_sim::world::grid_to_world(o.grid, rules.map.cell)
 }
 
+// QUIRK O-283: kept
 #[test]
 fn a_quartered_gunner_fires_from_the_tower_node_nearest_the_target() {
     let Some(rules) = corpus() else {

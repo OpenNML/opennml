@@ -127,6 +127,7 @@ fn set_behavior_sets_attack_mode_walk_behaviour_and_building_mode() {
     );
 }
 
+// QUIRK C-207: deviation
 #[test]
 fn set_behavior_outside_0_to_4_is_refused_directly_and_queued() {
     // Deviation (exception A8): the original does not check the mode (`0x004762E0`); mode 5 would yield an
@@ -187,6 +188,7 @@ fn garrison_attack_posts_0x1b17_to_the_buildings() {
     );
 }
 
+// QUIRK C-13: kept
 #[test]
 fn right_click_411_attacks_and_x_mode_attacks_or_marches() {
     let rules = ck::rules();
@@ -306,6 +308,7 @@ fn attacking_a_fog_memory_carries_its_position() {
     assert_eq!(cmd.type_code(), 0x5000_0071);
 }
 
+// QUIRK K-81, W-68, C-182: kept
 #[test]
 fn hunt_and_gut_post_0x216_only_when_direct() {
     // re/commands 1.8 no. 4 (K-81/W-68), C-182: 0x16 and 0x17 are the same; no acknowledgment.
@@ -381,6 +384,7 @@ fn hunt_and_gut_post_0x216_only_when_direct() {
     assert!(sim.object(h).unwrap().fifo.is_empty());
 }
 
+// QUIRK K-193: kept
 #[test]
 fn follow_posts_0x3900_and_walk_escorts_with_5_degrees() {
     // re/walk 15.4; K-193: tolerance Fixed(180) lies outside 0...180 -> 5 degrees.

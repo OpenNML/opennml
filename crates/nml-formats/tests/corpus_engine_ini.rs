@@ -11,6 +11,7 @@ use nml_formats::text::decode_cp1252;
 use nml_rda::Vfs;
 use nml_rda::testutil::corpus_game_dir;
 
+// QUIRK D-246: deviation
 #[test]
 fn installation_engine_ini_round_trips() {
     let Some(dir) = corpus_game_dir() else {
@@ -62,6 +63,7 @@ fn default_keys_parse() {
     assert_eq!(installed, ids);
 }
 
+// QUIRK D-246: deviation
 #[test]
 fn installation_engine_ini_onto_the_default_keys_keeps_the_mapping() {
     let Some(dir) = corpus_game_dir() else {

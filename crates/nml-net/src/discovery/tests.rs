@@ -105,6 +105,7 @@ fn datagrams_round_trip() {
     assert_eq!(decode_datagram(&bytes).unwrap(), d);
 }
 
+// QUIRK E-301: deviation
 #[test]
 fn bad_datagrams_are_ignored() {
     let good = encode_datagram(&Datagram::Announce(Box::new(ann(1, 1)))).unwrap();
@@ -155,6 +156,7 @@ fn bad_datagrams_are_ignored() {
     assert_eq!(got.session.map_name, "Map");
 }
 
+// QUIRK E-301: deviation
 #[test]
 fn oversized_announcement_is_not_sent() {
     let mut a = ann(3, 1);
@@ -170,6 +172,7 @@ fn oversized_announcement_is_not_sent() {
     assert!(bytes.len() <= MAX_DATAGRAM);
 }
 
+// QUIRK E-278: kept
 #[test]
 fn list_filters_like_the_original() {
     let own = hello("test");
@@ -253,6 +256,7 @@ fn saved_session_needs_map_ok() {
     assert!(hide_reason(&with(3, &bad), &own, all_maps).is_some());
 }
 
+// QUIRK E-278: kept
 #[test]
 fn foreign_build_is_hidden() {
     let own = hello("0123456789ab");
@@ -278,6 +282,7 @@ fn foreign_build_is_hidden() {
     assert!(list.games().is_empty());
 }
 
+// QUIRK E-278: kept
 #[test]
 fn entries_expire_after_3s() {
     let own = hello("test");
@@ -302,6 +307,7 @@ fn entries_expire_after_3s() {
     assert!(list.games().is_empty());
 }
 
+// QUIRK E-301: deviation
 #[test]
 fn known_entry_is_rechecked() {
     let own = hello("test");

@@ -100,6 +100,7 @@ fn query_100_reads_raw_shifted_and_caps_housing() {
     }
 }
 
+// QUIRK E-193: deviation
 #[test]
 fn conditions_2_and_12_compare_signed_and_guard_invalid_players() {
     let rules = rules();
@@ -134,6 +135,7 @@ fn conditions_2_and_12_compare_signed_and_guard_invalid_players() {
     );
 }
 
+// QUIRK E-138: kept
 #[test]
 fn query_200_counts_by_tile_inclusive_without_dying_or_quartered() {
     let rules = rules();
@@ -158,6 +160,7 @@ fn query_200_counts_by_tile_inclusive_without_dying_or_quartered() {
     assert_eq!(query::count_in_area(&mut sim, 0, 1100, "weg"), 0);
 }
 
+// QUIRK E-190: deviation
 #[test]
 fn query_200_with_swapped_corners_counts_zero_until_condition_6_normalised_it() {
     // Query 200 does not swap the corners (0), condition 6/query 300 swaps them in the stored rectangle,
@@ -197,6 +200,7 @@ fn query_200_with_swapped_corners_counts_zero_until_condition_6_normalised_it() 
     assert_eq!(sim.state.script.area_overrides.len(), 2);
 }
 
+// QUIRK E-190: deviation
 #[test]
 fn condition_6_swaps_through_the_condition_and_1300_follows() {
     let rules = rules();
@@ -220,6 +224,7 @@ fn condition_6_swaps_through_the_condition_and_1300_follows() {
     );
 }
 
+// QUIRK E-138: kept
 #[test]
 fn query_200_guid_zero_or_unknown_filter_counts_zero() {
     let rules = rules();
@@ -240,6 +245,7 @@ fn query_200_guid_zero_or_unknown_filter_counts_zero() {
     assert_eq!(query::count_in_area(&mut sim, 0, 1999, "feld"), 0);
 }
 
+// QUIRK E-138: kept
 #[test]
 fn query_200_player_minus_one_counts_all_owners() {
     let rules = rules();
@@ -278,6 +284,7 @@ fn conditions_3_11_13_14_compare_signed() {
     ));
 }
 
+// QUIRK E-190: deviation
 #[test]
 fn query_300_needs_seen_bit_and_rejects_players_outside_0_to_7() {
     let rules = rules();
@@ -309,6 +316,7 @@ fn query_300_needs_seen_bit_and_rejects_players_outside_0_to_7() {
     assert!(!query::area_seen(&mut sim, 0, "weg"));
 }
 
+// QUIRK E-138: kept
 #[test]
 fn query_400_counts_stock_with_quartered_and_filters_below_1000() {
     let rules = rules();
@@ -342,6 +350,7 @@ fn query_400_counts_stock_with_quartered_and_filters_below_1000() {
     }
 }
 
+// QUIRK E-134: kept
 #[test]
 fn conditions_7_and_9_are_equal_and_8_and_10_are_equal() {
     let rules = rules();
@@ -365,6 +374,7 @@ fn conditions_7_and_9_are_equal_and_8_and_10_are_equal() {
     assert!(traces(std::mem::take(&mut sim.state.events)).is_empty());
 }
 
+// QUIRK E-134: kept
 #[test]
 fn condition_21_is_true_for_one_letter_names() {
     let rules = rules();
@@ -379,6 +389,7 @@ fn condition_21_is_true_for_one_letter_names() {
     assert!(!check(&mut sim, "held 1"));
 }
 
+// QUIRK E-137: kept
 #[test]
 fn conditions_25_26_read_kill_counts() {
     let rules = rules();

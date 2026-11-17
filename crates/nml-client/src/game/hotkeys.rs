@@ -274,6 +274,7 @@ mod tests {
         assert_eq!(resolve(&[0x31], free), None);
     }
 
+    // QUIRK O-309: kept
     #[test]
     fn parse_command_lowercases_and_reads_the_argument() {
         assert_eq!(
@@ -355,6 +356,7 @@ mod tests {
 
     /// Every line of `keys.ini` and every binding of `bindings2.ini` of the corpus yields a command; `keymap.ini` has
     /// neither `KD_CHECK_QUESTMENU` nor `KD_CAM_XROT_*` (O-305).
+    // QUIRK O-305: kept
     #[test]
     fn parse_command_knows_every_command_of_the_corpus() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {
@@ -405,6 +407,7 @@ mod tests {
     }
     /// Three filter stages type -> nation -> selection, per stage first the exact value, then 0; the first match
     /// counts, even if its button is missing. Assignment = `defaultkeys.ini`. (O-302)
+    // QUIRK O-302, O-307: kept
     #[test]
     fn keys_ini_filters_selection_then_nation_then_type() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {

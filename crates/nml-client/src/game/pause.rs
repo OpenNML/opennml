@@ -52,6 +52,7 @@ mod tests {
 
     /// O-316: `togglepause` flips both bits only when they are equal and not in the menu level; a network echo (only
     /// the visible bit) blocks it.
+    // QUIRK O-316: kept
     #[test]
     fn toggle_pause_needs_equal_bits() {
         let mut p = PauseState::default();

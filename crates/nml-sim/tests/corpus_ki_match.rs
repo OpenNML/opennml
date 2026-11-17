@@ -294,6 +294,7 @@ mod checksums {
     /// step 300, sends three single steps to slot 1 at 305 and lets it continue at 310; after step
     /// 305 (paused, before the single step) it is saved and loaded. The log contains only these
     /// three control commands; the AI commands are created anew on replay.
+    // QUIRK E-97: deviation
     #[test]
     fn ki_golden_replays_from_the_command_log() {
         let Some(rules) = rules_for(EXILE) else {
@@ -1151,6 +1152,8 @@ fn report(runs: &[RunResult]) -> String {
 /// Nation run: release only and on demand (`--ignored`), report to
 /// `$NML_SHOTS_OUT/nation-run.md`. Checks that the maps have no island constraint; rejections
 /// and stalls are in the report and are explained there.
+// QUIRK E-107, E-108, E-109, E-110, E-111, E-112: kept
+// QUIRK E-113: deviation
 #[test]
 #[ignore]
 fn ki_nation_survey() {

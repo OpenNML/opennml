@@ -48,6 +48,8 @@ fn values_at(list: &KiList, keys: [i32; 3]) -> [i32; 3] {
     keys.map(|k| *list.get(k).expect("key"))
 }
 
+// QUIRK E-32: kept
+// QUIRK E-34: deviation
 #[test]
 fn list_reads_create_missing_keys_and_invalid_lists_push_nothing() {
     let mut r = rig();
@@ -158,6 +160,7 @@ fn list_copy_merges_in_mfc_order() {
     assert_eq!(entries(&r, L0), before);
 }
 
+// QUIRK E-32: kept
 #[test]
 fn list_insert_loses_the_last_element() {
     // E-32: `[a, b, c]` at 0...2, inserting `x` at 1 -> `[a, x, b]`.
@@ -205,6 +208,7 @@ fn list_insert_loses_the_last_element() {
     }
 }
 
+// QUIRK E-43: kept
 #[test]
 fn list_remove_shifts_even_without_a_hit() {
     // re/ki-vm 12.3 P10, E-43: keys {0, 1, 2, 7} (bucket 0, chain [7, 2, 1, 0]), removing 5 hits
@@ -265,6 +269,7 @@ fn list_remove_shifts_even_without_a_hit() {
     }
 }
 
+// QUIRK E-13: deviation
 #[test]
 fn random_follows_the_original_formula() {
     // re/ki-vm 12.3 P5: vectors with `CrtRand::new(1)` (raw sequence 41, 18467, 6334, 26500, 19169, 15724, ...),

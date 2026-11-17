@@ -121,6 +121,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-136: kept
     #[test]
     fn ldg_blocks_inherit_fields() {
         // `StartTextBlock` resets nothing (O-136): the second block inherits `TextFont` and `TextColor`
@@ -146,6 +147,7 @@ StartTextBlock\r\nEndTextBlock";
         );
     }
 
+    // QUIRK O-136: kept
     #[test]
     fn ldg_defaults_without_keys() {
         let ldg = parse_ldg("");
@@ -182,6 +184,7 @@ EndTextBlock \nTextGuid zz\nTextColor ZZ\nTextExtent 5 6 7 8\nEndTextBlock\n";
         );
     }
 
+    // QUIRK O-136: kept
     #[test]
     fn every_parse_starts_from_the_template() {
         // The template applies per call: a second call sees nothing of the first.

@@ -782,6 +782,7 @@ mod tests {
         assert_eq!(condition(56).unwrap().query, Some(2600));
     }
 
+    // QUIRK E-133: kept
     #[test]
     fn effects_follow_appendix_a() {
         let internal = numbers(&[
@@ -855,6 +856,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-127: deviation
     #[test]
     fn min_params_samples() {
         let min = |n: i32| action(n).unwrap().min_params;
@@ -957,6 +959,7 @@ mod tests {
         assert_eq!(condition_areas, expected);
     }
 
+    // QUIRK E-127, E-174: deviation
     #[test]
     fn check_rejects_in_german() {
         let path = "data/levels/test/test.abl";
@@ -1026,6 +1029,7 @@ mod tests {
         assert_eq!(check(&file, path, true), Ok(()));
     }
 
+    // QUIRK E-193: deviation
     #[test]
     fn check_rejects_condition_2_and_12_with_invalid_player() {
         // E-193: a player outside 0-7 with resource kind 0-4 reads through a null pointer in the original.
@@ -1052,6 +1056,7 @@ mod tests {
         assert_eq!(check(&file, path, false), Ok(()));
     }
 
+    // QUIRK E-191: deviation
     #[test]
     fn check_rejects_condition_33_with_negative_player() {
         // E-191: player < 0 reads the local player (host state); >= 8 yields 0 and stays valid.
@@ -1068,6 +1073,8 @@ mod tests {
         assert_eq!(check(&file, path, false), Ok(()));
     }
 
+    // QUIRK E-157: kept
+    // QUIRK E-197: deviation
     #[test]
     fn check_rejects_202_197_35_with_slot_outside_0_to_10() {
         // E-197: the original does not check the target slot and indexes tables with 11 entries.
@@ -1095,6 +1102,8 @@ mod tests {
         assert_eq!(check(&file, path, false), Ok(()));
     }
 
+    // QUIRK E-218: kept
+    // QUIRK E-220: deviation
     #[test]
     fn check_rejects_37_and_380_bad_slots_and_340_negative_index() {
         // 37 writes behind the table in the original, 340 throws an exception for a negative index,
@@ -1140,6 +1149,7 @@ mod tests {
         assert_eq!(check(&file, path, false), Ok(()));
     }
 
+    // QUIRK E-199: kept
     #[test]
     fn check_accepts_173_205_with_any_daytime() {
         // E-199: the time of day goes unchecked to `PlayerSetup_ApplyDaytimeUpgrades`; values outside
@@ -1158,6 +1168,7 @@ mod tests {
         assert_eq!(check(&file, path, false), Ok(()));
     }
 
+    // QUIRK E-155: kept
     #[test]
     fn check_rejects_203_204_with_behavior_outside_0_to_4() {
         // E-155: the original writes every stance, but for a stance outside 0-4 it leaves words of the
@@ -1191,6 +1202,7 @@ mod tests {
         assert_eq!(check(&file, path, false), Ok(()));
     }
 
+    // QUIRK E-153: kept
     #[test]
     fn check_rejects_159_160_211_214_with_slot_outside_0_to_10() {
         // E-153: the original does not check the slot and indexes tables with 11 entries.
@@ -1219,6 +1231,7 @@ mod tests {
         assert_eq!(check(&file, path, false), Ok(()));
     }
 
+    // QUIRK E-241: deviation
     #[test]
     fn check_rejects_150_negative_slot_and_213_below_minus_4() {
         // E-241: 150 with slot < 0 and 213 with pos < -4 or pos > i32::MAX - 4 (pos + 4 overflows)

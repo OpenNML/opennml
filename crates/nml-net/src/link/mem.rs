@@ -532,6 +532,7 @@ mod tests {
             .count()
     }
 
+    // QUIRK E-271: deviation
     #[test]
     fn mem_link_delays_and_orders() {
         let net = MemNet::new();

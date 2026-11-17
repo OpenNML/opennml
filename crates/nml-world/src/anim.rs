@@ -1865,6 +1865,7 @@ mod tests {
         assert_eq!(AnimationPlayer::default().rate, 1.0);
     }
 
+    // QUIRK D-370: kept
     #[test]
     fn carrier_and_sub_instances_take_separate_rates() {
         let (model, resolve) = carrier();

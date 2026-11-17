@@ -440,6 +440,7 @@ mod tests {
     /// The rally point flag (`PropertyBuilding_RenderMeetingFlag` `0x00507BB0`) draws with
     /// `ModelInstance_Render(1.0, ...)`: without fog brightness `k`, with its player color in the
     /// first `EF-MATERIAL` (D-259); the other effect models keep the `.rdo` color (D-221).
+    // QUIRK D-259: kept
     #[test]
     fn flag_ignores_fog_brightness() {
         let draw = ModelDraw {

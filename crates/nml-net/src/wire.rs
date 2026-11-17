@@ -380,6 +380,7 @@ mod tests {
         h
     }
 
+    // QUIRK E-270: deviation
     #[test]
     fn oversized_frame_is_rejected() {
         // No bytes follow the header: an attempt to read the body would be an Io error.

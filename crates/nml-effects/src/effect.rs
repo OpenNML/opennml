@@ -441,6 +441,7 @@ mod tests {
 
     /// `Effect_SetPosition` (`0x0057C4E0`) measures again immediately when a target is set: when setting the
     /// position and in both branches of `advance` that set it; not when frozen.
+    // QUIRK D-277: kept
     #[test]
     fn every_new_placement_remeasures_the_flight() {
         let mut rng = MsvcRand::new(1);

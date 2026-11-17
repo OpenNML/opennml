@@ -91,6 +91,7 @@ fn start2_hidden_below_two_occupied_slots() {
     assert_eq!(l.sps_status("start2"), Some(HIDE));
 }
 
+// QUIRK O-133, O-189: kept
 #[test]
 fn computer_kinds_set_handicap_50_20_0_and_lock_it() {
     // `name<n>` code 4 (`0x004D8BF4`...`0x004D8DF0`, table `0x004D9018`): 1 -> handicap 5, 2 -> 2, 3 -> 0; then
@@ -114,6 +115,7 @@ fn computer_kinds_set_handicap_50_20_0_and_lock_it() {
     }
 }
 
+// QUIRK O-133: kept
 #[test]
 fn manual_computer_keeps_handicap_free() {
     // Kind 4 "Computer (Manual)": handicap 0 and freely selectable.
@@ -152,6 +154,7 @@ fn open_slot_resets_handicap_and_team() {
     assert_eq!(l.query(SPS, "name6", code::QUERY_VALUE), (1, Some(-1)));
 }
 
+// QUIRK O-134: kept
 #[test]
 fn color_list_excludes_other_slots_even_open_ones() {
     // `FUN_004BD0A0`: colors 0...8 (8 = "White"), without the colors of all other slots - also open ones (O-134);
@@ -171,6 +174,7 @@ fn color_list_excludes_other_slots_even_open_ones() {
     assert_eq!(l.sps_status("color5"), Some(HIDE));
 }
 
+// QUIRK O-134: kept
 #[test]
 fn color_list_offers_white() {
     // O-134: 15158 "White" is the last entry (`indexarray` 8), without the colors of other slots; if another slot
@@ -194,6 +198,7 @@ fn color_list_offers_white() {
     assert_ne!(l.slot(0).color, 8);
 }
 
+// QUIRK O-134: kept
 #[test]
 fn same_color_is_rejected() {
     // `FUN_004BA710`: with more than one occupied slot, a color that another **occupied** slot has rejects the change
@@ -243,6 +248,7 @@ fn all_in_one_team_is_rejected() {
     assert_eq!((r, int_of(&msg, "timeout")), (1, Some(1000)));
 }
 
+// QUIRK O-190, O-191: kept
 #[test]
 fn railroad_teams_are_slots_and_swap() {
     // Game type 4: team texts 15590... "A-Vert., A-Zerst., ..."; team >= number of occupied slots -> reject; another
@@ -441,6 +447,7 @@ fn exit2_keeps_slots_until_next_create2() {
     );
 }
 
+// QUIRK O-135: kept
 #[test]
 fn plt_type_is_ignored_all_foreign_slots_open() {
     // `FUN_004BDDA0` reads `PLAYER_TYPE` and discards it (O-135): all slots except the own one are "Open", although
@@ -466,6 +473,7 @@ fn plt_type_is_ignored_all_foreign_slots_open() {
     assert!(element(&d, SPS, &format!("name{}", slots.len())).hidden);
 }
 
+// QUIRK O-189: kept
 #[test]
 fn joined_team_shows_after_the_timeout() {
     // O-189: `name<n>` code 4 does not deliver the built requery to `team<n>`; the team shows the join

@@ -256,6 +256,7 @@ LoadingRect 834 690 1072 1120\r\nLoadingColor ffff00ff\r\n";
     }
 
     /// O-137, O-138: bar `x = X*W/1280`, `y = Y*H/1024`, right edge `x0 + (x1 - x0)*p/100`, all truncating.
+    // QUIRK O-137, O-138: kept
     #[test]
     fn loading_rects_follow_the_original_formulas() {
         let s = |width, height| Screen { width, height };
@@ -299,6 +300,7 @@ LoadingRect 834 690 1072 1120\r\nLoadingColor ffff00ff\r\n";
     }
 
     /// The command list contains the background (whole screen, stretched) and the bar with the formulas.
+    // QUIRK O-138, O-193, O-194: kept
     #[test]
     fn draw_emits_background_and_bar() {
         let mut f = fixture();
@@ -331,6 +333,7 @@ LoadingRect 834 690 1072 1120\r\nLoadingColor ffff00ff\r\n";
         }
     }
 
+    // QUIRK O-138: kept
     #[test]
     fn bar_grows_only_in_x() {
         let mut f = fixture();
@@ -367,6 +370,7 @@ LoadingRect 834 690 1072 1120\r\nLoadingColor ffff00ff\r\n";
 
     /// Text: format `0x46`, width `x1 - x0`, origin `(x0, y0)`, no shadow, `[CENTER]` takes effect, blocks in
     /// file order after the bar, font by name and text color of the block.
+    // QUIRK O-137: kept
     #[test]
     fn text_blocks_are_laid_out_in_their_rectangles() {
         let mut f = fixture();
@@ -411,6 +415,7 @@ TextFont LoadingFont\r\nEndTextBlock\r\n"
 
     /// O-139: missing `.ldg` - restart of a multiplayer map `multiplayer.ldg`, otherwise and when loading
     /// `default.ldg`.
+    // QUIRK O-139: kept
     #[test]
     fn missing_ldg_falls_back_to_default() {
         let none = |_: &str| false;
@@ -425,6 +430,7 @@ TextFont LoadingFont\r\nEndTextBlock\r\n"
         assert_eq!(ldg_path_for(level, -1, true, none), DEFAULT_LDG);
     }
 
+    // QUIRK O-139: kept
     #[test]
     fn existing_ldg_is_taken_without_the_last_four_characters() {
         let level = "data/levels/kampagne1/kamp1-1.lvl";

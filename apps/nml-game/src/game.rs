@@ -1976,6 +1976,7 @@ mod tests {
     use serde_json::json;
 
     /// E-295: only the network start skips the start videos; the main menu always comes.
+    // QUIRK E-295: kept
     #[test]
     fn net_start_skips_the_intro_videos() {
         let single = window_menu_options(Vec::new(), Vec::new(), false);
@@ -2141,6 +2142,7 @@ mod tests {
 
     /// `ui_focus_lost` acts like the focus loss of the window (O-154) - held keys released, the match switches the
     /// pause on, also with an active control channel; the window with a control channel only releases.
+    // QUIRK O-154: kept
     #[test]
     fn ui_focus_lost_pauses() {
         assert!(AVAILABLE.contains(&"ui_focus_lost"));

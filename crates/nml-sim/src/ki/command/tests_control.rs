@@ -166,6 +166,7 @@ fn is_rejected(o: &Outcome) -> bool {
     matches!(o, Outcome::Rejected(_))
 }
 
+// QUIRK O-322: kept
 #[test]
 fn diplomacy_builtin_sends_vision_then_relation() {
     let s = scene();
@@ -247,6 +248,7 @@ fn diplomacy_builtin_sends_vision_then_relation() {
     assert_eq!(checksum(&after), checksum(&s.base));
 }
 
+// QUIRK E-92: kept
 #[test]
 fn remove_builtin_sells_buildings_and_kills_units() {
     let s = scene();
@@ -300,6 +302,7 @@ fn remove_builtin_sells_buildings_and_kills_units() {
     }
 }
 
+// QUIRK E-51: kept
 #[test]
 fn headhunter_uses_the_first_finished_hq_in_table_order() {
     let mut s = scene();
@@ -380,6 +383,7 @@ fn headhunter_uses_the_first_finished_hq_in_table_order() {
     );
 }
 
+// QUIRK E-104: kept
 #[test]
 fn occupancy_border_builtin_sends_the_border() {
     let s = scene();
@@ -405,6 +409,7 @@ fn occupancy_border_builtin_sends_the_border() {
     assert!(is_rejected(&outcome));
 }
 
+// QUIRK E-101: kept
 #[test]
 fn ai_player_modes_use_the_stack_slot_or_me() {
     let s = scene();
@@ -451,6 +456,7 @@ fn ai_player_modes_use_the_stack_slot_or_me() {
     assert!(is_rejected(&outcomes[0]));
 }
 
+// QUIRK E-103: kept
 #[test]
 fn ai_object_modes_take_the_object_from_the_stack() {
     let s = scene();
@@ -490,6 +496,7 @@ fn ai_object_modes_take_the_object_from_the_stack() {
     assert_eq!(checksum(&after), checksum(&s.base));
 }
 
+// QUIRK E-105: kept
 #[test]
 fn resource_builtin_minus_one_means_me() {
     let s = scene();
@@ -581,6 +588,7 @@ fn behavior_list_sends_one_command_per_entry_without_filter() {
     assert_eq!(t.vars.list_at(l0).unwrap().len(), 3);
 }
 
+// QUIRK E-34: deviation
 #[test]
 fn list_rows_ignore_bad_lists_and_sizes() {
     let s = scene();
@@ -689,6 +697,7 @@ fn attack_row_needs_a_target_with_module_3_or_0() {
     assert!(is_rejected(&outcome), "{outcome:?}");
 }
 
+// QUIRK E-88: deviation
 #[test]
 fn list_attack_sends_one_attack_per_unit() {
     let s = scene();
@@ -721,6 +730,7 @@ fn list_attack_sends_one_attack_per_unit() {
     assert_eq!(outcomes.len(), 2);
 }
 
+// QUIRK E-100: kept
 #[test]
 fn behavior_builtin_sends_the_ai_mode_afterwards() {
     let s = scene();
@@ -752,6 +762,7 @@ fn behavior_builtin_sends_the_ai_mode_afterwards() {
     }
 }
 
+// QUIRK E-26: deviation
 #[test]
 fn foreign_slot_is_rejected() {
     let s = scene();
@@ -794,6 +805,7 @@ fn foreign_slot_is_rejected() {
     assert!(is_rejected(&outcomes[0]));
 }
 
+// QUIRK E-34: deviation
 #[test]
 fn control_rows_pop_exactly_their_pops_even_when_rejecting() {
     // Every row takes exactly its arguments from the stack and pushes nothing - even on rejection, missing object,

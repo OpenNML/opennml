@@ -102,6 +102,7 @@ mod tests {
         b
     }
 
+    // QUIRK O-284: kept
     #[test]
     fn rows_are_stored_bottom_up_in_bgr_without_padding() {
         // 3 x 2: rows of 9 bytes, without padding to 12 (like `FUN_00592880`).
@@ -127,6 +128,7 @@ mod tests {
         assert_eq!(img.get_pixel(2, 0).0, [18, 17, 16, 255]);
     }
 
+    // QUIRK O-284: kept
     #[test]
     fn other_depths_short_data_and_foreign_files_are_rejected() {
         assert!(decode_bmp_game(&bmp(1, 1, 32, &[[0; 3], [0; 3]])).is_err());

@@ -138,6 +138,7 @@ fn colonist_menu() -> Toolbar {
     )])
 }
 
+// QUIRK O-227: kept
 #[test]
 fn first_entry_per_slot_wins_and_only_hidden_rows_yield() {
     let t = colonist_menu();
@@ -201,6 +202,7 @@ fn foreign_or_empty_selection_has_no_buttons() {
     assert_eq!(set.shown_menu, 0);
 }
 
+// QUIRK O-229: kept
 #[test]
 fn site_shows_only_slot_13() {
     let t = menus(&[(
@@ -231,6 +233,7 @@ fn site_shows_only_slot_13() {
     assert_eq!(main_set(&m, &d).normal.iter().flatten().count(), 3);
 }
 
+// QUIRK O-228, O-272: kept
 #[test]
 fn multi_selection_adds_only_non_group_and_buttons_on_free_slots() {
     let t = menus(&[
@@ -278,6 +281,7 @@ fn multi_selection_adds_only_non_group_and_buttons_on_free_slots() {
     assert_eq!(sub.selection.len(), 3, "the rows remain");
 }
 
+// QUIRK O-230: kept
 #[test]
 fn counter_upgrade_without_requirement_is_hidden_others_locked() {
     let t = menus(&[(
@@ -317,6 +321,7 @@ fn counter_upgrade_without_requirement_is_hidden_others_locked() {
     assert_eq!(slot_msgs(&main_set(&m, &d))[0], Some(611));
 }
 
+// QUIRK O-37: kept
 #[test]
 fn production_row_starts_at_slot_4_and_stops_at_26() {
     let t = menus(&[(1000, &[(0, 1101, 0x200_0000, &[])])]);
@@ -365,6 +370,7 @@ fn production_row_starts_at_slot_4_and_stops_at_26() {
     assert!(main_set(&m, &d).production.is_empty());
 }
 
+// QUIRK O-232: kept
 #[test]
 fn single_selection_shows_only_scatter() {
     let t = menus(&[(1100, &[])]);
@@ -468,6 +474,8 @@ fn stance_bits_are_the_union_and_mark_several() {
     assert!(main_set(&m, &d).stance.is_empty());
 }
 
+// QUIRK O-258: kept
+// QUIRK O-263: deviation
 #[test]
 fn selection_buttons_stop_after_30_and_leave_gaps() {
     let t = menus(&[(1100, &[]), (1300, &[])]);
@@ -505,6 +513,7 @@ fn selection_buttons_stop_after_30_and_leave_gaps() {
     assert_eq!(main_set(&m, &d).selection.len(), 28);
 }
 
+// QUIRK D-232, O-35, O-36: kept
 #[test]
 fn hero_buttons_fill_from_the_right_with_no_sixth_button() {
     let t = menus(&[]);
@@ -585,6 +594,7 @@ fn hero_buttons_fill_from_the_right_with_no_sixth_button() {
     assert_eq!(hunters.slots[2].pos, None);
 }
 
+// QUIRK O-266: kept
 #[test]
 fn auto_occupant_view_needs_five_free_slots_and_has_no_417() {
     let t = menus(&[(
@@ -646,6 +656,7 @@ fn auto_occupant_view_needs_five_free_slots_and_has_no_417() {
     assert_eq!(button_msgs(&set), want);
 }
 
+// QUIRK O-268: kept
 #[test]
 fn trade_offers_neutral_slot_8() {
     let t = menus(&[]);
@@ -672,6 +683,7 @@ fn trade_offers_neutral_slot_8() {
     );
 }
 
+// QUIRK O-267: kept
 #[test]
 fn target_guid_level_keeps_hero_gaps_and_hq_only_without_heroes() {
     let t = menus(&[]);
@@ -725,6 +737,7 @@ fn target_guid_level_keeps_hero_gaps_and_hq_only_without_heroes() {
     assert_eq!(msgs, [(0, 470, KIND_TARGET_PLAYER), (13, MSG_BACK, DO)]);
 }
 
+// QUIRK O-263: deviation
 #[test]
 fn normal_buttons_sit_bar_relative_and_clamp_negative_icons() {
     let t = menus(&[(
@@ -763,6 +776,7 @@ fn normal_buttons_sit_bar_relative_and_clamp_negative_icons() {
     assert_eq!(set.normal[0].as_ref().unwrap().spec.rect[1], 600 - 176 + 17);
 }
 
+// QUIRK O-229: kept
 #[test]
 fn silent_rebuild_keeps_the_shown_menu_or_asks_for_a_full_one() {
     let t = menus(&[

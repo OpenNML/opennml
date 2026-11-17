@@ -372,6 +372,7 @@ mod tests {
         assert!((f.arrow_pos(500.0).y - chord_mid.y - 1000.0 * 1000.0 / 8000.0).abs() < 1e-3);
     }
 
+    // QUIRK C-111: kept
     #[test]
     fn the_ball_hides_its_first_quarter_and_puffs_every_10_ms() {
         // re/combat-host 2.2: t = 1792 -> invisible until 448 ms, ~134 puffs.
@@ -389,6 +390,7 @@ mod tests {
         assert!((133..=135).contains(&puffs), "{puffs}");
     }
 
+    // QUIRK C-109: kept
     #[test]
     fn a_missing_arrow_falls_by_the_formula_and_sticks_2000_ms() {
         // re/combat-projectiles 15.5: t = trunc((vy + sqrt(vy^2 + (y - h) * 0.002)) * 999.99994).
@@ -490,6 +492,7 @@ mod tests {
         assert_eq!(game_ms(&mut c, 0.0, factor), 0.0);
     }
 
+    // QUIRK C-113: kept
     #[test]
     fn ghosts_fade_out_in_150_ms() {
         let mut f = Flight::arrow(
@@ -508,6 +511,7 @@ mod tests {
         assert!(f.ghosts.iter().all(|g| g.age_ms < GHOST_MS));
     }
 
+    // QUIRK C-108: deviation
     #[test]
     fn tracking_keeps_the_position_and_ends_at_the_moved_aim() {
         // C-108: new target point, x/z velocity recomputed, position continuous; not any more below 400 ms remaining.

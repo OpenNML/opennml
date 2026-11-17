@@ -62,6 +62,7 @@ fn head_and_chunks_round_trip() {
     assert_eq!(replay.commands.len(), 7);
 }
 
+// QUIRK E-337: kept
 #[test]
 fn torn_tail_keeps_the_whole_chunks() {
     let chunks = chunks();
@@ -80,6 +81,7 @@ fn torn_tail_keeps_the_whole_chunks() {
     assert!(!file.torn);
 }
 
+// QUIRK E-337: kept
 #[test]
 fn broken_chunk_checksum_ends_the_reading() {
     let chunks = chunks();
@@ -222,6 +224,7 @@ fn recorder_writes_head_the_log_so_far_and_new_commands() {
     assert!(read(&recorder).commands.is_empty());
 }
 
+// QUIRK E-337: kept
 #[test]
 fn recorder_splits_a_long_log_into_chunks_within_the_limit() {
     // A whole log after loading can exceed `MAX_CHUNK_BYTES`; the recorder splits it into chunks.
@@ -273,6 +276,7 @@ fn recorder_ends_when_the_log_gets_shorter() {
     );
 }
 
+// QUIRK E-335: deviation
 #[test]
 fn recorder_write_error_ends_the_recording() {
     // A write error ends the recording with a warning; the match (the host) stays untouched.

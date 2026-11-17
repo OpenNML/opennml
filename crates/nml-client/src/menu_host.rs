@@ -1095,6 +1095,7 @@ mod tests {
         assert!(!h.app.report(S1024, *now).busy);
     }
 
+    // QUIRK O-32: kept
     #[test]
     fn menu_effects_reach_audio_and_requests() {
         let (_dir, vfs) = world();
@@ -1203,6 +1204,7 @@ mod tests {
         assert_eq!(music_paths(h.app.menu().library()), ["DATA/MUSIC/X.OGG"]);
     }
 
+    // QUIRK O-58: kept
     #[test]
     fn display_mode_change_keeps_the_font_size() {
         let (_dir, vfs) = world();
@@ -1295,6 +1297,7 @@ mod tests {
 
     /// Pointer 7 variant 0 as the fallback (deviation from the original, O-298): IDs outside 0...11, a variant outside
     /// 0...2, a missing row or file draw pointer 7 variant 0, with a warning per ID and variant, without a crash.
+    // QUIRK O-298: deviation
     #[test]
     fn unknown_or_missing_pointer_falls_back_to_seven() {
         let (_dir, vfs) = world();
@@ -1375,6 +1378,7 @@ mod tests {
 
     /// Without a loadable `mouse.rdo` (small installation) `HardwareCursor 0` also draws the TGA of the variant,
     /// untinted, with a warning when loading; the choice still applies.
+    // QUIRK O-297: kept
     #[test]
     fn missing_model_falls_back_to_the_tga() {
         let (_dir, vfs) = world();
@@ -1458,6 +1462,7 @@ mod tests {
 
     /// The options menu switches `HardwareCursor` live; in the very next frame the host draws the model instead of the
     /// TGA and back. The choice (also with tint) reaches the model only with software (O-462).
+    // QUIRK O-297, O-462: kept
     #[test]
     fn pointer_draw_follows_hardware_cursor_live() {
         let Some((vfs, _home, mut h)) = corpus_cursor_host(true) else {
@@ -1504,6 +1509,7 @@ mod tests {
 
     /// `ui_state.pointer_model` reports ID, animation, tint, phase and the setting; the query does not fix the restart
     /// of the loop.
+    // QUIRK O-297: kept
     #[test]
     fn pointer_model_data_in_ui_state() {
         for hardware in [false, true] {
@@ -1540,6 +1546,7 @@ mod tests {
 
     /// As long as the UI has the pointer off or the mouse is outside the window, there is no pointer in either
     /// setting; the phase keeps running.
+    // QUIRK O-459: kept
     #[test]
     fn hidden_pointer_draws_nothing() {
         for hardware in [false, true] {
@@ -1566,6 +1573,7 @@ mod tests {
 
     /// End of video (`SetPointer(0)`, `SetPointer(7)`): if the host closes a video, the loop of 7 restarts in the
     /// next drawn frame.
+    // QUIRK O-459: kept
     #[test]
     fn video_end_restarts_the_pointer_loop() {
         let Some((vfs, _home, mut h)) = corpus_cursor_host(false) else {
@@ -1605,6 +1613,7 @@ mod tests {
     }
 
     /// All 12 pointers in three variants from the installation, 64 x 64, the hotspot `OFFSET` on the mouse.
+    // QUIRK O-297: kept
     #[test]
     fn pointer_quads_use_the_hotspot() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {
@@ -1696,6 +1705,7 @@ mod tests {
         assert_eq!(name(&h, now).as_deref(), Some("N\u{e4}a"));
     }
 
+    // QUIRK O-116, O-331: kept
     #[test]
     fn mouse_buttons_reach_the_key_table_a_round_later() {
         let (_dir, vfs) = world();
@@ -1858,6 +1868,7 @@ mod tests {
         h
     }
 
+    // QUIRK O-119: kept
     #[test]
     fn host_plays_and_ends_a_video() {
         let (_dir, vfs) = world();
@@ -1919,6 +1930,7 @@ mod tests {
 
     /// O-440: the version line only without a visible world and without a video (`(D5E0 & 0x41) == 0`), one quad per
     /// character of [`VERSION_TEXT`]; the menu commands never contain it (the host draws it above the pointer).
+    // QUIRK O-440: kept
     #[test]
     fn version_line_only_without_world_and_video() {
         let (_dir, vfs) = world();
@@ -2225,6 +2237,7 @@ mod tests {
         assert_eq!(std::fs::read(&path).unwrap(), before, "file unchanged");
     }
 
+    // QUIRK O-32: kept
     #[test]
     fn shutdown_writes_the_settings() {
         let (_dir, vfs) = world();
@@ -2408,6 +2421,7 @@ mod tests {
         assert_eq!(again.app.profiles().file, file);
     }
 
+    // QUIRK O-29: kept
     #[test]
     fn deleting_a_profile_removes_only_its_saves() {
         // `FUN_004C6D70(g)`: only `savegame/*.<GUID %03X>`, not the subfolders (O-29); extension case-insensitive like

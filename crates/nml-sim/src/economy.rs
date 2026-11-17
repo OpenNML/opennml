@@ -545,6 +545,7 @@ mod tests {
         rules
     }
 
+    // QUIRK W-1: kept
     #[test]
     fn account_checks_follow_the_order_and_clamp_the_living_space() {
         // Gold 10, wood 150, population 4 of 5.
@@ -642,6 +643,7 @@ mod tests {
         assert_eq!(object_costs(&sim, 0, 4711), None);
     }
 
+    // QUIRK W-8: kept
     #[test]
     fn market_prices_follow_the_trade_sequence() {
         assert_eq!(
@@ -702,6 +704,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-14: deviation
     #[test]
     fn guid_counts_resolve_groups_recursively_and_cut_cycles() {
         let mut rules = Rules::synthetic("", 16);
@@ -787,6 +790,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-216: kept
     #[test]
     fn player_bytes_of_the_flags_follow_the_original() {
         // `(b | 0x100) << 8 | a`: byte 1 lies on bit 16 (O-216).
@@ -796,6 +800,7 @@ mod tests {
         assert_eq!(players(7, 4), 0x1_0407);
     }
 
+    // QUIRK W-9: deviation
     #[test]
     fn messages_go_only_to_player_slots_0_to_7() {
         // The original shows messages only to the local player (`GameEngine_GetLocalPlayer`,
@@ -819,6 +824,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-14: deviation
     #[test]
     fn deep_acyclic_group_chains_count_fully() {
         // Chain 10 -> 11 -> ... -> 49 (40 levels, acyclic), at the end the member 7000.
@@ -899,6 +905,7 @@ END
             }
         }
 
+        // QUIRK E-66: kept
         #[test]
         fn count_guid_or_filter_adds_pending_only_for_guids() {
             let rules = rules();
@@ -930,6 +937,7 @@ END
         }
     }
 
+    // QUIRK D-232: kept
     #[test]
     fn heroes_come_in_object_table_order() {
         // D-232: the hero row of the bar follows the object table of the slot (ring from the last index,

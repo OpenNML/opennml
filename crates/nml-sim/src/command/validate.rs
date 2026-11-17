@@ -470,6 +470,7 @@ mod tests {
         assert!(!once_taken(&sim, 0, b1001, 1001));
     }
 
+    // QUIRK E-164: kept
     #[test]
     fn button_lock_207_blocks_toolbar_ki_query_and_headhunter_buttons() {
         // The AI query `Player_CanBuildOrMakeGuid` (`0x004305E0`) asks `Player_IsGuidDisabled`; the
@@ -552,6 +553,8 @@ REQUIRED_GUID 1004
 ENDGUID
 ";
 
+    // QUIRK E-68: kept
+    // QUIRK E-67: deviation
     #[test]
     fn can_build_or_make_guid_follows_the_original_checks() {
         let mut rules = Rules::synthetic("", 16);

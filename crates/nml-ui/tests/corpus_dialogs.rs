@@ -17,6 +17,7 @@ fn open() -> Option<Vfs> {
 
 /// Every font from `localisation.deu` has its atlas in the installation at the widths 1024 and 1280
 /// (re/ui-rendering 3.3), so without fallback and without generating.
+// QUIRK O-58: kept
 #[test]
 fn all_menu_fonts_load() {
     let Some(vfs) = open() else { return };
@@ -103,6 +104,7 @@ fn text_id(kind: &WidgetKind) -> Option<i32> {
 /// panic. Every line stays within 400 px except for the overhang per O-80: a word that wraps after others stands
 /// alone at the start of the line and sticks out. The shipped data uses only known tags, so no tag appears
 /// literally.
+// QUIRK O-77, O-80: kept
 #[test]
 fn menu_texts_lay_out() {
     let Some(vfs) = open() else { return };
@@ -231,6 +233,7 @@ fn paint_all(
 
 /// All 63 dialogs paint at 1024 x 768 and 1280 x 1024 without a panic, each with at least one command, all
 /// images are loaded (`UiAssets::missing` empty) and no text ID is missing; the evaluation reports nothing.
+// QUIRK O-4: kept
 #[test]
 fn all_dialogs_paint() {
     let Some((vfs, loc, texts, library)) = library() else {
@@ -387,6 +390,7 @@ fn dialog_draw_checksums_are_stable() {
 }
 
 /// Unusual sizes (width < 800, widescreen, 4K): no panic, menus stretched.
+// QUIRK O-57: kept
 #[test]
 fn all_dialogs_paint_at_odd_sizes() {
     let Some((vfs, loc, texts, library)) = library() else {
@@ -411,6 +415,7 @@ fn all_dialogs_paint_at_odd_sizes() {
 /// Comparison on the image (Python, brightness profiles): frame and button edges lie up to 1 px further inside than
 /// the rectangles (edge smoothing of the filter, grid rule - a matter for the drawer and the reference comparison),
 /// the ink of "Single player" begins as in the reimplementation at (154, 220).
+// QUIRK O-57: kept
 #[test]
 fn start_matches_the_reference_layout() {
     let Some((vfs, loc, texts, library)) = library() else {
@@ -523,6 +528,7 @@ fn find_accepts_the_file_stem() {
 /// (`button_disabled.bkg`) and run time (set 0 + `DISABLEDTEXTCOLOR`) therefore show the active shipped data the same.
 /// Locked by the file there is only the EditField `PROFILENAME` in `singleplayermenu.dlg` (corrected in
 /// re/menu-system 12.5); the dead `...2.dlg` have locked buttons.
+// QUIRK O-91: kept
 #[test]
 fn no_active_button_is_disabled_by_file() {
     use nml_formats::dialog_map::parse_dialog_map;
@@ -573,6 +579,7 @@ fn no_active_button_is_disabled_by_file() {
 /// `OnAttach`, transition, drawing passes, `paint_ui`). Where the run time shows nothing of its own (no credits, no
 /// locked button; lists and input fields are empty without logic, the caret is just off at 2500 ms), the image after
 /// the fly-in equals static drawing.
+// QUIRK O-91: kept
 #[test]
 fn runtime_end_state_matches_paint_static() {
     use nml_ui::msg::NoListener;

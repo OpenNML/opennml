@@ -687,6 +687,7 @@ mod tests {
         out
     }
 
+    // QUIRK O-71: kept
     #[test]
     fn tile_uv_skips_the_last_texel() {
         // 8.4.1/O-71: 64^2 texture, 21-pixel tiles (3 x 3), tile 1: cell origin 21/64, cell size 20/64, half texel
@@ -721,6 +722,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-71: kept
     #[test]
     fn clip_cuts_uv_proportionally() {
         // Tile 0 (cell 20/64) on 42 x 42 pixels; cut of 10 pixels on the left and 21 at the bottom: UV proportionally
@@ -758,6 +760,7 @@ mod tests {
         }
     }
 
+    // QUIRK O-71: kept
     #[test]
     fn empty_clip_draws_nothing() {
         let dst = [10, 10, 52, 52];
@@ -782,6 +785,8 @@ mod tests {
         }
     }
 
+    // QUIRK O-71: kept
+    // QUIRK O-88: deviation
     #[test]
     fn index_outside_the_grid_draws_nothing() {
         let dst = [0, 0, 21, 21];
@@ -855,6 +860,7 @@ mod tests {
     const FRAME_BKG: &str = "FILE data/r.tga 21 21\r\nTOPLEFT 0 0\r\nTOPMID 0 1\r\nTOPRIGHT 0 2\r\nLEFTMID 0 3\r\n\
 RIGHTMID 0 5\r\nBOTTOMLEFT 0 6\r\nBOTTOMMID 0 7\r\nBOTTOMRIGHT 0 8\r\nFILLTILE 0 4\r\nCLIENTAREA 15 30 15 30\r\n";
 
+    // QUIRK O-12, O-70: kept
     #[test]
     fn nine_slice_follows_8_4_2_order() {
         let (bkg, assets) = load(FRAME_BKG, &[("data/r.tga", 64, 64)]);
@@ -904,6 +910,7 @@ RIGHTMID 0 5\r\nBOTTOMLEFT 0 6\r\nBOTTOMMID 0 7\r\nBOTTOMRIGHT 0 8\r\nFILLTILE 0
         assert_eq!(dsts(&out)[2][2], dsts(&out)[4][0], "TL right = fill left");
     }
 
+    // QUIRK O-70: kept
     #[test]
     fn small_rect_keeps_inner_edges_at_max() {
         // 30 x 30 with 21-pixel tiles: iR = max(9, 21) = 21, iB = 21 - left/top win, no fill, no
@@ -921,6 +928,7 @@ RIGHTMID 0 5\r\nBOTTOMLEFT 0 6\r\nBOTTOMMID 0 7\r\nBOTTOMRIGHT 0 8\r\nFILLTILE 0
         );
     }
 
+    // QUIRK O-12: kept
     #[test]
     fn sequence_tiles_in_screen_pixels() {
         // Like `logo.bkg`: tile size 64 as a point at 1024 x 768 -> 51 x 48 pixels, from S(abs).lt = (80, 75).
@@ -1001,6 +1009,8 @@ TILE 0 7\nTILE 0 0\n",
         );
     }
 
+    // QUIRK O-12: kept
+    // QUIRK O-88: deviation
     #[test]
     fn paint_skips_missing_tiles() {
         // File 0 is missing, file 1 is there. Missing slots (-1), file index outside (5, -1), image missing (file
@@ -1055,6 +1065,7 @@ BOTTOMRIGHT -1 8\nTOPMID 1 99\nFILLTILE 1 4\nTILE 0 0\nTILE 7 0\nTILE 1 -5\n",
         assert!(load_bkg(&vfs, "data/nonexistent.bkg", &mut assets).is_none());
     }
 
+    // QUIRK O-12, O-70: kept
     #[test]
     fn missing_texture_keeps_the_file_indices() {
         // `FUN_00445F40` creates an image list entry for every `FILE` line (`FUN_00402DF0` always succeeds);
@@ -1100,6 +1111,7 @@ BOTTOMRIGHT -1 8\nTOPMID 1 99\nFILLTILE 1 4\nTILE 0 0\nTILE 7 0\nTILE 1 -5\n",
         }
     }
 
+    // QUIRK O-76: kept
     #[test]
     fn fullscreen_background_is_point_without_half_texel() {
         let mut assets = UiAssets::new();
@@ -1214,6 +1226,7 @@ BOTTOMRIGHT -1 8\nTOPMID 1 99\nFILLTILE 1 4\nTILE 0 0\nTILE 7 0\nTILE 1 -5\n",
         out
     }
 
+    // QUIRK O-72: kept
     #[test]
     fn frame_decor_matches_8_4_3() {
         let d = decor();
@@ -1360,6 +1373,7 @@ BOTTOMRIGHT -1 8\nTOPMID 1 99\nFILLTILE 1 4\nTILE 0 0\nTILE 7 0\nTILE 1 -5\n",
         }
     }
 
+    // QUIRK O-73: kept
     #[test]
     fn title_text_is_centered_without_shadow() {
         let d = decor();
@@ -1405,6 +1419,8 @@ BOTTOMRIGHT -1 8\nTOPMID 1 99\nFILLTILE 1 4\nTILE 0 0\nTILE 7 0\nTILE 1 -5\n",
         assert!(title(&frame, None).is_empty());
     }
 
+    // QUIRK O-73: kept
+    // QUIRK O-88: deviation
     #[test]
     fn mirrored_and_barless_titles_use_their_tiles() {
         let d = decor();

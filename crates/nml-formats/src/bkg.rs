@@ -314,6 +314,7 @@ mod tests {
         TileRef { file, tile }
     }
 
+    // QUIRK O-11, O-12: kept
     #[test]
     fn bkg_reads_slots_sequence_and_client_area() {
         let text = "FILE x.tga 21 21\r\nTILE 0 1\r\nNEWLINE\r\nTILE 0 2\nTOPLEFT 0 0\r\n\
@@ -394,6 +395,7 @@ mod tests {
         assert_eq!(parse_bkg(b"a\n").lines.len(), 1);
     }
 
+    // QUIRK O-12: kept
     #[test]
     fn bkg_ignores_bad_lines_and_indices() {
         let text = " TOPLEFT 0 0\ntopleft 0 0\nTOPLEFTX 1 1\nUNKNOWN 1 2\n# Comment\n\nTILEX 3 4\n\
@@ -412,6 +414,7 @@ mod tests {
         assert_eq!(d.size, None);
     }
 
+    // QUIRK O-12: kept
     #[test]
     fn keywords_are_prefixes_and_stray_cr_is_dropped() {
         // `CString_Left(n) == word`: ALPHATESTX counts as ALPHATEST; a `\r` in the middle of the line is dropped

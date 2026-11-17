@@ -115,6 +115,8 @@ fn join_and_create_hidden_without_name() {
     assert_eq!(l.lan_status(LAN1, "create"), Some(0));
 }
 
+// QUIRK E-278: kept
+// QUIRK E-300: deviation
 #[test]
 fn selection_follows_the_session() {
     // E-300, deviation: the selection is tied to the session ID. B selected at index 1, A disappears -> the list shows
@@ -134,6 +136,8 @@ fn selection_follows_the_session() {
     assert_eq!(l.data.lan_choice, Some(20));
 }
 
+// QUIRK E-278: kept
+// QUIRK E-300: deviation
 #[test]
 fn vanished_selection_resets() {
     // If the selected session disappears, the selection is empty (-1) and `JOIN` hidden; a click does nothing.
@@ -262,6 +266,7 @@ fn lan3_create_hosts_a_fixed_map() {
     assert!(l.take_queue().is_empty());
 }
 
+// QUIRK E-313: kept
 #[test]
 fn lan3_create_random_hosts_a_random_map() {
     // `LevelType` 1 like `CREATE2` (as in E-313) - `{3}`, `{4,"randommap"}`, `FUN_004BF1F0(0)` over the random map

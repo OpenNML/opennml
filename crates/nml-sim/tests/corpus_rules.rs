@@ -69,6 +69,7 @@ fn rules_load_for_all_multiplayer_maps() {
 /// The rules load the time markers of the animations for **all** types with a loadable model, not only for types
 /// with a stand, combat or dying module. Reason (E-212): the animation lock 157 with 0 seconds takes marker 1 of the
 /// animation of arbitrary figures.
+// QUIRK E-212: kept
 #[test]
 fn rules_load_labels_for_all_animated_types() {
     use nml_rda::normalize_path;
@@ -199,6 +200,7 @@ fn wall_corner_pairs_from_the_flags_match_the_fort_cursor() {
 
 /// re/upgrades 1.1, 10.1, 10.4 F-U2; re/temp-upgrades 1.4: upgrade catalog, type lists, temporary
 /// upgrades, lock via level data and time of day.
+// QUIRK W-222: kept
 #[test]
 fn rules_know_upgrades_and_disabled_guids() {
     let Some(dir) = corpus_game_dir() else {
@@ -246,6 +248,7 @@ fn rules_know_upgrades_and_disabled_guids() {
 
 /// re/heroes-resources 1.2, 9.1: hero list in the rules, hero index and the missing elite bit of
 /// 2401 (W-274).
+// QUIRK W-273, W-274: kept
 #[test]
 fn rules_know_the_heroes() {
     let Some(dir) = corpus_game_dir() else {
@@ -319,6 +322,7 @@ fn flowcontrol_targets_are_loaded_from_the_game() {
 /// `water_tiles` counts the tiles whose highest corner height lies below the water level
 /// (`GameEngine_ClassifyAllTiles` `0x00432140`, re/ki-queries 5.16, E-83); `tile_count` is
 /// `DIM_X * DIM_Z`. Neither goes into the checksum of the rules (derived).
+// QUIRK E-83: kept
 #[test]
 fn water_tiles_count_fully_submerged_tiles() {
     let Some(dir) = corpus_game_dir() else {

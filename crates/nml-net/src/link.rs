@@ -158,6 +158,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-271: deviation
     #[test]
     fn outbox_sends_small_before_next_chunk() {
         let mut o = Outbox::new();

@@ -396,6 +396,7 @@ mod tests {
         assert_eq!(rules().priorities.len(), 5);
     }
 
+    // QUIRK C-33: kept
     #[test]
     fn search_radius_and_bands_follow_combat_targeting_1_13() {
         let rules = rules();
@@ -412,6 +413,7 @@ mod tests {
         assert_eq!((b.near, b.far, b.radius), ((0, 2560), (-1, -1), 45056));
     }
 
+    // QUIRK C-38: kept
     #[test]
     fn range_gaps_follow_combat_targeting_1_13() {
         let rules = rules();
@@ -485,6 +487,7 @@ mod tests {
         );
     }
 
+    // QUIRK W-170, C-32: kept
     #[test]
     fn priorities_pick_the_highest_group_and_the_last_found_on_ties() {
         let rules = rules();
@@ -521,6 +524,7 @@ mod tests {
         assert_eq!(pick, Some(last));
     }
 
+    // QUIRK C-31: kept
     #[test]
     fn the_switch_rule_needs_a_higher_group_or_one_tile_closer() {
         let rules = rules();

@@ -22,6 +22,7 @@ fn hef_type(guid: u32, hef: &str) -> String {
     )
 }
 
+// QUIRK C-241: kept
 #[test]
 fn read_params_zeroes_mana_and_builds_the_filter() {
     let rules = tk::rules_from(&(tk::types() + &hef_type(9001, "0")));
@@ -54,6 +55,7 @@ fn read_params_zeroes_mana_and_builds_the_filter() {
     assert_eq!(healing(&sim, none).unwrap().hef, "");
 }
 
+// QUIRK C-253: deviation
 #[test]
 fn the_filter_follows_the_flag_word() {
     let expect = |mode: u32, prop_id: u32, match_bits: u32| MatchFilter {
@@ -301,6 +303,7 @@ fn trance_timeline(guid: u32, establish: i32, remove: i32, setup: usize, teardow
     assert_loads(sim.state, &rules);
 }
 
+// QUIRK C-247: kept
 #[test]
 fn the_trance_follows_its_four_messages() {
     // Time markers: 2014 setup = teardown 7 (3999 ms) -> +40; 2303 setup 3 / teardown 6
@@ -309,6 +312,7 @@ fn the_trance_follows_its_four_messages() {
     trance_timeline(tk::MEDIC, 3, 6, 46, 46);
 }
 
+// QUIRK C-254: kept
 #[test]
 fn begin_is_ignored_while_locked_or_in_trance() {
     // C-254: `0x11D` aborts with `0x800000` (banishing or setup) and with `HEAL`.
@@ -340,6 +344,7 @@ fn begin_is_ignored_while_locked_or_in_trance() {
     assert_eq!(filter(&sim, h), trance_filter());
 }
 
+// QUIRK K-53, C-247: kept
 #[test]
 fn orders_are_lost_only_until_the_end_of_the_trance() {
     // K-53, C-247: in the trance only `0x21D`, in the teardown nothing at all; discarded, not queued.
@@ -414,6 +419,7 @@ fn orders_are_lost_only_until_the_end_of_the_trance() {
     ));
 }
 
+// QUIRK C-248: kept
 #[test]
 fn stop_during_the_setup_animation_is_lost() {
     // C-248: `0x21D` with `0x800000` set (setup) is ignored; the unit becomes ready in N + 40
@@ -510,6 +516,7 @@ fn a_healer_dying_in_trance_gets_the_die_anim_and_stops() {
     }
 }
 
+// QUIRK W-152: kept
 #[test]
 fn the_stand_module_asks_for_the_trance_idle() {
     // W-152: with `HEAL` module 29 answers (`0x51D {sel}` -> `m_StandAnim[sel % n]`) without
@@ -539,6 +546,7 @@ fn the_stand_module_asks_for_the_trance_idle() {
     assert_eq!(select_idle_anim(&mut sim, p, -1), 0);
 }
 
+// QUIRK C-250: kept
 #[test]
 fn a_quartered_healer_switches_the_building() {
     // re/healing 4 (quarters), C-250: no shipped building has module 23 and 29 at the same time. Entry ->
@@ -580,6 +588,7 @@ fn a_quartered_healer_switches_the_building() {
     }
 }
 
+// QUIRK C-249: kept
 #[test]
 fn buildings_become_ready_after_completion_with_a_hef() {
     // C-249, re/healing 3.1/9.4: finished in F -> ready in the first healing tick after it; never without a HEF name.
@@ -687,6 +696,7 @@ fn infected(sim: &Sim, id: ObjectId) -> bool {
     sim.module(id, dying).unwrap().base.flags & INFECTED != 0
 }
 
+// QUIRK W-135: kept
 #[test]
 fn a_monastery_heals_by_the_minute_table() {
     // re/healing 9.1: monastery 1015 (H = 180), saber fighter 1107 (190) at 50 % within 7 tiles ->
@@ -740,6 +750,7 @@ fn a_shipyard_heals_its_own_ships() {
     }
 }
 
+// QUIRK C-242: kept
 #[test]
 fn a_soldier_first_in_the_query_stops_the_shipyard() {
     // C-242: the injured soldier is in the bucket of the shipyard (tiles 16-23), the ship
@@ -775,6 +786,7 @@ fn a_soldier_first_in_the_query_stops_the_shipyard() {
     assert!(infected(&sim, soldier), "full: not found");
 }
 
+// QUIRK C-246: kept
 #[test]
 fn area_healing_takes_own_walk_objects_only() {
     // C-246: only own (`MYLIST`, no allies), non-quartered walk objects, without swimming
@@ -915,6 +927,7 @@ fn spawn_at(sim: &mut Sim, guid: u32, slot: i32, x: f32, z: f32) -> ObjectId {
     create_object(sim, &mut desc).expect("object created")
 }
 
+// QUIRK C-243: kept
 #[test]
 fn a_field_doctor_heals_by_the_end_spurt_formula() {
     // re/healing 9.2 (C-243): medic 2303 (H = 288, mana max 950), female farmer 2302 (max 100).
@@ -951,6 +964,7 @@ fn a_field_doctor_heals_by_the_end_spurt_formula() {
     assert_loads(sim.state, &rules);
 }
 
+// QUIRK C-245: kept
 #[test]
 fn the_healer_heals_himself_first() {
     // C-245: the healing filter (MYLIST) contains the healer itself with edge distance 0; the female farmer
@@ -981,6 +995,7 @@ fn the_healer_heals_himself_first() {
     }
 }
 
+// QUIRK C-246: kept
 #[test]
 fn single_healing_searches_own_walk_objects_only() {
     // C-246 for single healing: the same filter as for the area (`MYLIST`, walk, not full).
@@ -1015,6 +1030,7 @@ fn single_healing_searches_own_walk_objects_only() {
     assert_eq!(fraction(&sim, enemy), 50_000);
 }
 
+// QUIRK C-244: kept
 #[test]
 fn a_target_in_the_band_is_dropped_and_found_again() {
     // C-244: keeping only up to edge distance r (= 10,240 for the medic), the search reaches up to
@@ -1053,6 +1069,7 @@ fn a_target_in_the_band_is_dropped_and_found_again() {
     assert_eq!(fraction(&sim, outside), 50_000);
 }
 
+// QUIRK C-243: kept
 #[test]
 fn a_fresh_healer_settles_at_a_tenth_hitpoint_per_tick() {
     // re/healing 9.3, C-241: the created pilgrim has mana 0, regeneration +10 per tick after the
@@ -1084,6 +1101,7 @@ fn a_fresh_healer_settles_at_a_tenth_hitpoint_per_tick() {
     }
 }
 
+// QUIRK C-251: kept
 #[test]
 fn a_requested_target_out_of_range_blocks_healing() {
     // C-251: `m_NewTarget` out of range (center distance > r) blocks every healing; the
@@ -1130,6 +1148,7 @@ fn a_requested_target_out_of_range_blocks_healing() {
     assert_eq!(fraction(&sim, near), 50_000);
 }
 
+// QUIRK C-337: kept
 #[test]
 fn a_dying_target_is_given_up() {
     // `GameWorld_GetObjectById(id, 0)` (`0x00475300`) also returns the dead; the carcass changes

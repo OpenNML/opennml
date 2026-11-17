@@ -81,6 +81,7 @@ fn go(units: &[ObjectId], tile: (i32, i32)) -> Command {
     }
 }
 
+// QUIRK O-293: kept
 #[test]
 fn idle_workers_fill_at_level_start() {
     let (rules, setup) = level();
@@ -104,6 +105,7 @@ fn idle_workers_fill_at_level_start() {
     );
 }
 
+// QUIRK O-293: kept
 #[test]
 fn idle_worker_message_appends_once() {
     let rules = combat_rules();
@@ -133,6 +135,7 @@ fn idle_worker_message_appends_once() {
     assert_eq!(sim.state.idle_workers.list(0), [b, a, c]);
 }
 
+// QUIRK O-293: kept
 #[test]
 fn refresh_runs_only_at_phase_zero_and_keeps_order() {
     let rules = combat_rules();
@@ -188,6 +191,7 @@ fn refresh_runs_only_at_phase_zero_and_keeps_order() {
     assert_eq!(state.idle_workers.list(0), [a, b]);
 }
 
+// QUIRK O-293: kept
 #[test]
 fn idle_workers_survive_save_load_and_replay() {
     // Five workers on slot 0 (a ... e) and one on slot 1.

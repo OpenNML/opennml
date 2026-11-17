@@ -204,6 +204,7 @@ fn route_with_map(
     (taken, out)
 }
 
+// QUIRK O-222: kept
 #[test]
 fn clicks_outside_the_bar_rect_go_to_the_world() {
     let t = menus(&[(1100, vec![row(0, 300, kinds::DO)])]);
@@ -235,6 +236,7 @@ fn clicks_outside_the_bar_rect_go_to_the_world() {
 
 /// In the 16-px overlap at 800 x 600 the tree order applies. If the minimap takes the event (diamond, rectangle per
 /// re/game-ui D5.1), the bar sees nothing; if it does not take it, the bar gets it.
+// QUIRK O-222: kept
 #[test]
 fn overlap_at_800x600_follows_the_tree_order() {
     let small = Screen {
@@ -289,6 +291,7 @@ fn overlap_at_800x600_follows_the_tree_order() {
     assert_eq!(bar.shown_menu(), 407);
 }
 
+// QUIRK O-231, O-246: kept
 #[test]
 fn button_pressed_comes_first_even_when_paused_or_locked_path() {
     let t = menus(&[(
@@ -338,6 +341,7 @@ fn button_pressed_comes_first_even_when_paused_or_locked_path() {
     assert_eq!(bar.cursor, None);
 }
 
+// QUIRK O-246: kept
 #[test]
 fn locked_button_is_silent_and_keeps_last_button() {
     let mut make = row(0, 1101, kinds::MAKE);
@@ -373,6 +377,7 @@ fn locked_button_is_silent_and_keeps_last_button() {
     );
 }
 
+// QUIRK O-226: kept
 #[test]
 fn submenus_have_no_stack_and_right_click_returns_to_the_base_menu() {
     let t = menus(&[
@@ -431,6 +436,7 @@ fn submenus_have_no_stack_and_right_click_returns_to_the_base_menu() {
     assert_eq!(bar.shown_menu(), 407);
 }
 
+// QUIRK D-234: kept
 #[test]
 fn silent_rebuild_keeps_the_shown_menu_and_the_cursor() {
     let t = menus(&[
@@ -469,6 +475,7 @@ fn silent_rebuild_keeps_the_shown_menu_and_the_cursor() {
     assert_eq!(bar.selected, -1);
 }
 
+// QUIRK O-275: kept
 #[test]
 fn full_rebuild_plays_the_select_sound_only_for_single_selection() {
     let t = menus(&[(1100, vec![row(0, 300, kinds::DO)])]);
@@ -505,6 +512,7 @@ fn full_rebuild_plays_the_select_sound_only_for_single_selection() {
     assert_eq!(bar.selected, -1);
 }
 
+// QUIRK O-262: kept
 #[test]
 fn background_draws_unclipped_in_file_order() {
     let vfs = test_vfs(&[
@@ -669,6 +677,7 @@ fn queue_click_any_way_cancels() {
     assert_eq!(intents(&click(&mut bar, &m, running)), [cancel(0, 1101)]);
 }
 
+// QUIRK O-223: kept
 #[test]
 fn hidden_bar_takes_only_its_always_events() {
     let t = menus(&[
@@ -779,6 +788,7 @@ fn hero_rows_change_only_through_events() {
     assert_eq!(bar.heroes.buttons().count(), 0);
 }
 
+// QUIRK O-246: kept
 #[test]
 fn headhunter_button_presses_twice_and_leads_to_the_hire() {
     let t = menus(&[(1300, vec![row(0, 300, kinds::DO)])]);
@@ -841,6 +851,7 @@ fn headhunter_button_presses_twice_and_leads_to_the_hire() {
     assert_eq!(normal_msgs(&bar)[0], Some(300), "base menu afterwards");
 }
 
+// QUIRK O-282: kept
 #[test]
 fn dynamic_levels_clear_stance_and_selection_but_keep_formation() {
     // `0x186A3` (`0x00457F7C`) clears the list `+0xE0` (`FUN_00453450`: normal **and stance buttons**, `0x00453EF8`,
@@ -877,6 +888,7 @@ fn dynamic_levels_clear_stance_and_selection_but_keep_formation() {
     }
 }
 
+// QUIRK O-282: kept
 #[test]
 fn target_cursor_keeps_stance_and_production() {
     // Target button (TARGET, `FUN_00458130`): submenu of the BUTTONMSG (`FUN_00454120`, `BuildButtonSet(msg, 1)`) and
@@ -905,6 +917,7 @@ fn target_cursor_keeps_stance_and_production() {
     assert_eq!(bar.set.production.len(), 2);
 }
 
+// QUIRK O-277: kept
 #[test]
 fn occupant_view_follows_the_full_view_flag() {
     // Building with 415 and only three free slots among 0-6: no automatic view, the flag stays 1.
@@ -954,6 +967,7 @@ fn occupant_view_follows_the_full_view_flag() {
     assert_eq!(intents(&out), [ToolbarIntent::UnquarterAll]);
 }
 
+// QUIRK O-278: kept
 #[test]
 fn stance_formation_and_selection_buttons() {
     let t = menus(&[(1100, vec![]), (1300, vec![])]);
@@ -1110,6 +1124,7 @@ fn unknown_do_messages_open_a_submenu_only_on_the_left() {
     assert_eq!(normal_msgs(&bar)[5], Some(300));
 }
 
+// QUIRK O-34: kept
 #[test]
 fn resize_moves_buttons_with_the_bar() {
     let t = menus(&[(1100, vec![row(0, 300, kinds::DO)])]);
@@ -1197,6 +1212,7 @@ fn production_only_rebuild_and_hover_event() {
 /// O-303 (`FUN_0044B110`, `0x00457980`, `Toolbar_BuildButtonSet` `0x00455824`): the type comes from the
 /// **first** own object, the selection GUID from the **last** set build (multi-selection: last object; submenu: its
 /// GUID). A foreign first object leaves the type as it is, and alone also the selection; empty -> type 1.
+// QUIRK O-303: kept
 #[test]
 fn key_context_is_the_last_object_and_ignores_foreign_ones() {
     let t = menus(&[
@@ -1297,6 +1313,7 @@ fn key_context_is_the_last_object_and_ignores_foreign_ones() {
 /// The minimap GUIDs 570...577, 579, 580 go to the host as one intent, for every click kind of the kind `0x13000000`
 /// (`FUN_0044CF50` -> dispatcher); `double` only for a double click, never for a key (`xbutton`, event 9). The
 /// dispatcher does not know 578 and 581 (no branch, re/game-ui N.5.4).
+// QUIRK O-219: kept
 #[test]
 fn minimap_guids_go_to_the_host_with_the_double_click() {
     let t = menus(&[]);

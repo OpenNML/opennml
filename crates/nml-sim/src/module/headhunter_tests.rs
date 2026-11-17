@@ -1146,6 +1146,7 @@ fn spa_hunter(state: &SimState) -> Option<ObjectId> {
     hunter::current(state, 0)
 }
 
+// QUIRK E-168: kept
 #[test]
 fn n380_hires_over_the_customers_hq_and_pays_gold() {
     // `kamp3-13` form `n380;customer;kind;target;GUID`: customer 3, kind 0, target 6, GUID 1715. Slot 3 gets
@@ -1237,6 +1238,7 @@ fn n380_hires_where_the_bar_refuses() {
     );
 }
 
+// QUIRK E-168: kept
 #[test]
 fn n380_without_hq_does_nothing() {
     let (mut state, rules, s) = hunter_scene();
@@ -1262,6 +1264,7 @@ fn n380_without_hq_does_nothing() {
     assert_eq!(gold(&state), before_gold);
 }
 
+// QUIRK E-218: kept
 #[test]
 fn n380_ignores_the_button_lock() {
     // E-218: the script does not check lock, button and target player menu. The color buttons of the target player
@@ -1314,6 +1317,7 @@ fn n380_ignores_the_button_lock() {
     );
 }
 
+// QUIRK E-218: kept
 #[test]
 fn n380_with_target_outside_0_to_7_hires() {
     // E-218: the target player is not checked (`0x0048A8F0`): 9, 8, -1 and `i32::MAX` also hire,
@@ -1367,6 +1371,7 @@ fn script_hire(sim: &mut Sim, sender: u8, building: ObjectId, art: i32, target: 
     )
 }
 
+// QUIRK E-218: kept
 #[test]
 fn script_hire_without_the_menu_button_works() {
     // E-218 "button": the headquarters 1000 has no button 4100 in the menu. The command bar rejects; the
@@ -1392,6 +1397,7 @@ fn script_hire_without_the_menu_button_works() {
     assert!(spa_hunter(sim.state).is_some());
 }
 
+// QUIRK E-218: kept
 #[test]
 fn script_hire_over_a_foreign_building_is_paid_by_its_owner() {
     // Sender 0, building of slot 1: the command bar rejects ("not own"), the script hires. The
@@ -1427,6 +1433,7 @@ fn script_hire_over_a_foreign_building_is_paid_by_its_owner() {
     assert_eq!(hunter_of(&state, hh).customer, 1);
 }
 
+// QUIRK E-218: kept
 #[test]
 fn script_hire_over_an_unfinished_building_is_not_blocked_by_the_state() {
     // Unfinished: the command bar rejects, the script path does not check the construction state (E-218). Whether the
@@ -1452,6 +1459,7 @@ fn script_hire_over_an_unfinished_building_is_not_blocked_by_the_state() {
     assert!(sim.state.resource(0, 0) < START_GOLD, "gold deducted");
 }
 
+// QUIRK E-218: kept
 #[test]
 fn script_hire_with_a_missing_building_returns_before_paying() {
     // Without a headhunter of the kind the original looks up the building and returns before the payment
@@ -1487,6 +1495,7 @@ fn script_hire_with_a_missing_building_returns_before_paying() {
     assert_eq!(sim.state.resource(7, 0), before7, "the sender pays nothing");
 }
 
+// QUIRK E-218: kept
 #[test]
 fn script_hire_from_slot_8_or_higher_is_free() {
     // E-218: a payer from slot 8 on has no money table in the original (`0x0048A8F0`): no gold check,

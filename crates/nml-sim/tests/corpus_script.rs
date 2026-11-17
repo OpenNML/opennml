@@ -161,6 +161,7 @@ impl Blocks {
 mod checksums {
     use super::*;
 
+    // QUIRK E-140: deviation
     #[test]
     fn script_golden() {
         let Some(rules) = rules_for(LEVEL) else {

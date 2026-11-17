@@ -52,6 +52,7 @@ mod tests {
     }
 
     /// Area over `[l, r) x [t, b)`, then top, right, bottom, left like the tooltip outline.
+    // QUIRK O-384: kept
     #[test]
     fn fill_then_outline_like_the_tooltip() {
         let mut out = Vec::new();
@@ -69,6 +70,7 @@ mod tests {
     }
 
     /// The drag direction changes nothing: dragged to the top left yields the same pixels.
+    // QUIRK O-384: kept
     #[test]
     fn any_drag_direction_gives_the_same_pixels() {
         let mut forward = Vec::new();
@@ -86,6 +88,7 @@ mod tests {
 
     /// No minimum distance: without extent nothing, with height 0 only the horizontal line (top and bottom are the
     /// same row, which the line list of the original draws twice), with width 0 only the vertical one.
+    // QUIRK O-384: kept
     #[test]
     fn degenerate_rectangles_draw_lines_only() {
         let mut out = Vec::new();

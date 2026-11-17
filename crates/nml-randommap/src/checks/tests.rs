@@ -62,6 +62,7 @@ fn grid_of(dim: usize, number: i32) -> Grid {
     grid
 }
 
+// QUIRK D-357: kept
 #[test]
 fn snap_centres_small_hulls_on_the_tile() {
     // w = 100 < 128: origin to the tile center, ftol(300/128) = 2 -> 2*128 + 64 = 320.
@@ -75,6 +76,7 @@ fn snap_centres_small_hulls_on_the_tile() {
     assert_eq!(snap_to_grid(300.0, 300.0, 400.0, S), 320.0);
 }
 
+// QUIRK D-357: kept
 #[test]
 fn snap_aligns_wide_hulls_to_the_left_edge() {
     // w = 200 >= 128: t = 200/128 = 1.5625, floor 1, x = 300 - 128*0.5625 = 228; left edge 128.
@@ -112,6 +114,8 @@ fn far_from_players_uses_fixed_hypot() {
     assert!(far_from_players(10, 10, &[]).unwrap());
 }
 
+// QUIRK D-340, D-358: kept
+// QUIRK D-352: deviation
 #[test]
 fn put_onto_needs_the_whole_square() {
     let mut grid = grid_of(5, 1);
@@ -132,6 +136,7 @@ fn put_onto_needs_the_whole_square() {
     assert!(!put_onto_ok(&grid, 1, 1, -1, 0));
 }
 
+// QUIRK D-358: kept
 #[test]
 fn negative_avoid_other_skips_put_onto() {
     let mut grid = grid_of(5, 1);
@@ -162,6 +167,7 @@ fn negative_avoid_other_skips_put_onto() {
     );
 }
 
+// QUIRK D-340: kept
 #[test]
 fn flat_needs_exact_normals() {
     let mut grid = grid_of(4, 1);
@@ -216,6 +222,7 @@ fn border_check_is_strict_and_rejects_nan() {
     assert!(!inside_map(64.0, 64.0, f32::NAN, 4, 4, S));
 }
 
+// QUIRK D-360: kept
 #[test]
 fn group_distance_uses_three_d_length_and_sx() {
     let earlier = [[0.0, 0.0, 0.0]];
@@ -238,6 +245,8 @@ fn group_distance_uses_three_d_length_and_sx() {
     assert!(group_distance_ok([0.0, 0.0, 0.0], &[], 5, S));
 }
 
+// QUIRK D-337: kept
+// QUIRK D-352: deviation
 #[test]
 fn block_map_starts_as_steep_and_blocks_set_rects() {
     // D-337: the block map starts as a copy of the steepness.
@@ -315,6 +324,7 @@ impl Fixture {
     }
 }
 
+// QUIRK D-337: kept
 #[test]
 fn checks_short_circuit_in_order() {
     // Everything passes: each check exactly once, result snapped.
@@ -435,6 +445,7 @@ fn rotated_hull_swaps_the_snap_branches_and_the_rect() {
     assert_eq!(turned.rect, [5, 4, 5, 5]);
 }
 
+// QUIRK D-335: deviation
 #[test]
 fn player_distance_of_1024_tiles_is_an_error_not_a_panic() {
     // |tx - cx| = 1024 tiles: `Fixed_Hypot` divided by zero in the original (D-335).

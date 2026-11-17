@@ -340,6 +340,7 @@ mod tests {
 
     /// The pointer over the world is the `MAUSICONID` of the row that the right click would choose (active list),
     /// otherwise 7; the query changes nothing.
+    // QUIRK O-296: kept
     #[test]
     fn world_pointer_follows_the_right_click_list() {
         let mut host = pointer_host();
@@ -375,6 +376,7 @@ mod tests {
 
     /// With a foreign selection: the pointer does not check ownership (`0x00480E80`), sending does
     /// (`0x00457C50`), and only a found row sets 7 afterwards.
+    // QUIRK O-296, O-336: kept
     #[test]
     fn foreign_selection_shows_its_pointer_but_sends_nothing() {
         let mut host = pointer_host();
@@ -390,6 +392,7 @@ mod tests {
 
     /// Command bar 7/0, minimap 7 with the variant staying, after sending a right click 7 until the next
     /// movement; without movement the pointer stays, even if something changes underneath.
+    // QUIRK O-296, O-337: kept
     #[test]
     fn toolbar_and_minimap_pointer() {
         let mut p = PointerState::default();
@@ -453,6 +456,7 @@ mod tests {
     /// Targeting mode red/green with the `MAUSICONID` of the first row, also over the command bar; over the minimap 7
     /// with the variant; end 7/0. With the installation: the values of the first rows and which targets are always
     /// valid.
+    // QUIRK O-295: kept
     #[test]
     fn target_mode_pointer_is_red_or_green() {
         let mut p = PointerState::default();
@@ -525,6 +529,7 @@ mod tests {
     /// the variant stays 0. With the end of the build cursor it is 0 again. This test sets the verdict by hand; for the
     /// real position of `toolbar_step` see
     /// `game_session::tests::build_pointer_tint_follows_the_preview_verdict_over_the_minimap`.
+    // QUIRK O-394: kept
     #[test]
     fn build_cursor_tints_the_pointer_also_over_the_minimap() {
         let mut p = PointerState::default();
@@ -623,6 +628,7 @@ mod tests {
     }
 
     /// O-394: only with the software pointer does the build cursor write the tint; without a verdict it stays.
+    // QUIRK O-394: kept
     #[test]
     fn build_cursor_tints_only_with_software() {
         let mut p = PointerState::default();
@@ -649,6 +655,7 @@ mod tests {
     }
 
     /// The build cursor writes the tint per frame; without events it stays.
+    // QUIRK O-394: kept
     #[test]
     fn build_tint_survives_frames_without_events() {
         let mut p = PointerState::default();
@@ -665,6 +672,7 @@ mod tests {
 
     /// O-464 (reference run re/pointer-3d MZ.13): after the end of the build cursor the tint stays until the next
     /// `SetPointer`; the variant goes to 0.
+    // QUIRK O-464: kept
     #[test]
     fn build_cursor_end_keeps_the_tint_until_the_next_move() {
         let mut p = PointerState::default();

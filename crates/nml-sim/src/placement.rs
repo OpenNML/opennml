@@ -858,6 +858,7 @@ GUID 3602\nNAME Baum\nVALUEID 100 6 1 256\nPROPID 4\n";
         }
     }
 
+    // QUIRK W-115: kept
     #[test]
     fn harbor_counts_with_exclusive_bounds_and_needs_a_fifth_of_each() {
         let harbor = |water: &[(usize, usize)], w: f32| {
@@ -922,6 +923,7 @@ GUID 3602\nNAME Baum\nVALUEID 100 6 1 256\nPROPID 4\n";
         create_object(sim, &mut d).expect("object")
     }
 
+    // QUIRK W-116: kept
     #[test]
     fn wall_segment_checks_only_its_first_tile() {
         let rules = rules();
@@ -956,6 +958,7 @@ GUID 3602\nNAME Baum\nVALUEID 100 6 1 256\nPROPID 4\n";
         ));
     }
 
+    // QUIRK W-118: kept
     #[test]
     fn tower_snaps_onto_an_own_wall_segment_without_further_checks() {
         let rules = rules();
@@ -1202,6 +1205,7 @@ GUID 3602\nNAME Baum\nVALUEID 100 6 1 256\nPROPID 4\n";
         ));
     }
 
+    // QUIRK W-120: kept
     #[test]
     fn spiral_skips_the_middle_columns_and_shifts_later_rows() {
         let mut tried = Vec::new();
@@ -1290,6 +1294,7 @@ GUID 3602\nNAME Baum\nVALUEID 100 6 1 256\nPROPID 4\n";
     /// A7/A8: without the limit, a wall piece with NaN, +-infinity or 3e9 was valid (`ftol` ->
     /// `i32::MIN` gives a "valid" rectangle, the first tile lies outside the map and counts
     /// as free), and the placement search ran endlessly from `|x| ≥ 2³¹` on.
+    // QUIRK W-117: deviation
     #[test]
     fn non_finite_and_off_map_poses_are_rejected_before_the_original_check() {
         let mut rules = rules();

@@ -124,6 +124,7 @@ mod tests {
     use crate::module::riding::testkit::*;
     use crate::module::stand;
 
+    // QUIRK K-151: kept
     #[test]
     fn swim_answers_its_animations() {
         let rules = rules();
@@ -240,6 +241,7 @@ mod tests {
         assert_eq!((swimming(&sim, w), onwater(&sim, w)), (false, false));
     }
 
+    // QUIRK K-233: kept
     #[test]
     fn boat_and_quarter_clear_swimming_but_keep_onwater() {
         // K-233: swimmer with 0x8000 (link to the canoe) -> SWIMMING off, 0x302 (ONWATER stays on).
@@ -265,6 +267,7 @@ mod tests {
         assert_eq!((swimming(&sim, q), onwater(&sim, q)), (false, true));
     }
 
+    // QUIRK K-234, K-238: kept
     #[test]
     fn a_diver_keeps_its_swim_bit_and_gets_onwater_every_tick() {
         // K-234: status DIVING (by hand) in shallow water (ground -30) -> SWIMMING unchanged,

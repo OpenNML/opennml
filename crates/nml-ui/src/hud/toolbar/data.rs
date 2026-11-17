@@ -291,6 +291,7 @@ mod tests {
         assert_eq!(empty.portrait_of(20), None);
     }
 
+    // QUIRK O-273: deviation
     #[test]
     fn missing_colors_stay_white_without_an_exception() {
         // O-273: a block that is too short leaves the remaining slots white; without a block all are white.
@@ -334,6 +335,7 @@ mod tests {
         assert_eq!(d.counter_overlay.tile, [64, 64]);
     }
 
+    // QUIRK O-280: kept
     #[test]
     fn status_bar_first_gives_the_resource_sheet_its_32_grid() {
         // O-280: texture cache by file name (`0x00445F40` -> `0x00445C20`). If the status bar loads
@@ -355,6 +357,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-280: kept
     #[test]
     fn the_first_load_of_a_file_fixes_its_grid_for_all_toolbar_sheets() {
         // The loading order of the constructor `0x00456630` also applies within the bar: `toolbar.cfg` (`0x004567A4`),
@@ -377,6 +380,7 @@ mod tests {
         assert_eq!(grids.get("data/icons/info_icons16x16.tga"), Some([16, 16]));
     }
 
+    // QUIRK O-263: deviation
     #[test]
     fn icon_lookups_differ_in_missing_and_negative_values() {
         let d = ToolbarData::from_texts(CFG, INI);

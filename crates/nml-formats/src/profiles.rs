@@ -452,6 +452,7 @@ mod tests {
         assert!(!file.profiles[0].levels[1].complete);
     }
 
+    // QUIRK O-126: deviation
     #[test]
     fn wrong_name_size_keeps_the_default_name() {
         // `FUN_00403A00`: only with `fixedsize == 40` is it read, otherwise "Jon Doe" stays.
@@ -462,6 +463,7 @@ mod tests {
         assert_eq!(file.profiles[0].guid, 3);
     }
 
+    // QUIRK O-126: deviation
     #[test]
     fn profiles_reject_broken_files() {
         let ok = |guid: i32| profile_text("A", guid, NO_LEVELS, NO_VARS);
@@ -552,6 +554,7 @@ mod tests {
         assert!(shown.contains("corrupted profile file"), "{shown}");
     }
 
+    // QUIRK O-126: deviation
     #[test]
     fn counter_just_above_the_highest_guid_is_accepted() {
         let ok = |guid: i32| profile_text("A", guid, NO_LEVELS, NO_VARS);

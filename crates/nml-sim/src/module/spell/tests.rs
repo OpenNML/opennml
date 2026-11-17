@@ -156,6 +156,7 @@ fn assert_loads(state: &SimState, rules: &crate::rules::Rules) {
         .expect("savegame valid");
 }
 
+// QUIRK C-222: kept
 #[test]
 fn the_tax_button_casts_and_starts_taxes_at_half_the_label_time() {
     // Governor (mana 100, button 543 costs 75, 2828 researched): CastSpell {4, 2, 1, 543}.
@@ -200,6 +201,7 @@ fn the_tax_button_casts_and_starts_taxes_at_half_the_label_time() {
     assert!(sim.module(g, INDEX).unwrap().base.events.is_empty());
 }
 
+// QUIRK C-229: kept
 #[test]
 fn the_cast_times_by_the_first_animation_of_the_list() {
     // C-229 (re/temp-upgrades 15 no. 4): T = time marker 1 of 390002[0], not of the selected
@@ -223,6 +225,7 @@ fn the_cast_times_by_the_first_animation_of_the_list() {
     assert!(!locked(&sim, g));
 }
 
+// QUIRK C-230: kept
 #[test]
 fn an_abort_before_the_cast_point_loses_the_mana() {
     // re/temp-upgrades 15 no. 6, C-230: Halt in the 3rd tick deletes the timers, lock off, attack
@@ -413,6 +416,8 @@ const START_TURN: usize = 2;
 /// Likewise for the clamped look-at point (`a_face_point_off_the_map_is_clamped_and_starts`).
 const START_CLAMPED: usize = 2;
 
+// QUIRK K-91, C-229, C-294: kept
+// QUIRK D-237: deviation
 #[test]
 fn explosion_follows_its_timeline() {
     // re/spells 9.1, C-294: mana 100, button 480 costs 80; the target point is the world position
@@ -478,6 +483,7 @@ fn explosion_follows_its_timeline() {
     assert!(!locked(&sim, m) && attack_on(&sim, m));
 }
 
+// QUIRK C-295: kept
 #[test]
 fn the_caster_turns_to_the_target_first() {
     // C-295: ground point behind the caster (-x), no enemy within scan range. The cast sends the
@@ -520,6 +526,7 @@ fn the_caster_turns_to_the_target_first() {
     assert_eq!(mana(&sim, m), 20);
 }
 
+// QUIRK C-295: kept
 #[test]
 fn a_face_point_off_the_map_is_clamped_and_starts() {
     // re/walk 16.6: a look-at point outside the map is clamped to the edge tile (x to the hard
@@ -558,6 +565,7 @@ fn a_face_point_off_the_map_is_clamped_and_starts() {
     assert_eq!(spell(&sim, m).unwrap().target, target);
 }
 
+// QUIRK C-295: kept
 #[test]
 fn a_walk_fault_still_starts() {
     // C-295 (success and fault are both 0x226): if walk cannot move, the face order aborts and
@@ -580,6 +588,7 @@ fn a_walk_fault_still_starts() {
     assert_eq!(mana(&sim, m), 20);
 }
 
+// QUIRK C-230, C-294: kept
 #[test]
 fn an_abort_before_the_effect_costs_nothing() {
     // re/spells 8 no. 1 (counterpart to C-230).
@@ -651,6 +660,7 @@ fn an_abort_before_the_effect_costs_nothing() {
     assert_eq!(mana(&sim, m), 100);
 }
 
+// QUIRK C-294: kept
 #[test]
 fn mana_can_go_negative_at_the_effect() {
     // C-294: the effect deducts without a check (K-62). Mana set to 10 after N+21 -> in
@@ -701,6 +711,7 @@ fn the_storm_spell_creates_the_storm() {
     assert_eq!(sounds(&events, 0x1F), [(m, target, 481)]);
 }
 
+// QUIRK K-323, C-294: kept
 #[test]
 fn a_button_without_values_is_free_and_silent() {
     // re/spells 3.1: without a value set of the button cost 0, no check, no sound 0x1E; the effect
@@ -844,6 +855,7 @@ fn two_wolves(sim: &mut Sim) -> (ObjectId, [ObjectId; 2]) {
     (m, [first, second])
 }
 
+// QUIRK C-299: kept
 #[test]
 fn reincarnation_follows_its_timeline() {
     // re/spells 9.3: mana 100, cost 40, sight 52; enemy colonist corpse 5 tiles in front of the
@@ -911,6 +923,7 @@ fn reincarnation_follows_its_timeline() {
     assert_eq!((mana(&sim, m), raw(&sim, m)), (60, 60_000));
 }
 
+// QUIRK C-299: kept
 #[test]
 fn two_wolves_then_the_third_fails() {
     // re/spells 9.3: the second reincarnation takes the remaining corpse -> mana 20, reserve
@@ -935,6 +948,7 @@ fn two_wolves_then_the_third_fails() {
     assert_eq!((mana(&sim, m), reserve(&sim, m)), (20, 80));
 }
 
+// QUIRK C-299: kept
 #[test]
 fn a_dead_wolf_frees_the_reserve() {
     // C-299, re/spells 9.3: if a wolf dies, its callback sends `0x526 {wolf, 40}` -> reserve 40,
@@ -960,6 +974,7 @@ fn a_dead_wolf_frees_the_reserve() {
     assert_eq!(reserve(&sim, m), 40);
 }
 
+// QUIRK C-300: kept
 #[test]
 fn the_wolf_vanishes_with_its_caster() {
     // C-300: if the caster dies, his wolf gets `0x114` (fade-out, destroyed after 1000 ms);
@@ -1003,6 +1018,7 @@ fn the_wolf_vanishes_with_its_caster() {
     assert_eq!(reserve(&sim, caster), 40, "no callback");
 }
 
+// QUIRK C-296: kept
 #[test]
 fn reincarnation_needs_twenty_mana() {
     // C-296, re/spells 9.3: cost set to 10; mana 15 (and 19) passes the cost check (sound
@@ -1038,6 +1054,7 @@ fn reincarnation_needs_twenty_mana() {
     }
 }
 
+// QUIRK C-296, C-297: kept
 #[test]
 fn no_corpse_no_spell() {
     // re/spells 3.4, 9.3: search radius sight/4 = Fx(52) >> 2 = 13 tiles, extended in edge mode by
@@ -1085,6 +1102,7 @@ fn no_corpse_no_spell() {
     }
 }
 
+// QUIRK C-297: kept
 #[test]
 fn any_dead_walker_is_a_corpse() {
     // C-297: the filter (`0x4000015`, status DIED, module walk) checks neither owner nor fog:
@@ -1132,6 +1150,7 @@ fn any_dead_walker_is_a_corpse() {
     assert_eq!(reincarnate::find_corpse(&mut sim, m), Some(near));
 }
 
+// QUIRK C-298: kept
 #[test]
 fn a_wolf_rises_from_a_vanished_corpse() {
     // C-298: the corpse is not checked again at 0x326. Destroyed between cast and 0x326 ->
@@ -1184,6 +1203,7 @@ fn a_wolf_rises_from_a_vanished_corpse() {
     }
 }
 
+// QUIRK C-299: kept
 #[test]
 fn the_wolf_fights_for_its_caster() {
     // re/spells 4, re/animals 2: the wolf belongs to the slot of the caster, is neither aggressive
@@ -1297,6 +1317,8 @@ fn ground_of(sim: &Sim, id: ObjectId) -> [f32; 3] {
     [p[0], 0.0, p[2]]
 }
 
+// QUIRK K-91, C-303: kept
+// QUIRK C-305: deviation
 #[test]
 fn drain_mana_follows_its_timeline() {
     // re/spells 9.4: missionary mana 200, HP 600 of 1000, cost 50, against an enemy medicine man
@@ -1354,6 +1376,7 @@ fn drain_mana_follows_its_timeline() {
     assert_eq!((mana(&sim, m), mana(&sim, t), hp(&sim, m)), (150, 0, 1000));
 }
 
+// QUIRK C-304: kept
 #[test]
 fn a_second_drain_pays_twice_and_drains_once() {
     // C-304, re/spells 8 no. 8: 0x4E runs without abort; a second command in N+10 creates new
@@ -1401,6 +1424,7 @@ fn a_second_drain_pays_twice_and_drains_once() {
     );
 }
 
+// QUIRK C-303: kept
 #[test]
 fn drain_without_target_still_pays() {
     // C-303, re/spells 8 no. 7: if the target is missing at 0x326, the cost is gone anyway; 0xB7F
@@ -1426,6 +1450,7 @@ fn drain_without_target_still_pays() {
     assert_eq!(checksum(sim.state), before);
 }
 
+// QUIRK C-306: kept
 #[test]
 fn a_mounted_missionary_does_not_drain() {
     // C-306: mounted, the cast ends with 0 before anything else (no sound, no animation, no
@@ -1446,6 +1471,7 @@ fn a_mounted_missionary_does_not_drain() {
     assert_eq!((mana(&sim, m), mana(&sim, t)), (200, 100));
 }
 
+// QUIRK C-305: deviation
 #[test]
 fn the_drain_faces_the_target() {
     // C-305 deviated: the original turns to a look-at point that is never written; the

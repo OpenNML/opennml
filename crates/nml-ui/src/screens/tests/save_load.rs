@@ -265,6 +265,7 @@ fn existing_save_asks_before_overwriting() {
     );
 }
 
+// QUIRK O-144: kept
 #[test]
 fn save_selected_flag_is_always_set_and_targets_newest() {
     // O-144: `FUN_004D6100` code 2 always sets the flag (count >= 0) and enters the newest name; `LOAD4` and
@@ -336,6 +337,7 @@ fn save_selected_flag_is_always_set_and_targets_newest() {
     assert!(d.app.menu().open_names().is_empty());
 }
 
+// QUIRK O-145: kept
 #[test]
 fn delete_in_savegame_uses_typed_name() {
     // O-145: `DELETEFILE` asks 15174 (OK `{0x2A, frame}`, no cancel command); `0x2A` deletes `GameApp+0x177C`, i.e. in
@@ -374,6 +376,7 @@ fn delete_in_savegame_uses_typed_name() {
     );
 }
 
+// QUIRK O-146: kept
 #[test]
 fn return_command_survives_save() {
     // O-146: `SAVE` leaves the return command `{5,"ingameoptions3"}` in place; a later quickload with `CANCEL` then
@@ -414,6 +417,7 @@ fn return_command_survives_save() {
     assert_eq!(d.app.screen_state().return_cmd, None);
 }
 
+// QUIRK O-148: kept
 #[test]
 fn double_click_loads_only_in_loadsavedgame2() {
     // O-148: code `0xD` on `DIR` loads with the flag only in `LOADSAVEDGAME2` (`{3, frame}`, `{0x0A}`); no effect in
@@ -541,6 +545,7 @@ fn ingame_load_cancel_without_return_resumes_with_0x37() {
     assert!(d.app.queue().is_empty());
 }
 
+// QUIRK O-197: deviation
 #[test]
 fn save_command_sequence_opens_savingmessage_then_writes() {
     // re/ingame-menus 4.1: `{0x26}` -> state 0, `{6,"SAVINGMESSAGE"}`, `{0x0B}`; frame n opens `SAVINGMESSAGE`, frame
@@ -595,6 +600,7 @@ fn save_command_sequence_opens_savingmessage_then_writes() {
     assert!(save_effects(d.app.take_effects()).is_empty());
 }
 
+// QUIRK O-145: kept
 #[test]
 fn delete_reopens_the_dialog() {
     // `0x2A` (`0x004C9D4B`...): delete (`UiEffect::DeleteSave` with `GameApp+0x177C`), then `{3, name}`, `{5, name}`
@@ -652,6 +658,7 @@ fn fake_net() -> Rc<FakeSaveFiles> {
 
 const NET_SHOWN: [&str; 2] = ["(26/11/07 18:30) net_new", "(26/11/01 8:00) net_old"];
 
+// QUIRK O-144: kept
 #[test]
 fn loadsavednetworkgame_lists_the_multiplayer_folder() {
     // The frame `LAN3` (code 5) selects the network folder; `LOADSAVEDNETWORKGAME` shares `FUN_004D6100`, `dir` code 0
@@ -673,6 +680,7 @@ fn loadsavednetworkgame_lists_the_multiplayer_folder() {
     assert_eq!((r, int_of(&msg, "int")), (1, None));
 }
 
+// QUIRK O-144: kept
 #[test]
 fn net_list_preselects_the_newest() {
     // O-144: the silent preselection takes the newest entry into the name buffer (`GameApp+0x177C`), which `{0x12}`

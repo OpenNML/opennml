@@ -1692,6 +1692,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-263: kept
     #[test]
     fn the_stealth_bit_draws_only_the_main_model_with_a_tenth_alpha() {
         // `ObjectRenderer_Draw` `0x0054A3A2…0x0054A42C` (re/world-display W.2.1, D-263): bit `0x80`
@@ -1730,6 +1731,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-263: kept
     #[test]
     fn stealth_is_no_click_target() {
         // Ray test and mouse target check `& 0x65` (`0x0046CEA0`): the silhouette (only `0x80`) is never
@@ -2082,6 +2084,7 @@ mod tests {
     /// `shd.rdo` (hull +/-100, black, opaque); shadow light oblique from -z, intensity 128.
     /// The wall enlarged five times (`koerper`, x 384...484, height 500) casts its shadow toward
     /// +z. Skipped without a GPU.
+    // QUIRK D-214: kept
     #[test]
     fn shadow_decals_and_textures_render_offscreen() {
         use nml_world::shadows::TileMask;
@@ -2255,6 +2258,7 @@ mod tests {
     /// `[[c, s], [−s, c]]`). Under the crate the mark lies below the shadow decal (black,
     /// opaque): it covers it because the marks are drawn before the shadows. Skipped
     /// without a GPU.
+    // QUIRK D-268: kept
     #[test]
     fn footprints_draw_before_shadows_rotated() {
         use nml_effects::marks::Footprint;
@@ -3205,6 +3209,7 @@ mod tests {
     /// Player color (`ObjectRenderer_Draw` `0x00549AC0` -> `FUN_005884C0`): the first `EF-MATERIAL`
     /// of the main model and its sub-objects appears in the color of the entry instead of the
     /// `.rdo` color; the scaffold stays without. Skipped without a GPU.
+    // QUIRK D-39: kept
     #[test]
     fn the_player_colour_reaches_the_model_and_its_sub_objects_but_not_the_scaffold() {
         let Ok((device, queue, _)) = headless_device(BackendChoice::Auto) else {
@@ -3367,6 +3372,7 @@ mod tests {
         assert!(error.is_none(), "validation error: {error:?}");
     }
 
+    // QUIRK D-222: kept
     #[test]
     fn fog_memories_draw_the_remembered_look_with_their_brightness() {
         let Ok((device, queue, _)) = headless_device(BackendChoice::Auto) else {
@@ -3617,6 +3623,7 @@ mod tests {
     /// without shadow decal and not pickable; over the water `0.1·C + 0.9·(terrain with water)`, i.e.
     /// drawn after the water. A camouflaged unit without a drawn layer keeps its hull top (health bar
     /// of a selected foreign unit, D-266). Skipped without a GPU.
+    // QUIRK D-263, D-264, D-266: kept
     #[test]
     fn stealth_layer_is_white_with_a_tenth_alpha_after_water_without_shadow() {
         use nml_world::shadows::TileMask;

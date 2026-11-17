@@ -512,6 +512,7 @@ mod tests {
         );
     }
 
+    // QUIRK C-206: kept
     #[test]
     fn the_rank_icon_of_a_passenger_is_offset_by_the_yaw() {
         let near = |a: Vec3, b: Vec3| (a - b).abs().max_element() < 1e-4;
@@ -678,6 +679,7 @@ mod tests {
         assert_eq!(bar_targets(&h, &[], Some(foe)), [foe]);
     }
 
+    // QUIRK D-266: kept
     #[test]
     fn selected_foreigner_keeps_ring_and_bar_after_masking() {
         // re/world-display W.2.1, D-266: ring and health bar of the selection list (`0x0047A490`) check
@@ -712,6 +714,7 @@ mod tests {
         assert!(!rank_icon_visible(&h, foe));
     }
 
+    // QUIRK C-205: kept
     #[test]
     fn the_rank_icon_follows_rank_quarter_ownership_fog_and_mask() {
         let mut h = fogged_host();
@@ -888,6 +891,7 @@ mod tests {
     /// x 15..45, y -15..15 around the bar center (top of hull + 15), 12 higher when a bar is drawn. Without
     /// hit points (attribute 14) there is no bar, but the digit still appears (without +12). Drawn after the
     /// bars, `zahl_<i>.tga`, linear, white.
+    // QUIRK O-313: kept
     #[test]
     fn group_digit_only_on_own_objects_with_a_bar() {
         use crate::game::control_groups::ControlGroups;

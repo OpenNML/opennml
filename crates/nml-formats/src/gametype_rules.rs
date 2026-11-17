@@ -250,6 +250,7 @@ mod tests {
         assert_eq!(filled, 2);
     }
 
+    // QUIRK O-200: kept
     #[test]
     fn unknown_nation_and_gametype_are_skipped() {
         let text = "GAMETYPE 0\nNATION XXX\nAND\nCHECKENEMY\n/AND\n/NATION\n\
@@ -262,6 +263,7 @@ mod tests {
         assert_eq!(rules.rules.iter().flatten().flatten().count(), 1);
     }
 
+    // QUIRK O-199: kept
     #[test]
     fn leaf_without_numbers_defaults_like_the_original() {
         // The block reader takes the rest after the first space for each number and calls `atol`;
@@ -288,6 +290,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-198: kept
     #[test]
     fn negation_negates_the_children_of_a_block_and_leaves_ignore_it() {
         // `FUN_0042C820` applies the flag +0xC of the block to the results of its children;
@@ -306,6 +309,7 @@ mod tests {
         );
     }
 
+    // QUIRK O-200: kept
     #[test]
     fn last_root_wins_and_a_nation_without_root_reuses_the_previous_one() {
         let text = "GAMETYPE 3\nNATION WID\nOR\nCHECKENEMY\n/OR\nAND\nCHECKFLAGOWNER\n/AND\n/NATION\n\
@@ -316,6 +320,7 @@ mod tests {
         assert_eq!(rules.rules[3][1], last);
     }
 
+    // QUIRK O-200: kept
     #[test]
     fn top_level_closing_word_ends_reading_and_blocks_close_on_either_word() {
         let text = "GAMETYPE 0\nNATION WID\nOR\nCHECKENEMY\n/AND\n/NATION\n/OR\n\

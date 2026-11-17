@@ -3804,6 +3804,7 @@ mod tests {
 
     /// With the chat window open (input field with focus) the camera in the original does not scroll, zoom or rotate
     /// although the arrow keys are held; the screen edge keeps working, and after closing the same key scrolls again.
+    // QUIRK O-393: kept
     #[test]
     fn camera_keys_are_dead_while_a_text_field_has_focus() {
         let hotkeys = camera_keymap();
@@ -3830,6 +3831,7 @@ mod tests {
     }
 
     /// The installation has the same `KD_` lines for the camera as [`camera_keymap`] (corpus).
+    // QUIRK O-305: kept
     #[test]
     fn installed_keymap_matches_the_fixture() {
         let Some(dir) = nml_rda::testutil::corpus_game_dir() else {
@@ -3847,6 +3849,7 @@ mod tests {
 
     /// O-306 (`0x0043CDAD`...`0x0043CE29`): End/Delete rotate only with `LockCamera 0`: End (`KD_CAM_YROT_CLOCKWISE`)
     /// with `Camera_Yaw(-dt * 0.001)`, Delete with `+`; with `LockCamera 1` (installation) nothing.
+    // QUIRK O-306: kept
     #[test]
     fn end_and_delete_rotate_only_without_lock_camera() {
         const END: u8 = 0x23;
@@ -3888,6 +3891,7 @@ mod tests {
 
     /// O-305: `keymap.ini` has no `KD_CAM_XROT_*`, so neither Home nor End nor any other key tilts in `nml-game`;
     /// arrows scroll, Page Down (`KD_CAM_ZOOM_IN` = `NEXT`) zooms closer, Page Up farther.
+    // QUIRK O-305: kept
     #[test]
     fn no_tilt_keys_in_nml_game() {
         let hotkeys = camera_keymap();
@@ -3932,6 +3936,7 @@ mod tests {
     }
 
     /// O-305: `KD_SPEEDUP_GAME` (TAB) is in `keymap.ini`, the code does not query it: TAB moves nothing.
+    // QUIRK O-305: kept
     #[test]
     fn tab_does_nothing() {
         let hotkeys = camera_keymap();
@@ -3950,6 +3955,7 @@ mod tests {
 
     /// `KD_CHECK_LBUTTON` (`0x0043C7EA`): a held left mouse button halts keys, edge, rotating and zoom; the
     /// acceleration stays put (no gliding out) and continues after release.
+    // QUIRK O-329: kept
     #[test]
     fn held_left_button_stops_the_camera() {
         const LBUTTON: u8 = 0x01;
@@ -4009,6 +4015,7 @@ mod tests {
     /// O-331: `KD_CAM_FREEHAND` (`MBUTTON`, VK 4) held -> [`CameraInput::freehand`] ([`freehand_step`] sets the
     /// movement), also with `LockCamera 1` and with the chat open; not with the left button held, not under the lock,
     /// never in the viewer.
+    // QUIRK O-331: kept
     #[test]
     fn middle_button_marks_the_freehand_camera() {
         const MBUTTON: u8 = 0x04;
@@ -4057,6 +4064,7 @@ mod tests {
     /// of the previous frame in whole pixels; the pointer jumps back to this position (`SetCursorPos`), which stays the
     /// reference. Without the key the reference follows; if the camera block does not run (lock, left button), it stays
     /// put, and the first frame afterwards brings the whole movement at once. Nothing without a pointer position.
+    // QUIRK O-331, O-434: kept
     #[test]
     fn freehand_step_measures_against_the_previous_frame_and_holds_the_pointer() {
         let held = || CameraInput {
@@ -4121,6 +4129,7 @@ mod tests {
     /// O-331 in the session: with `LockCamera 0` the held middle button rotates the camera around the target, the
     /// pointer jumps back and `nml-game` gets the position for `SetCursorPos`; with `LockCamera 1` it moves. With the
     /// left button held everything stands still, afterwards the movement since the press acts at once (O-434).
+    // QUIRK O-331, O-434: kept
     #[test]
     fn middle_button_turns_or_moves_the_camera_in_the_session() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -4182,6 +4191,7 @@ mod tests {
 
     /// The viewer keeps its keys (Home/End tilt, Insert/Delete rotate, Page Down farther); `CameraKeys::Viewer` is the
     /// session's default.
+    // QUIRK O-306: kept
     #[test]
     fn viewer_camera_keys_stay() {
         assert_eq!(CameraKeys::default(), CameraKeys::Viewer);
@@ -4217,6 +4227,8 @@ mod tests {
     /// (`CAMERA_OFFSET`) in 250 game ms, linear in the offset; the target stays, the first frame is already under way
     /// but not at the destination. The move queues behind a script move, does not lock the player camera, stands still
     /// in pause, and the mouse wheel does not wait (it is discarded).
+    // QUIRK O-306, O-329: kept
+    // QUIRK O-330: deviation
     #[test]
     fn home_moves_the_camera_back_softly() {
         use crate::game::script_camera::MoveLeg;
@@ -4467,6 +4479,7 @@ mod tests {
     /// The message bar runs only with the match (O-213): it appears, stands as long as you like with the game menu open
     /// (the program clock keeps running, `frame_ms` yields nothing, so no tick) and expires in game time when play
     /// resumes.
+    // QUIRK O-213: kept
     #[test]
     fn bar_stands_while_the_session_is_stopped() {
         use crate::game::hud::{Hud, HudOptions};
@@ -4594,6 +4607,7 @@ TEXT 17000
 
     /// The bar runs via [`GameSession::advance`] only with the match (O-213): without `running` the head stands, with
     /// `running` it expires by the frame's game time (speed 10: 500 ms frame time = 500 ms game time).
+    // QUIRK O-213: kept
     #[test]
     fn session_advance_ticks_the_bar_only_while_running() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -4632,6 +4646,7 @@ TEXT 17000
 
     /// Last button (deviation from the original, O-269): `None` at session start, after a button its value, `None`
     /// again after restarting the view (`reset_view`) and after loading; not in the savegame.
+    // QUIRK O-269: deviation
     #[test]
     fn last_button_starts_empty_and_resets_on_load() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -4683,6 +4698,8 @@ TEXT 17000
     /// O-246/O-269: every click path reports the button first; for selection, hero and occupant buttons the value is
     /// the HID, the headhunter button reports twice with its own HQ. [`GameSession::toolbar_outputs`] passes each
     /// report in sequence to [`GameSession::button_pressed`].
+    // QUIRK O-246: kept
+    // QUIRK O-269: deviation
     #[test]
     fn button_pressed_records_hid_for_selection_hero_and_occupant_buttons() {
         use nml_ui::hud::toolbar::button::{ButtonEvent, KIND_HERO, KIND_SELECTION};
@@ -4878,6 +4895,7 @@ TEXT 17000
 
     /// O-222: a click in the bar rectangle belongs to the bar, the world does not see it; a click on a button takes the
     /// click path (first the last button).
+    // QUIRK O-222: kept
     #[test]
     fn hud_takes_bar_clicks_before_the_world() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -4905,6 +4923,7 @@ TEXT 17000
     /// Clicks outside the windows go to the world. In the 16 px overlap of minimap and bar at 800 x 600 the tree order
     /// applies: outside the diamond the minimap does not take the press, so the bar does; the minimap takes the release
     /// in the rectangle. The world sees neither.
+    // QUIRK O-222: kept
     #[test]
     fn world_gets_clicks_outside_the_windows() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -4976,6 +4995,7 @@ TEXT 17000
     /// normal slots and checks the lock including `REQUIRED_GUID_NATION` (`Toolbar_IsButtonLocked`, which the drawn bar
     /// leaves out); `xbutton` sends `{n, DO}` without button and lock like a left click: `xbutton(408)` (F12) thus
     /// gives the command Die to the selection.
+    // QUIRK O-309: kept
     #[test]
     fn button_and_xbutton_only_with_a_visible_toolbar() {
         use crate::game::hotkeys::HotkeyCommand as C;
@@ -5050,6 +5070,7 @@ TEXT 17000
     /// O-219: key and button 570 take the newest location from the action stack and move the game camera with the
     /// current offset to `(SIZE_X*x, 0, SIZE_Z*z)` (`0x0047F1E0`); every press uses up one location, the empty stack
     /// does nothing. Local: no command, no effect on the checksum; the pings stay.
+    // QUIRK O-219: kept
     #[test]
     fn button_570_pops_the_newest_location() {
         use crate::game::hotkeys::HotkeyCommand as C;
@@ -5103,6 +5124,7 @@ TEXT 17000
     /// diplomacy; without allies mask `0x01`); with the tick "Anna: hello" stands as a chat line (kind 10) in the
     /// player color at (20, H - 200) and lives 8000 ms of game time. A line whose mask does not carry the local slot
     /// does not appear.
+    // QUIRK O-325: kept
     #[test]
     fn chat_line_name_text_8_s() {
         use nml_ui::hud::screen_text::kind;
@@ -5172,6 +5194,7 @@ TEXT 17000
     /// before the tick neither checksum nor ping changes. With the tick the ping at (70, 101) with one repetition in
     /// the slot's color and the location on the stack arrive. A second signal at the same tile only deposits the
     /// location once more.
+    // QUIRK O-321: kept
     #[test]
     fn signal_m9() {
         use crate::game::hotkeys::HotkeyCommand as C;
@@ -5235,6 +5258,7 @@ TEXT 17000
 
     /// In pause the command runs immediately (`execute_now`, in the log), but the event comes only with the first tick
     /// after resuming (deviation from the original); before that no ping and no stack entry.
+    // QUIRK O-321: kept
     #[test]
     fn signal_in_pause_shows_up_after_resuming() {
         use crate::game::hotkeys::HotkeyCommand as C;
@@ -5263,6 +5287,7 @@ TEXT 17000
 
     /// 578 (quicksave) and 581 (load) are not known to the dispatcher (re/game-ui N.5.4): they reach the bar (last
     /// button), but no minimap branch: no command, no camera move, the action stack stays.
+    // QUIRK O-219, O-292: kept
     #[test]
     fn xbuttons_578_and_581_have_no_branch() {
         use crate::game::hotkeys::HotkeyCommand as C;
@@ -5335,6 +5360,7 @@ TEXT 17000
     /// twice, the tile of the selected one goes to the front of the action stack, the camera stays. Key
     /// (`xbutton(576)`) and button take the same path. A missing object still raises the index and leaves the selection
     /// empty (one message); an empty list clears the selection (one message). No command, no effect on the checksum.
+    // QUIRK O-293: kept
     #[test]
     fn idle_576_cycles_m8() {
         use crate::game::hotkeys::HotkeyCommand as C;
@@ -5394,6 +5420,7 @@ TEXT 17000
     /// O-293: a double-click on button 576 (mouse through the tree: 9, 9, `0x27`) selects three workers in a row; the
     /// first two end up on the action stack, only the third gets the camera (world position, offset stays). Click sound
     /// three times, `ButtonPressed` three times.
+    // QUIRK O-293: kept
     #[test]
     fn idle_576_double_click_three_then_camera() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -5434,6 +5461,7 @@ TEXT 17000
 
     /// 577: all idle workers via the group path (with more than one object only units), two messages `{0x10, 2}`;
     /// neither camera nor stack nor index (O-293).
+    // QUIRK O-293: kept
     #[test]
     fn idle_577_selects_all_without_camera() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -5461,6 +5489,7 @@ TEXT 17000
     /// O-292: corner buttons only with `IsMap`, 580 only for game type >= 0 (not in the campaign); a click on the mode
     /// button advances the mode and rebuilds the buttons; without a visible bar the click is taken but has no effect;
     /// 579 asks the flow for the game menu. The keys 573 ... 577 also work without `IsMap`.
+    // QUIRK O-292, O-388: kept
     #[test]
     fn buttons_only_with_ismap_and_580_only_outside_campaign() {
         use crate::game::hotkeys::HotkeyCommand as C;
@@ -5559,6 +5588,7 @@ TEXT 17000
 
     /// Key 572 (`SHIFT D` = `xbutton(572)`) asks the flow for diplomacy, also in the campaign; button 580 only for game
     /// type >= 0. No command.
+    // QUIRK O-323: kept
     #[test]
     fn diplomacy_key_and_button_ask_the_flow() {
         use crate::game::hotkeys::HotkeyCommand as C;
@@ -5586,6 +5616,7 @@ TEXT 17000
 
     /// Index of the idle workers and masks go into the host part and come back with `resume_from`; the next press on
     /// 576 continues there.
+    // QUIRK O-293: kept
     #[test]
     fn idle_index_survives_save_and_load() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -5810,6 +5841,7 @@ TEXT 17000
 
     /// O-285: left press in the diamond sets the camera to `(SIZE_X*mx, 0, SIZE_Z*mz)` with the old offset; dragging
     /// with the button held and releasing no longer change it. The world does not see the click, there is no command.
+    // QUIRK O-285: kept
     #[test]
     fn drag_does_not_move_the_camera() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -5874,6 +5906,7 @@ TEXT 17000
     /// O-40: right-click in the diamond gives the same command as `sim_command` with `Move` (fixed point from the
     /// floating-point tile, formation 0, no direction, target radius -1, spread -1, not running): the same queue, the
     /// same checksum after the next steps.
+    // QUIRK O-40: kept
     #[test]
     fn right_click_sends_move_like_sim_command() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -5912,6 +5945,7 @@ TEXT 17000
 
     /// With an open build cursor the minimap takes the left click (camera jump, no building) and the right click (move
     /// command to the selection) before the world; the build cursor stays open (O-40, O-285).
+    // QUIRK O-40, O-285: kept
     #[test]
     fn minimap_takes_both_buttons_before_an_open_build_cursor() {
         use nml_ui::hud::toolbar::{BuildCursor, Cursor};
@@ -5956,6 +5990,7 @@ TEXT 17000
     /// world as over the minimap, via the real position from `toolbar_step` (ground behind the pointer,
     /// [`GameSession::ground_at`]); over the minimap the pointer is an arrow (7). With the hardware pointer the variant
     /// stays 0.
+    // QUIRK O-394: kept
     #[test]
     fn build_pointer_tint_follows_the_preview_verdict_over_the_minimap() {
         use crate::game::pointer::{VARIANT_GREEN, VARIANT_NORMAL, VARIANT_RED};
@@ -6003,6 +6038,7 @@ TEXT 17000
 
     /// O-40: a right double-click in the diamond delivers 4, 4, `0x12` (`ClickClocks::release`) and thereby three
     /// commands to the same target; only the third runs.
+    // QUIRK O-40: kept
     #[test]
     fn right_double_click_gives_three_commands_third_runs() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6030,6 +6066,7 @@ TEXT 17000
 
     /// O-40: if the first selected object does not belong to the local player, the minimap sends nothing but still
     /// takes the right-click (the world does not see the press); also not on a double-click.
+    // QUIRK O-40: kept
     #[test]
     fn foreign_first_object_sends_nothing() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6082,6 +6119,7 @@ TEXT 17000
     /// right double-click of the whole screen: neither the bar button nor the world (also not the right-click command,
     /// O-233) gets a click, and the minimap itself has no effect. Without `IsMap` the normal path applies: the bar
     /// takes clicks, the right-click command works.
+    // QUIRK O-290: kept
     #[test]
     fn locked_minimap_swallows_all_clicks_m11() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6132,6 +6170,7 @@ TEXT 17000
 
     /// O-291: the hidden minimap (`{0x1D, 0}`, `+0x4D = 0`) keeps taking clicks with the last drawn position: left
     /// press in the invisible diamond sets the camera, the right-click sends the selection.
+    // QUIRK O-291: kept
     #[test]
     fn hidden_minimap_still_takes_clicks() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6155,6 +6194,7 @@ TEXT 17000
     /// pointer: 128 x 128 px rotated by theta, inside the window including the overhang, the center covered, the window
     /// corner not. Hidden or in the cinemascope it does not draw: then no rectangles, even if its rectangle keeps
     /// taking clicks (O-291, O-368).
+    // QUIRK O-457: kept
     #[test]
     fn minimap_depth_rects_follow_the_minimap() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6203,6 +6243,8 @@ TEXT 17000
     /// O-289: the script ping (action 7) creates location and ping with 10 repetitions; its clock runs only in frames
     /// with a drawn minimap. In the cinemascope it stands still, the first drawn frame afterwards brings all the game
     /// time at once and uses up one repetition without a ring.
+    // QUIRK O-289: kept
+    // QUIRK E-244: deviation
     #[test]
     fn minimap_pings_tick_only_in_drawn_frames() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6343,6 +6385,7 @@ TEXT 17000
 
     /// O-237: the target point stands 300 ms of **program time**, also with the game menu open, and shrinks from 33 to
     /// 1 (`rest * 0.0033333334 * 32 + 1`); ground targets on the terrain, object targets flat.
+    // QUIRK O-237: kept
     #[test]
     fn target_decal_lasts_300_ms_of_program_time() {
         use crate::game::toolbar_host::{TargetDecal, target_decal_size};
@@ -6390,6 +6433,7 @@ TEXT 17000
 
     /// re/game-ui N.5.8: ground targets lie on the terrain with `y = 0`, only the object targets 529/533 at the
     /// object's position with height (flat, `0x0054BFA0`).
+    // QUIRK O-237: kept
     #[test]
     fn decal_lies_on_the_ground_or_at_the_object() {
         let ground = Vec3::new(700.0, 55.0, 900.0);
@@ -6402,6 +6446,7 @@ TEXT 17000
 
     /// Without the game UI (viewer without `--hud`) the bar sees no mouse; every click, also in the bar rectangle, goes
     /// to the host's modes as before.
+    // QUIRK O-222: kept
     #[test]
     fn viewer_without_hud_keeps_viewer_modes() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6755,6 +6800,8 @@ TEXT 17000
     /// [`GameSession::button_pressed`] as host command `ScriptButton` with the `BUTTONMSG` to the simulation; the next
     /// tick sets the mirror's last button (`GE+0x4E0`, condition 38). Without such a script the bar sends nothing
     /// ([`SimHost::press_button`], counter-check on the multiplayer map).
+    // QUIRK O-246: kept
+    // QUIRK E-229: deviation
     #[test]
     fn toolbar_click_reaches_the_script_mirror_as_script_button() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6819,6 +6866,7 @@ TEXT 17000
     /// mouse before the root (`FUN_004B8E70` -> `FUN_004528F0`, without checking the lock). The lock 18 sends the bar
     /// `{0x19, 1}` (`FUN_0042D920`): the open cursor closes. Applies without `IsMap`: with a minimap it intercepts the
     /// clicks before the bar under the lock (O-290, test `locked_minimap_swallows_all_clicks_m11`).
+    // QUIRK E-246, O-290: kept
     #[test]
     fn ui_lock_blocks_the_world_but_not_the_toolbar() {
         use nml_sim::script::present::Presentation;
@@ -6876,6 +6924,7 @@ TEXT 17000
     /// O-233: nobody checks the right-click command against the lock in the original (the bar's flag `+0xCC` is never
     /// set, `0x00458510` case 4); with a selection it works as without the lock. Applies without `IsMap`: with a
     /// minimap it takes every right press under the lock (O-290, test `locked_minimap_swallows_all_clicks_m11`).
+    // QUIRK E-246, O-233, O-290: kept
     #[test]
     fn right_click_command_works_under_the_lock() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -6903,6 +6952,7 @@ TEXT 17000
     /// re/campaign-ui D6.10 (`0x00449B00`, `GameEngine_UpdateCamera` `0x0043C7DC`): under the lock the world takes no
     /// left click (selection, box, the host's modes) and the wheel does not zoom ([`InputGate::world_click`],
     /// [`InputGate::player_camera`]); without the lock both.
+    // QUIRK E-246: kept
     #[test]
     fn left_click_and_wheel_stay_blocked_under_the_lock() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -7009,6 +7059,7 @@ TEXT 17000
     /// restarting the view and after loading in the cinemascope it stays hidden. The `{8}` afterwards is not taken by
     /// the hidden bar (as in the original, `FUN_0047A130` clears the selection without its own `{8}`). Without `IsMap`:
     /// the intro also locks the input; with a minimap it would take the press (O-290).
+    // QUIRK E-238, O-290: kept
     #[test]
     fn cinemascope_hides_the_toolbar_also_after_loading() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -7082,6 +7133,7 @@ TEXT 17000
 
     /// `advance_by` reports the host's selection to the simulation's mirror before the step, but only for scripts with
     /// conditions 35-38 (tutorial 0-1) and only on change; on a map without them the command log stays free of it.
+    // QUIRK E-230: deviation
     #[test]
     fn session_advance_syncs_the_selection_only_for_ui_scripts() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -7215,6 +7267,7 @@ TEXT 17000
 
     /// O-350 (`FUN_00430920`, `0x004309BE`): the tutorial's cinemascope sets speed 10 and turns the command bar and the
     /// status bar off in every game type; bars (`BARSIZE`) only for game type -1.
+    // QUIRK O-350: kept
     #[test]
     fn cinemascope_bars_only_in_the_campaign() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -7263,6 +7316,7 @@ TEXT 17000
 
     /// O-217: in the cinemascope messages expire invisibly (and silently); the host sets the flag each frame from the
     /// scripts' cinemascope, already for the messages of the frame in which it begins.
+    // QUIRK O-217: kept
     #[test]
     fn messages_are_hidden_in_cinemascope() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -7306,6 +7360,7 @@ TEXT 17000
 
     /// O-354: the portrait fade runs on the program clock, also with the game menu open (without a step); `advance_by`
     /// does not compute it, a backward jump of the clock counts 0.
+    // QUIRK O-354: kept
     #[test]
     fn portrait_fade_runs_while_the_game_menu_is_open() {
         use nml_sim::script::present::Presentation;
@@ -7351,6 +7406,8 @@ TEXT 17000
 
     /// After loading, bars (campaign only), portraits, the running line and the tips stand there at once in full,
     /// without fade; the status bar and the messages stay hidden in the cinemascope.
+    // QUIRK O-217, O-355, O-356: kept
+    // QUIRK E-239: deviation
     #[test]
     fn loading_restores_bars_portraits_line_and_tips_without_fade() {
         use nml_sim::script::present::PortraitMemory;
@@ -7440,6 +7497,7 @@ TEXT 17000
 
     /// O-234: the cinemascope's `{8}` comes after `{0x11, 1}` and is lost; hidden, the bar does not rebuild even with a
     /// changed signature (here a button lock). After the cinemascope the buttons from before stand.
+    // QUIRK O-234: kept
     #[test]
     fn toolbar_keeps_the_old_buttons_after_cinemascope() {
         use nml_sim::script::present::Presentation;
@@ -7568,6 +7626,8 @@ TEXT 17000
     /// [`GameSession::prepare`] sets exactly one world model; the cloth waves with the effect world's clock, so it
     /// stands still in pause and game menu (20 frames of the same animation time) and keeps running afterwards. Without
     /// a selection no flag.
+    // QUIRK D-257, D-261: kept
+    // QUIRK D-258: deviation
     #[test]
     fn flag_cloth_stands_still_in_pause_and_game_menu() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -7711,6 +7771,8 @@ TEXT 17000
     /// the second moves the camera with the current offset to the mean; clearing the selection (also in the frame)
     /// resets the last group; the shift path works via the table of held keys; none of it changes checksum or command
     /// log. Saving and loading brings back the groups of all slots, with an empty selection and without a last group.
+    // QUIRK O-43, O-310: kept
+    // QUIRK O-312: deviation
     #[test]
     fn session_runs_control_groups_and_restores_them() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -7854,6 +7916,8 @@ TEXT 17000
     /// `selectnextguid` via `run_hotkey` at program clock selects without a camera, the double-tap within 300 ms moves
     /// the game camera with the current offset to the selected object; no effect on the checksum, no command. The index
     /// is in the host part and continues after loading.
+    // QUIRK O-314: kept
+    // QUIRK O-333: deviation
     #[test]
     fn session_selects_next_guid_and_restores_the_index() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -7953,6 +8017,7 @@ TEXT 17000
     /// `resume_from` restores game camera and script camera, and both matches keep running alike (camera and checksum).
     /// The savegame's selection mirror is not empty, the host's selection after loading is: the first step reports the
     /// empty selection (`ScriptSelection []`).
+    // QUIRK E-239: deviation
     #[test]
     fn resumed_session_restores_the_script_camera_and_reports_the_empty_selection() {
         use nml_sim::script::present::Presentation;
@@ -8131,6 +8196,7 @@ TEXT 17000
     /// The game UI draws the minimap (frame, terrain with fog, border, dots of the own start objects, four lines of the
     /// camera frame) without effect on the checksum. In the cinemascope it is absent, even if the map itself would be
     /// visible (the host's lock, `InputGate::minimap_visible`), afterwards it is back.
+    // QUIRK O-39: kept
     #[test]
     fn the_session_draws_the_minimap_except_in_cinemascope() {
         use crate::game::minimap::draw::{BORDER_IMAGE, FOG_TEXTURE, FRAME_IMAGE};
@@ -8328,6 +8394,7 @@ TEXT 17000
     /// O-317: in pause world, message bar and rendering clock stand still; the player camera (keys) and the water run,
     /// the engine counts ticks without world tick (ESC, O-152). The wheel has no effect in pause and not later either
     /// (`0x0043D0E9`). With the game menu open, in contrast, the camera stands still too.
+    // QUIRK O-317, O-335: kept
     #[test]
     fn pause_stops_world_and_messages_but_not_the_camera() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -8429,6 +8496,7 @@ TEXT 17000
 
     /// O-231: in the visible pause a build button has no effect (no build cursor), but the click counts as a button
     /// (`ButtonPressed` first); without pause the same button opens the cursor.
+    // QUIRK O-231: kept
     #[test]
     fn build_does_nothing_in_the_visible_pause() {
         use nml_formats::gifcon::button_kind as kinds;
@@ -8507,6 +8575,7 @@ TEXT 17000
 
     /// O-318: a move command in pause takes effect in the state at once (it does not wait for a tick), but the unit
     /// stands still until resuming; the replay of the log gives the same checksum as the match.
+    // QUIRK O-318: kept
     #[test]
     fn move_command_in_pause_executes_at_once_and_replays_alike() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -8570,6 +8639,7 @@ TEXT 17000
     /// O-318: a command A that is still waiting at the tick boundary when the pause is switched on runs at once, before
     /// the command B given in the pause, in the log as in the state; a savegame of the pause contains A, and the replay
     /// reaches the same checksum. Likewise via loss of focus.
+    // QUIRK O-318: kept
     #[test]
     fn pending_command_runs_before_commands_of_the_pause() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -8643,6 +8713,7 @@ TEXT 17000
 
     /// O-154: loss of focus switches the pause on if it is not visible; a further loss of focus changes nothing, the
     /// player has to resume the match themselves.
+    // QUIRK O-154: kept
     #[test]
     fn focus_loss_pauses_and_stays() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -8811,6 +8882,7 @@ TEXT 17000
     /// O-384: the box appears from the press on (without extent it draws nothing) between press point and pointer,
     /// after the messages of the world pass and after PAUSE, before the game windows; also in the cinemascope. The
     /// viewer path [`GameSession::hud_cmds`] does not have it. Releasing ends it; the checksum stays.
+    // QUIRK O-384: kept
     #[test]
     fn selection_rect_lies_between_pause_and_windows() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -8888,6 +8960,7 @@ TEXT 17000
 
     /// O-384: `{0x19, 1}` ends a running box without a selection (`0x00449ADB`), `{0x19, 0}` does not bring it back;
     /// releasing afterwards selects nothing.
+    // QUIRK O-384: kept
     #[test]
     fn lock_ends_a_running_selection_rect() {
         use nml_sim::script::present::Presentation;
@@ -8917,6 +8990,7 @@ TEXT 17000
     /// clears the selection first; in this test match shortly after the start nothing in the box is visible enough to
     /// select (fog check `0x00467D70`), so the selection is empty afterwards. If the bar takes the release
     /// (beforehand), the box lapses and the bar object stays selected.
+    // QUIRK O-385: kept
     #[test]
     fn releasing_a_rect_over_the_toolbar_selects() {
         let Some((vfs, device, queue)) = corpus_gpu() else {
@@ -8948,6 +9022,7 @@ TEXT 17000
     /// re/campaign-ui D6.4: the scene fade lies above world (combat display) and game UI, as the last command of
     /// [`GameSession::over_world_cmds`]; the desktop (menu, dialogs) and the pointer follow at the host afterwards. It
     /// runs on the program clock also with the game menu open. Without a drawn UI (viewer without `--hud`) none.
+    // QUIRK O-362: kept
     #[test]
     fn fade_draws_after_the_hud_and_before_the_desktop() {
         use nml_sim::script::present::Presentation;
@@ -9022,6 +9097,7 @@ TEXT 17000
 
     /// O-376: session start, restart and loading reset the scene fade (`FUN_004BAA10`: state 0, value 255); a running
     /// fade aborts, a 146 without a flag in the state becomes clear.
+    // QUIRK O-376: deviation
     #[test]
     fn level_start_and_restart_reset_the_fade() {
         use nml_sim::script::present::Presentation;
@@ -9060,6 +9136,7 @@ TEXT 17000
 
     /// O-376: a savegame after 146 and before 145 (`PresentationMemory::faded_out`) shows black at once after loading,
     /// without a fade, and stays black; without the flag the image is clear.
+    // QUIRK O-376: deviation
     #[test]
     fn loading_a_faded_out_save_shows_black_without_fade() {
         use nml_ui::hud::scene_fade::state;
@@ -9143,6 +9220,7 @@ TEXT 17000
     /// clears with the fog color when fog is on (`m_EnableFog`: 501/502 before the view's switch), otherwise with
     /// `BackColor`; without cinemascope black, also with fog. [`GameSession::prepare`] passes the color to the
     /// renderer.
+    // QUIRK E-245, O-374: kept
     #[test]
     fn clear_color_in_cinemascope_uses_fog_or_back_color() {
         use crate::game::presentation::FogValues;
@@ -9206,6 +9284,7 @@ TEXT 17000
     /// E-228, re/campaign-ui D6.13: the target highlight 152 gets the selection ring (the same ground marker as
     /// selection and right-click target), without expiry; a later right-click target replaces it (the same field
     /// `GameWorld+0x318`), and conversely 152 replaces a right-click target; 155 and the end of the object clear it.
+    // QUIRK E-228: kept
     #[test]
     fn highlight_draws_a_selection_ring() {
         use nml_sim::script::present::Presentation;
@@ -9270,6 +9349,7 @@ TEXT 17000
 
     /// The wiring of `advance_by` (`speech_step`): every event acts once; an `InfoFrameClose` decides on the
     /// simulation's line (`SpeechLine`): if it still runs (`n169`), the sound stays, if it is over, it fades out.
+    // QUIRK O-363: kept
     #[test]
     fn speech_events_reach_the_audio_once() {
         use crate::testutil::FakeAudio;
@@ -9342,6 +9422,7 @@ TEXT 17000
     /// O-363 (pause and game menu do not stop the channel): without `running` the session produces no events and does
     /// not advance, the speech output stays untouched (the line keeps running, no fading out). The sound side
     /// (`AudioEngine` keeps running in pause) cannot be checked without a device (manual check).
+    // QUIRK O-363: kept
     #[test]
     fn paused_session_leaves_the_speech_line_alone() {
         use crate::testutil::FakeAudio;
@@ -9633,6 +9714,7 @@ TEXT 17000
     /// - 639: line 20002 on slot 1 next to portrait 1000/101 on slot 1 (from 635), 1,098: line 20008; saving and
     ///   loading at 1,100;
     /// - 1,600: `Cinemascope off`: no bars, command and status bars back; 1,622: `Tip 20100` on slot 1 -> text slot 3.
+    // QUIRK E-246, O-56, O-350, O-351, O-353, O-356, O-362, O-363: kept
     #[test]
     fn kamp1_intro_shows_bars_portrait_and_line() {
         use nml_ui::hud::cinemascope::Fade;
@@ -9796,6 +9878,7 @@ TEXT 17000
     /// The presentation events open and close the host's info windows: 168 (`InfoFrame`) as a window, 213
     /// (`InfoSpeechFrame`) as a speech window, both at the head (O-360); `InfoFrameClose` closes exactly the ID, an
     /// unknown ID is ignored; a second 168 of the same ID replaces the window (E-249). Session start: none.
+    // QUIRK E-249: kept
     #[test]
     fn info_frame_events_open_and_close_frames() {
         use nml_sim::script::present::Presentation;
@@ -9864,6 +9947,7 @@ TEXT 17000
     /// A speech window (213 with pos >= 0, line on slot >= 4) closes at the end of speech via the simulation's
     /// `InfoFrameClose` (`FUN_00444C10` -> `FUN_00443450` -> `FUN_004401C0`), not earlier; the host has no clock of its
     /// own for it.
+    // QUIRK E-240, E-249: kept
     #[test]
     fn speech_frame_closes_at_speech_end() {
         use nml_sim::script::InfoFrameMemory;
@@ -9931,6 +10015,8 @@ TEXT 17000
     /// know an opening order), so each at the head: the largest ID is at the bottom (E-249). Windows only in the host
     /// (without an entry in the state) no longer exist afterwards; a restart without windows in the state empties the
     /// list.
+    // QUIRK E-249: kept
+    // QUIRK E-239: deviation
     #[test]
     fn loading_restores_info_frames_in_text_id_order() {
         use nml_sim::script::InfoFrameMemory;
@@ -10037,6 +10123,7 @@ TEXT 17000
     /// as the last part of [`GameSession::over_world_cmds`]); game menu, dialogs and pointer are drawn by the host
     /// afterwards. They draw (and measure themselves) in every frame with a match, also with the game menu open and in
     /// the cinemascope without the command and status bars; not without a drawn UI (viewer without `--hud`).
+    // QUIRK O-360: kept
     #[test]
     fn info_frames_draw_after_the_fade_and_before_menus() {
         use nml_sim::script::present::Presentation;
@@ -10098,6 +10185,7 @@ TEXT 17000
 
     /// O-361: info windows take no mouse clicks (all mouse slots of vtable `0x0061A3A8` return 0); a click in the
     /// window rectangle goes to the world or to the bar's button below.
+    // QUIRK O-361: kept
     #[test]
     fn clicks_go_through_info_frames() {
         use nml_sim::script::present::Presentation;
@@ -10170,6 +10258,7 @@ TEXT 17000
     /// re/campaign-ui D6.9 (O-367): the countdown appears only with a registered container (`GE+0x608 != 0`, action 15)
     /// with the value `countdown_s`, right-aligned at y = 20, red below 10 s; without a container nothing, also not in
     /// the control channel.
+    // QUIRK O-367: kept
     #[test]
     fn countdown_only_with_a_container() {
         use nml_ui::hud::countdown::{COUNTDOWN_COLOR, COUNTDOWN_RED};
@@ -10215,6 +10304,7 @@ TEXT 17000
     /// 0x28}`, at 1024 x 768 `(0, 30)`), white from 10 s, red below; the number is `ms / 1000` (truncating: 999 ms ->
     /// "0:00"). Without an entry no number and `timers` empty; the time limit of game type 4 is in the same list (ID
     /// 0). Script countdown (part 1) and timers (part 2) both draw, the script countdown first.
+    // QUIRK D-302: kept
     #[test]
     fn timers_show_the_remaining_time_top_left() {
         use nml_ui::coords::game_y;
@@ -10282,6 +10372,7 @@ TEXT 17000
     /// re/campaign-ui D6.4/D6.9/D6.12: screen text and countdown draw with the world at the end of
     /// [`GameSession::combat_cmds`], the screen text before the countdown (`0x00438F2A` before `0x00438F74`), both
     /// below the whole UI (status bar, bars, info windows; O-367) and also in the cinemascope. The checksum stays.
+    // QUIRK O-367, O-373: kept
     #[test]
     fn countdown_draws_with_the_world_below_the_hud() {
         use nml_sim::script::present::Presentation;
@@ -10337,6 +10428,7 @@ TEXT 17000
     /// texts (`FUN_00493B80` -> `FUN_004926D0` -> `FUN_004931A0`), before the countdown: in `0xC8C8C8` at the truncated
     /// pixel (text at x + 2), after 1,000 ms of the bar's game time higher with alpha 127, from 2,000 ms nothing more.
     /// The checksum stays.
+    // QUIRK D-244: kept
     #[test]
     fn floats_draw_in_the_world_pass_of_the_game() {
         use crate::game::notices::FLOAT_MS;
@@ -10417,6 +10509,7 @@ TEXT 17000
     /// ([`GameSession::advance_paused`]) clock, position and alpha stand still; at speed 19 (factor 29/20) the number
     /// is gone after 87 frames of 16 ms = 1,392 ms of frame time (sum of `dt` 2,018 >= 2,000; after 86 frames 1,995),
     /// not only after 2,000 ms.
+    // QUIRK D-244: kept
     #[test]
     fn floats_run_on_the_bar_clock() {
         use crate::game::world_effects::DIGIT_COLOR;
@@ -10472,6 +10565,7 @@ TEXT 17000
     /// re/campaign-ui D6.12: the screen texts run on the message bar's game time (`FUN_00494A00` from `0x0043D1DB`): in
     /// pause and with the game menu open (no tick of the match) the text including alpha stands as long as you like; on
     /// resuming it ends after the remainder of its duration. Speed 10 = program time.
+    // QUIRK O-373: kept
     #[test]
     fn screen_text_stands_in_pause() {
         use crate::game::hud::{Hud, HudOptions};

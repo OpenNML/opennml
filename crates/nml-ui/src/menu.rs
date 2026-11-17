@@ -450,6 +450,7 @@ mod tests {
         assert!(q.is_empty());
     }
 
+    // QUIRK O-33: kept
     #[test]
     fn clear_drops_the_commands_but_not_the_wait() {
         // `FUN_004BC6C0` frees only the commands of the list; a running wait state is not part of it.

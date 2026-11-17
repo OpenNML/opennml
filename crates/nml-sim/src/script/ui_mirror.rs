@@ -202,6 +202,7 @@ mod tests {
         assert!(rules.uses_ui_conditions);
     }
 
+    // QUIRK E-230: deviation
     #[test]
     fn selection_command_sets_the_mirror_and_rejects_31_ids() {
         let (mut state, rules) = started();
@@ -269,6 +270,7 @@ mod tests {
         crate::save::check_state(sim.state).expect("savegame loads");
     }
 
+    // QUIRK E-229: deviation
     #[test]
     fn script_and_ki_origins_cannot_send_ui_commands() {
         let (mut state, rules) = started();
@@ -294,6 +296,7 @@ mod tests {
         assert_eq!(sim.state.script.mission.last_button, 77);
     }
 
+    // QUIRK E-229: deviation
     #[test]
     fn button_command_sets_last_button_and_38_does_not_consume_it() {
         // Start 0 (E-229, deviation from the original), then the value of the command; 38 consumes nothing.
@@ -330,6 +333,7 @@ mod tests {
         assert_eq!(LEVEL_CONTAINER_ID, 1);
     }
 
+    // QUIRK E-135: kept
     #[test]
     fn conditions_35_36_unknown_name_is_true_for_both() {
         let (mut state, rules) = started();
@@ -352,6 +356,7 @@ mod tests {
         }
     }
 
+    // QUIRK E-136: deviation
     #[test]
     fn condition_35_needs_every_present_id() {
         let (mut state, rules) = started();
@@ -385,6 +390,8 @@ mod tests {
         assert!(check(&mut sim, 35, &["GRUPPE"]));
     }
 
+    // QUIRK E-231: kept
+    // QUIRK E-136: deviation
     #[test]
     fn condition_37_compares_the_type_guid_only() {
         let (mut state, rules) = started();
@@ -420,6 +427,7 @@ mod tests {
         assert!(!check(&mut sim, 37, &["6", "1100"]));
     }
 
+    // QUIRK E-136: deviation
     #[test]
     fn condition_38_ignores_the_player() {
         let (mut state, rules) = started();
@@ -438,6 +446,7 @@ mod tests {
         assert_eq!(sim.state.script.mission.last_button, 0);
     }
 
+    // QUIRK E-230: deviation
     #[test]
     fn mirror_follows_world_changes_like_the_selection_list() {
         // The mirror models the original's selection list: dying counts (until final

@@ -433,6 +433,7 @@ mod tests {
         assert_eq!(batch.space, EffectSpace::World);
     }
 
+    // QUIRK D-98: kept
     #[test]
     fn tilt_is_applied_after_the_rotoff_step() {
         // ROTATION 0, phi 0: M = identity, the corner stays (M*(c + o) - o = c). Original: afterwards

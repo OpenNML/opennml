@@ -1984,6 +1984,7 @@ mod tests {
         }
     }
 
+    // QUIRK W-195: kept
     #[test]
     fn mount_and_board_ignore_the_queue_keys() {
         // W-195: Mount (403) and Board (404) go directly to the network like Quarter (414);
@@ -2318,6 +2319,7 @@ mod tests {
         assert!(logged(&mut host).is_empty());
     }
 
+    // QUIRK W-223: deviation
     #[test]
     fn the_hq_lists_research_of_submenu_600() {
         let mut host = host();
@@ -2767,6 +2769,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-227: kept
     #[test]
     fn the_run_modifier_reaches_go_to_and_attack_only() {
         let go = |flags| CommandKind::Move {
@@ -2816,6 +2819,7 @@ mod tests {
         );
     }
 
+    // QUIRK D-227: kept
     #[test]
     fn a_right_double_click_issues_the_action_twice_and_the_second_runs() {
         let mut host = host();
@@ -2979,6 +2983,7 @@ mod tests {
             .expect("headhunter menu")
     }
 
+    // QUIRK D-239: kept
     #[test]
     fn the_hire_menu_walks_three_levels() {
         use crate::game::testworld::{HQ_SID, HQ_SPA, SID_SHERIFF, UNDERTAKER, hunter_host, spawn};
@@ -3061,6 +3066,7 @@ mod tests {
         assert_eq!(host.state.players[0].resources_fx[0] >> 12, 700);
     }
 
+    // QUIRK D-239, C-228: kept
     #[test]
     fn the_hire_menu_offers_the_hq_only_with_a_hunter() {
         use crate::game::testworld::{HQ_SPA, HUNTER_SID, SID_SHERIFF, hunter_host, spawn};

@@ -447,6 +447,7 @@ mod tests {
 
     /// re/pointer-3d MZ.5/MZ.7: `PerspectiveFovLH` with fov 0.1, aspect ratio 1, `zn = 10100`,
     /// `zf = −9900` (`0x0042BF14…0x0042C025`); depth of the origin `0.495 − 4999.5/20100`.
+    // QUIRK O-454: kept
     #[test]
     fn pointer_matrices_like_the_original() {
         let p = pointer_projection();
@@ -558,6 +559,7 @@ mod tests {
 
     /// re/pointer-3d MZ.6: white and build cursor opaque, targeting mode (alpha 0.8) transparent
     /// only; the tint replaces the material color (`Material_MakeTinted` `0x005832F0`), fog off.
+    // QUIRK O-454, O-455: kept
     #[test]
     fn pointer_look_by_tint() {
         let white = pointer_look([1.0; 4]);

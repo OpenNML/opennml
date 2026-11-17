@@ -917,6 +917,7 @@ VALUEID 50003 6 1 0
         panic!("not reached after {max} steps");
     }
 
+    // QUIRK W-21: kept
     #[test]
     fn the_unit_delay_rounds_to_100_ms_and_carries_the_rest() {
         // Rate 60: constantly 1000 ms without leak.
@@ -1046,6 +1047,7 @@ VALUEID 50003 6 1 0
         }
     }
 
+    // QUIRK W-39: deviation
     #[test]
     fn matches_class_needs_one_bit_and_ignores_the_owner() {
         let rules = rules();

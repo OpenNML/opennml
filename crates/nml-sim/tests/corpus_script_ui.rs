@@ -85,6 +85,7 @@ fn button(word: i32) -> Command {
     }
 }
 
+// QUIRK E-136: deviation
 #[test]
 fn tutorial0_1_lesson_a_waits_for_the_selection() {
     let Some(dir) = corpus_game_dir() else {
@@ -129,6 +130,7 @@ fn tutorial0_1_lesson_a_waits_for_the_selection() {
     assert!(fired(&events).contains(&lesson), "{:?}", fired(&events));
 }
 
+// QUIRK E-136: deviation
 #[test]
 fn tutorial0_2_button_blocks_fire_on_2904_2921_140() {
     let Some(dir) = corpus_game_dir() else {

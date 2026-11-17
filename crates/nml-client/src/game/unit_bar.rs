@@ -1679,6 +1679,7 @@ ENDGUID
             .set_status_flags(status::MOVE, moving);
     }
 
+    // QUIRK K-88: kept
     #[test]
     fn the_bar_offers_train_buttons_by_motion() {
         use crate::game::sim_host::testkit::{CART, LOCO, TENDER, spawn_dir};
@@ -1723,6 +1724,7 @@ ENDGUID
         );
     }
 
+    // QUIRK K-88: kept
     #[test]
     fn train_buttons_submit_train_commands() {
         use crate::game::sim_host::testkit::{LOCO, TENDER, spawn_dir};
@@ -1859,6 +1861,7 @@ ENDGUID
         );
     }
 
+    // QUIRK K-263: kept
     #[test]
     fn a_drag_gives_its_own_direction_and_spread_from_world_units() {
         let at = |x: f32, y: f32, z: f32| Vec3::new(x, y, z);
@@ -1892,6 +1895,7 @@ ENDGUID
         );
     }
 
+    // QUIRK K-263: kept
     #[test]
     fn the_last_drag_beyond_16_units_stays_until_release() {
         let mut t = FormationDragTracker::new(Vec3::ZERO);
@@ -2048,6 +2052,7 @@ ENDGUID
 
     // --- Open gate 430 and close gate 431 (re/arming-gates 2.C, 7) ---
 
+    // QUIRK K-291: kept
     #[test]
     fn gate_buttons_follow_the_door_state() {
         use crate::game::testworld::{GATE, host, spawn, spawn_site};
@@ -2135,6 +2140,7 @@ ENDGUID
         assert_eq!(offered(&mut host, &[gate, foreign]), [431]);
     }
 
+    // QUIRK K-88: kept
     #[test]
     fn gates_open_and_close_per_object() {
         // K-88: 430/431 send one command per gate of the selection (`FUN_0044B3F0` over the list),
@@ -2186,6 +2192,7 @@ ENDGUID
         assert_eq!(sent, [CommandKind::OpenGate { gate: b }]);
     }
 
+    // QUIRK K-291: kept
     #[test]
     fn a_dead_gate_has_no_buttons() {
         use crate::game::testworld::{GATE, host, spawn};
@@ -2254,6 +2261,7 @@ ENDGUID
             .collect()
     }
 
+    // QUIRK W-277: kept
     #[test]
     fn mask_buttons_follow_the_mask_bit() {
         use crate::game::testworld::{ARCHER, MASK_UPGRADE, host, spawn, unlock};
@@ -2597,6 +2605,7 @@ ENDGUID
             .collect()
     }
 
+    // QUIRK C-271: kept
     #[test]
     fn evocation_buttons_follow_the_first_selected_object() {
         use crate::game::testworld::{
@@ -2680,6 +2689,7 @@ ENDGUID
             .collect()
     }
 
+    // QUIRK C-271: kept
     #[test]
     fn evocation_sends_one_command_for_the_first_object() {
         use crate::game::testworld::{
@@ -2864,6 +2874,7 @@ ENDGUID
             .collect()
     }
 
+    // QUIRK C-336: kept
     #[test]
     fn spell_buttons_follow_the_first_selected_object() {
         use crate::game::testworld::{
@@ -2913,6 +2924,7 @@ ENDGUID
         assert_eq!(button(&all, 482).unwrap().label, "Reincarnation");
     }
 
+    // QUIRK K-313: kept
     #[test]
     fn the_target_mode_sends_one_command_for_the_first_object() {
         use crate::game::testworld::{
@@ -3005,6 +3017,7 @@ ENDGUID
         assert_eq!(ability_target(556, Some(enemy), None), None);
     }
 
+    // QUIRK C-336: kept
     #[test]
     fn the_target_mode_rejects_unfit_targets() {
         use crate::game::testworld::{
@@ -3470,6 +3483,7 @@ ENDGUID
 
     // --- Pack tent 452 and unpack tent 453 (re/tents 2.5, 3.4) ---
 
+    // QUIRK W-262: kept
     #[test]
     fn tent_buttons_follow_the_leader() {
         use crate::game::testworld::{
@@ -3551,6 +3565,7 @@ ENDGUID
         assert_eq!([PACK_TENT_BUTTON, UNPACK_TENT_BUTTON], [452, 453]);
     }
 
+    // QUIRK W-263: kept
     #[test]
     fn the_unpack_cursor_keeps_the_tent_rotation_and_sends_grid_coordinates() {
         use crate::game::testworld::{

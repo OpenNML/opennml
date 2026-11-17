@@ -856,6 +856,7 @@ mod tests {
         (att, tgt)
     }
 
+    // QUIRK C-17: kept
     #[test]
     fn init_takes_the_player_behaviour_the_ai_mapping_and_rank_zero() {
         let rules = rules();
@@ -904,6 +905,7 @@ mod tests {
         assert_eq!((s.aggressiveness, s.stubbornness[0]), (1, 4));
     }
 
+    // QUIRK C-11, C-204: kept
     #[test]
     fn queries_answer_like_the_original() {
         let rules = rules();
@@ -948,6 +950,7 @@ mod tests {
         assert_eq!(q(&mut sim, 0x711, &[]), -1);
     }
 
+    // QUIRK C-2: kept
     #[test]
     fn a_commanded_attack_reaches_the_target_and_restarts_after_each_swing() {
         let rules = rules();
@@ -1005,6 +1008,7 @@ mod tests {
         assert_eq!(snapshot(&sim, a).stubbornness[1], 0);
     }
 
+    // QUIRK C-21: kept
     #[test]
     fn a_unit_stuck_in_an_obstacle_counts_as_deaf() {
         // C-21: stubbornness below 4 and walk `m_InObstacle` -> 4.
@@ -1019,6 +1023,7 @@ mod tests {
         assert_eq!(get_stubbornness(&mut sim, w), 4);
     }
 
+    // QUIRK C-12: kept
     #[test]
     fn the_search_counter_drops_the_rest_and_runs_on_while_fighting() {
         // C-12: in status 2 no trigger, the counter keeps growing; otherwise = 0 (remainder discarded).
@@ -1040,6 +1045,7 @@ mod tests {
         assert_eq!(snapshot(&sim, w).search_counter, 700);
     }
 
+    // QUIRK C-8, C-9: kept
     #[test]
     fn defensive_units_strike_back_at_once_and_others_only_remember() {
         let rules = rules();
@@ -1064,6 +1070,7 @@ mod tests {
         assert_eq!((s.target, s.status), (ObjectId::NONE, 0));
     }
 
+    // QUIRK C-7: kept
     #[test]
     fn stance_changes_abort_or_restart_a_running_attack() {
         let rules = rules();
@@ -1090,6 +1097,7 @@ mod tests {
         });
     }
 
+    // QUIRK C-160: kept
     #[test]
     fn attack_points_sum_max_hp_per_target_owner_every_double_tick() {
         let rules = rules();
@@ -1137,6 +1145,7 @@ mod tests {
         SEEN.with(|s| s.borrow().iter().filter(|&&c| c == code).count())
     }
 
+    // QUIRK C-6: kept
     #[test]
     fn near_or_far_is_chosen_by_the_centre_distance() {
         // re/combat-attack 11: melee (0xA12) as long as `Fixed_Hypot` < far minimum distance 4096
@@ -1156,6 +1165,7 @@ mod tests {
         }
     }
 
+    // QUIRK C-1: kept
     #[test]
     fn the_stored_fault_goes_out_only_on_the_next_abort() {
         // C-1: no success message; the fault message of the command stays after a normal end.
@@ -1184,6 +1194,7 @@ mod tests {
         assert_eq!((seen(0x1C12), seen(0x1D12)), (0, 1));
     }
 
+    // QUIRK C-10: kept
     #[test]
     fn a_swimming_unit_aborts_when_it_reaches_its_target() {
         // C-10: abort (end + fault message) instead of swing.

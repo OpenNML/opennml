@@ -222,6 +222,7 @@ mod tests {
     }
 
     /// re/combat-damage 7.2; fraction x 100,000; XP as experience fraction (Max(30) = 100 -> x100).
+    // QUIRK C-121, C-122, C-123, C-124, C-127, C-129, C-132: kept
     #[test]
     fn damage_follows_the_cases_of_combat_damage_7_2() {
         let case = |name, attacker, victim, amount, before, factors, after, hp, xp| Case {
@@ -382,6 +383,7 @@ mod tests {
         assert_eq!(hp(&sim), 10_000 - 4000 - 3200);
     }
 
+    // QUIRK C-120, C-135: kept
     #[test]
     fn self_damage_is_divided_by_1000_and_boat_riders_forward_everything() {
         let rules = rules();
@@ -424,6 +426,7 @@ mod tests {
         assert_eq!(reports.len(), 1, "only the boat reports the attack");
     }
 
+    // QUIRK C-124, C-125, C-137: kept
     #[test]
     fn experience_counts_against_neutrals_only_for_0x17f() {
         let rules = rules();
@@ -465,6 +468,7 @@ mod tests {
     /// Raw fraction of the pikeman after a hit by the warrior (SWORD_PEEK +40%, factors 100,
     /// pikeman 270 HP, fraction before 100,000), recomputed with the formula from re/combat-damage 1.2
     /// in `i32` with overflow: `d = a·1000`, `d = 140·d / 100`, `Δ = d·100 000 / (270·1000)`.
+    // QUIRK C-131: kept
     #[test]
     fn damage_wraps_like_the_original_and_never_panics() {
         let rules = rules();

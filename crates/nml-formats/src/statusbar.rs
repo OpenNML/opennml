@@ -93,6 +93,7 @@ mod tests {
 
     const SAMPLE: &str = "#Header\r\nSTATUSSIZE 26\r\nSTATUSCOLOR 2 22 35\r\nSTATUSFONTCOLOR 255 255 255\r\nICONSIZE 32 32\r\nICONFILE data/icons/resourcen_icons.tga\r\nRESOURCE 0 1 1 33 5\r\nRESOURCE 1 120 1 153 5\r\nPLAYERNAME 480 1 480 5\r\n";
 
+    // QUIRK O-38: kept
     #[test]
     fn statusbar_reads_colors_like_the_original() {
         // Third value = red byte (file in b g r), per value only `& 0xFF`, alpha fixed.
@@ -146,6 +147,7 @@ mod tests {
         assert_eq!(c.size, 9, "the last line wins");
     }
 
+    // QUIRK O-251: deviation
     #[test]
     fn missing_lines_and_numbers_default_to_zero() {
         assert_eq!(parse_statusbar(""), StatusBarConfig::default());

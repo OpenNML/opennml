@@ -229,6 +229,7 @@ mod tests {
             .map(|(_, a)| a)
     }
 
+    // QUIRK D-255: kept
     #[test]
     fn clear_drops_every_image_at_once() {
         // `MenuManager_CloseAllAndStopMusic` (`RemoveAll`): even a fading-out image is gone immediately and is no
@@ -248,6 +249,7 @@ mod tests {
         assert_eq!(alpha_of(&images, WID, 300), Some(0));
     }
 
+    // QUIRK O-23, O-92: kept
     #[test]
     fn image_states_follow_the_table() {
         // 12.3, O-92: fade in from alpha 0, full in the frame of the end; another 0x15E on a visible image collapses
@@ -290,6 +292,7 @@ mod tests {
         assert!(!images.contains(""));
     }
 
+    // QUIRK O-92: kept
     #[test]
     fn cmap_buckets_follow_the_hash() {
         // h = h*33 + (signed char)c, mod 17; "Ü" (0xDC) counts as negative.

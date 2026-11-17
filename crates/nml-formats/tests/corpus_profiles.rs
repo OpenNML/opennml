@@ -49,6 +49,7 @@ fn check_entries_are_consistent(table: &CampaignTable, vfs: &Vfs) {
     }
 }
 
+// QUIRK O-184: kept
 #[test]
 fn campaign_ini_matches_campaign_ui() {
     let Some(dir) = corpus_game_dir() else {
@@ -162,6 +163,7 @@ fn ldg_paths(vfs: &Vfs) -> Vec<String> {
     paths
 }
 
+// QUIRK O-136, O-185: kept
 #[test]
 fn multiplayer_maps_and_ldg_read() {
     let Some(dir) = corpus_game_dir() else {

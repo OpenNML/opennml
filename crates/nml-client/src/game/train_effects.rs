@@ -235,6 +235,7 @@ mod tests {
         }
     }
 
+    // QUIRK D-216: kept
     #[test]
     fn brake_sparks_follow_the_braking_bit() {
         let mut f = Fixture::new();

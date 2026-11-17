@@ -122,6 +122,7 @@ mod tests {
         fraction(sim, id) - from
     }
 
+    // QUIRK W-135: kept
     #[test]
     fn healing_follows_the_rate_per_minute_table() {
         let rules = rules();
@@ -159,6 +160,7 @@ mod tests {
         assert_eq!(fraction(&sim, warrior), -292);
     }
 
+    // QUIRK W-135: kept
     #[test]
     fn construction_sites_and_dead_objects_do_not_heal() {
         let rules = rules();

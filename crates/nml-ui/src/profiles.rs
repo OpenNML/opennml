@@ -315,6 +315,7 @@ mod tests {
     /// Script action 382 (`FUN_0040DAA0`, E-166/E-252): the name is lowercased the German way, the search is
     /// case-sensitive (`FUN_0040C1B0`: hash *33 and `_mbscmp`). A "Gold" entered by hand stays, next to it "gold" is
     /// created (two entries as in the original); without an active profile nothing happens.
+    // QUIRK E-252: kept
     #[test]
     fn set_current_var_lowers_the_name_and_compares_case_sensitively() {
         let mut p = Profiles::default();
@@ -357,6 +358,7 @@ mod tests {
         assert!(p.unlocked_list(-1, &table()).is_empty());
     }
 
+    // QUIRK O-124: kept
     #[test]
     fn create_unlocks_entries_0_and_1_of_every_campaign() {
         let mut p = Profiles::default();
@@ -390,6 +392,7 @@ mod tests {
         assert_eq!(rec.name, name_field("Anna"));
     }
 
+    // QUIRK O-124: kept
     #[test]
     fn create_takes_the_entry_of_the_active_profile() {
         let mut p = Profiles::default();
@@ -404,6 +407,7 @@ mod tests {
         assert_eq!(p.current_name(), "Anna");
     }
 
+    // QUIRK O-27: kept
     #[test]
     fn rd_prefix_unlocks_everything_and_is_stripped() {
         let mut p = Profiles::default();
@@ -435,6 +439,7 @@ mod tests {
         assert_eq!(create(&mut p, "[rd]y").1, "[rd]y");
     }
 
+    // QUIRK O-123: kept
     #[test]
     fn duplicate_names_compare_exactly() {
         let mut p = Profiles::default();
@@ -468,6 +473,7 @@ mod tests {
         p
     }
 
+    // QUIRK O-121: deviation
     #[test]
     fn deleting_moves_the_active_index_like_the_original_or_keeps_it() {
         // The active one itself: the one before becomes active (FUN_0040C130, cur - 1).

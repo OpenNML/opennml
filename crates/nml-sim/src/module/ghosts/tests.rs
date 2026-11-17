@@ -170,6 +170,7 @@ fn listens(sim: &Sim, ghost: ObjectId, evoker: ObjectId) -> bool {
 
 const ATTACK: u8 = attack::INDEX as u8;
 
+// QUIRK C-145, C-255: kept
 #[test]
 fn the_evocation_follows_its_timeline() {
     let rules = tk::evoke_rules();
@@ -236,6 +237,7 @@ fn the_evocation_follows_its_timeline() {
     assert_eq!(mana(&sim, ev), (125, 125, 125));
 }
 
+// QUIRK C-255: kept
 #[test]
 fn the_evoker_turns_before_it_starts() {
     let rules = tk::evoke_rules();
@@ -272,6 +274,7 @@ fn the_evoker_turns_before_it_starts() {
 /// evoker facing the corpse: in the first, synchronously in the FIFO).
 const TURN_TICKS: usize = 3;
 
+// QUIRK C-257: kept
 #[test]
 fn six_ghosts_bind_all_mana() {
     let rules = tk::evoke_rules();
@@ -310,6 +313,7 @@ fn six_ghosts_bind_all_mana() {
     assert_eq!(mana(&sim, ev).2, before);
 }
 
+// QUIRK C-258: kept
 #[test]
 fn aborting_in_the_window_refunds_twice() {
     let rules = tk::evoke_rules();
@@ -349,6 +353,7 @@ fn aborting_in_the_window_refunds_twice() {
     assert_eq!(mana(&sim, ev).0, 175);
 }
 
+// QUIRK C-259: kept
 #[test]
 fn aborting_before_the_ghost_fades_the_previous_one() {
     let rules = tk::evoke_rules();
@@ -376,6 +381,7 @@ fn aborting_before_the_ghost_fades_the_previous_one() {
     assert_eq!(mana(&sim, ev).0, 150);
 }
 
+// QUIRK C-260: kept
 #[test]
 fn a_quick_restart_makes_two_ghosts() {
     let rules = tk::evoke_rules();
@@ -421,6 +427,7 @@ fn a_quick_restart_makes_two_ghosts() {
     assert_eq!(mana(&sim, ev).0, 125, "one payment");
 }
 
+// QUIRK C-154, C-256: kept
 #[test]
 fn the_corpse_search_takes_any_unclaimed_dead_walker() {
     let rules = tk::evoke_rules();
@@ -529,6 +536,7 @@ fn a_vanished_corpse_stops_the_evocation_without_cost() {
     assert!(ghosts(&sim).is_empty());
 }
 
+// QUIRK C-261: kept
 #[test]
 fn a_failed_ghost_keeps_the_mana_bound() {
     // Type 1413 is missing from the rules: `create_object` fails (C-261).
@@ -652,6 +660,7 @@ fn alpha_after(k: usize) -> f32 {
     a
 }
 
+// QUIRK C-262: kept
 #[test]
 fn a_ghost_appears_and_becomes_selectable() {
     let rules = tk::evoke_rules();
@@ -707,6 +716,7 @@ fn a_ghost_appears_and_becomes_selectable() {
     assert!(!locked(&sim, g));
 }
 
+// QUIRK C-264: kept
 #[test]
 fn fading_takes_34_ticks_in_f32() {
     let rules = tk::evoke_rules();
@@ -744,6 +754,7 @@ fn fading_takes_34_ticks_in_f32() {
     assert!(sim.object(g).is_none(), "removed in phase 0");
 }
 
+// QUIRK C-3, C-263: kept
 #[test]
 fn sucking_hits_minus_five_both_ways() {
     let rules = tk::evoke_rules();
@@ -782,6 +793,7 @@ fn sucking_hits_minus_five_both_ways() {
     assert_eq!((s.status, s.target), (ghost::state::IDLE, ObjectId::NONE));
 }
 
+// QUIRK C-263: kept
 #[test]
 fn a_ghost_dies_after_fifty_sucks() {
     let rules = tk::evoke_rules();
@@ -856,6 +868,7 @@ fn the_ghost_sucks_through_attack() {
     assert_eq!(gstate(&sim, g).target, c);
 }
 
+// QUIRK C-263: kept
 #[test]
 fn a_building_target_faults_and_a_dead_one_is_ignored() {
     let rules = tk::evoke_rules();
@@ -901,6 +914,7 @@ fn a_building_target_faults_and_a_dead_one_is_ignored() {
     assert_eq!(gstate(&sim, g).status, ghost::state::IDLE);
 }
 
+// QUIRK C-263: kept
 #[test]
 fn sucking_a_dead_target_does_nothing() {
     let rules = tk::evoke_rules();
@@ -920,6 +934,7 @@ fn sucking_a_dead_target_does_nothing() {
     assert_eq!(gstate(&sim, g).status, ghost::state::IDLE);
 }
 
+// QUIRK C-264: kept
 #[test]
 fn a_living_fading_ghost_returns_to_full_alpha_when_it_dies() {
     let rules = tk::evoke_rules();
@@ -960,6 +975,7 @@ fn a_living_fading_ghost_returns_to_full_alpha_when_it_dies() {
     assert!(sim.object(g).is_none(), "removed in phase 0");
 }
 
+// QUIRK C-265: kept
 #[test]
 fn fading_is_interrupted_by_suck_and_appear() {
     let rules = tk::evoke_rules();
@@ -999,6 +1015,7 @@ fn fading_is_interrupted_by_suck_and_appear() {
     assert!(sim.object(g).unwrap().selectable);
 }
 
+// QUIRK C-266: kept
 #[test]
 fn envelopes_set_the_replies_even_without_0x31b() {
     let rules = tk::evoke_rules();
@@ -1021,6 +1038,7 @@ fn envelopes_set_the_replies_even_without_0x31b() {
     assert_eq!(gstate(&sim, g).status, ghost::state::IDLE);
 }
 
+// QUIRK C-3: kept
 #[test]
 fn stop_suck_from_fight_far_ends_the_target() {
     let rules = tk::evoke_rules();
@@ -1044,6 +1062,7 @@ fn stop_suck_from_fight_far_ends_the_target() {
 /// ends (`start_attack` fails at the dead or missing target -> `end_attack` -> `0xC13` -> FightFar
 /// `notify_ghost` -> `0x71B`) and `Ghost.target` becomes `NONE`; the host hangs the end of the
 /// suction beam on that.
+// QUIRK D-242: kept
 #[test]
 fn a_victim_lost_while_sucked_ends_the_suck() {
     // 0: killed from outside, 1: killed by the suck strike (HP 5), 2: removed.
@@ -1178,6 +1197,7 @@ fn ghost_of(sim: &mut Sim, slot: i32, tile: (i32, i32)) -> ObjectId {
     tk::spawn(sim, tk::GHOST, slot, tile)
 }
 
+// QUIRK C-267, C-270: kept
 #[test]
 fn banishing_kills_enemy_seen_ghosts_after_1500_ms() {
     let rules = tk::evoke_rules();
@@ -1245,6 +1265,7 @@ fn banishing_kills_enemy_seen_ghosts_after_1500_ms() {
     assert!(attack_on(&sim, ev));
 }
 
+// QUIRK C-267: kept
 #[test]
 fn the_radius_is_half_the_sight_at_the_time_of_the_ban() {
     let rules = tk::evoke_rules();
@@ -1267,6 +1288,7 @@ fn the_radius_is_half_the_sight_at_the_time_of_the_ban() {
     assert!(hp(&sim, far) > 0 && !died(&sim, far));
 }
 
+// QUIRK C-268: kept
 #[test]
 fn banishing_pays_even_without_a_ghost() {
     let rules = tk::evoke_rules();
@@ -1303,6 +1325,7 @@ fn banishing_pays_even_without_a_ghost() {
     assert_eq!(hp(&sim, g), 250);
 }
 
+// QUIRK C-267: kept
 #[test]
 fn fog_hides_ghosts_from_the_ban() {
     let rules = tk::evoke_rules();
@@ -1319,6 +1342,7 @@ fn fog_hides_ghosts_from_the_ban() {
     assert_eq!(hp(&sim, g), 0);
 }
 
+// QUIRK C-254, C-270: kept
 #[test]
 fn a_trance_lock_blocks_banishing() {
     let rules = tk::evoke_rules();
@@ -1367,6 +1391,7 @@ fn a_trance_lock_blocks_banishing() {
     );
 }
 
+// QUIRK C-269: kept
 #[test]
 fn a_mounted_banisher_uses_the_riding_anim() {
     let rules = tk::evoke_rules();
@@ -1399,6 +1424,7 @@ fn a_mounted_banisher_uses_the_riding_anim() {
     assert!(!locked(&sim, m));
 }
 
+// QUIRK C-269: kept
 #[test]
 fn the_missionary_bans_at_his_own_times() {
     let rules = tk::evoke_rules();

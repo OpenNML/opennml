@@ -361,6 +361,7 @@ const SYNC_STARTED: [&str; 9] = [
 /// equivalent because neither `setschwierigkeitsgrad` nor any of the synchronously started corpus
 /// modules contains `CALLB 0x18C` - not even in modules that they call with `CALLM` in the same
 /// run (`SPAWN` starts threads that do not run until the tick).
+// QUIRK E-12: kept
 #[test]
 fn sync_started_corpus_modules_do_not_pause_the_ki() {
     let Some(dir) = corpus_game_dir() else {

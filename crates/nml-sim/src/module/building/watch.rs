@@ -311,6 +311,7 @@ mod tests {
         running + steps_until(sim, 30, events, |s| elapsed(s) == Some(0))
     }
 
+    // QUIRK W-271: kept
     #[test]
     fn a_finished_ring_from_the_loader_is_watched_at_once() {
         let rules = rules();
@@ -370,6 +371,7 @@ mod tests {
         (done, watched)
     }
 
+    // QUIRK W-271: kept
     #[test]
     fn a_player_ring_is_watched_after_the_next_build_step() {
         // Way b (W-271): the command `0x18` creates all parts unfinished (`ObjDesc.flags = 0xD3`), its
@@ -399,6 +401,7 @@ mod tests {
         assert_eq!(building(&sim, m).unwrap().check_area_rect, FORT_RECT);
     }
 
+    // QUIRK K-49: kept
     #[test]
     fn a_watcher_added_by_the_last_event_waits_one_tick() {
         // K-49 (re/arming-gates 3.D4): the enemy already stands in the area.
@@ -485,6 +488,7 @@ mod tests {
         (m, inner, enemy)
     }
 
+    // QUIRK W-272: kept
     #[test]
     fn an_enemy_in_the_fort_turns_the_whole_ring_neutral() {
         // W-272, re/arming-gates 9.D: own house in the fort, closed gate on the south wall.
@@ -550,6 +554,7 @@ mod tests {
         assert!(sim.state.owner_changes.is_empty());
     }
 
+    // QUIRK W-272: kept
     #[test]
     fn two_owners_in_the_fort_keep_it_neutral() {
         let rules = rules();
@@ -568,6 +573,7 @@ mod tests {
         assert_eq!(loaded.area_queries, sim.state.area_queries);
     }
 
+    // QUIRK W-272: kept
     #[test]
     fn the_last_owner_standing_captures_the_fort() {
         let rules = rules();
@@ -620,6 +626,7 @@ mod tests {
         assert_eq!(loaded.area_queries, sim.state.area_queries);
     }
 
+    // QUIRK W-272: kept
     #[test]
     fn a_foreign_tower_in_the_fort_blocks_the_capture() {
         // re/arming-gates 8 D3: towers are not members, keep their owner and count in the
@@ -643,6 +650,7 @@ mod tests {
         });
     }
 
+    // QUIRK K-296: kept
     #[test]
     fn corpses_only_hand_the_ring_to_slot_8_and_it_stays_capturable() {
         // K-296, corrected: corpses belong to slot 8 and stay listed; only corpses -> slot 8
@@ -707,6 +715,7 @@ mod tests {
         });
     }
 
+    // QUIRK W-275: kept
     #[test]
     fn a_repair_step_in_the_capture_gap_leaks_a_watch() {
         // W-275: `CaptureByPlayer` sets `check_area_id = −1` and registers the
@@ -769,6 +778,7 @@ mod tests {
         assert_eq!(loaded.area_queries, sim.state.area_queries);
     }
 
+    // QUIRK W-272: kept
     #[test]
     fn a_destroyed_master_unregisters_its_watch() {
         // `PropertyBuilding_Destruct` (`0x00508400`) unregisters the query.

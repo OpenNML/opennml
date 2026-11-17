@@ -44,6 +44,7 @@ impl TileGrids {
 mod tests {
     use super::*;
 
+    // QUIRK O-280: kept
     #[test]
     fn the_first_loader_fixes_the_grid_by_exact_name() {
         let mut g = TileGrids::new();
