@@ -74,6 +74,9 @@ fn post(sim: &mut Sim, id: ObjectId, delay: i32, msg: Message) {
 }
 
 /// `PropertyFightNear_StartSwing` (`0x00513E70`).
+///
+/// QUIRK C-65, C-67: kept
+/// QUIRK C-70: deviation (A7)
 fn start_swing(sim: &mut Sim, id: ObjectId) {
     let r = sim.state.rng.rand(); // C-61: always first, 0...32767
     let list = fight_near(sim, id)
@@ -125,6 +128,8 @@ fn start_swing(sim: &mut Sim, id: ObjectId) {
 }
 
 /// `PropertyFightNear_ApplyHit` (`0x00514190`).
+///
+/// QUIRK C-66: kept
 fn apply_hit(sim: &mut Sim, id: ObjectId, part: i32) {
     if sim
         .object(id)
@@ -197,6 +202,8 @@ pub fn query(sim: &mut Sim, id: ObjectId, msg: &mut Message) -> i32 {
 }
 
 /// `PropertyFightNear_OnMessage` (`0x00514130`): only `0x112` (C-64: no protection against a second one).
+///
+/// QUIRK C-64: kept
 pub fn on_message(sim: &mut Sim, id: ObjectId, env: &Envelope) -> bool {
     let dead = sim.object(id).is_none_or(|o| o.status & status::DIED != 0);
     if dead && env.msg.code != 0xB12 {

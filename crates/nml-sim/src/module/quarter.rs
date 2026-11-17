@@ -536,6 +536,8 @@ pub fn enter_container(sim: &mut Sim, u: ObjectId, c: ObjectId) {
 /// Mounted (only from mobile containers) the mount comes along - quirk: `QUARTERED` is cleared on the
 /// **container**, not on the rider. Finally `0x1611` (attack module), `0x3D00` (walk restores the backed-up
 /// behavior) and the healing module back into the tick list.
+///
+/// QUIRK C-19: kept
 pub fn leave_container(sim: &mut Sim, u: ObjectId) -> bool {
     let mut ok = true;
     set_status(sim, u, status::QUARTERED, false);

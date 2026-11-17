@@ -402,6 +402,8 @@ fn pos(sim: &Sim, id: ObjectId) -> (i32, i32) {
 /// and give walk the approach (`0x400` FINDTO_UNIT, building in melee `0x200`) with success
 /// `0x211 {far}` and fault `0x311`; status 1, `FIGHTING` off. On a failure the target stays
 /// (the callers decide).
+///
+/// QUIRK C-4, C-5: kept
 pub fn start_attack(sim: &mut Sim, id: ObjectId, flags: i32, force_melee: bool) -> bool {
     if sim
         .object(id)

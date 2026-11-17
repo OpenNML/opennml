@@ -256,6 +256,8 @@ fn owners_are_friends(sim: &Sim, a: &GameObject, b: &GameObject) -> bool {
 /// zero there as soon as the distance is negative (`fixed_hypot` for positions 512 ... 1024 tiles apart) and
 /// crashes; all other inputs compute bit-identically. The hard divisor is never 0: both hard radii are >= 1
 /// here, so their sum lies in 2 ... 2^32 - 2.
+///
+/// QUIRK K-326: deviation
 pub fn pair_overlap_cost(
     sim: &mut Sim,
     a: ObjectId,

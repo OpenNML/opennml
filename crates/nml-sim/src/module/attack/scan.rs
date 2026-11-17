@@ -289,6 +289,8 @@ pub(crate) fn pick_target(
 /// `ScanForTarget` (re/combat-targeting 1.2): gate checks (aggressiveness 4, free - for a rider also
 /// the carrier -, stubbornness; at 3 only after a fresh hit by someone other than the target,
 /// then like 2), priorities, spatial query within the search radius, selection and switch rule.
+///
+/// QUIRK C-30: kept
 pub fn scan_for_target(sim: &mut Sim, id: ObjectId) -> bool {
     let Some(a) = attack(sim, id).filter(|a| a.aggressiveness == 4).copied() else {
         return false;

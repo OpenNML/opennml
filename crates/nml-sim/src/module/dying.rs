@@ -88,6 +88,8 @@ pub struct Dying {
     /// `m_Listeners`: death callbacks.
     pub listeners: Listeners,
     /// `m_RobEffectID`: stored (savegame/fidelity to the original), never used in the original (C-151).
+    ///
+    /// QUIRK C-151: kept
     pub rob_effect_id: i32,
     /// `m_RobGold`: gold when robbing (25 or 0).
     pub rob_gold: i32,

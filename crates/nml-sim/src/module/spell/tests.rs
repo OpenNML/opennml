@@ -660,6 +660,7 @@ fn an_abort_before_the_effect_costs_nothing() {
     assert_eq!(mana(&sim, m), 100);
 }
 
+// QUIRK K-62: kept
 // QUIRK C-294: kept
 #[test]
 fn mana_can_go_negative_at_the_effect() {

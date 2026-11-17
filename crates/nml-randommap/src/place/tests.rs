@@ -440,6 +440,7 @@ fn zero_divisors_are_errors_negative_divisors_are_c_remainders() {
     assert_eq!(positions(&run.objects)[..2], [centre, member]);
 }
 
+// QUIRK D-353: deviation
 #[test]
 fn object_without_guid_is_an_error() {
     // D-353: `#Object` without GUID -> message as soon as a placer chooses from it; no draw.

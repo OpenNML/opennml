@@ -3,6 +3,8 @@
 //! The original calculates the terrain only when loading the level into a color buffer and an image (D-21: a later
 //! change of light does not change the map). The reimplementation calculates without a GPU in 8 bits per channel
 //! (deviation from the original, O-294) and additionally delivers an [`RgbaImage`] for the presentation.
+//!
+//! QUIRK O-294: deviation
 
 use glam::Vec3;
 use image::RgbaImage;

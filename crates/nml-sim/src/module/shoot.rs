@@ -370,6 +370,8 @@ fn start_reload(sim: &mut Sim, id: ObjectId, msg: Message) {
 }
 
 /// `PropertyShootProjectile_LaunchArrow` (`0x00525F90`, re/combat-ranged 3.2).
+///
+/// QUIRK C-88: deviation (A7)
 fn launch_arrow(sim: &mut Sim, id: ObjectId) {
     let Some(s) = shoot(sim, id).cloned() else {
         return;

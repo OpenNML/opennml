@@ -441,6 +441,7 @@ mod tests {
     /// `ModelInstance_Render(1.0, ...)`: without fog brightness `k`, with its player color in the
     /// first `EF-MATERIAL` (D-259); the other effect models keep the `.rdo` color (D-221).
     // QUIRK D-259: kept
+    // QUIRK D-221: deviation
     #[test]
     fn flag_ignores_fog_brightness() {
         let draw = ModelDraw {
