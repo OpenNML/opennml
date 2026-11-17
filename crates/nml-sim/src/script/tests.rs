@@ -1824,7 +1824,7 @@ fn query_600_removes_only_the_first_match() {
     assert_eq!(speech(&state).events, [4, 3]);
 }
 
-// QUIRK E-173: kept
+// QUIRK E-173: deviation
 #[test]
 fn event_list_drops_the_oldest_at_the_limit() {
     let rules = rules_with_speech("");

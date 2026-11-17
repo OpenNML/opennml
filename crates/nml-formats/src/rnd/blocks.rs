@@ -976,7 +976,7 @@ BaseTexture B
         assert_eq!(script.base_texture, "A");
     }
 
-    // QUIRK D-324: kept
+    // QUIRK D-324: deviation
     #[test]
     fn end_of_file_inside_a_block_is_an_error() {
         let error = parse_with("create_LandArea\n{\nID 3\n", &[], &[], &[]).unwrap_err();

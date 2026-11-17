@@ -1293,8 +1293,7 @@ mod tests {
         );
     }
 
-    // QUIRK O-2: kept
-    // QUIRK O-3: deviation
+    // QUIRK O-2, O-3: deviation
     #[test]
     fn expand_stops_like_the_original() {
         // (case, source text, expected tree, line of the diagnostic)

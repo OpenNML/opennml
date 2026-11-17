@@ -1103,7 +1103,7 @@ mod tests {
     }
 
     // QUIRK E-218: kept
-    // QUIRK E-220: deviation
+    // QUIRK E-220, E-221: deviation
     #[test]
     fn check_rejects_37_and_380_bad_slots_and_340_negative_index() {
         // 37 writes behind the table in the original, 340 throws an exception for a negative index,
@@ -1168,7 +1168,7 @@ mod tests {
         assert_eq!(check(&file, path, false), Ok(()));
     }
 
-    // QUIRK E-155: kept
+    // QUIRK E-155: deviation
     #[test]
     fn check_rejects_203_204_with_behavior_outside_0_to_4() {
         // E-155: the original writes every stance, but for a stance outside 0-4 it leaves words of the

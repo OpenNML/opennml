@@ -660,8 +660,7 @@ fn an_abort_before_the_effect_costs_nothing() {
     assert_eq!(mana(&sim, m), 100);
 }
 
-// QUIRK K-62: kept
-// QUIRK C-294: kept
+// QUIRK K-62, C-294: kept
 #[test]
 fn mana_can_go_negative_at_the_effect() {
     // C-294: the effect deducts without a check (K-62). Mana set to 10 after N+21 -> in

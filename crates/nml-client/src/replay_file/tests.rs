@@ -62,7 +62,7 @@ fn head_and_chunks_round_trip() {
     assert_eq!(replay.commands.len(), 7);
 }
 
-// QUIRK E-337: kept
+// QUIRK E-337: deviation
 #[test]
 fn torn_tail_keeps_the_whole_chunks() {
     let chunks = chunks();
@@ -81,7 +81,7 @@ fn torn_tail_keeps_the_whole_chunks() {
     assert!(!file.torn);
 }
 
-// QUIRK E-337: kept
+// QUIRK E-337: deviation
 #[test]
 fn broken_chunk_checksum_ends_the_reading() {
     let chunks = chunks();

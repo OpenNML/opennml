@@ -190,7 +190,7 @@ mod tests {
         );
     }
 
-    // QUIRK W-18: kept
+    // QUIRK W-18: deviation
     #[test]
     fn more_than_nine_numbers_in_a_message_line_are_a_load_error() {
         // A7: "MSGSTART 601 9 1 2 3 4 5 6 7 8 9" (10 numbers) -> Err with line number; argc > 8 likewise.
