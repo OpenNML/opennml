@@ -1,4 +1,4 @@
-# Mechanical rename of the packages from nml-* to opennml-*.
+# Mechanical commit that renamed all workspace packages to opennml-*.
 # Hide it from `git blame` locally with:
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
 # (GitHub's blame view reads this file automatically.)
