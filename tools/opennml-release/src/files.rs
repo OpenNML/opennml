@@ -113,6 +113,10 @@ fn group_overview(text: &str) -> anyhow::Result<String> {
 }
 
 fn third_party(release: &Release) -> anyhow::Result<String> {
+    // cargo-about refuses to write to stdout when any parent process is PowerShell (the default shell of
+    // Windows runners in GitHub Actions), so it writes to a file.
+    let about_out =
+        std::env::temp_dir().join(format!("opennml-release-about-{}.txt", std::process::id()));
     let output = Command::new("cargo")
         .current_dir(&release.workspace_root)
         .args([
@@ -130,10 +134,14 @@ fn third_party(release: &Release) -> anyhow::Result<String> {
             "gui",
             "--fail",
             "--locked",
-            ABOUT_TEMPLATE,
+            "--output-file",
         ])
+        .arg(&about_out)
+        .arg(ABOUT_TEMPLATE)
         .output()
         .context("running cargo about generate")?;
+    let bytes = fs::read(&about_out);
+    let _ = fs::remove_file(&about_out);
     if !output.status.success() {
         bail!(
             "cargo about generate failed ({}): {}",
@@ -141,7 +149,8 @@ fn third_party(release: &Release) -> anyhow::Result<String> {
             String::from_utf8_lossy(&output.stderr)
         );
     }
-    let text = String::from_utf8(output.stdout).context("cargo about output is not UTF-8")?;
+    let bytes = bytes.with_context(|| format!("reading {}", about_out.display()))?;
+    let text = String::from_utf8(bytes).context("cargo about output is not UTF-8")?;
     let mut text = group_overview(&text)?;
 
     let rustc = Command::new("rustc")
