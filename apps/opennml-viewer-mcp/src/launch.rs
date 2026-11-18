@@ -54,11 +54,19 @@ pub enum Program {
 }
 
 impl Program {
-    /// Name of the package and the exe.
+    /// Name of the cargo package (`cargo build -p`).
     pub fn package(self) -> &'static str {
         match self {
             Self::Viewer => "opennml-viewer",
             Self::Game => "opennml-game",
+        }
+    }
+
+    /// File stem of the exe; the game is built as `OpenNML.exe`, not under its package name.
+    pub fn exe_stem(self) -> &'static str {
+        match self {
+            Self::Viewer => "opennml-viewer",
+            Self::Game => "OpenNML",
         }
     }
 }
@@ -85,7 +93,7 @@ pub fn repo_root(env: Option<OsString>, exe: &Path) -> Result<PathBuf, String> {
 pub fn program_exe(repo: &Path, program: Program, profile: Profile) -> PathBuf {
     repo.join("target").join(profile.dir()).join(format!(
         "{}{}",
-        program.package(),
+        program.exe_stem(),
         std::env::consts::EXE_SUFFIX
     ))
 }
@@ -251,7 +259,7 @@ mod tests {
             program_exe(repo, Program::Game, Profile::Release),
             repo.join("target")
                 .join("release")
-                .join(format!("opennml-game{}", std::env::consts::EXE_SUFFIX))
+                .join(format!("OpenNML{}", std::env::consts::EXE_SUFFIX))
         );
         assert_eq!(Program::default(), Program::Viewer);
         assert_eq!(
@@ -284,6 +292,7 @@ mod tests {
                 .starts_with("opennml-viewer")
         );
         assert_eq!(Profile::default(), Profile::Release);
+        assert_eq!(Program::Viewer.exe_stem(), Program::Viewer.package());
     }
 
     #[test]

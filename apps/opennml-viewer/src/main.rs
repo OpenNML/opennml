@@ -173,7 +173,7 @@ struct Cli {
     /// dialog, Ctrl+D hides
     #[arg(long, value_delimiter = ',', num_args = 1.., conflicts_with = "model")]
     dialog: Vec<String>,
-    /// Settings file of the dialog layer in the format of Engine.ini (like opennml-game --settings, never in the
+    /// Settings file of the dialog layer in the format of Engine.ini (like OpenNML --settings, never in the
     /// installation); without it the defaults apply only in memory and nothing is ever saved
     #[arg(long, requires = "dialog")]
     settings: Option<PathBuf>,

@@ -653,7 +653,7 @@ pub(crate) mod tests {
             .await
             .unwrap_err();
         assert!(
-            error.contains(&format!("opennml-game{}", std::env::consts::EXE_SUFFIX))
+            error.contains(&format!("OpenNML{}", std::env::consts::EXE_SUFFIX))
                 && error.contains("cargo build --release -p opennml-game"),
             "{error}"
         );

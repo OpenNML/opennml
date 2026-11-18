@@ -34,7 +34,7 @@ Without `--control` the viewer behaves as before (the clock then always runs in 
 - With `--hud`, the viewer draws the game UI like `opennml-game` (message bar, status bar, command bar, and the minimap)
   instead of the message lines in the overlay; at run time the command `hud` switches it. See "Game UI". With
   `--hud`, keys without a viewer binding also go into the key path of the original (see "Input in the game").
-- The MCP server starts `opennml-game` with `viewer_start` and `program: game` (`target/<profile>/opennml-game`, the same
+- The MCP server starts the game (`OpenNML.exe`) with `viewer_start` and `program: game` (`target/<profile>/OpenNML`, the same
   switches `--control 127.0.0.1:0`, `--paused`, `--mute`). It does not build: if the exe is missing, the message
   names `cargo build --release -p opennml-game`. `viewer_state`, `viewer_input` and `viewer_time` then return the state of
   the UI; `viewer_attach` always assumes the viewer (`hello` does not distinguish the programs).
@@ -2187,9 +2187,9 @@ terrain, textures and light of the map script, **no objects and no simulation** 
 
 `opennml-game` starts a network match without a lobby from the command line:
 
-    opennml-game --host [PORT] --net-map <path.lvl> [--net-players N] [--net-ai K] [--turn-steps L] [--net-name NAME]
-             [--net-seed S] [--net-loopback]
-    opennml-game --join <ADDRESS[:PORT]> [--net-name NAME]
+    OpenNML --host [PORT] --net-map <path.lvl> [--net-players N] [--net-ai K] [--turn-steps L] [--net-name NAME]
+            [--net-seed S] [--net-loopback]
+    OpenNML --join <ADDRESS[:PORT]> [--net-name NAME]
 
 | Switch | Default | Meaning |
 |---|---|---|
@@ -2288,10 +2288,10 @@ for the game, UDP port 2303 for the search).
 
 Command line (changes compared with the command-line start):
 
-    opennml-game --host [PORT] --net-map <path.lvl> [--net-players N] [--net-ai K] [--turn-raster T/V | --turn-steps L]
-             [--net-name NAME] [--net-seed S] [--net-loopback]
-    opennml-game --join <ADDRESS[:PORT]> [--net-name NAME] [--net-loopback]
-    opennml-game [--net-loopback]                       (menu path)
+    OpenNML --host [PORT] --net-map <path.lvl> [--net-players N] [--net-ai K] [--turn-raster T/V | --turn-steps L]
+            [--net-name NAME] [--net-seed S] [--net-loopback]
+    OpenNML --join <ADDRESS[:PORT]> [--net-name NAME] [--net-loopback]
+    OpenNML [--net-loopback]                       (menu path)
 
 | Switch | Default | Meaning |
 |---|---|---|
@@ -2488,7 +2488,7 @@ stdio server; manages at most one viewer. It finds the repo root through `NML_RE
 
 | Tool | Parameters | Effect |
 |---|---|---|
-| `viewer_start` | `args` (list), `program`: `viewer` (default)/`game`, `profile`: `release`/`debug`, `paused` (default `true`), `audio` (default `false`) | starts `target/<profile>/opennml-viewer` (or `opennml-game` with `program: game`) `--control 127.0.0.1:0 [--paused] [--mute] <args>` (clock stopped at 0 ms; `paused: false` = real time; muted with `--mute`, unless `audio: true` or `args` already contains `--mute`), waits at most 30 s for the port line, connects; does not build (if the exe is missing: message with `cargo build ... -p opennml-viewer` or `-p opennml-game`) |
+| `viewer_start` | `args` (list), `program`: `viewer` (default)/`game`, `profile`: `release`/`debug`, `paused` (default `true`), `audio` (default `false`) | starts `target/<profile>/opennml-viewer` (or `OpenNML` with `program: game`) `--control 127.0.0.1:0 [--paused] [--mute] <args>` (clock stopped at 0 ms; `paused: false` = real time; muted with `--mute`, unless `audio: true` or `args` already contains `--mute`), waits at most 30 s for the port line, connects; does not build (if the exe is missing: message with `cargo build ... -p opennml-viewer` or `-p opennml-game`) |
 | `viewer_attach` | `port` | connects to a running viewer |
 | `viewer_stop` | - | `quit`, wait for the process to end (5 s), otherwise kill the process |
 | `viewer_input` | `actions`: list of `{"type": "key", "code", "action", "repeat"}` (`repeat` optional, only with `down`), `mouse_move`, `mouse_leave`, `mouse_button`, `wheel`, `step` | actions in order; result: state snapshot |

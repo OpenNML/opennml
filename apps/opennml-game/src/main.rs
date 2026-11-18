@@ -39,7 +39,7 @@ const DEFAULT_TIME_MS: f32 = 1000.0;
 
 #[derive(Parser)]
 #[command(
-    name = "opennml-game",
+    name = "OpenNML",
     about = "No Man's Land (Rust reimplementation): starts into the main menu"
 )]
 #[command(group(clap::ArgGroup::new("net").args(["host", "join"])))]

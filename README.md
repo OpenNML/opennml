@@ -37,7 +37,7 @@ give a location.
 
 | Program | Purpose |
 |---|---|
-| `opennml-game` | The game |
+| `opennml-game` (`OpenNML.exe`) | The game |
 | `opennml-viewer` | Tool for viewing maps, models, effects and menus |
 | `opennml-extract` | List, unpack and convert game data to common formats |
 | `opennml-viewer-mcp` | Interface for automated tests with AI tools |
