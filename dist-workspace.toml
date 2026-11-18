@@ -32,4 +32,4 @@ github-build-setup = "../build-setup.yml"
 # Checks the archive before the release is created
 global-artifacts-jobs = ["./check-release"]
 # Pull requests only plan the release
-pr-run-mode = "plan"
+pr-run-mode = "upload"
