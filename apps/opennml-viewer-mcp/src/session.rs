@@ -167,7 +167,7 @@ impl Session {
         true
     }
 
-    /// Starts `target/<profile>/opennml-viewer` (or `opennml-game`) `--control 127.0.0.1:0 [--paused] [--mute] <args>`
+    /// Starts `target/<profile>/opennml-viewer` (or `OpenNML`) `--control 127.0.0.1:0 [--paused] [--mute] <args>`
     /// in the repo root (`--mute` as long as `audio` is not set). Does not build: if the exe is missing, the
     /// message names the build command.
     pub async fn start(

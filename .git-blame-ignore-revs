@@ -1,0 +1,5 @@
+# Mechanical rename of the packages from nml-* to opennml-*.
+# Hide it from `git blame` locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# (GitHub's blame view reads this file automatically.)
+0b3e253538a3a4b8010c4c02d338887a0326ac55
