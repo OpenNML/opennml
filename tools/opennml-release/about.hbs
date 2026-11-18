@@ -1,0 +1,33 @@
+THIRD-PARTY LICENSES
+====================
+
+OpenNML contains the following third-party Rust crates. Each crate is listed with its version and the license
+under which it is used. The license texts follow below, each text once, with the crates it applies to.
+
+OVERVIEW
+--------
+
+{{#each licenses}}
+{{#each used_by}}
+{{crate.name}} {{crate.version}}  ({{{../id}}})
+{{/each}}
+{{/each}}
+
+LICENSE TEXTS
+-------------
+{{#each licenses}}
+
+================================================================================
+{{{name}}} ({{{id}}})
+================================================================================
+
+Used by:
+{{#each used_by}}
+  - {{crate.name}} {{crate.version}}{{#if crate.repository}} ({{{crate.repository}}}){{/if}}
+{{#if (eq ../id "MPL-2.0")}}
+    Source code: https://crates.io/crates/{{crate.name}}/{{crate.version}}
+{{/if}}
+{{/each}}
+
+{{{text}}}
+{{/each}}

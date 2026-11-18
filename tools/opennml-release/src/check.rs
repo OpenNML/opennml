@@ -71,6 +71,9 @@ fn check_text(name: &str, text: &[u8], release: &Release, findings: &mut Vec<Str
         findings.push(format!("{name}: not valid UTF-8"));
         return;
     };
+    if text.starts_with('\u{feff}') {
+        findings.push(format!("{name}: starts with a UTF-8 BOM, expected none"));
+    }
     if !text.contains(&release.version) {
         findings.push(format!(
             "{name}: does not mention version {}",
@@ -203,5 +206,42 @@ mod tests {
         assert!(has("extra.txt: unexpected file"), "{findings:?}");
         assert!(has("subsystem is 3"), "{findings:?}");
         assert!(!has("README.txt"), "{findings:?}");
+    }
+
+    fn text_findings(text: &[u8]) -> Vec<String> {
+        let release = Release {
+            package: "opennml-game".into(),
+            version: "0.9.0".into(),
+            exe: "OpenNML.exe".into(),
+            pdb: "OpenNML.pdb".into(),
+            manifest_path: Default::default(),
+            workspace_root: Default::default(),
+        };
+        let mut findings = Vec::new();
+        check_text("README.txt", text, &release, &mut findings);
+        findings
+    }
+
+    #[test]
+    fn check_text_reports_readme_problems() {
+        assert!(text_findings(b"OpenNML 0.9.0 OpenNML.exe\r\nx\r\n").is_empty());
+
+        let findings = text_findings(b"OpenNML 0.9.0 OpenNML.exe\nx\r\n");
+        assert!(findings.iter().any(|f| f.contains("CRLF")), "{findings:?}");
+
+        let findings = text_findings(b"OpenNML OpenNML.exe\r\n");
+        assert!(
+            findings.iter().any(|f| f.contains("version 0.9.0")),
+            "{findings:?}"
+        );
+
+        let findings = text_findings(b"OpenNML 0.9.0\r\n");
+        assert!(
+            findings.iter().any(|f| f.contains("OpenNML.exe")),
+            "{findings:?}"
+        );
+
+        let findings = text_findings("\u{feff}OpenNML 0.9.0 OpenNML.exe\r\n".as_bytes());
+        assert!(findings.iter().any(|f| f.contains("BOM")), "{findings:?}");
     }
 }

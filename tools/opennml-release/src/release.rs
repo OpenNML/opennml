@@ -6,8 +6,6 @@ use std::process::Command;
 use anyhow::{Context, bail};
 use serde_json::Value;
 
-// Not every field is read by every subcommand yet.
-#[allow(dead_code)]
 pub struct Release {
     pub package: String,
     pub version: String,

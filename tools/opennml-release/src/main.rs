@@ -1,6 +1,7 @@
 //! Release helper: reads the shipped package from `cargo metadata` and checks an unpacked release folder.
 
 mod check;
+mod files;
 mod pe;
 mod release;
 
@@ -23,6 +24,12 @@ enum Command {
     Inspect { exe: PathBuf },
     /// Check an unpacked release folder; every output line is one finding.
     Check { dir: PathBuf },
+    /// Generate the readme and license files of the release archive.
+    Files {
+        /// Output folder; it is cleared first.
+        #[arg(long, default_value = "target/release-files")]
+        out: PathBuf,
+    },
 }
 
 fn run(cli: Cli) -> anyhow::Result<ExitCode> {
@@ -37,6 +44,18 @@ fn run(cli: Cli) -> anyhow::Result<ExitCode> {
             for import in &info.imports {
                 println!("  {import}");
             }
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Files { out } => {
+            let release = release::load()?;
+            let commit = files::git_commit(&release.workspace_root)?;
+            files::write_release_files(&release, &commit, &out)?;
+            println!(
+                "wrote {} for {} {}",
+                out.display(),
+                release.package,
+                release.version
+            );
             Ok(ExitCode::SUCCESS)
         }
         Command::Check { dir } => {

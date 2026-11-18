@@ -36,14 +36,15 @@ fn add(a: usize, b: usize) -> anyhow::Result<usize> {
 
 struct Section {
     rva: u32,
-    size: u32,
+    /// Bytes of the section that are in the file.
+    raw_size: u32,
     raw: u32,
 }
 
 fn rva_to_offset(sections: &[Section], rva: u32) -> anyhow::Result<usize> {
     for s in sections {
         if let Some(delta) = rva.checked_sub(s.rva)
-            && delta < s.size
+            && delta < s.raw_size
         {
             let offset = s
                 .raw
@@ -92,11 +93,10 @@ pub fn read_pe(bytes: &[u8]) -> anyhow::Result<PeInfo> {
     let mut sections = Vec::new();
     for i in 0..section_count {
         let at = add(sections_at, i * SECTION_SIZE)?;
-        let virtual_size = u32_at(bytes, add(at, 8)?)?;
         let raw_size = u32_at(bytes, add(at, 16)?)?;
         sections.push(Section {
             rva: u32_at(bytes, add(at, 12)?)?,
-            size: virtual_size.max(raw_size),
+            raw_size,
             raw: u32_at(bytes, add(at, 20)?)?,
         });
     }
@@ -153,6 +153,20 @@ mod tests {
                 .iter()
                 .any(|i| i.eq_ignore_ascii_case("kernel32.dll"))
         );
+    }
+
+    #[test]
+    fn rva_to_offset_maps_only_data_that_is_in_the_file() {
+        let sections = [Section {
+            rva: 0x1000,
+            raw_size: 0x200,
+            raw: 0x400,
+        }];
+        assert_eq!(rva_to_offset(&sections, 0x1000).unwrap(), 0x400);
+        assert_eq!(rva_to_offset(&sections, 0x11ff).unwrap(), 0x5ff);
+        // Past the raw data (virtual padding): no file offset.
+        assert!(rva_to_offset(&sections, 0x1200).is_err());
+        assert!(rva_to_offset(&sections, 0xfff).is_err());
     }
 
     #[test]
