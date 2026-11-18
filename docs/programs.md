@@ -142,6 +142,12 @@ written." when there is none (for example with `--settings`, when the start fail
 checked). The folder search shows its own message boxes; such an error is not shown a second time. Check runs never
 show a message box, because it would block scripts and the MCP server: the error goes to stderr and the log only.
 
+A command line that does not parse (an unknown switch such as `--gamedir`, a missing value) ends with exit code 2.
+clap prints the message to stderr; on a plain start the same text also appears in the message box, because the release
+build has no console. The log file does not exist yet, so the box says "No log file was written." If the command line
+contains any of `--screenshot`, `--loading-shot`, `--control`, `--host` or `--join` (also as `--switch=value`), there is
+no box, only stderr and the exit code. `--help` and `--version` print to stdout and end with exit code 0, without a box.
+
 ### Network play
 
 In the menu: "Multiplayer" -> LAN search (`LAN1`), create match (`LAN3`), lobby with slots, ready, kick and chat

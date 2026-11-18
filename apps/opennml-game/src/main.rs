@@ -20,6 +20,7 @@ mod game_dir;
 mod log_file;
 mod net_start;
 
+use std::ffi::OsString;
 use std::net::SocketAddr;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
@@ -160,11 +161,7 @@ impl Cli {
 
     /// May the start open the folder dialog? Only on a plain start, never in check runs and network paths.
     fn allows_dialog(&self) -> bool {
-        self.game_dir.is_none()
-            && self.screenshot.is_none()
-            && self.loading_shot.is_none()
-            && self.control.is_none()
-            && !self.is_net()
+        self.game_dir.is_none() && !self.is_check_run()
     }
 
     /// Does the program run without the menu level? In a network path and for the screenshot.
@@ -197,6 +194,26 @@ impl Cli {
             discovery_port: opennml_net::DISCOVERY_PORT,
         }
     }
+}
+
+/// The switches of [`Cli::is_check_run`] as they appear in the raw command line. A command line that clap rejects has
+/// no parsed [`Cli`], so [`raw_args_request_check_run`] looks for these. Keep both in sync (a test does).
+const RAW_CHECK_RUN_FLAGS: &[&str] = &[
+    "--screenshot",
+    "--loading-shot",
+    "--control",
+    "--host",
+    "--join",
+];
+
+/// Does the raw command line (without the program name) contain a check-run switch, alone or as `--flag=value`?
+/// Used for a command line that does not parse, where [`Cli::is_check_run`] is not available.
+fn raw_args_request_check_run(args: &[OsString]) -> bool {
+    args.iter().any(|arg| {
+        let arg = arg.to_string_lossy();
+        let name = arg.split_once('=').map_or(&*arg, |(name, _)| name);
+        RAW_CHECK_RUN_FLAGS.contains(&name)
+    })
 }
 
 /// Location of the settings file: `--settings`, otherwise `NML_SETTINGS` or `%LOCALAPPDATA%\OpenNML\Engine.ini`; a
@@ -297,9 +314,28 @@ fn run(cli: &Cli, log: &LogHandle) -> Result<()> {
     game.into_result()
 }
 
+/// Help and version go to stdout with exit code 0. A command-line error goes to stderr with exit code 2, as clap does,
+/// and on a plain start also into a message box: the release build has no console, so the user would see nothing. The
+/// log file does not exist yet at this point. Check runs never get the box.
+fn report_argument_error(error: &clap::Error) -> ExitCode {
+    let _ = error.print();
+    if !error.use_stderr() {
+        return ExitCode::SUCCESS;
+    }
+    let args: Vec<OsString> = std::env::args_os().skip(1).collect();
+    if !raw_args_request_check_run(&args) {
+        let text = error.render().to_string();
+        SystemPrompt.show_error(&failure::failure_message(text.trim_end(), None));
+    }
+    ExitCode::from(2)
+}
+
 /// Exit code 1: the program stopped on an error. Exit code 101: it stopped on a panic.
 fn main() -> ExitCode {
-    let cli = Cli::parse();
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(error) => return report_argument_error(&error),
+    };
     let log = log_file::init();
     install_panic_hook();
     log::info!(
@@ -381,6 +417,46 @@ mod tests {
         ] {
             assert!(parse(args).unwrap().is_check_run(), "{args:?}");
         }
+    }
+
+    #[test]
+    fn raw_args_detect_check_run_flags() {
+        let args = |list: &[&str]| list.iter().map(OsString::from).collect::<Vec<_>>();
+        assert!(!raw_args_request_check_run(&args(&[])));
+        assert!(!raw_args_request_check_run(&args(&[
+            "--gamedir",
+            "x",
+            "--mute"
+        ])));
+        // The flag must be a whole argument, not a prefix of another flag.
+        assert!(!raw_args_request_check_run(&args(&["--controller"])));
+        assert!(raw_args_request_check_run(&args(&["--gamedir", "--join"])));
+        assert!(raw_args_request_check_run(&args(&[
+            "--control=127.0.0.1:0"
+        ])));
+        assert!(raw_args_request_check_run(&args(&["--host=2302", "x"])));
+        assert!(raw_args_request_check_run(&args(&["--screenshot=a.png"])));
+    }
+
+    #[test]
+    fn raw_check_run_flags_match_is_check_run() {
+        let value_of = |flag: &str| match flag {
+            "--screenshot" => "x.png",
+            "--loading-shot" => "x",
+            "--control" => "127.0.0.1:0",
+            "--join" => "127.0.0.1",
+            "--host" => "2302",
+            other => panic!("no test value for {other}"),
+        };
+        for flag in RAW_CHECK_RUN_FLAGS {
+            let mut args = vec![*flag, value_of(flag)];
+            if *flag == "--host" {
+                args.extend(["--net-map", "m.lvl"]);
+            }
+            assert!(parse(&args).unwrap().is_check_run(), "{flag}");
+        }
+        // Every flag that makes `is_check_run` true is in the raw list.
+        assert_eq!(RAW_CHECK_RUN_FLAGS.len(), 5);
     }
 
     #[test]
