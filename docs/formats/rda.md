@@ -1,7 +1,7 @@
 # RDA archives (`Resource File V1.0`)
 
-Archives `NML0.RDA` ... `nml10.rda` in the game directory. Reader: `nml_rda::Archive`, virtual file system:
-`nml_rda::Vfs`.
+Archives `NML0.RDA` ... `nml10.rda` in the game directory. Reader: `opennml_rda::Archive`, virtual file system:
+`opennml_rda::Vfs`.
 
 ## Layout
 
@@ -100,7 +100,7 @@ memory buffer; where that buffer comes from is not established.
 
 ## Behavior of the Rust implementation
 
-Behavior of `crates/nml-rda/src/vfs.rs`, matching the original:
+Behavior of `crates/opennml-rda/src/vfs.rs`, matching the original:
 
 - `Vfs::open_game_dir` loads `nml0.rda`, `nml1.rda`, ... (case does not matter) up to the first missing number, like the
   original. For the installation (`nml0`-`nml10` without a gap) this changes nothing; other directories (a gap,
@@ -114,7 +114,7 @@ Behavior of `crates/nml-rda/src/vfs.rs`, matching the original:
   index, the original through the Windows file system.
 - `Vfs::exists` matches the existence check of the original: first a loose file, then the archives. Unlike there, Rust
   trims the whitespace here too, because `exists` uses the same normalization as `read`.
-- `Vfs::files` returns only archive files; `nml-extract list` therefore shows no loose files.
+- `Vfs::files` returns only archive files; `opennml-extract list` therefore shows no loose files.
 
 Kept deliberately (no effect on the shipped data):
 

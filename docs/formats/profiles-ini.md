@@ -1,8 +1,8 @@
 # `profiles.ini` and `campaign.ini`
 
 The archive format itself is described in [engine-ini.md](engine-ini.md), section "Format". The reimplementation
-reads and writes `profiles.ini` with `nml-formats/src/profiles.rs` and reads `campaign.ini` with
-`nml-formats/src/campaign.rs`. It never writes the file of the installation; the reimplementation keeps `profiles.ini`
+reads and writes `profiles.ini` with `opennml-formats/src/profiles.rs` and reads `campaign.ini` with
+`opennml-formats/src/campaign.rs`. It never writes the file of the installation; the reimplementation keeps `profiles.ini`
 in the folder of the settings file (deviation from the original).
 
 ## `profiles.ini`
@@ -50,7 +50,7 @@ reimplementation rejects it with `FormatError::Invalid`; the message always begi
 host then starts without profiles and renames the file to `profiles.ini.broken` (an older backup of this name is
 replaced, only the last one is kept; a warning in the log names both paths). So the next writing of the profiles
 (creating, deleting, choosing) does not overwrite it; if the renaming fails, the warning says so. An unreadable file
-(read error) stays where it is (`nml-client/src/settings.rs`, `load_profiles`). Rejected are:
+(read error) stays where it is (`opennml-client/src/settings.rs`, `load_profiles`). Rejected are:
 
 | Case | Consequence in the original |
 |---|---|

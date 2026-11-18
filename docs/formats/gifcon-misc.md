@@ -72,7 +72,7 @@ still open at the end of the file does the same.
 
 ### `gametypevictory.ini` / `gametypedefeat.ini`
 
-Reader in the reimplementation: `nml-formats/src/gametype_rules.rs` (`parse_gametype_rules`, path constants
+Reader in the reimplementation: `opennml-formats/src/gametype_rules.rs` (`parse_gametype_rules`, path constants
 `GAMETYPE_VICTORY_PATH`/`GAMETYPE_DEFEAT_PATH`); it reads like the original.
 
 ```
@@ -112,7 +112,7 @@ combat.
 
 ### `randommaptypes.ini`
 
-Path `data/gifcon/randommaptypes.ini`; reader in the reimplementation: `nml-formats/src/mp_levels.rs`
+Path `data/gifcon/randommaptypes.ini`; reader in the reimplementation: `opennml-formats/src/mp_levels.rs`
 (`parse_random_map_types`). It ignores lines with `#` and empty lines. The line starts (with space, exact, without
 trimming) are `GNAME `, `MNAME `, `LNAME `, `DNAME `, `NNAME ` (name = text ID) and `GTYPE `, `MSCRIPT `, `LTYPE `,
 `DTYPE `, `NTYPE ` (word or script path). All `*NAME` lines write the **same** intermediate variable; the entry
@@ -136,7 +136,7 @@ description (`RandomMapSpec`), and the generator reads script, landscape and tim
 
 Files `data/levels/multiplayer/levels0000.ini`, `levels0001.ini`, ... ascending up to the **first missing one**
 (at most `levels9999.ini`); no directory scan, no sorting.
-Reader in the reimplementation: `nml-formats/src/mp_levels.rs` (`load_map_list`, `parse_level_list` per file).
+Reader in the reimplementation: `opennml-formats/src/mp_levels.rs` (`load_map_list`, `parse_level_list` per file).
 
 ```
 NAME 15800            text ID of the display name (number)
@@ -197,8 +197,8 @@ Quirks (O-115): lines before the first number go to an uninitialized number, `OF
 second value of the previous `OFFSET` line, the number is not limited. Shipped data: one file per pointer per
 edition; pointer 7 "Normal" = `data/pointer/pointer-normal.tga`, `OFFSET 2 2`.
 
-Reimplementation: `nml_formats::gifcon::parse_mouse_pointers` (map number -> `MousePointer { normal, red, green,
-offset }`); lines before the first number are ignored, the hotspot starts at 0. The menu host (`nml-client`
+Reimplementation: `opennml_formats::gifcon::parse_mouse_pointers` (map number -> `MousePointer { normal, red, green,
+offset }`); lines before the first number are ignored, the hotspot starts at 0. The menu host (`opennml-client`
 `menu_host.rs`) draws pointer 7 with the first `NORMAL` file.
 
 ### `statusbar.ini`
@@ -228,7 +228,7 @@ icons 32 x 32, four `RESOURCE` lines 0...3 (icon at x = 1/120/240/360, text 32 o
 checked: if a line or a number is missing, heap or stack content remains; the font `StatusFont` is loaded only if the
 file could be opened. The reimplementation takes 0 (or empty) without the line and 0 for missing numbers of a line,
 because undetermined values cannot be reproduced; the shipped data has all lines, so this has no effect.
-Reimplementation: `nml_formats::statusbar::{parse_statusbar, StatusBarConfig, StatusEntry}`.
+Reimplementation: `opennml_formats::statusbar::{parse_statusbar, StatusBarConfig, StatusEntry}`.
 ### `toolbar.cfg`
 
 Path `data/gifcon/toolbar.cfg`; 3191 bytes in `NML0.RDA`. Prefix comparisons as above, in this order:
@@ -251,7 +251,7 @@ Shipped data: 17 `ICONS` (6 x 128 x 128 `status_a_00 ... 05`, 11 x 64 x 64 `stat
 `TOOLBAR` (17 `ICON`, each from its sheet, tile 0), `NORMALBUTTONS` (14 `POS`: column `245 + 53 * (k mod 7)`, y 17 or
 71), `STATUSBUTTONS` (5), `FORMATIONBUTTONS` (9), `SELECTIONBUTTONS` (30), `PORTRAITPOSITION` (11),
 `BUTTONNORMALCOLORS` (10 `COLOR`), `HEROBUTTONS` and `HEADHUNTERBUTTONS` (5 each).
-Reimplementation: `nml_formats::toolbar_cfg::{parse_toolbar_cfg, ToolbarConfig, ToolbarTag, ToolbarIcon}`.
+Reimplementation: `opennml_formats::toolbar_cfg::{parse_toolbar_cfg, ToolbarConfig, ToolbarTag, ToolbarIcon}`.
 
 ### `icons.ini`
 
@@ -265,7 +265,7 @@ Path `data/gifcon/icons.ini`; 37,890 bytes in `NML0.RDA`. Keys **without** a spa
 
 Comment lines (`#`, also `[GUID] ...`) match nothing. Shipped data: 6 `PORTRAIT`, 13 `ICONS`, 743 `GUID` lines
 without a duplicate GUID; GUID 500 ... 505 are the nation icons.
-Reimplementation: `nml_formats::icons_ini::{parse_icons_ini, IconsIni, GuidIcons}`.
+Reimplementation: `opennml_formats::icons_ini::{parse_icons_ini, IconsIni, GuidIcons}`.
 
 ### `messages.ini`: file order of the kinds
 

@@ -14,7 +14,7 @@ Everything is in English: documentation, comments, messages, commit messages, id
 - No original game data in the repository: no images, savegames or tables from the exe.
 - Corpus tests need `NML_GAME_DIR` (the original installation). Without the variable they skip themselves.
 - The German and the English edition are supported. The tests detect the edition with
-  `nml_rda::testutil::game_version` and check the numbers per edition.
+  `opennml_rda::testutil::game_version` and check the numbers per edition.
 
 ## Checks before a commit
 
@@ -25,8 +25,8 @@ Everything is in English: documentation, comments, messages, commit messages, id
 
 ## Simulation rules
 
-- `nml-sim`, `nml-formats`, `nml-world`, `nml-control` and `nml-ui` stay free of `wgpu`, `winit` and `egui`.
-  `nml-client` and `nml-game` stay free of `egui`.
+- `opennml-sim`, `opennml-formats`, `opennml-world`, `opennml-control` and `opennml-ui` stay free of `wgpu`, `winit` and `egui`.
+  `opennml-client` and `opennml-game` stay free of `egui`.
 - Determinism: integer or fixed-point arithmetic, or `f32` in a fixed order of operations. No libm transcendentals,
   no `HashMap` iteration, no time. Randomness comes only from the state.
 - The viewer changes the simulation only through commands. Previews and queries leave the checksum unchanged.
@@ -36,7 +36,7 @@ Everything is in English: documentation, comments, messages, commit messages, id
 - Load rule: loading (including network sync, which is external input) rejects with a message only what would
   otherwise crash, hang or use unbounded memory (index, divisor, circles, lengths), and what does not fit the loaded
   match (format, checksum, rules, map). Fixed lengths and ranges use types with `try_from` (same bytes in the savegame). No plausibility checks
-  and no rejection test per field: a new crash check gets one row in the combined test `crates/nml-sim/src/save/tests/crash.rs`.
+  and no rejection test per field: a new crash check gets one row in the combined test `crates/opennml-sim/src/save/tests/crash.rs`.
 
 ## References in comments
 
@@ -50,11 +50,11 @@ Everything is in English: documentation, comments, messages, commit messages, id
 
 ## Viewer MCP
 
-`.mcp.json` registers the MCP server `nml-viewer` (`nml-viewer-mcp`). The control channel is described in
+`.mcp.json` registers the MCP server `opennml-viewer` (`opennml-viewer-mcp`). The control channel is described in
 `docs/viewer-control.md`. In automated runs start the programs with `--mute --window-mode windowed`.
 
 ## Licensing
 
-Code is GPL-3.0-or-later (`LICENSE`), `crates/nml-bink` is LGPL-2.1-or-later, `docs/` and `assets/` are
+Code is GPL-3.0-or-later (`LICENSE`), `crates/opennml-bink` is LGPL-2.1-or-later, `docs/` and `assets/` are
 CC BY-SA 4.0. New crates use `license.workspace = true`. New dependencies need a license that is compatible with
 GPL-3.0-or-later (see `docs/licensing.md`).

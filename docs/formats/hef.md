@@ -1,6 +1,6 @@
 # "Handle effect" `.hef` (circle/radius indicators made of `.pef` effects)
 
-Rust: `nml_formats::hef::parse_hef`, the `effectlist.ini` with `nml_formats::hef::parse_effect_list`.
+Rust: `opennml_formats::hef::parse_hef`, the `effectlist.ini` with `opennml_formats::hef::parse_effect_list`.
 
 Text file (cp1252, CRLF; header comment "CFG-File für einen Handle Effect"). A `.hef` describes how `.pef` effects are
 set repeatedly around a unit (the "handle"): a circle or arc that either rotates (time mode) or appears as a ring of

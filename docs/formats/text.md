@@ -1,6 +1,6 @@
 # Bracket text formats (`.cfg`, `.lvl`, `.wld`, `.prj`, `.pef`)
 
-Encoding: Windows-1252, line endings CRLF. Parser: `nml_formats::text::parse_blocks`.
+Encoding: Windows-1252, line endings CRLF. Parser: `opennml_formats::text::parse_blocks`.
 
 ## Grammar
 

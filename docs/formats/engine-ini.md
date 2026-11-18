@@ -134,7 +134,7 @@ Defaults are those of the original. Column M: **O** = options pages, **S** = oth
 
 ## Implementation
 
-Modules in `nml-formats`: `engine_ini` (archive, `EngineConfig`) and `keys` (`defaultkeys.ini`). The format above is
+Modules in `opennml-formats`: `engine_ini` (archive, `EngineConfig`) and `keys` (`defaultkeys.ini`). The format above is
 the reference; this section says what the reimplementation does with it.
 
 - **Archive:** `parse_archive`/`write_archive` (`ArchiveNode::{Value, Block}`). A node is a block if `<Name>` is
@@ -172,8 +172,8 @@ the reference; this section says what the reimplementation does with it.
   order of the base or of the file (lossless without a base). A mapping newly created from the defaults or read onto
   the defaults carries the order of `defaultkeys.ini`, not that of the `CMap`. Reason: the original reads both orders
   the same way (assignment ID -> key); reproducing the `CMap` arrangement would gain nothing.
-- **Settings file of the reimplementation** (`nml-client/src/settings.rs`): location `--settings <path>` or
-  `NML_SETTINGS`, otherwise `%LOCALAPPDATA%\nml-rust\Engine.ini` (shared helper `nml_ui::atlas_gen::user_path_from`
+- **Settings file of the reimplementation** (`opennml-client/src/settings.rs`): location `--settings <path>` or
+  `NML_SETTINGS`, otherwise `%LOCALAPPDATA%\OpenNML\Engine.ini` (shared helper `opennml_ui::atlas_gen::user_path_from`
   with the cache of the atlases); a location inside the installation is rejected (`settings_path_for`, checked with
   `is_inside`). `load_settings` reads like the original's configuration constructor onto the defaults including
   `defaultkeys.ini`; if the file is missing, these apply (the `Engine.ini` of the installation is not adopted);

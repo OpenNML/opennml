@@ -26,7 +26,7 @@ The project is under active development.
 ## Quick start
 
 ```bash
-cargo run --release -p nml-game
+cargo run --release -p opennml-game
 ```
 
 The game finds the original installation itself (next to the program, in Steam and at the usual locations) and
@@ -37,10 +37,10 @@ give a location.
 
 | Program | Purpose |
 |---|---|
-| `nml-game` | The game |
-| `nml-viewer` | Tool for viewing maps, models, effects and menus |
-| `nml-extract` | List, unpack and convert game data to common formats |
-| `nml-viewer-mcp` | Interface for automated tests with AI tools |
+| `opennml-game` (`OpenNML.exe`) | The game |
+| `opennml-viewer` | Tool for viewing maps, models, effects and menus |
+| `opennml-extract` | List, unpack and convert game data to common formats |
+| `opennml-viewer-mcp` | Interface for automated tests with AI tools |
 
 Each program shows more options with `--help`; in more detail in [docs/programs.md](docs/programs.md).
 
@@ -60,7 +60,7 @@ Technical documentation on file formats, game mechanics and structure is in [doc
 | Part | License | Text |
 |---|---|---|
 | Source code | **GPL-3.0-or-later** | [LICENSE](LICENSE) |
-| Video decoder `crates/nml-bink` (based on FFmpeg) | **LGPL-2.1-or-later** | [COPYING.LGPLv2.1](crates/nml-bink/COPYING.LGPLv2.1) |
+| Video decoder `crates/opennml-bink` (based on FFmpeg) | **LGPL-2.1-or-later** | [COPYING.LGPLv2.1](crates/opennml-bink/COPYING.LGPLv2.1) |
 | Documentation `docs/` and artwork `assets/` | **CC BY-SA 4.0** | [LICENSE-CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0) |
 
 Rationale and the check of the dependencies: [docs/licensing.md](docs/licensing.md).

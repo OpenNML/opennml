@@ -1,0 +1,41 @@
+[package]
+name = "opennml-viewer"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-render.workspace = true
+opennml-rda.workspace = true
+opennml-formats.workspace = true
+opennml-world.workspace = true
+opennml-control.workspace = true
+opennml-effects.workspace = true
+opennml-audio.workspace = true
+opennml-sim.workspace = true
+opennml-ui.workspace = true
+opennml-client.workspace = true
+opennml-randommap.workspace = true
+egui.workspace = true
+egui-wgpu.workspace = true
+egui-winit.workspace = true
+glam.workspace = true
+image.workspace = true
+wgpu.workspace = true
+winit.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+log.workspace = true
+env_logger.workspace = true
+
+[dev-dependencies]
+opennml-client = { workspace = true, features = ["testkit"] }
+tempfile.workspace = true
+
+[build-dependencies]
+# Program icon of the exe on Windows (`build.rs`).
+embed-resource.workspace = true

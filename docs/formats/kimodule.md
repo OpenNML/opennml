@@ -1,6 +1,6 @@
 # AI modules `.mod` and module database `nml.db`
 
-Rust: `nml_formats::kimodule` (reader, disassembler; see section 9).
+Rust: `opennml_formats::kimodule` (reader, disassembler; see section 9).
 
 ## 1. Purpose and locations
 
@@ -171,9 +171,9 @@ Read from the path `data/KIModules/nml.db`. No entry for 11 modules: `multi_norm
 `*_normal_angriffswellen` (590203, 590204, 590207, 590236, 590281, 590312). Conversely, every `nml.db` entry has a
 file.
 
-## 9. Reader and corpus test (Rust: `nml_formats::kimodule`)
+## 9. Reader and corpus test (Rust: `opennml_formats::kimodule`)
 
-Implemented in `crates/nml-formats/src/kimodule.rs`, corpus test `crates/nml-formats/tests/corpus_kimodules.rs`. The
+Implemented in `crates/opennml-formats/src/kimodule.rs`, corpus test `crates/opennml-formats/tests/corpus_kimodules.rs`. The
 reader follows the original loader: a loop as long as at least 12 bytes are left (a shorter remainder is the end
 without an error); the block ID by prefix (`HEADER` and `VARMAP` 6 characters, otherwise 8 like `strncmp`); `CODEDATA`
 reads `size >> 2` words, after which reading continues directly; `VARMAP` and `DEBUGGER` read their content without

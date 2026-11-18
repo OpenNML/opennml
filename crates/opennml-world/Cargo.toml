@@ -1,0 +1,17 @@
+[package]
+name = "opennml-world"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-rda.workspace = true
+opennml-formats.workspace = true
+glam.workspace = true
+image.workspace = true
+anyhow.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

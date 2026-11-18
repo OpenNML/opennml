@@ -1,6 +1,6 @@
 # Height map `.hlm`
 
-Rust: `nml_formats::hlm::parse_hlm`; derived values `nml_world::terrain::Terrain`.
+Rust: `opennml_formats::hlm::parse_hlm`; derived values `opennml_world::terrain::Terrain`.
 
 Binary height map of a level: one record per grid point of the terrain with position, normal and color GUID. Grid
 size and spacing are not in the file but in the `[TERRAIN]` block of the `.wld` of the same name ([wld.md](wld.md)).
@@ -58,7 +58,7 @@ The game derives these values per grid point after reading:
 | `normal` | Recomputed: the **negated mean (not normalized)** of the adjacent triangle normals (inner points have 6: tile `(x,z)` triangle A, `(x-1,z)` A+B, `(x,z-1)` A+B, `(x-1,z-1)` B; fewer at the edge). Points **up** (flat: `(0, 1, 0)`), length < 1 on slopes |
 | `lit_color` | Per channel `clamp(c/255 * f * L, 0, 255)` with `c` = `COLOR_DIFFUSE` of the color GUID (255 if none), `L` = channel of `[TERRAIN] LIGHT_COLOR`, `f = n * normalize(LIGHT_POSITION) + 1 - 0.01 * LIGHT_INTENSITY` with the grid point normal `n` (pointing up); as `0x00RRGGBB`; becomes the vertex color of the terrain mesh ([tlm.md](tlm.md#terrain-mesh-chunk-vertex-buffer)) |
 | `display_color` | Default `-1`; per frame `lit_color` times the fog-of-war factor, also the color of the water |
-| `water_alpha` | `clamp(int(255 * sqrt(-(y - WATER_LEVEL) / WATER_MAXDEPTH)), WATER_MINALPHA, WATER_MAXALPHA)`; above the water the root is invalid and the result becomes `WATER_MINALPHA`. Edge cases of the Rust implementation (`nml_world::terrain::water_alpha`, not present in the shipped data, behavior of the game not checked): `WATER_MAXDEPTH` <= 0 gives a quotient of +-infinity and Rust saturates to `WATER_MAXALPHA` (the game possibly `WATER_MINALPHA`); swapped limits `MINALPHA` > `MAXALPHA` are ordered by Rust because `i32::clamp` would panic otherwise. The conversion from floating point to integer truncates (`as`) |
+| `water_alpha` | `clamp(int(255 * sqrt(-(y - WATER_LEVEL) / WATER_MAXDEPTH)), WATER_MINALPHA, WATER_MAXALPHA)`; above the water the root is invalid and the result becomes `WATER_MINALPHA`. Edge cases of the Rust implementation (`opennml_world::terrain::water_alpha`, not present in the shipped data, behavior of the game not checked): `WATER_MAXDEPTH` <= 0 gives a quotient of +-infinity and Rust saturates to `WATER_MAXALPHA` (the game possibly `WATER_MINALPHA`); swapped limits `MINALPHA` > `MAXALPHA` are ordered by Rust because `i32::clamp` would panic otherwise. The conversion from floating point to integer truncates (`as`) |
 | `is_edge` | 1 if `x = 0`, `z = 0`, `x = DIM_X * SIZE_X` or `z = DIM_Z * SIZE_Z` |
 
 **Triangle decomposition**: tile `(x, z)` consists of triangle A = `(x,z)`, `(x,z+1)`, `(x+1,z)` and triangle

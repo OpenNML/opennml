@@ -1,6 +1,6 @@
 # Project file `.prj` and `default.dat`
 
-Rust: `nml_formats::prj::parse_project`. It also reads `OBJ_UPGRADES` (`ProjectObject::upgrades`, the upgrades of the
+Rust: `opennml_formats::prj::parse_project`. It also reads `OBJ_UPGRADES` (`ProjectObject::upgrades`, the upgrades of the
 type in file order) and `[UPGRADE]` (`Project::upgrades`, `ProjectUpgrade { guid, name }` by `UPG_GUID`); the rules
 build `Rules::upgrade_types` (upgrade -> types) and `Rules::upgrades` from them. Corpus test
 `nml_wiese_lists_upgrades_and_their_types`.
@@ -43,7 +43,7 @@ and colors by `COLOR_GUID`. The model of a game object comes from the `OBJ_FILEN
 | `OBJ_GAME_FILENAME` | `"path"` | **Overrides** the model path unchanged (without replacing the extension) if the text is longer than 1 character; 38 types, e.g. `dragoner_eng_zu_pferd.rdw` -> `dragoner_eng.rdo` (horse via `SUBOBJECT` of the object `.cfg`) |
 | `OBJ_SHADOW_FILENAME` | `"path"` | Shadow model (`_shd.rdo`), extension -> `.rdo`; the game uses only the hull and the texture of material 0 as a terrain decal (shadow kind 1; for buildings with a ground plate as a decal lit like the terrain) |
 | `OBJ_GROUNDPLANE_FILENAME`, `OBJ_SCAFFOLD_FILENAME`, `OBJ_SELECTION_FILENAME` | `"path"` | Ground plate (`.rdo` under `ground\`, 75 buildings: decal with terrain light), scaffold (set together with GUID 1108/1109/1117/2009/2010/3505 = ship marker for the shadows), selection marker (`.tga`) |
-| `OBJ_SELECTION_RADIUS` | `%f` | Half edge length of the selection ring (`nml_formats::prj::SelectionMarker`; the ring decal applies only for file names longer than 1 character, otherwise a line rectangle) |
+| `OBJ_SELECTION_RADIUS` | `%f` | Half edge length of the selection ring (`opennml_formats::prj::SelectionMarker`; the ring decal applies only for file names longer than 1 character, otherwise a line rectangle) |
 | `OBJ_SELECTION_USE_BBOX` | `%i` | != 0: box over the model hull instead of a ring (96 types: buildings, gold deposits, fields) |
 | `OBJ_XROT`, `OBJ_YROT`, `OBJ_ZROT` | `%f` | Default rotation of the type (33 types with `OBJ_YROT` != 0); no reader found in the placement code, probably applied only by the editor when placing |
 | `OBJ_ONSURFACE`, `OBJ_ONWATER` | `%i` | Can be placed on terrain or on water (23 types on water) |

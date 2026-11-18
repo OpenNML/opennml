@@ -1,6 +1,6 @@
 # Effect file `.pef` (particle, billboard and model effects)
 
-Rust: `nml_formats::pef::parse_pef`.
+Rust: `opennml_formats::pef::parse_pef`.
 
 Text file (cp1252, CRLF) from the internal effect editor. A `.pef` describes **one effect** made of any number of
 **components** of three kinds: particle emitter (`PARTICLEEFFECT`), billboard effect with layers
@@ -200,7 +200,7 @@ Effect space = world space without rotation, origin at the effect position; the 
 ## Validation
 
 Statistics above come from a pass over all 127 files (counting blocks/keys, value ranges, curve lengths, `#IND` check).
-In the corpus test (`crates/nml-formats/tests/corpus_effects.rs`) the Rust parser reads all 127 files and checks per
+In the corpus test (`crates/opennml-formats/tests/corpus_effects.rs`) the Rust parser reads all 127 files and checks per
 file the component count against `count("PARTICLEEFFECT")` etc. as well as the sums above. Three particle blocks have
 `TEXTURE ""` (`schatten-kampfsicht.pef`, `units-kampfsicht.pef`, `units-panzerung.pef`).
 

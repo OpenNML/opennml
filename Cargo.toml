@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/nml-rda", "crates/nml-formats", "crates/nml-world", "crates/nml-export", "tools/nml-extract", "crates/nml-render", "apps/nml-viewer", "crates/nml-control", "apps/nml-viewer-mcp", "crates/nml-effects", "crates/nml-audio", "crates/nml-bink", "crates/nml-sim", "crates/nml-ui", "crates/nml-client", "apps/nml-game", "crates/nml-randommap", "crates/nml-net", "tools/nml-icon"]
+members = ["crates/opennml-rda", "crates/opennml-formats", "crates/opennml-world", "crates/opennml-export", "tools/opennml-extract", "crates/opennml-render", "apps/opennml-viewer", "crates/opennml-control", "apps/opennml-viewer-mcp", "crates/opennml-effects", "crates/opennml-audio", "crates/opennml-bink", "crates/opennml-sim", "crates/opennml-ui", "crates/opennml-client", "apps/opennml-game", "crates/opennml-randommap", "crates/opennml-net", "tools/opennml-icon"]
 
 [workspace.package]
 version = "0.1.0"
@@ -10,22 +10,22 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/OpenNML/opennml"
 
 [workspace.dependencies]
-nml-rda = { path = "crates/nml-rda" }
+opennml-rda = { path = "crates/opennml-rda" }
 winreg = "0.56"
 rfd = "0.18"
-nml-formats = { path = "crates/nml-formats" }
-nml-world = { path = "crates/nml-world" }
-nml-export = { path = "crates/nml-export" }
-nml-render = { path = "crates/nml-render" }
-nml-control = { path = "crates/nml-control" }
-nml-effects = { path = "crates/nml-effects" }
-nml-audio = { path = "crates/nml-audio" }
-nml-bink = { path = "crates/nml-bink" }
-nml-sim = { path = "crates/nml-sim" }
-nml-net = { path = "crates/nml-net" }
-nml-ui = { path = "crates/nml-ui" }
-nml-client = { path = "crates/nml-client" }
-nml-randommap = { path = "crates/nml-randommap" }
+opennml-formats = { path = "crates/opennml-formats" }
+opennml-world = { path = "crates/opennml-world" }
+opennml-export = { path = "crates/opennml-export" }
+opennml-render = { path = "crates/opennml-render" }
+opennml-control = { path = "crates/opennml-control" }
+opennml-effects = { path = "crates/opennml-effects" }
+opennml-audio = { path = "crates/opennml-audio" }
+opennml-bink = { path = "crates/opennml-bink" }
+opennml-sim = { path = "crates/opennml-sim" }
+opennml-net = { path = "crates/opennml-net" }
+opennml-ui = { path = "crates/opennml-ui" }
+opennml-client = { path = "crates/opennml-client" }
+opennml-randommap = { path = "crates/opennml-randommap" }
 glam = "0.34"
 serde_json = "1"
 gltf = "1.4"
@@ -63,5 +63,5 @@ embed-resource = "3"
 opt-level = 2
 
 # The Bink decoder also runs optimized in debug tests and in the debug game.
-[profile.dev.package.nml-bink]
+[profile.dev.package.opennml-bink]
 opt-level = 2

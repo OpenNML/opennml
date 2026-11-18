@@ -1,0 +1,24 @@
+[package]
+name = "opennml-render"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-rda.workspace = true
+opennml-formats.workspace = true
+opennml-world.workspace = true
+opennml-effects.workspace = true
+opennml-ui.workspace = true
+wgpu.workspace = true
+pollster.workspace = true
+anyhow.workspace = true
+log.workspace = true
+serde.workspace = true
+glam.workspace = true
+bytemuck.workspace = true
+image.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -1,6 +1,6 @@
 # Light presets `lightdata.ini`
 
-Rust: `nml_formats::lightdata` (`parse_lightdata`, `find_preset`).
+Rust: `opennml_formats::lightdata` (`parse_lightdata`, `find_preset`).
 
 Text file with named light presets. Each preset contains a **terrain light**
 (corresponds to `[TERRAIN] LIGHT_*` of the `.wld`, precomputed into the vertex colors, see [hlm.md](hlm.md)) and an

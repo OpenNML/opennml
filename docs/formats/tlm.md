@@ -1,8 +1,8 @@
 # Texture map `.tlm`
 
-Rust: `nml_formats::tlm::parse_tlm`; block textures `nml_world::chunks::build_chunk_textures`.
+Rust: `opennml_formats::tlm::parse_tlm`; block textures `opennml_world::chunks::build_chunk_textures`.
 
-glTF export: `nml_export::bake_chunk_texture` recomputes the base texture and the alpha pass per block on the CPU
+glTF export: `opennml_export::bake_chunk_texture` recomputes the base texture and the alpha pass per block on the CPU
 (bilinear, without mipmaps); the vertex color is stored as `COLOR_0` in the mesh.
 
 Binary texture map of a level: per terrain tile the GUID of a ground texture from the project file. Grid size from the
@@ -69,7 +69,7 @@ Excerpt of `kamp1-1.tlm`: `0500 0000 0500 0000 ...` = GUID 5 (`Karibik Wasser Du
   - Tile list of texture `t` (index `a*C + b`): a tile with `t`, or - if `t` lies in a group != 0 - a tile of another
     group != 0 in whose neighborhood `x - 2 ... x + 1`, `z - 2 ... z + 1` (asymmetric) `t` occurs.
   - Drawing: per group ascending, per texture its tile list (ground texture UV set 2, alpha map UV set 1).
-- **Deviations and additions of the Rust implementation** (`crates/nml-world/src/chunks.rs`):
+- **Deviations and additions of the Rust implementation** (`crates/opennml-world/src/chunks.rs`):
   - `Terrain::chunk_count` is `(DIM_X / C) * (DIM_Z / C)`, the original computes `(DIM_X / C)^2`. For the square maps
     of the shipped data this is the same.
   - `sample_texel` clamps the coordinates at the edge of the texture (column and row are limited). This is a
@@ -131,7 +131,7 @@ only for the steepness classification and as summands of the grid-point normals,
 one weather particle (snow/rain) per tile.
 
 **For right-handed targets (e.g. glTF export)**: Mirror positions as in [hlm.md](hlm.md) with `z -> -z` and reverse the
-winding (or swap the indexes `i0, i2, i1` or `front_face`); the diagonal stays the same grid connection. `nml-render`
+winding (or swap the indexes `i0, i2, i1` or `front_face`); the diagonal stays the same grid connection. `opennml-render`
 (wgpu) does **not** mirror but renders in the original left-handed system.
 
 ## Coordinate system and units

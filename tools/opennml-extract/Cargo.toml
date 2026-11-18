@@ -1,0 +1,20 @@
+[package]
+name = "opennml-extract"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-rda.workspace = true
+opennml-formats.workspace = true
+opennml-world.workspace = true
+opennml-export.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+glob.workspace = true
+env_logger.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

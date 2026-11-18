@@ -21,16 +21,16 @@ The small versions sit on whole pixels of their grid. Colors: background `#2a242
 
 ## Generating
 
-    cargo run --release -p nml-icon            # rewrites the PNGs and opennml.ico
-    cargo run --release -p nml-icon -- --check # only checks whether they match the sources
+    cargo run --release -p opennml-icon            # rewrites the PNGs and opennml.ico
+    cargo run --release -p opennml-icon -- --check # only checks whether they match the sources
 
-The tool (`tools/nml-icon`, using `resvg`) generates `opennml-<size>.png` for 16, 24, 32, 48, 64, 128 and 256 px
+The tool (`tools/opennml-icon`, using `resvg`) generates `opennml-<size>.png` for 16, 24, 32, 48, 64, 128 and 256 px
 and `opennml.ico` with all sizes (up to 128 px as bitmap, 256 px as PNG). The `assets_are_current` test of
-`nml-icon` fails if a source was changed but the output was not regenerated.
+`opennml-icon` fails if a source was changed but the output was not regenerated.
 
 ## Usage
 
-- Exe icon (Explorer): `apps/nml-game/build.rs` and `apps/nml-viewer/build.rs` embed `opennml.ico` on Windows
+- Exe icon (Explorer): `apps/opennml-game/build.rs` and `apps/opennml-viewer/build.rs` embed `opennml.ico` on Windows
   with `embed-resource`.
-- Window and taskbar: `nml_client::app_icon` sets the PNGs 16 to 128 px when the window is created, matching
+- Window and taskbar: `opennml_client::app_icon` sets the PNGs 16 to 128 px when the window is created, matching
   the monitor scaling (title bar 16 px, taskbar 32 px at 100 %).

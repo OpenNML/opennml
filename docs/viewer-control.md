@@ -1,14 +1,14 @@
 # Viewer control channel and MCP server
 
-With `--control`, `nml-viewer` opens a **control channel**: synthetic input, a virtual clock, state queries,
-screenshots rendered by the viewer, window mode and monitor. The MCP server `nml-viewer-mcp` makes it available to
+With `--control`, `opennml-viewer` opens a **control channel**: synthetic input, a virtual clock, state queries,
+screenshots rendered by the viewer, window mode and monitor. The MCP server `opennml-viewer-mcp` makes it available to
 Claude as tools.
 
 Without `--control` the viewer behaves as before (the clock then always runs in real time).
 
 ## Start
 
-    nml-viewer --control 127.0.0.1:0 [--paused] [further arguments]
+    opennml-viewer --control 127.0.0.1:0 [--paused] [further arguments]
 
 - Only loopback addresses are allowed (`127.0.0.1`, `::1`); port `0` lets the operating system pick a free port.
 - The viewer binds the port before the event loop starts and then writes the log line
@@ -24,19 +24,19 @@ Without `--control` the viewer behaves as before (the clock then always runs in 
 - With `--dialog`, the dialogs run on the virtual clock; stopped only with `step`. Without `--settings <file>`, their
   settings exist only in memory (defaults including `defaultkeys.ini`, nothing is ever saved), so check runs and
   images do not depend on the settings of the game; with `--settings` the viewer reads the file and writes it on
-  `OPTIONS OK` (never into the installation). `nml-game` has its own control channel with a subset of the commands
-  (`docs/programs.md`, "nml-game"): `hello`, `pause`, `resume`, `step`, `screenshot`, `state`, the `ui_*` commands,
+  `OPTIONS OK` (never into the installation). `opennml-game` has its own control channel with a subset of the commands
+  (`docs/programs.md`, "opennml-game"): `hello`, `pause`, `resume`, `step`, `screenshot`, `state`, the `ui_*` commands,
   `sim_hash`, `sim_query`, `sim_command` (only with a running match), `sim_result` (likewise),
   `ui_present` (likewise), `mouse_move`, `mouse_button`, `key`, `ui_focus_lost`,
   `random_map`, `net_status`, `net_part_hashes`, `net_save`, `net_debug` (see "Network play (command line)" and
   "Network play (menus and lobby)") and `quit`; `state` and `step` answer there with the state of the UI
   (like `ui_state`).
-- With `--hud`, the viewer draws the game UI like `nml-game` (message bar, status bar, command bar, and the minimap)
+- With `--hud`, the viewer draws the game UI like `opennml-game` (message bar, status bar, command bar, and the minimap)
   instead of the message lines in the overlay; at run time the command `hud` switches it. See "Game UI". With
   `--hud`, keys without a viewer binding also go into the key path of the original (see "Input in the game").
-- The MCP server starts `nml-game` with `viewer_start` and `program: game` (`target/<profile>/nml-game`, the same
+- The MCP server starts the game (`OpenNML.exe`) with `viewer_start` and `program: game` (`target/<profile>/OpenNML`, the same
   switches `--control 127.0.0.1:0`, `--paused`, `--mute`). It does not build: if the exe is missing, the message
-  names `cargo build --release -p nml-game`. `viewer_state`, `viewer_input` and `viewer_time` then return the state of
+  names `cargo build --release -p opennml-game`. `viewer_state`, `viewer_input` and `viewer_time` then return the state of
   the UI; `viewer_attach` always assumes the viewer (`hello` does not distinguish the programs).
 
 ## Protocol
@@ -55,14 +55,14 @@ the main thread. Request lines are at most 1 MiB long.
 | `key` | `code` (winit spelling, e.g. `ArrowUp`, `KeyB`, `F11`), `action`: `down`/`up`/`tap`, optional `repeat` (only with `down`: that many further press events as automatic repeat; otherwise the error `repeat only with down`) | `null` |
 | `mouse_move` | `x`, `y` (window pixels) | `null` |
 | `mouse_leave` | - | `null` |
-| `mouse_button` | `button`: `left`/`right`/`middle` (`middle` only in `nml-game`, quirk O-331; the viewer answers with an error), `down` | `null` |
+| `mouse_button` | `button`: `left`/`right`/`middle` (`middle` only in `opennml-game`, quirk O-331; the viewer answers with an error), `down` | `null` |
 | `wheel` | `up` | `null` |
 | `pause` / `resume` | - | `null` |
 | `step` | `frames` (1-10,000), `frame_ms` (0 < x <= 100) | state snapshot |
-| `screenshot` | `overlay` (default `false`), `max_size` (optional), `pointer` (default `false`, only `nml-game`) | `{"width", "height", "rgba_hash", "png_width", "png_height", "png_base64"}` |
+| `screenshot` | `overlay` (default `false`), `max_size` (optional), `pointer` (default `false`, only `opennml-game`) | `{"width", "height", "rgba_hash", "png_width", "png_height", "png_base64"}` |
 | `state` | - | state snapshot |
 | `window` | `mode`: `windowed`/`borderless`/`exclusive`, `monitor` (both optional) | `null` |
-| `hud` | `on` | `null`: game UI of the viewer on/off like `--hud` (see "Game UI"; not available in `nml-game`) |
+| `hud` | `on` | `null`: game UI of the viewer on/off like `--hud` (see "Game UI"; not available in `opennml-game`) |
 | `ui_state` | - | state of the menu UI (protocol 24; see "UI (`ui_*`)") |
 | `ui_click` | `dialog`, `element`, `button`: `left` (default)/`right` (`middle` is rejected by the check) | `{"x", "y"}`: click on the center of the element in the next frame (protocol 24) |
 | `ui_key` | `chord` (key names of the original, e.g. `ESCAPE`, `CONTROL H`), `char` (cp1252, optional) | `{"vk"}`: key event in the next frame (protocol 24) |
@@ -70,7 +70,7 @@ the main thread. Request lines are at most 1 MiB long.
 | `ui_video` | `name` (video name without path and extension, e.g. `eng`) | `null`: video `data/videos/<name>.bik` queued like `videostart` (open menus closed, video, menus opened again); only with an idle UI, otherwise an error (protocol 25; see "UI (`ui_*`)") |
 | `ui_present` | `event` (JSON form of `Presentation`: object with one key or a string, e.g. `{"Portrait": {"slot": 1, "portrait": 1000, "frame": 101}}`) | `null`: presentation event triggered by hand, rendering only (checksum unchanged until the next step; after that, host consequences - selection, game speed - can generate commands; the game speed and fog mode of the host change with it); only with a match or map (see "Campaign UI") |
 | `quit` | - | `null`, after which the viewer exits |
-| `random_map` | - | random map of the preview (`--random-map`): `{"seed_text", "hash", "script", "defines", "dim", "players", "rand_counts", "rand_state", "digests", "objects", "slots_used", "start_points"}`; without a random map `null` (see "Random map"; in `nml-game` the random map of the running match) |
+| `random_map` | - | random map of the preview (`--random-map`): `{"seed_text", "hash", "script", "defines", "dim", "players", "rand_counts", "rand_state", "digests", "objects", "slots_used", "start_points"}`; without a random map `null` (see "Random map"; in `opennml-game` the random map of the running match) |
 | `lights` | - | list of the light names in the order of F6: `level` (values of the `.wld`), then the 32 presets from `lightdata.ini` |
 | `set_light` | `name`: `level` or the name of a preset (case-insensitive) | `null`; unknown name: error with the known names |
 | `set_weather` | `kind`: `none`/`rain`/`snow` | `null`; the particles are recreated |
@@ -84,7 +84,7 @@ the main thread. Request lines are at most 1 MiB long.
 | `audio_capture` | `action`: `start` (+ `path`) / `stop` | `start`: `null` (a running recording is finished first); `stop`: `{"path", "frames", "length_ms", "peak", "rms", "envelope"}` (levels left/right, full scale 1; `envelope` = RMS per 100 ms); without a running recording: error |
 | `sim_setup` | `mode` (-1, 0, 1, 2 Domination, 3, 4/5 "Railroad"), `seed`, `nations` (e.g. `["SPA", "ENG"]`), `teams`, `game_speed` (0-30), `resource_setting` (0 = starting balance of the map, 1-3 = stages of `resourcenconfig.ini`), `living_space` (0-5 = living space 75, 100, 125, 150, 175, 200), `map_explored` (`true`/`false`, "map explored", `MapExplored`: "explored" fully set for all slots at the start; protocol 10), `slots` (lobby slots `{"kind": "closed"/"human"/"ai", "nation", "team", "color" 0-8, "handicap" 0-5, "ki_kind" 1-4}`, excludes `nations`/`teams`), `ki_enabled`, `campaign_difficulty` (0-2; protocol 26, see "AI match"), `script_enabled`, `time_per_char` (1-1000 ms per character; protocol 28, see "Scripts"), `time_limit` (time limit in minutes, 1-35791, default 20, otherwise as last time; see "Flag game modes"), each optional | `sim` section; with `mode`/`seed`/`nations`/`teams`/`resource_setting`/`living_space`/`map_explored`/`slots`/`ki_enabled`/`campaign_difficulty`/`script_enabled`/`time_per_char`/`time_limit` a new match on the same map (missing values as last time, selection empty), `game_speed` alone changes only the game speed; game type >= 0 only on multiplayer maps, 6 does not exist (error; 2 Domination); the resource and living space settings take effect only on multiplayer maps (campaign: starting balance of the map, living space 125); the same values are in the settings file (`resource_setting`, `living_space`, `map_explored`; command line `--map-explored`) |
 | `sim_result` | `player` (slot 0-7), `result` (1 lost, 2 won); protocol 29 | `{"step"}` like `sim_command`: command `0x56` `SetPlayerResult` of the active player for the next tick (like the cheat of the original, but in the command log); errors `player = <n> invalid: allowed 0 to 7`, `result = <n> invalid: allowed 1 (lost) or 2 (won)`; see "Protocol 29" |
-| `sim_command` | `command`: JSON form of `nml_sim::command::Command`, e.g. `{"player": 0, "kind": {"Halt": {"units": [65537]}}}`, `{"player": 0, "kind": {"Diplomacy": {"p": 0, "q": 1, "mode": 0}}}`, `{"player": 0, "kind": {"SharedVision": {"p": 0, "q": 1, "on": true}}}`, `{"player": 0, "kind": {"Queue": {"cyclic": false, "inner": {"Halt": {"units": [65537]}}}}}`, combat (protocol 11, see "Combat section of `sim_query`"): `{"player": 0, "kind": {"Attack": {"units": [2048], "target": 6144, "pos": null, "mods": 0}}}`, `{"player": 0, "kind": {"SetBehavior": {"units": [2048], "mode": 3}}}` | `{"step"}` = engine tick before which the command takes effect; sender check of the simulation (foreign units are ignored) |
+| `sim_command` | `command`: JSON form of `opennml_sim::command::Command`, e.g. `{"player": 0, "kind": {"Halt": {"units": [65537]}}}`, `{"player": 0, "kind": {"Diplomacy": {"p": 0, "q": 1, "mode": 0}}}`, `{"player": 0, "kind": {"SharedVision": {"p": 0, "q": 1, "on": true}}}`, `{"player": 0, "kind": {"Queue": {"cyclic": false, "inner": {"Halt": {"units": [65537]}}}}}`, combat (protocol 11, see "Combat section of `sim_query`"): `{"player": 0, "kind": {"Attack": {"units": [2048], "target": 6144, "pos": null, "mods": 0}}}`, `{"player": 0, "kind": {"SetBehavior": {"units": [2048], "mode": 3}}}` | `{"step"}` = engine tick before which the command takes effect; sender check of the simulation (foreign units are ignored) |
 | `sim_query` | `player`, `guid`, `ids`, `limit` (1-10,000, default 100), each optional | `{"tick", "steps", "total", "objects", "players", "counter_upgrades", "daytime", "headhunters", "kill_counts", "button_locks", "slot_running", "area_views"}`: objects in table order (ID, type, owner, position, tile, direction, state, animation, target, tick group, modules with name, behavior `inert`/`walk`/`stand`/`building`/`tree`/`natur`/`resource`/`quarter`/`selfheal`/`construct`/`attack`/`fightnear`/`dying`/`fightfar`/`shoot`/`animal`/`edible`/`hunting`/`riding`/`swim`/`diving`/`train`/`multihead`/`multipart`/`globalupgrade`/`spell`/`exectempupgrade`/`transporttent`/`tent`/`trading`/`masking`/`assassin`/`healing`/`evokeghost`/`ghost`/`banish`/`evokeanimal`/`bomberman`/`killer`/`specialmove`/`headhunter`/`robbing`, on/off, idle, flags, timers; with a walk module `walk` = `{"state", "ende", "goal_fx", "goal" (target of the FINDTO, otherwise the last waypoint), "waypoints", "trajectory", "speed", "cruising", "running", "layer", "planner", "wait_for", "group" (group ID or `null`), "formation_num" (rank)}`; economy sections and the combat section `combat` only if the object has the module or hit points, see below; protocol 17: `tent`, `transport_tent`, `trade` and `in_collision`, see "Tents and trade"; protocol 18: per building `gate`, `area_watch` and `watch_rect`, see "Gates and enemy watch"; protocol 19: `masking`, `assassin`, `healing`, `message_filter` and `look`, see "Camouflage, digging in, healing"; protocol 20: `evoke_ghost`, `ghost`, `banish`, `evoke_animal` and `influence`, see "Ghosts, banishing, animal evocation, auras"; protocol 21: `spell` with `target` and `corpse`, `bomberman`, `killer` and `special_move`, see "Spells and special attacks"; protocol 22: `headhunter` and `robbing`, see "Headhunters and robbing"; protocol 23: `ai_marks` = the slots 0-7 (ascending) that have marked the object for the AI, absent if empty), player slots 0-7 (control, name, nation, team, color, resources in whole units - living space unclamped -, friends as a bit mask, `enemies` = enemies and `vision` = shared vision as bit masks of the slots (`vision`: this slot sees what the slots of the mask see, its own included; protocol 10), `population` = `[occupied, living space clamped to the limit]`, `counts` = stock per GUID without groups and `pending` = "in progress" per GUID (construction sites, queued production), both only entries != 0 and only if not empty, `upgrades` = applied upgrade GUIDs in order of application, only if not empty; protocol 16, see "Upgrades and arming"; `attack_reports` = attack reports of the slot `[{"victim", "tile": [x, z]}]` in the order in which `0x512E` selects them, only if not empty; protocol 23); `headhunters` = headhunter table per kind 0-2 (protocol 22, see "Headhunters and robbing"); protocol 23: per object `ai_marks` and per player `attack_reports`, see "AI queries"; protocol 30: per object `name` (script name, reverse lookup in the name table; absent without) and `hidden` (hidden; absent if not), plus `kill_counts`, `button_locks`, `slot_running`, `area_views`, see "Scripts" |
 | `sim_save` | `path`, `replay` (default `false`) | `{"path", "bytes", "steps", "checksum"}`; savegame or replay since the start; a replay after loading a savegame is an error |
 | `sim_load` | `path`, `steps` (replay only, at most 576,000 = eight hours of game time) | `sim` section; savegame or replay (recognized by the identifier) of the same map and rules, otherwise an error with the reason (format version, map, rules checksum); a replay runs up to `steps` (default: one tick after the last command) |
@@ -104,8 +104,8 @@ the main thread. Request lines are at most 1 MiB long.
 | `ki_state` | optional `slot` (0-7), optional `values` (default `false`) | `{"paused", "engines", "rejected", "commands"}`: AI state (protocol 26): per engine threads in execution order (module, name, pc, status, sleep, semaphore, stack depth, top 8 stack values, child), semaphores, with `values` also `m_iValues`; counters of the AI commands (host state since the last restart). **Leaves the checksum unchanged**; see "AI match" |
 | `ki_command` | `action` (`start`/`pause`/`step`); `start`: `slot` (0-7), `module` (module ID from `nml.db`), optional `args` (at most 64), `sync` (default `false`); `pause`: optional `paused` (default `true`); `step`: `slot`, optional `passes` (1-1000, default 1); fields of other actions are errors | `{"step"}`: AI intervention as a command of the simulation at the next tick (protocol 26, `KiStart`/`KiPause`/`KiStep`, in the command log): start a module (synchronous or as a thread), pause/resume the whole AI, single steps while the AI is paused (per pass, each thread of the slot takes exactly one step with `dt = 20`). Errors up front: `slot` missing or without an engine, module unknown, `AI is running: ki_command pause first`; see "AI match" |
 | `script_state` | optional `block` (`{"container", "index"}`: container level 1, ... or dialog -1 and block index in the script file), optional `names` (substring), optional `log` (0-1000 steps, default 50) | `{"enabled", "dialog_running", "containers", "conditions", "speech", "names", "log", "main_quests", "sub_quests", "countdown_container", "countdown_s", "task_status", "area_overrides", "commands", "results", "ui"}`: script state (protocol 28): containers with countdown, name spaces and blocks (index, name, state, action index, wait reason), with `block` its conditions with the current value (evaluated on a copy), speech state, object names, block log (host state of the last 1,000 steps), since protocol 30 also mission objectives, countdown display, task status and changed areas, since protocol 32 counters and last rejections of the script commands (`commands`) and the decided slots (`results`), since protocol 33 control lock, cinemascope, selection mirror and last button (`ui`). **Leaves the checksum unchanged**; see "Scripts", "Script commands (protocol 32)" and "Presentation (protocol 33)" |
-| `script_events` | optional `steps` (0-1000, default 50) | `{"events": [{"step", "event"}], "presentation", "ui", "profile_vars", "camera"}`: presentation events of the last steps, presentation state, UI (lock, cinemascope, selection mirror, last button), profile variables and camera of the scripts (protocol 33). **Leaves the checksum unchanged.** Only in the viewer, not in `nml-game`; see "Presentation (protocol 33)" |
-| `script_command` | `action` (`skip_dialog`) | `{"step"}`: debug intervention in the script flow as a command of the simulation at the next tick (protocol 32, `ScriptSkipDialog`, in the command log, therefore also in replays and savegames): ends the running dialog at the next tick (like the skip flag `WaitForKIDebugger`). The sender is the active player. Error: `script_command skip_dialog: no dialog running` (nothing queued); unknown action when the line is read. Only in the viewer, not in `nml-game`; see "Script commands (protocol 32)" |
+| `script_events` | optional `steps` (0-1000, default 50) | `{"events": [{"step", "event"}], "presentation", "ui", "profile_vars", "camera"}`: presentation events of the last steps, presentation state, UI (lock, cinemascope, selection mirror, last button), profile variables and camera of the scripts (protocol 33). **Leaves the checksum unchanged.** Only in the viewer, not in `opennml-game`; see "Presentation (protocol 33)" |
+| `script_command` | `action` (`skip_dialog`) | `{"step"}`: debug intervention in the script flow as a command of the simulation at the next tick (protocol 32, `ScriptSkipDialog`, in the command log, therefore also in replays and savegames): ends the running dialog at the next tick (like the skip flag `WaitForKIDebugger`). The sender is the active player. Error: `script_command skip_dialog: no dialog running` (nothing queued); unknown action when the line is read. Only in the viewer, not in `opennml-game`; see "Script commands (protocol 32)" |
 | `sim_upgrade` | `player` (target slot 0-10), `guid` (!= 0), `remove` (default `false`) | `{"step"}`: apply an upgrade like the console (`0x39`, `ApplyUpgrade`) or remove it (`0x3A`, `RemoveUpgrade`); the sender is the active player, `player` only the target slot; applying with `guid` < 0 applies all GUIDs 2800 to 3399, removing needs `guid` > 0; without an ownership check as in the original (protocol 16, see "Upgrades and arming"); errors `player = <n> invalid: allowed 0 to 10 (target slot)`, `guid = 0 invalid`, `guid = <n> invalid: removing needs a GUID > 0` |
 | `sim_trade` | `player` (sender), `units` (carts; empty = selection), `ware` (0 buy wood, 1 buy food, 2 sell wood, 3 sell food), `target` (partner slot 0-8) | `{"step"}`: trade with player (`0x45`, `TradeWithPlayer`): per own cart with a trade module `{0x12B, ware, target}` with abort; the sender of the command is `player`, not the active player, so that rejections and the ignoring of foreign carts stay testable; the simulation alone checks the values (kind 0-3, target 0-8 and not the sender, the target slot has a trading building), a rejection is in the debug log and leaves the checksum unchanged (protocol 17, see "Tents and trade"); error `no units (selection empty)` |
 | `sim_tribute` | `player` (giver and sender), `recipients` (bit mask of the slots 0-7), `resource` (0 gold, 1 wood, 2 food), `amount` | `{"step"}`: tribute (`0x65`, `Tribute`): `player` pays `amount` to every slot 0-7 with a set bit (except itself); the simulation checks resource, amount and stock, a rejection is in the debug log (protocol 17, see "Tents and trade") |
@@ -167,7 +167,7 @@ headhunter menu in the "Economy" window, commands `HireHeadhunter` and `RobCorps
 24 = menu UI (`ui_state`, `ui_click`, `ui_key`, `ui_open`), 25 = videos (`ui_video`, `video` and `pointer_hidden` in
 `ui_state`, effects `play_video`/`stop_video`), 26 = AI match (commands `ki_state` and `ki_command`,
 `slots`/`ki_enabled`/`campaign_difficulty` in `sim_setup`), 27 = match from the menu (`ui_state.game`, game effects,
-`sim_hash`/`sim_query`/`sim_command` in `nml-game`), 28 = `script_state`, `sim_setup`
+`sim_hash`/`sim_query`/`sim_command` in `opennml-game`), 28 = `script_state`, `sim_setup`
 `script_enabled`/`time_per_char` (key `KeyJ`, "Script" window), 29 = game end, accounting, campaign (`sim_result`,
 `ui_state.game.result`, `ui_state.accounting`/`play_time`, effects `game_end`, `accounting`, `surrender`,
 `start_campaign_level`, `book_campaign`; see "Protocol 29"), 30 = world state and mission objectives of the scripts
@@ -177,7 +177,7 @@ ID 1), 31 = game UI (`ui_state.game.hud`, viewer command `hud`; see "Game UI"), 
 (`script_command`, `script_state` `commands`/`results` and the block log message `Command`, `DebugDestroy` in
 `sim_command`; see "Script commands (protocol 32)"), 33 = presentation (`script_events`, `script_state` `ui`,
 `ScriptSelection`/`ScriptButton` in `sim_command`, MCP `viewer_script`; see "Presentation (protocol 33)"),
-34 = command bar (`ui_click`/`ui_state` for `GAMEUI`, mouse commands in `nml-game`; see "Command bar").
+34 = command bar (`ui_click`/`ui_state` for `GAMEUI`, mouse commands in `opennml-game`; see "Command bar").
 35 = campaign UI (`ui_present`, `ui_state.game.presentation`; see "Campaign UI"). 36 = input in the game (`key`
 with `repeat`, `ui_focus_lost`, `ui_state.game.input`; see "Input in the game"). 37 = minimap, diplomacy and chat
 (`ui_state.game.minimap`/`diplomacy_open`/`chat_lines`, the elements `minimap*` of `GAMEUI`, the effects `diplomacy`
@@ -187,15 +187,15 @@ rendering"). 39 = flag game modes: `sim.flags`/`ui_state.game.flags`, lobby colo
 `time_limit` and game type 2, `ui_state.game.presentation.timers` (remaining time of the timers); see "Flag game
 modes" and "Campaign UI" (`ui_state.game.presentation`). 40 = random map: command `random_map`; see "Random map".
 41 = random map with objects: `random_map` with object counters and checksums (`rand_counts` six, `digests` seven
-entries), `objects`, `slots_used`, `start_points`; `random_map` also in `nml-game`; `start_match` of a random map with
+entries), `objects`, `slots_used`, `start_points`; `random_map` also in `opennml-game`; `start_match` of a random map with
 `level` = `randommap:<seed>`. The response of `random_map` is not readable with protocol 40 (fixed lengths changed).
-42 = network play in `nml-game`: `net_status`, `net_part_hashes`, `net_save`, `net_debug`; `pause` and `step` rejected
+42 = network play in `opennml-game`: `net_status`, `net_part_hashes`, `net_save`, `net_debug`; `pause` and `step` rejected
 on the network, `sim_command`/`sim_result` only for the own slot; see "Network play (command line)". 43 = middle mouse
-button (quirk O-331): `mouse_button` with `middle` (`nml-game`), `ui_click` rejects `middle`; see "Middle mouse button
+button (quirk O-331): `mouse_button` with `middle` (`opennml-game`), `ui_click` rejects `middle`; see "Middle mouse button
 (quirk O-331)". 44: effects `net`, `search`, `lobby` in `ui_state.effects`; `net_status` with `role` `null` during the
 search, the phases `searching`, `connecting`, `lobby` and the fields `spacing`, `lead`, `build`, `rtt_ms`, `lobby`,
 `found`; `ui_*` free during search and lobby; see "Network play (menus and lobby)". 45: `ui_state.menu_level` and the
-effect `menu_level` in `ui_state.effects`; `sim_hash`/`sim_query` also read the menu level in `nml-game`; see "Menu
+effect `menu_level` in `ui_state.effects`; `sim_hash`/`sim_query` also read the menu level in `opennml-game`; see "Menu
 level". 46: `net_status.lobby.saved` and `net_status.lobby.rows[].seat`; see "Network play (network savegames)". 47:
 `sim_load` up to 576,000 ticks, `ui_state.game.replay`, effect `play_replay`; see "Replays". 48 (3D mouse pointer):
 `screenshot.pointer` and `ui_state.pointer_model`; see "3D mouse pointer". 49 (sound driver): effect
@@ -208,7 +208,7 @@ Valid key names: `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `PageUp`, `P
 `KeyV`, `KeyT`, `KeyP`, `KeyH`, `KeyI`, `KeyG`, `KeyR`, `KeyF`, `KeyO`, `KeyX`, `KeyK`, `KeyL`, `KeyJ`, `KeyU`,
 `Digit0`-`Digit9`, `Minus`, `Equal`, `BracketRight`, `Slash`, `Period`, `Comma`, `NumpadAdd`, `NumpadSubtract`,
 `ShiftLeft`, `ShiftRight`, `ControlLeft`, `Tab`, `Space`, `Enter`, `Escape`, `Pause`, `PrintScreen`, `F1`-`F12`
-(the names after `KeyU` and `Digit0`/`Digit6`-`Digit9` are for the keys of the original; `nml-game` maps the
+(the names after `KeyU` and `Digit0`/`Digit6`-`Digit9` are for the keys of the original; `opennml-game` maps the
 physical key to the VK of the **German** layout: main-block `+` is `BracketRight`, main-block `-` is `Slash`,
 `Equal` there is the acute accent and `Minus` the sharp s)
 (`F9`: sound on/off, with Shift held combat music on/off; in the model browser `KeyT`
@@ -352,7 +352,7 @@ same):
   table of the original, in which `0x512E` chooses at equal distance; absent if empty). The simulation fills attack
   reports only for victims on slots with control kind AI.
 - MCP: action `ki_query` of `viewer_sim` with `player`, `code`, `words`, `sight`. The parameters appear only in a new
-  MCP session after rebuilding `nml-viewer-mcp`; until then `ki_query` goes through the raw control channel.
+  MCP session after rebuilding `opennml-viewer-mcp`; until then `ki_query` goes through the raw control channel.
 
 Example (real responses of the viewer; IDs `id` renumbered, `request` shortened to the first ten words, the response
 has 130). Loaded is the savegame `ai_fire.nmlsave` on `[4players]-exile`: slot 1 is AI, three warriors (GUID 1400) of
@@ -395,7 +395,7 @@ Control channel: `words` instead of `args`, MCP through `viewer_sim` action `ki_
   "team", "color", "handicap", "ki_kind"}`, everything except `kind` optional), `ki_enabled` and
   `campaign_difficulty`. The slots go in order onto the active `.lvl` slots (a `closed` consumes the slot); slots
   behind the list stay like the default of the map (human, nation of the `.lvl`, team and color = slot). The AI kind
-  1-4 sets the handicap like the original (1 -> 5, 2 -> 2, 3 -> 0, 4 -> 0; `nml_sim::setup::ki_kind_handicap`), a
+  1-4 sets the handicap like the original (1 -> 5, 2 -> 2, 3 -> 0, 4 -> 0; `opennml_sim::setup::ki_kind_handicap`), a
   free handicap 0-5 (the six stages of the lobby) excludes it. `ki_enabled` starts the AI on restart like the
   original: one engine per occupied slot, per AI slot `setschwierigkeitsgrad` (351152) synchronously and - except in
   the campaign - `multi_startplayer` (195235) as a thread with `[slot, nation, 5 - handicap]` (King of the Hill:
@@ -451,7 +451,7 @@ Control channel: `words` instead of `args`, MCP through `viewer_sim` action `ki_
   a drawn model, plus a line at the top with the slot and the number of marked objects. Rendering only.
 - MCP: tool `viewer_ki` with `action` `state`/`query`/`start`/`pause`/`step`; `viewer_sim setup` with `slots`,
   `ki_enabled`, `campaign_difficulty`. New parameters appear only in a new MCP session after rebuilding
-  `nml-viewer-mcp`; until then the same commands go through the raw control channel. Unlike the control channel,
+  `opennml-viewer-mcp`; until then the same commands go through the raw control channel. Unlike the control channel,
   `viewer_ki` silently ignores fields that do not belong to the chosen action (e.g. `passes` with `pause`) instead of
   reporting an error.
 
@@ -498,14 +498,14 @@ the state, resume.
 - **Condition values:** With `block`, under `conditions` each condition of the block has `number`, `or` (prefix other
   than `&`; with the first one without effect), `params` and `value`: `true`/`false` or `null` = not yet implemented
   (false in the tick with `ConditionPending`; there is no such number anymore). Numbers without a case are `false` as
-  in the tick. Evaluation is in order on **a copy** of the state (`nml_sim::script::condition_values`), because
+  in the tick. Evaluation is in order on **a copy** of the state (`opennml_sim::script::condition_values`), because
   conditions have side effects (19 consumes text events, query 2500 clears event bits): a second 19 on the same ID
   sees the event already consumed. It is the state between two steps (the tick first counts the timers down). A block
   of the file that has already been deleted still has values. Errors: container not running, block behind the end of
   the file.
 - **Block log:** The viewer collects the messages `SimEvent::Script` of the last 1,000 steps (host state like the AI
   counters: restart, load and replay clear it). Each entry has `step` (1-based: the step in which it was reported,
-  `steps` afterward) and `trace` = JSON form of `nml_sim::script::ScriptTrace`: `{"Fired": {"container", "block"}}`
+  `steps` afterward) and `trace` = JSON form of `opennml_sim::script::ScriptTrace`: `{"Fired": {"container", "block"}}`
   (block executes its actions), `{"Deleted": {...}}`, `{"Suspended": {"container", "block", "action"}}` (stops),
   `{"Pending": {"container", "block", "action"}}` (action still without effect), `{"ConditionPending": {"container",
   "block", "condition"}}`, `{"DialogStarted": {"path"}}`, `"DialogEnded"`, `{"Guarded": {"container", "block",
@@ -627,7 +627,7 @@ Response (shortened, values for illustration):
   `steps` steps, the camera of the scripts and the state of the UI. Response
   `{"events": [{"step", "event"}], "presentation", "ui", "profile_vars", "camera"}`:
   - `events`: oldest first, `step` 1-based like the block log, `event` in the JSON form of
-    `nml_sim::script::Presentation` (e.g. `{"Cinemascope": {"on": true}}`, `{"Speech": {"text", "slot", "ms"}}`,
+    `opennml_sim::script::Presentation` (e.g. `{"Cinemascope": {"on": true}}`, `{"Speech": {"text", "slot", "ms"}}`,
     `"QuickSave"`, `"LightRestoreLevel"`). Host state like the block log: the events of the last 1,000 steps (at most
     4,096), restart, load and replay clear them;
   - `presentation`: the presentation state (`MissionState::presentation`: `light`, `weather`, `music`, `attack_music`,
@@ -638,7 +638,7 @@ Response (shortened, values for illustration):
     `target_speed`, `rotation`, `bind`, `pending_cut`). It belongs to the session, not the simulation; the viewer
     puts it into the response.
   Error: `steps = 1001 invalid: allowed 0 to 1000 steps`. **Leaves the checksum unchanged.** Only in the viewer:
-  `nml-game` does not get `script_events` (like `script_state` it stays outside `AVAILABLE`); there only
+  `opennml-game` does not get `script_events` (like `script_state` it stays outside `AVAILABLE`); there only
   `sim_command` with `ScriptSelection`/`ScriptButton` works.
 - **`script_state.ui`** = `{"ui_locked", "cinemascope", "selection": [ids], "last_button"}`: control lock (actions
   18/19), cinemascope (147/148), the selection mirror (at most 30 IDs in report order) and the last button (0 = none).
@@ -668,7 +668,7 @@ Response (shortened, values for illustration):
   rest (`GameSession::advance_by` with `running = false`). A restart (`sim_setup`), `sim_load` or a new mission resets
   the result. This applies to **every match** of the viewer, with or without a script, campaign like free play: every
   viewer match is a single-player game (one local slot, no network match), so the host stops at the game end in every
-  game on the machine, like `nml-game` (end screen after `GameFlow::check_result`, free play and campaign). The **active slot** is decisive: an AI match that is supposed to run beyond the
+  game on the machine, like `opennml-game` (end screen after `GameFlow::check_result`, free play and campaign). The **active slot** is decisive: an AI match that is supposed to run beyond the
   defeat of this slot switches with `sim_view` `active_player` to an undecided slot, then the steps keep running (check scripts that send `step`
   after the game end otherwise see a stopped clock: check `sim_hash` `steps`).
 - **MCP `viewer_script`** `action`: `state` (`script_state` without the block log; + `block_container`/`block_index`,
@@ -677,7 +677,7 @@ Response (shortened, values for illustration):
   `viewer_start` with `--mission <name> --campaign-difficulty <n> --mute --window-mode windowed`. New tool parameters
   appear in the schema only in a new session; until then the same commands go through the raw control channel.
 - A mission that the viewer starts with `--mission` gets no profile variables (`profile_vars` empty; the variables of
-  the player are read from the profile only by `nml-game`).
+  the player are read from the profile only by `opennml-game`).
 
 Example (raw control channel, clock stopped, mission `kamp1-1` started): 200 steps, then the events of the last 100
 steps and the UI state.
@@ -732,7 +732,7 @@ FPS and frame times in the state snapshot measure real time.
 - `tap` presses and releases immediately: takes effect exactly once like a key press.
 - `down` with `repeat`: after the press, `repeat` further press events with the repeat flag set, like holding by
   hand (autorepeat). In the viewer the repeats affect only the key path of the original (`--hud`), its own keys react
-  only to the first press; in `nml-game` every repeat is a separate key event (quirk O-300).
+  only to the first press; in `opennml-game` every repeat is a separate key event (quirk O-300).
 - Mouse pointer and mouse buttons are shared by the user and the control channel; the last input counts.
   **Mouse movements of the user over the window change the result of a running check** (e.g. edge scrolling, object
   under the mouse). Deviations are visible in the state snapshot.
@@ -1301,7 +1301,7 @@ commands themselves):
   storm pulses every second one); it is absent for the other kinds. The storm keeps running after the end of the spell,
   `target_pos` holds its position.
 
-Examples (the numbers were measured in the test world of the viewer, `crates/nml-client/src/game/testworld.rs` and the
+Examples (the numbers were measured in the test world of the viewer, `crates/opennml-client/src/game/testworld.rs` and the
 test `spell_special_info_follows_the_real_commands`; times and values of the original differ). Three buttons at once:
 the medicine man 1 throws an explosion at the enemy 2049, the Patriot 65537 places dynamite at the enemy building
 133121, the trapper 131073 kills the enemy 67585 (all player 0 against 1, mana 100):
@@ -1402,7 +1402,7 @@ through the commands themselves):
   `text` `null` (the templates have placeholders for player and type names that only the UI fills in; `messages.ini`
   does not know these numbers).
 
-Examples (the numbers were measured in the test world of the viewer, `crates/nml-client/src/game/testworld.rs`
+Examples (the numbers were measured in the test world of the viewer, `crates/opennml-client/src/game/testworld.rs`
 `hunter_host` and the tests `headhunter_info_leaves_the_checksum_unchanged` and `hire_menu_matches_the_panel`; times
 and values of the original differ). Slot 0 (SPA, 1000 gold) has the headquarters 1, slot 1 (SID) the sheriff 2049; the
 undertaker 65537 belongs to slot 0 (research 3326, mana 150). Menu, hiring and robbing:
@@ -1441,7 +1441,7 @@ without an elite (e.g. `{"players": [1], "targets": [1000]}` for kind 2 with `ta
 
 All fields are absent in responses before protocol 22 and then read as empty; `sim_hire_menu` and the button 540 came
 with protocol 22. The MCP parameters `art` and `target_player` (action `hire_menu`) appear only in a new MCP session
-after rebuilding `nml-viewer-mcp`; until then `sim_hire_menu` goes through the raw control channel.
+after rebuilding `opennml-viewer-mcp`; until then `sim_hire_menu` goes through the raw control channel.
 
 **Economy sections of `sim_query`** (protocol 9; a section is absent if the object does not have the module; IDs
 `null`/empty for "none", also for the start ID 0 of the modules):
@@ -1529,16 +1529,16 @@ enemy, `KeyX` and Shift+`Digit1`-`Digit5` (section on keys).
 Weather particles move only in visible tiles: `weather_moved` counts only particles of visible tiles, the others stand
 still. After `set_light`, `set_weather` and `set_quality` the viewer draws a new frame (except with a minimized
 window); the state snapshot afterward shows its overlay and `weather_drawn`. Fields and types:
-`crates/nml-control/src/state.rs`.
+`crates/opennml-control/src/state.rs`.
 
 ## UI (`ui_*`)
 
 Protocol 24, plus `ui_video` and the fields `video`/`pointer_hidden` since protocol 25.
 The commands operate the menu UI
-(`nml_ui::app::MenuApp`) like mouse, keyboard and command 5: they act only through the input of the **next frame** or
+(`opennml_ui::app::MenuApp`) like mouse, keyboard and command 5: they act only through the input of the **next frame** or
 the queue of the UI, never on the simulation (checksum the same). Available in the viewer only with
-`--dialog <names>` in the window, in `nml-game` always; otherwise the error "no UI open". With a stopped clock nothing
-happens until `step`. Executed in the window thread (`nml_client::ui_control::execute_ui`).
+`--dialog <names>` in the window, in `opennml-game` always; otherwise the error "no UI open". With a stopped clock nothing
+happens until `step`. Executed in the window thread (`opennml_client::ui_control::execute_ui`).
 
 - `ui_state`: `{"now_ms", "screen": [W, H], "dialogs", "focus", "hover", "elements", "images", "busy", "queued",
   "effects", "video", "pointer_hidden", "game"}`. Names lowercase as in the messages of the UI, rectangles `[x0, y0,
@@ -1559,14 +1559,14 @@ happens until `step`. Executed in the window thread (`nml_client::ui_control::ex
   the clock: `floor((now - start) * fps / 1000)`), number of frames, `abortable` = every key aborts (quirk O-68);
   `pointer_hidden` = the mouse pointer is off (start sequence, campaign video). `play_video` (`path`, `abortable`) is
   in the effect log as soon as `0x1D` requests the video, `stop_video` (`path`) when it ends (end after N frames, key
-  abort or replacement by a new video). `game` (only `nml-game` with a match, see "Protocol 27") and the effects of the
-  match: see there. Types: `crates/nml-control/src/ui.rs`.
+  abort or replacement by a new video). `game` (only `opennml-game` with a match, see "Protocol 27") and the effects of the
+  match: see there. Types: `crates/opennml-control/src/ui.rs`.
 - `ui_click`: center of the part of the element that the last frame drew, then movement, press and release into the
   input of the next frame - the same sequence as the mouse by hand: a disabled element does nothing (as in the
   original), during the fly-in triggering is refused (the button asks `0x12F` before the sound: no code 8, no click
   sound, no subdialog - `ui_state` then shows `busy`), two clicks within `DoubleClickTimeout` are a double-click.
   Case-insensitive. Errors (error message): dialog not open (with the open ones), element unknown (with the known
-  ones), hidden, not drawn in the last frame or outside the screen. The drawn pointer of `nml-game` stays where the
+  ones), hidden, not drawn in the last frame or outside the screen. The drawn pointer of `opennml-game` stays where the
   real mouse is; the host does not know the position from `ui_click`, so a real movement to the same place as before
   does not arrive. The entries of an open ComboBox list have no name (the list hangs on the desktop) and are not
   reachable; a `ui_click` on the combobox with the list open hits the row below its center. Other entries can be
@@ -1596,10 +1596,10 @@ happens until `step`. Executed in the window thread (`nml_client::ui_control::ex
   With a stopped clock every frame needs a `step`; check runs are muted. The frame of the `step` in whose response
   `play_video` first appears is still drawn without this video (the host opens it after drawing, with the time of this
   frame as the start); `screenshot` therefore shows frame 0 only after the next `step` (at 16 ms still frame 0). At
-  640 x 480 the video image is texel-identical to `nml_bink::to_rgba` (UV shifted by half a pixel,
-  `nml_ui::video::video_uv`).
+  640 x 480 the video image is texel-identical to `opennml_bink::to_rgba` (UV shifted by half a pixel,
+  `opennml_ui::video::video_uv`).
 
-Example (`nml-game` at 1024 x 768):
+Example (`opennml-game` at 1024 x 768):
 
     {"id": 1, "cmd": "ui_click", "dialog": "start", "element": "options"}
     {"id": 1, "ok": {"x": 204, "y": 377}}
@@ -1610,7 +1610,7 @@ Example (`nml-game` at 1024 x 768):
 
 Match from the menu. Old lines stay readable (new fields with a default).
 
-- **`ui_state.game`** (only `nml-game`, absent without a match, in the menu and in the viewer): `{"level",
+- **`ui_state.game`** (only `opennml-game`, absent without a match, in the menu and in the viewer): `{"level",
   "game_type", "menu_state", "steps", "checksum", "loading", "load_phases"}`. `level` = `.lvl` path of the map in the
   spelling of the session (lowercase, as the archive search keeps it; `start_match.level` carries the spelling of the
   original - compare case-insensitively), `game_type` = game type of the original, `menu_state` = game menu state
@@ -1619,21 +1619,21 @@ Match from the menu. Old lines stay readable (new fields with a default).
   phase in percent (0, 40, 70, 100), set only during loading; since loading blocks the host, it is never visible over
   the channel - instead `load_phases` gives the course of the last load (percent per drawn phase, absent before the
   first load). Reported in `ui_state`, `state` and the response of `step`.
-- **New effects** in `effects` (game effects of the UI, `nml-game` executes them, the viewer only logs them):
+- **New effects** in `effects` (game effects of the UI, `opennml-game` executes them, the viewer only logs them):
   `start_match` (`level`, `game_type`, `slots` = occupied slots `{"kind" (1...4 computer, 999 human), "nation", "team",
   "color", "handicap"}` in list order), `load_game`/`save_game`/`delete_save` (`name` without the extension
   `.<GUID>`), `reload_level`, `resume_game` (`game_speed` or `null`), `write_profiles` and `delete_profile_saves`
   (`guid`).
-- **`nml-game` and `sim_*`:** `sim_hash`, `sim_query` and `sim_command` as in the viewer (same parameters and
-  responses, `nml_client::game::sim_control::execute_sim`), only with a running match, otherwise the error "no match".
-  All other `sim_*` commands stay with the viewer and are "not available" in `nml-game`. `sim_command` takes effect at
+- **`opennml-game` and `sim_*`:** `sim_hash`, `sim_query` and `sim_command` as in the viewer (same parameters and
+  responses, `opennml_client::game::sim_control::execute_sim`), only with a running match, otherwise the error "no match".
+  All other `sim_*` commands stay with the viewer and are "not available" in `opennml-game`. `sim_command` takes effect at
   the next tick of the running match. **Quirk O-318:** As long as the match takes no steps (pause or an open game
-  menu), `nml-game` executes `sim_command` and `sim_result` **immediately** (`SimHost::execute_now`, with an entry in
+  menu), `opennml-game` executes `sim_command` and `sim_result` **immediately** (`SimHost::execute_now`, with an entry in
   the command log); before, they waited until resuming. Check scripts must no longer rely on a command staying put
   with an open menu.
 - Hints for check runs: The name field of `SELECTPROFILE` is prefilled with `NetName` from the settings file, and the
   player name enters the checksum - equal checksums across runs only with the same starting folder (fresh copy of a
-  fixed settings file per run). Loading screens are shown by the check switch `--loading-shot <folder>` of `nml-game`
+  fixed settings file per run). Loading screens are shown by the check switch `--loading-shot <folder>` of `opennml-game`
   (per phase `loading-<n>-<percent>.png`). `screenshot` draws a pointer only with `pointer: true`; whether it is
   visible after loading is shown by `pointer_hidden` and a window image. The frame in whose `step` `load_game` appears
   shows steps and checksum of the savegame (no tick yet). The lists of `INGAMELOADGAME`/`LOADSAVEDGAME2` show date and
@@ -1643,36 +1643,36 @@ Match from the menu. Old lines stay readable (new fields with a default).
 
 Game end, accounting, campaign. Old lines stay readable (new fields with a default).
 
-- **`sim_result`** `{"player", "result"}` (viewer and `nml-game`, there only with a running match, otherwise "no
+- **`sim_result`** `{"player", "result"}` (viewer and `opennml-game`, there only with a running match, otherwise "no
   match"): slot `player` (0-7) loses (`result` 1) or wins (2) - like the cheat of the original
   (`GameEngine_SetPlayerResult` `0x00430CE0`), but as the command `0x56` `SetPlayerResult` of the active player through
-  `nml_client::game::sim_control::execute_sim`: takes effect at the **next tick** (with an open game menu only after
+  `opennml_client::game::sim_control::execute_sim`: takes effect at the **next tick** (with an open game menu only after
   closing), is in the command log and in replays. Only slot and result are checked (the slot need not be the own one);
   the simulation afterward lets every slot that is not mutually friendly lose (quirk O-181). Response `{"step"}` like
   `sim_command`. Equivalent raw:
   `{"cmd": "sim_command", "command": {"player": 0, "kind": {"SetPlayerResult": {"slot": 0, "result": 2}}}}`.
 - **`ui_state.game.result`**: result of the local player (`Player+0x358`): 0 playing, 1 lost, 2 won (absent in lines of
-  protocol 27 -> 0). `nml-game` shows the end screen in the frame in which the result is first 1/2 (`menu_state` 7 or
+  protocol 27 -> 0). `opennml-game` shows the end screen in the frame in which the result is first 1/2 (`menu_state` 7 or
   6, dialog `gameend_defeat`/`gameend_victory`).
-- **`ui_state.accounting`** and **`ui_state.play_time`** (`nml-game`; the viewer builds no accounting, both are absent
+- **`ui_state.accounting`** and **`ui_state.play_time`** (`opennml-game`; the viewer builds no accounting, both are absent
   there; only while the frame `accounting` is open): the lines of the accounting in slot order `[{"name", "color",
   "values": [12 texts]}]` - name (empty -> "Computer", in the campaign resolved text IDs), color index and the twelve
   values as `"%d"` (columns 0-3 technology, 4-7 military, 8-11 economy; column 3 stays 0, quirk O-163) - and the play
   time text ("[CENTER]Spielzeit: 0:05", hours:minutes from `steps * 50` ms, quirk O-164; the text comes from the text
   table of the installation, here the German edition). The host builds the table at `0x0E` when the match has already
-  ended (`game` is then absent); it comes from `nml_ui::screens::MenuData::accounting`.
+  ended (`game` is then absent); it comes from `opennml_ui::screens::MenuData::accounting`.
 - **New effects** in `effects`: `game_end` (`victory`: end screen of the local player queued, state 6 or 7),
   `accounting` (command `0x0E`: end the match, build the accounting, open the frame `accounting`), `surrender` (`slot`:
   command `0x27` "Surrender", executed immediately; the command takes effect at the start of the step S->S+1 of the
   replay, the entry S in `sim_hash.history` then already shows the state after the command, a replay at S still the
   state before), `start_campaign_level` (`level`, `difficulty` 0-2: command `0x0C`, also automatically after a video or
   after "Continue" of the accounting) and `book_campaign` (`won`: current campaign entry booked - `0x1C` at the video
-  or the game end in the campaign; afterward `write_profiles`). `nml-game` executes `accounting`, `surrender` and
+  or the game end in the campaign; afterward `write_profiles`). `opennml-game` executes `accounting`, `surrender` and
   `start_campaign_level`; `game_end` and `book_campaign` are reports (the UI has already done both). The viewer only
   logs them.
 - **MCP:** `viewer_sim` with `action: result`, `player`, `result` (new tool parameters only after restarting the MCP
   session; until then raw over the control channel).
-- **Checksum sequence `UI_GOLDEN`** (`crates/nml-client/src/game_flow/ui_golden.rs`): the whole circle without graphics
+- **Checksum sequence `UI_GOLDEN`** (`crates/opennml-client/src/game_flow/ui_golden.rs`): the whole circle without graphics
   (profile, own game, 200 steps, quicksave/quickload, victory through `sim_result`, accounting with all tabs, main
   menu, campaign video with automatic level start, victory, "Continue") with one checksum per section.
 
@@ -1680,14 +1680,14 @@ Game end, accounting, campaign. Old lines stay readable (new fields with a defau
 
 Message bar and status bar, protocol 31. Old lines stay readable (`hud` is then absent).
 
-- **Drawing:** `nml-game` draws per frame world -> game UI -> menu -> pointer. The game UI
-  (`nml_client::game_session::GameSession::hud_cmds`) is in this order: the message bar in the world pass (`0x00438F2A`,
+- **Drawing:** `opennml-game` draws per frame world -> game UI -> menu -> pointer. The game UI
+  (`opennml_client::game_session::GameSession::hud_cmds`) is in this order: the message bar in the world pass (`0x00438F2A`,
   per message kind the head at `POSITION`, color from the remaining time), then the game windows in the drawing order
   of the tree (status bar, minimap, command bar, cinemascope area, tooltip), finally provisionally the text messages
   of the headhunters at (16, 16) (`FUN_00492A40`, no message bar; position in the original not traced). The bar runs in
   game time and stands still with an open game menu (quirk O-213). `screenshot` shows the same image without a pointer
   (with `pointer: true` with a pointer).
-- **`ui_state.game.hud`** (only `nml-game` with a match; also in `state` and the response of `step`): `{"dialog",
+- **`ui_state.game.hud`** (only `opennml-game` with a match; also in `state` and the response of `step`): `{"dialog",
   "windows", "messages", "action_stack", "status"}`.
   - `dialog` = always `"GAMEUI"` (target of `ui_click` on game windows, see "Command bar").
   - `windows` = windows of the tree in creation order `{"kind", "rect", "layer", "visible"}`; `kind` is `base`, `root`,
@@ -1705,14 +1705,14 @@ Message bar and status bar, protocol 31. Old lines stay readable (`hud` is then 
     (resources as `%d`, population as "population/living space", name of the local player, an empty name is absent),
     `red` = population > living space (quirk O-221). Absent without `IsStatusBar` or without a readable
     `statusbar.ini`.
-- **Viewer:** `--hud` (or `hud = true` in `nml-viewer.toml`; default off) draws the game UI like `nml-game` through the
+- **Viewer:** `--hud` (or `hud = true` in `opennml-viewer.toml`; default off) draws the game UI like `opennml-game` through the
   UI drawer between world and dialog layer, also in `screenshot`; the message lines in the overlay then disappear. With
   `--dialog` it uses its UI layer, otherwise the viewer creates its own. The command **`hud`** `{"on": true|false}`
   switches at run time (response `null`); rendering only, the checksum stays. The viewer reports no `ui_state.game`.
-  `nml-game` answers `hud` with "is not available in nml-game" (there the game UI is always on). There is no MCP tool
+  `opennml-game` answers `hud` with "is not available in opennml-game" (there the game UI is always on). There is no MCP tool
   and no new tool parameter for it: `hud` goes through the raw control channel.
 
-Example (`nml-game` at 1024 x 768, excerpt of `ui_state`):
+Example (`opennml-game` at 1024 x 768, excerpt of `ui_state`):
 
     {"id": 7, "cmd": "ui_state"}
     {"id": 7, "ok": {"now_ms": 41000, "screen": [1024, 768], ..., "game": {"level": "...", ..., "hud": {
@@ -1732,11 +1732,11 @@ Viewer at run time:
 
 ### Command bar
 
-Command bar, portrait, tooltips, protocol 34. Old lines stay readable (`toolbar` is then absent). Applies to `nml-game`
+Command bar, portrait, tooltips, protocol 34. Old lines stay readable (`toolbar` is then absent). Applies to `opennml-game`
 with a running match; the viewer operates the bar differently (see below).
 
-- **`ui_click` with `"dialog": "GAMEUI"`** (only `nml-game`): click on the center of an element of the game UI.
-  `nml-game` intercepts `GAMEUI` before `execute_ui` (`ui_*` for menu dialogs stays unchanged). The center comes from
+- **`ui_click` with `"dialog": "GAMEUI"`** (only `opennml-game`): click on the center of an element of the game UI.
+  `opennml-game` intercepts `GAMEUI` before `execute_ui` (`ui_*` for menu dialogs stays unchanged). The center comes from
   the last frame (button rectangles of the bar, areas of the last drawing); then **three mouse events** (move, press,
   release) go through the flow of the match, like the mouse by hand: an open **game menu blocks the click** (the move
   goes through), without a running match the response is an error. Response `{"x", "y"}` = point in window pixels. As
@@ -1777,7 +1777,7 @@ with a running match; the viewer operates the bar differently (see below).
   second click thus becomes the double-click of the original (click sequence 9, 9, `0x27`; with MAKE 1 + 1 + 2 = 4
   orders, with Shift 5 + 5 + 2 = 12). Two clicks with a wait of at least `DoubleClickTimeout` ms in between (`step`
   with enough `frame_ms`) are two single clicks.
-- **Mouse commands in `nml-game`:** `mouse_move` `{x, y}`, `mouse_button` `{button, down}` and `key` `{code, action}`
+- **Mouse commands in `opennml-game`:** `mouse_move` `{x, y}`, `mouse_button` `{button, down}` and `key` `{code, action}`
   as in the viewer ("Input"), response `null`; they act like the real mouse or keyboard in the next frame (menu host
   and match). This makes it possible to check tooltips (hold the pointer over a button or area, `step`) and Shift
   clicks. `mouse_leave` and `wheel` stay unavailable. A loss of window focus releases held keys.
@@ -1805,8 +1805,8 @@ with a running match; the viewer operates the bar differently (see below).
       {"id": 12, "cmd": "step", "frames": 2, "frame_ms": 16}
 
   Response 10: `game.hud.toolbar.tooltip` carries the tooltip. Through the MCP tool `viewer_ui` with `action: click`,
-  `dialog: GAMEUI` and `element`; `viewer_input` with `mouse_move`, `mouse_button` and `key` (with `nml-game`).
-- **`ui_state.game.hud.toolbar`** (only `nml-game` with a match and `IsToolBar`; also in `state` and the response of
+  `dialog: GAMEUI` and `element`; `viewer_input` with `mouse_move`, `mouse_button` and `key` (with `opennml-game`).
+- **`ui_state.game.hud.toolbar`** (only `opennml-game` with a match and `IsToolBar`; also in `state` and the response of
   `step`): state of the last frame.
 
   | Field | Content |
@@ -1847,7 +1847,7 @@ with a running match; the viewer operates the bar differently (see below).
 Keys, pointer, control groups, pause, game speed; protocol 36. Old lines stay readable (`repeat` absent = 0, `input`
 absent).
 
-- **Key path:** In `nml-game` keys of the control channel (`key`) take the same path as the keyboard: menu host, then
+- **Key path:** In `opennml-game` keys of the control channel (`key`) take the same path as the keyboard: menu host, then
   the keys that no widget took, to the dispatcher of the match (ESC, bindings from `bindings2.ini`, under the control
   lock End, then `keys.ini` in the keyboard context, screenshot). Chords arise from the held keys in press order:
   Ctrl+1 is `ControlLeft` `down`, then `Digit1` `tap`, then `ControlLeft` `up`. The keys compute on the program clock
@@ -1855,12 +1855,12 @@ absent).
 - **`key` with `repeat`:** `{"cmd": "key", "code": "BracketRight", "action": "down", "repeat": 5}` presses `+` and
   sends five repeats - each is a separate event (quirk O-300), so six game speed steps. Do not forget `up` afterward.
   `repeat` only with `down`, otherwise the error "repeat only with down".
-- **`ui_focus_lost`** (only `nml-game`, response `null`): like the focus loss of the window - menu host and match
+- **`ui_focus_lost`** (only `opennml-game`, response `null`): like the focus loss of the window - menu host and match
   release all held keys (a held key does not repeat afterward), and the match switches the pause on like the original
   (quirk O-154; not with the pause already visible, not in the menu level). The window itself pauses on a focus loss
   only **without** a control channel (check runs usually run without focus); with `--control` only this command
   triggers the pause. It does not exist in the viewer. MCP: `viewer_ui` with `action: focus_lost`.
-- **`ui_state.game.input`** (only `nml-game` with a match; also in `state` and the response of `step`):
+- **`ui_state.game.input`** (only `opennml-game` with a match; also in `state` and the response of `step`):
 
   | Field | Content |
   |---|---|
@@ -1876,7 +1876,7 @@ absent).
   | `gate` | names of the effective locks in fixed order: `ui_locked`, `cinemascope`, `dialog_running`, `script_camera`, `campaign`, `menu_open`, `menu_level` (empty without a lock; `campaign` = game type -1, `menu_level` = game type -2, practically never in the report of the match) |
 
   Read only: `ui_state` changes no checksum.
-- **Examples** (`nml-game`, match running, clock stopped):
+- **Examples** (`opennml-game`, match running, clock stopped):
 
       {"id": 1, "cmd": "key", "code": "BracketRight", "action": "down", "repeat": 5}
       {"id": 2, "cmd": "key", "code": "BracketRight", "action": "up"}
@@ -1898,7 +1898,7 @@ absent).
       {"id": 10, "cmd": "ui_focus_lost"}
       {"id": 11, "cmd": "step", "frames": 1, "frame_ms": 16}
 
-  Response 11: `game.input.paused` and `shown_paused` are `true`, `steps` stands. `Equal` in `nml-game` is the acute
+  Response 11: `game.input.paused` and `shown_paused` are `true`, `steps` stands. `Equal` in `opennml-game` is the acute
   accent (VK `0xDD`) and does not change the game speed.
 - **Viewer with `--hud`:** Keys **without** a viewer binding (help F1 and `App::key_pressed`: Esc, F1 to F12, B, N, T, R,
   I, K, J, L, P, H, X, F, O, G, Shift + 1...5, arrows, Page Up/Down, Home/End, Insert/Delete, W/A/S/D, Q/E, Shift,
@@ -1907,7 +1907,7 @@ absent).
   the viewer: quicksave/quickload and `togglepause` (the viewer stops with `pause`/`step`), ESC (ends the viewer or a
   mode) and the screenshot (F12). Without `--hud` everything stays as before. The viewer still changes the simulation
   only through commands.
-- **Images with a pointer:** `screenshot` renders in `nml-game` without a pointer, with `pointer: true` with one (see
+- **Images with a pointer:** `screenshot` renders in `opennml-game` without a pointer, with `pointer: true` with one (see
   "3D mouse pointer"); the chosen pointer is reported by `ui_state.game.input`. A window image of the program delivers
   an image including the pointer (`PrintWindow` with `PW_RENDERFULLCONTENT`; the system pointer is not included).
 - **MCP:** `viewer_input` takes the parameter `repeat` for `key`, `viewer_ui` the action `focus_lost`. New parameters
@@ -1919,8 +1919,8 @@ absent).
 The presentation of the scripts in the level (cinemascope bars, portraits, text slots, scene fade, control lock,
 pointer) has two accesses in the control channel. Protocol 35.
 
-- **`ui_present`** (`nml-game` with a match, viewer with a map): triggers a presentation event by hand, as if a script
-  had generated it. `event` is the JSON form of `nml_sim::script::present::Presentation`: an object with exactly one
+- **`ui_present`** (`opennml-game` with a match, viewer with a map): triggers a presentation event by hand, as if a script
+  had generated it. `event` is the JSON form of `opennml_sim::script::present::Presentation`: an object with exactly one
   key (`{"Portrait": {"slot": 1, "portrait": 1000, "frame": 101}}`, `{"Fade": {"into": false, "ms": 500}}`,
   `{"Cinemascope": {"on": true}}`, `{"Speech": {"text": 7, "slot": 0, "ms": 1000}}`) or, for unit variants, a string
   (`"CameraBackup"`). Response `null`; the event takes effect immediately (the fades keep running with the clock, with a
@@ -1943,11 +1943,11 @@ pointer) has two accesses in the control channel. Protocol 35.
     `ui_present_cinemascope_leaves_pointer_and_gate_to_the_simulation`).
   - Errors (error message): "ui_present: ..." with the message of serde for an unknown variant or missing fields;
     `QuickSave` and `ProfileVar` are requests to the flow, not presentation: "ui_present does not know QuickSave
-    (presentation only)". Without a match: "no match" (`nml-game`) or "no map loaded" (viewer). An `event` form other
+    (presentation only)". Without a match: "no match" (`opennml-game`) or "no map loaded" (viewer). An `event` form other
     than an object with one key/string is already rejected by the check of the command.
   - MCP: `viewer_ui` with `action: present` and `event`. In sessions that began before the rebuild of the MCP server the
     parameter is missing in the schema; then send the same line through the raw control channel.
-- **`ui_state.game.presentation`** (`nml-game` with a match, also in `state` and the response of `step`; absent in older
+- **`ui_state.game.presentation`** (`opennml-game` with a match, also in `state` and the response of `step`; absent in older
   lines and in the viewer): `{"bars": [top, bottom], "portraits": [{"slot", "portrait", "frame", "alpha"}, ...],
   "texts": [{"slot", "text", "alpha"}, ...], "fade_alpha", "pointer_visible", "clear_color": [r, g, b], "info_frames":
   [[text, [l, t, r, b]], ...], "countdown", "timers", "screen_text"}`.
@@ -1977,7 +1977,7 @@ pointer) has two accesses in the control channel. Protocol 35.
   - Older lines without `info_frames`, `countdown`, `timers`, `screen_text` stay readable (empty or `null`).
   - **Viewer gap:** The viewer draws the combat display with egui, not through `GameSession::combat_cmds`; countdown,
     timer remaining time and screen text do not appear there, not even with `--hud` (known).
-- Example (`nml-game` in game type -1, at 1024 x 768):
+- Example (`opennml-game` in game type -1, at 1024 x 768):
 
       {"id": 1, "cmd": "ui_present", "event": {"Cinemascope": {"on": true}}}
       {"id": 2, "cmd": "ui_present", "event": {"Portrait": {"slot": 1, "portrait": 1000, "frame": 101}}}
@@ -1992,7 +1992,7 @@ pointer) has two accesses in the control channel. Protocol 35.
 ### Minimap, diplomacy and chat
 
 Minimap, idle workers, signal, diplomacy, chat; protocol 37. Old lines stay readable: `minimap` and `chat_lines` are
-then absent, `diplomacy_open` is `false`. Applies to `nml-game` with a running match.
+then absent, `diplomacy_open` is `false`. Applies to `opennml-game` with a running match.
 
 - **`ui_state.game.minimap`** (absent without the minimap node `IsMap`; read only, changes no checksum):
 
@@ -2055,14 +2055,14 @@ then absent, `diplomacy_open` is `false`. Applies to `nml-game` with a running m
   (`0x5D`) goes to the simulation, the line then appears in `chat_lines` - the cheats of the original (`mudhut`,
   `angelpass`, `bamboozle!`, `wheelofmayhem`, `rainbowring`, `bloodmode`) take effect in single player and show no
   line.
-- **`sim_command` `Signal` and `Chat`** (JSON form of `nml_sim::command::CommandKind`; the command takes effect at the
+- **`sim_command` `Signal` and `Chat`** (JSON form of `opennml_sim::command::CommandKind`; the command takes effect at the
   next tick boundary): `{"player": 0, "kind": {"Signal": {"player": 0, "mask": 1, "x": 70, "z": 101}}}` - location in
   tiles, `mask` the recipients (bit per slot), `player` gives the color of the ping; the command has no state, the
   effect is sound, ping and an entry in the action stack at the host. `{"player": 0, "kind": {"Chat": {"player": 0,
   "mask": 255, "text": [104, 105]}}}` - `text` one UTF-16 unit per character (here "hi"), `player` must be the sender
   (otherwise rejected, exception A8).
 - **Viewer:** With `--hud` the viewer draws the minimap including corner buttons, pings and camera frame through the
-  same session as `nml-game` (`GameSession::hud_cmds`); clicks go to the map with `mouse_move` and `mouse_button`. The
+  same session as `opennml-game` (`GameSession::hud_cmds`); clicks go to the map with `mouse_move` and `mouse_button`. The
   viewer has no game menu, no diplomacy dialog and no chat window (requests 579/580 are logged) and no `GAMEUI`;
   `ui_state.game` does not exist there.
 - **MCP:** `viewer_ui` describes the new elements (`element`) and fields (description of `state`); there is no new
@@ -2071,7 +2071,7 @@ then absent, `diplomacy_open` is `false`. Applies to `nml-game` with a running m
 ### World rendering
 
 The state of the world rendering of the host (protocol 38) is in the viewer as `world_display` in the state snapshot
-(`state`, response of `step`) and in `nml-game` as `ui_state.game.world`. Without a map or without a simulation it is
+(`state`, response of `step`) and in `opennml-game` as `ui_state.game.world`. Without a map or without a simulation it is
 absent (`null` in the viewer, field absent in `ui_state`); older lines without the field stay readable, as do lines
 that lack individual subfields (then 0, empty, `false` or `null` apply). Read only: the checksum stays the same.
 Everything is rendering of the host and is not in the savegame.
@@ -2101,15 +2101,15 @@ Everything is rendering of the host and is not in the savegame.
   (explosion location), `last_digit` = last displayed digit (`m_LastCount`; 10 before the first digit), `follows` = the
   charge follows its target (charges found after loading do not).
 - MCP: no parameters of its own; `viewer_state` delivers the state snapshot, `viewer_ui` with `action: state` the report
-  of `nml-game`.
+  of `opennml-game`.
 
 ### Flag game modes
 
 Protocol 39. Old lines stay readable (`flags` and `timers` are then absent).
 
 The game types 2 (Domination) and 3 (King of the Hill) evaluate player flags (GUID 4300). The state is in the viewer
-as `state.sim.flags` (section `sim`) and in `nml-game` as `ui_state.game.flags`; both deliver the same structure from
-the same function (`nml_client::game::sim_host::flags_info`). The field is absent if the game type is neither 2 nor 3
+as `state.sim.flags` (section `sim`) and in `opennml-game` as `ui_state.game.flags`; both deliver the same structure from
+the same function (`opennml_client::game::sim_host::flags_info`). The field is absent if the game type is neither 2 nor 3
 and no player flag is alive; older lines without the field stay readable. Read only: the checksum stays the same.
 
     {"flags": [{"id", "tile": [x, z], "color", "holder", "check_ms"}, ...],
@@ -2127,18 +2127,18 @@ and no player flag is alive; older lines without the field stay readable. Read o
 - `remaining_ms`: remaining time of the leader timer (ID 0, quirk D-296); `null` if none is running - without a leader,
   but also after expiry and with a defeated leader, where `leader` stays set (so do not conclude `leader == 8` from
   `remaining_ms == null`); in game type 4 with a living flag the time limit of the game type is here (the same ID 0).
-  `nml-game` draws the same remaining time at the top left (`ui_state.game.presentation.timers`, quirk D-302).
+  `opennml-game` draws the same remaining time at the top left (`ui_state.game.presentation.timers`, quirk D-302).
 - `sim_setup`: `mode: 2` (Domination), `time_limit` (minutes, 1-35791, default 20; outside it the error `time_limit = n
   invalid: allowed 1 to 35791 (minutes)`) and `slots[].color` 0-8 (8 = white, quirk D-298). `time_limit` is also in the
   settings file of the viewer (`time_limit`). `time_limit` applies to every game type but takes effect only in 2, 3
   and 4.
 - MCP: `viewer_sim setup` with `mode`, `time_limit` and `slots[].color`; the new parameters appear in the schema only
   after rebuilding the MCP server in a new session (until then the raw control channel works). `viewer_state` delivers
-  `sim.flags`, `viewer_ui` with `action: state` the report of `nml-game`.
+  `sim.flags`, `viewer_ui` with `action: state` the report of `opennml-game`.
 
 ### Random map
 
-With `--random-map <SEED>` the viewer generates a random map (`nml-randommap`) and shows it instead of a level:
+With `--random-map <SEED>` the viewer generates a random map (`opennml-randommap`) and shows it instead of a level:
 terrain, textures and light of the map script, **no objects and no simulation** (like a map without loadable rules:
 `sim_*` answers "no simulation (map without loadable rules)", the camera stands at the map center). Works with
 `--screenshot` and in the window. The seed text is arbitrary (seed = sum of `(i+1) * wchar[i]`); the other menu values:
@@ -2171,25 +2171,25 @@ terrain, textures and light of the map script, **no objects and no simulation** 
   min_size]`, `rand_counts` = `rand()` draws per phase (preprocessor, land areas, player areas, terrain areas, texture
   GUIDs, objects), `rand_state` = state of the sequence at the end, `digests` = FNV-1a 64 (16 hex digits) over heights,
   texture numbers, tile GUIDs, steepness, area IDs, placed objects and the block map of the object step
-  (`nml_randommap::Digests`, the same numbers as the corpus tests `digests_per_script` and
+  (`opennml_randommap::Digests`, the same numbers as the corpus tests `digests_per_script` and
   `digests_with_objects_per_script`, there decimal). `objects` = placed objects as `[GUID, count]`, sorted by GUID;
   `slots_used` = slots 0...7 with a placed object of this owner; `start_points` = positions of the town centers (4200)
   in placement order (y = 0, as the generator places them). The preview lifts the objects to the terrain height when
-  drawing. The state is built by `nml_client::random_map_state::random_map_state`. Without a random map `null`.
-- `nml-game` answers `random_map` with the state of the random map of the running match
+  drawing. The state is built by `opennml_client::random_map_state::random_map_state`. Without a random map `null`.
+- `opennml-game` answers `random_map` with the state of the random map of the running match
   (`GameSession::random_map_state`, the same fields), without a match or with a fixed map `null`. A random map starts
   there from the menu (`RANDOMMAP`, `CREATE2`, `START2`); `ui_state.effects` reports `start_match` with `level` =
   `randommap:<seed>`.
-- Protocol 40, with objects and `nml-game` protocol 41. MCP: no tool of its own; the start goes through `viewer_start`
+- Protocol 40, with objects and `opennml-game` protocol 41. MCP: no tool of its own; the start goes through `viewer_start`
   with `args: ["--random-map", "<seed>", ...]`, the query `random_map` through the raw control channel.
 
 ### Network play (command line)
 
-`nml-game` starts a network match without a lobby from the command line:
+`opennml-game` starts a network match without a lobby from the command line:
 
-    nml-game --host [PORT] --net-map <path.lvl> [--net-players N] [--net-ai K] [--turn-steps L] [--net-name NAME]
-             [--net-seed S] [--net-loopback]
-    nml-game --join <ADDRESS[:PORT]> [--net-name NAME]
+    OpenNML --host [PORT] --net-map <path.lvl> [--net-players N] [--net-ai K] [--turn-steps L] [--net-name NAME]
+            [--net-seed S] [--net-loopback]
+    OpenNML --join <ADDRESS[:PORT]> [--net-name NAME]
 
 | Switch | Default | Meaning |
 |---|---|---|
@@ -2214,7 +2214,7 @@ terrain, textures and light of the map script, **no objects and no simulation** 
 - `--join` retries the connection setup for up to 10 s and waits in the same period for the acceptance; without a host
   the program ends with an error message and exit code 1 (log line `Network start: No host reachable at ..., given up
   after 10 s ...`). A rejection (other version, game edition, match full) ends it the same way.
-- Until `Go`, `nml-game` shows the main menu or the loaded map **with locked input** (window and control channel:
+- Until `Go`, `opennml-game` shows the main menu or the loaded map **with locked input** (window and control channel:
   `ui_click`, `ui_key`, `ui_open`, `mouse_move`, `mouse_button`, `key` answer "Input locked until the start of the
   network match"); it writes the state to the log (`Network: waiting for fellow players: N of M signed on (port P)`,
   `Network: loaded, waiting for the other machines (Go)`, `Network: match running`). If the start fails (load error,
@@ -2231,7 +2231,7 @@ In the network, the following applies at the control channel:
   tick of the turn on all machines); a command with a foreign `player` and `sim_result` for a foreign slot are rejected
   ("In network play only commands for your own slot ...").
 
-New commands (only `nml-game`; the viewer answers "Network commands exist only in nml-game (--host/--join)"). Without a
+New commands (only `opennml-game`; the viewer answers "Network commands exist only in opennml-game (--host/--join)"). Without a
 network session all answer with the error "no network session".
 
 | Command | Response |
@@ -2280,7 +2280,7 @@ port per instance).
 
 ### Network play (menus and lobby)
 
-Two to eight `nml-game` find each other through the menus: `LAN1` searches for open games in the LAN, `LAN3` creates a
+Two to eight `opennml-game` find each other through the menus: `LAN1` searches for open games in the LAN, `LAN3` creates a
 match (turn raster from `NetTurnRaster` of the settings file; `LAN3` has no choice field for it), the lobby `LAN2` with
 `CHATFRAME` sets slots, ready, kick and chat, `START` starts the match. Check scripts drive the menus with
 `ui_click`/`ui_key`/`ui_open` and read the state with `net_status`. Both paths use the transport over `std::net` (TCP
@@ -2288,10 +2288,10 @@ for the game, UDP port 2303 for the search).
 
 Command line (changes compared with the command-line start):
 
-    nml-game --host [PORT] --net-map <path.lvl> [--net-players N] [--net-ai K] [--turn-raster T/V | --turn-steps L]
-             [--net-name NAME] [--net-seed S] [--net-loopback]
-    nml-game --join <ADDRESS[:PORT]> [--net-name NAME] [--net-loopback]
-    nml-game [--net-loopback]                       (menu path)
+    OpenNML --host [PORT] --net-map <path.lvl> [--net-players N] [--net-ai K] [--turn-raster T/V | --turn-steps L]
+            [--net-name NAME] [--net-seed S] [--net-loopback]
+    OpenNML --join <ADDRESS[:PORT]> [--net-name NAME] [--net-loopback]
+    OpenNML [--net-loopback]                       (menu path)
 
 | Switch | Default | Meaning |
 |---|---|---|
@@ -2379,7 +2379,7 @@ No new commands and fields (`PROTOCOL_VERSION` unchanged); flows have changed th
 
 Protocol 45. Old lines stay readable (`menu_level` is then absent).
 
-- **`ui_state.menu_level`** (only `nml-game`; absent as long as no menu level is running, and in the viewer):
+- **`ui_state.menu_level`** (only `opennml-game`; absent as long as no menu level is running, and in the viewer):
   `{"level", "shown", "steps", "checksum"}`. `level` = `.lvl` path of the menu level (normalized,
   `data/levels/menülevel/menü2.lvl`), `shown` = visible and running (bit `0x1` of `GameApp+0xD5E0`; false in submenus
   with their own `BACKGROUND` and under a video, the ticks then stand), `steps` = engine ticks of the simulation since
@@ -2388,7 +2388,7 @@ Protocol 45. Old lines stay readable (`menu_level` is then absent).
   each other.
 - **Effect `menu_level`** in `effects`: `0x21` with `load` = path of the `.lvl` (start or continue the menu level),
   `0x20` without `load` (stop and fade out).
-- **`sim_hash` and `sim_query`** in `nml-game` also read the simulation of the menu level. **`sim_command` and
+- **`sim_hash` and `sim_query`** in `opennml-game` also read the simulation of the menu level. **`sim_command` and
   `sim_result`** answer with the error "Menu level takes no commands" as long as it runs (the simulation belongs to the
   scripts of `menü2.abl`). `pause`, `step` and `ui_*` as in the main menu.
 - **Command-line paths:** `--host`, `--join` and `--screenshot` run without a menu level (`ui_state.menu_level` is
@@ -2398,14 +2398,14 @@ Protocol 45. Old lines stay readable (`menu_level` is then absent).
 
 The pointer with `HardwareCursor 0` is the model `mouse.rdo`. Protocol 48. Old commands and responses stay readable.
 
-- **`screenshot.pointer`** (default `false`; only `nml-game`, the viewer shows the system pointer and ignores the
+- **`screenshot.pointer`** (default `false`; only `opennml-game`, the viewer shows the system pointer and ignores the
   field): draws the pointer at the mouse position (`mouse_move`) last into the image, like the window: the TGA square
   with `HardwareCursor 1` (and without a loaded model), the 3D model with `HardwareCursor 0`, clipped over the minimap
   (quirk O-457). Without a mouse position in the window or with `pointer_hidden` the image stays without a pointer.
   The query does not fix the start of the animation: the pointer in the next window image still begins at phase 0, and
   the checksum of the simulation stays the same. The MCP schema of `viewer_screenshot` does not have the parameter yet;
   through the raw control channel `{"cmd": "screenshot", "pointer": true}` works.
-- **`ui_state.pointer_model`** (only `nml-game`, also in the main menu without a match; absent in the viewer and
+- **`ui_state.pointer_model`** (only `opennml-game`, also in the main menu without a match; absent in the viewer and
   without a loaded `mouse.rdo`): `{"id", "animation", "tint", "phase_ms", "software"}`. `id` = chosen pointer 0-11,
   `animation` = running animation of the model, `tint` = `[r, g, b, a]` (build cursor and targeting mode tint only
   with software, quirks O-462/O-464), `phase_ms` = phase of the loop (absent as long as a restart is pending, until
@@ -2430,10 +2430,10 @@ Example at the host in `LAN4` (Anna plays slot 3, Bert has joined):
 
 ### Replays
 
-Recording after `SAVEREPLAY` and playback through `LOADAUTOPLAY` in `nml-game`. Protocol 47. Old lines stay readable
+Recording after `SAVEREPLAY` and playback through `LOADAUTOPLAY` in `opennml-game`. Protocol 47. Old lines stay readable
 (`replay` is then absent).
 
-- **`ui_state.game.replay`** (only `nml-game` with a match; also in `state` and the response of `step`; absent without
+- **`ui_state.game.replay`** (only `opennml-game` with a match; also in `state` and the response of `step`; absent without
   recording and playback): `{"mode", "file", "step", "ended"}`. Read only, changes no checksum.
 
   | Field | Recording (`mode` = `record`) | Playback (`mode` = `play`) |
@@ -2448,12 +2448,12 @@ Recording after `SAVEREPLAY` and playback through `LOADAUTOPLAY` in `nml-game`. 
 - **`sim_command` and `sim_result`** during playback still answer with `{"step"}`, but the command is discarded (debug
   log): playback takes only the commands of the file, the only thing accepted is the surrender of the viewing slot
   (`SetPlayerResult` with a defeat for the own slot, like `QUITGAME`). `sim_hash` and `sim_query` read as in the game.
-- **`sim_load`** reads replays of the viewer (`NMLREPL`) and recordings of `nml-game` (`NMLAUTO`) up to 576,000 ticks
+- **`sim_load`** reads replays of the viewer (`NMLREPL`) and recordings of `opennml-game` (`NMLAUTO`) up to 576,000 ticks
   (eight hours); `sim_save replay` still writes `NMLREPL`.
 
 ## Middle mouse button (quirk O-331)
 
-Like the original, `nml-game` passes the middle button only into the table of held keys (VK 4 `MBUTTON`); the UI gets
+Like the original, `opennml-game` passes the middle button only into the table of held keys (VK 4 `MBUTTON`); the UI gets
 no events. Held, `KD_CAM_FREEHAND` takes effect: with `LockCamera 0` the mouse movement rotates and tilts the camera,
 with `LockCamera 1` (default of the installation) it moves it; the pointer jumps back to its position of the previous
 frame every frame. Over the control channel:
@@ -2469,7 +2469,7 @@ frame every frame. Over the control channel:
 The movement counts against the position of the previous frame (`GE+0x252C`); therefore do a step after `mouse_move`,
 otherwise the movement since the last frame already takes effect at the press. The key is in the table from the next
 round of the menu host, so in the first `step` after the press. After step 6 the pointer of the match stands at (512,
-400) again. `nml-game` resets the system mouse pointer only if the user holds the button on the real mouse; a check
+400) again. `opennml-game` resets the system mouse pointer only if the user holds the button on the real mouse; a check
 run over the control channel does not move it. The viewer has no free mouse (own camera) and rejects `middle`;
 `ui_click` with `middle` is already rejected by the check. MCP: `viewer_input` with `{"type": "mouse_button",
 "button": "middle", "down": ...}` (new schema only in a new session).
@@ -2481,26 +2481,26 @@ the last frame (on the map including debug window, selection marks and frames of
 window in the last size other than 0. `rgba_hash` is FNV-1a (64 bit) over the RGBA pixels of the full image: equal
 checksum = pixel-identical. `max_size` shrinks only the PNG (longest side).
 
-## MCP server `nml-viewer-mcp`
+## MCP server `opennml-viewer-mcp`
 
 stdio server; manages at most one viewer. It finds the repo root through `NML_REPO` or the path of its exe
-(`<repo>/target/<profile>/nml-viewer-mcp.exe`) and starts the viewer there.
+(`<repo>/target/<profile>/opennml-viewer-mcp.exe`) and starts the viewer there.
 
 | Tool | Parameters | Effect |
 |---|---|---|
-| `viewer_start` | `args` (list), `program`: `viewer` (default)/`game`, `profile`: `release`/`debug`, `paused` (default `true`), `audio` (default `false`) | starts `target/<profile>/nml-viewer` (or `nml-game` with `program: game`) `--control 127.0.0.1:0 [--paused] [--mute] <args>` (clock stopped at 0 ms; `paused: false` = real time; muted with `--mute`, unless `audio: true` or `args` already contains `--mute`), waits at most 30 s for the port line, connects; does not build (if the exe is missing: message with `cargo build ... -p nml-viewer` or `-p nml-game`) |
+| `viewer_start` | `args` (list), `program`: `viewer` (default)/`game`, `profile`: `release`/`debug`, `paused` (default `true`), `audio` (default `false`) | starts `target/<profile>/opennml-viewer` (or `OpenNML` with `program: game`) `--control 127.0.0.1:0 [--paused] [--mute] <args>` (clock stopped at 0 ms; `paused: false` = real time; muted with `--mute`, unless `audio: true` or `args` already contains `--mute`), waits at most 30 s for the port line, connects; does not build (if the exe is missing: message with `cargo build ... -p opennml-viewer` or `-p opennml-game`) |
 | `viewer_attach` | `port` | connects to a running viewer |
 | `viewer_stop` | - | `quit`, wait for the process to end (5 s), otherwise kill the process |
 | `viewer_input` | `actions`: list of `{"type": "key", "code", "action", "repeat"}` (`repeat` optional, only with `down`), `mouse_move`, `mouse_leave`, `mouse_button`, `wheel`, `step` | actions in order; result: state snapshot |
 | `viewer_time` | `action`: `pause`/`resume`/`step` (+ `frames`, `frame_ms`) | result: state snapshot |
 | `viewer_screenshot` | `overlay`, `max_size` (default 1280, `0` = full size) | PNG as image content, plus the text "{w} x {h} pixels, checksum {hash}" |
-| `viewer_state` | - | state snapshot as JSON; with `nml-game` the state of the UI (like `ui_state`, likewise the result of `viewer_input` and `viewer_time`) |
+| `viewer_state` | - | state snapshot as JSON; with `opennml-game` the state of the UI (like `ui_state`, likewise the result of `viewer_input` and `viewer_time`) |
 | `viewer_window` | `mode`, `monitor` | like F11/F10; result: state snapshot |
 | `viewer_environment` | `action`: `lights`/`set_light` (+ `name`)/`set_weather` (+ `kind`)/`set_quality` (+ `shadow`, `particles`, `terrain`) | `lights`: name list; otherwise state snapshot (sections `environment` and `shadows`) |
 | `viewer_effects` | `action`: `spawn` (+ `path`, `position` or `object_index`, `scale`)/`clear`/`set_damage` (+ `value`) | state snapshot (sections `effects`, `browser`, `effect_browser`) |
 | `viewer_audio` | `action`: `play_sound` (+ `guid` and `sound_action` or `path`, `position`)/`music_play` (+ `track`)/`music_stop`/`music_attack` (+ `on`)/`set_volume` (+ `music`, `sfx`, `speech`, `mute`, `unit_response`)/`capture_start` (+ `path`)/`capture_stop` | `capture_stop`: length and levels; `play_sound`: `{"played", "id", "audio"}`; otherwise section `audio` |
 | `viewer_sim` | `action`: `setup` (+ `mode`, `seed`, `nations`, `teams`, `game_speed`, `resource_setting`, `living_space`)/`command` (+ `command`)/`query` (+ `player`, `guid`, `ids`, `limit`)/`save` (+ `path`, `replay`)/`load` (+ `path`, `steps`)/`hash`/`path` (+ `unit` or `from` and `layer`, `to`, `allow_override`, `show`)/`grid` (+ `layer`, `rect`)/`move` (+ `ids`, `to`, `append`, `cyclic`, `drag_to`)/`unit_bar` (+ `button` 511-515 formation, 519 scatter, 405/406/432/433 riding and diving, 449-451 train forward/backward/stop, 485/486 arm/disarm, 543 ff. abilities, 3370-3377 counter-upgrades, 452/453 pack tent/unpack travois, 430/431 open/close gate, 434/435 camouflage/uncamouflage, 437/438 dig in/dig out, 458/554 start healing, 459/564 stop healing, 555 self-healing, 436 evoke ghost, 439/547/550/553/558/562 banish, 441/442/443 evoke wolf/bear/wildcat, protocol 21: 480/481 explosion/storm, 482 reincarnation, 484 scout area, 541 drain mana, 542 whirlwind, 454/455 dynamite at building/ship, 456/548 kill, 457/546 snipe, 551 damage building, 556 scout map, the target buttons with `target` (object) or `to` (ground point, goes to the viewer as `ground`); the buttons of protocols 20 and 21 act only on the first selected own object; protocol 22: 540 rob)/`build` (+ `guid`, `to`, `rotation_steps`, `ids` = workers, `append`)/`train` (+ `building`, `guid`)/`cancel` (+ `building`, `index`)/`complete` (debug "complete immediately", + `building`, `index`, optional `guid` = expected type)/`sell` (+ `ids` = buildings)/`action` (+ `ids`, `target`, `to`, `append`, `cyclic`)/`menu` (+ `ids` = workers or `building`)/`fog` (+ `player`, `rect`)/`view` (+ `player` = active player, `fog_shown`, `fog_overlay`)/`upgrade` (+ `player` = target slot 0-10, `guid` > 0, `remove`; protocol 16 - "apply all" with a negative GUID works in the MCP only through `command` with `{"ApplyUpgrade": {"slot": p, "guid": -1}}`, in the raw control channel through `sim_upgrade`)/`trade` (+ `player` = sender, `ids` = carts, `ware` 0-3, `target` = target slot 0-8; protocol 17)/`tribute` (+ `player` = giver, `recipients`, `resource` 0-2, `amount`; protocol 17)/`hire_menu` (+ `player` = viewer, `art` 0-2, optional `target_player`; protocol 22)/`ki_query` (+ `player`, `code`, optional `words`, `sight`; protocol 23)/`result` (+ `player` = slot 0-7, `result` 1 lost or 2 won; protocol 29); `setup` also with `map_explored`, (protocol 26) `slots`, `ki_enabled`, `campaign_difficulty` and (protocol 28) `script_enabled`, `time_per_char` as well as `time_limit` | result of the command as JSON (`setup`/`load`/`view`: section `sim`); `ids` empty or missing = selection |
-| `viewer_ui` | `action`: `state`/`click` (+ `dialog`, `element`, `button` `left`/`right`)/`key` (+ `chord`, `char`)/`open` (+ `dialog`)/`video` (+ `name`)/`present` (+ `event`)/`focus_lost` (only `nml-game`: `ui_focus_lost`) | commands `ui_state`/`ui_click`/`ui_key`/`ui_open`/`ui_video`/`ui_present`/`ui_focus_lost` (protocol 24 and later, "UI (`ui_*`)"): `state` = state of the UI (with `nml-game` and a match including `game`), `click` = `{"x", "y"}`, `key` = `{"vk"}`, `open`, `video`, `present` and `focus_lost` = `null`; missing required fields: error, nothing sent. Only with an open UI (`nml-game`, viewer with `--dialog` in the window) |
+| `viewer_ui` | `action`: `state`/`click` (+ `dialog`, `element`, `button` `left`/`right`)/`key` (+ `chord`, `char`)/`open` (+ `dialog`)/`video` (+ `name`)/`present` (+ `event`)/`focus_lost` (only `opennml-game`: `ui_focus_lost`) | commands `ui_state`/`ui_click`/`ui_key`/`ui_open`/`ui_video`/`ui_present`/`ui_focus_lost` (protocol 24 and later, "UI (`ui_*`)"): `state` = state of the UI (with `opennml-game` and a match including `game`), `click` = `{"x", "y"}`, `key` = `{"vk"}`, `open`, `video`, `present` and `focus_lost` = `null`; missing required fields: error, nothing sent. Only with an open UI (`opennml-game`, viewer with `--dialog` in the window) |
 | `viewer_ki` | `action`: `state` (+ `slot`, `values`)/`query` (+ `slot`, `code`, `words`, `sight`)/`start` (+ `slot`, `module`, `args`, `sync`)/`pause` (+ `paused`)/`step` (+ `slot`, `passes`) | commands `ki_state`/`ki_query`/`ki_command` (protocol 26, "AI match"): `state` = AI state, `query` = request field and direct changes, `start`/`pause`/`step` = `{"step"}` (takes effect at the next tick); missing required fields and limits: error, nothing sent; fields of other actions are silently ignored (the raw control channel reports them as errors) |
 | `viewer_script` | `action`: `state` (+ `block_container`, `block_index`, `names`)/`log` (+ `steps`)/`events` (+ `steps`)/`skip_dialog`/`start` (+ `mission`, `difficulty`, `profile`, `paused`) | commands `script_state`/`script_events`/`script_command` (protocols 28, 32, 33; "Presentation (protocol 33)"); `log` returns only the block log; `start` ends a running viewer and restarts it with `--mission`, muted, in a window |
 | `viewer_log` | `lines` (default 50) | last lines of stderr of the started viewer (2,000 kept) |
@@ -2510,20 +2510,20 @@ log lines ("Last log lines:").
 
 ### Setup
 
-    cargo build --release -p nml-viewer -p nml-viewer-mcp
+    cargo build --release -p opennml-viewer -p opennml-viewer-mcp
 
 `.mcp.json` in the repo registers the server for Claude Code when Claude Code is started in the repo directory
 (confirm at the first start). Claude Code reads `.mcp.json` only from the start directory, and the memory of Claude
 Code also depends on the start directory. Whoever starts Claude Code in a folder above the repo registers the server
 there once with an absolute path (run in that folder):
 
-    claude mcp add --scope local nml-viewer -- <repo>\target\release\nml-viewer-mcp.exe
+    claude mcp add --scope local opennml-viewer -- <repo>\target\release\opennml-viewer-mcp.exe
 
 `--scope local` applies only to that folder, `--scope user` to all projects. The start folder of Claude Code does not
 matter for the server: it finds the repo through the path of its exe.
 
 As long as a Claude Code session has the server running, Windows locks the exe; `cargo build --release -p
-nml-viewer-mcp` then fails when overwriting. End the session before the rebuild, restart it after the rebuild.
+opennml-viewer-mcp` then fails when overwriting. End the session before the rebuild, restart it after the rebuild.
 
 ### Example: repeatable check
 

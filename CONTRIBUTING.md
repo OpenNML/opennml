@@ -31,7 +31,7 @@ Further rules for the simulation (determinism, crate boundaries, savegame loadin
 By contributing you agree that your work is published under the license of the part you change:
 
 - source code: GPL-3.0-or-later
-- `crates/nml-bink`: LGPL-2.1-or-later
+- `crates/opennml-bink`: LGPL-2.1-or-later
 - `docs/` and `assets/`: CC BY-SA 4.0
 
 Details: [docs/licensing.md](docs/licensing.md). New dependencies need a license that is compatible with

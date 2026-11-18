@@ -395,7 +395,7 @@ missing: return 0, no message, the widget has no background. The executable has 
 - **Tile sequence packed:** `TILE f k` becomes `(k << 16) | (f & 0xFFFF)`; when drawing, `k = 0xFFFF` is the mark of
   `NEWLINE`, so `TILE f 65535` or `TILE f -1` acts as a line break, and the file counts only with its lower 16 bits.
   A `NEWLINE` advances by the height of the tile set last, two in a row therefore twice.
-- **Reimplementation** (`nml-ui/src/bkg_paint.rs`): where the original aborts or divides by 0 (9-part table without
+- **Reimplementation** (`opennml-ui/src/bkg_paint.rs`): where the original aborts or divides by 0 (9-part table without
   `TOPLEFT` or with a `TOPLEFT` file outside the `FILE` lines; tile size <= 0), it omits the 9 parts or the tile (not
   present in the shipped data, O-88).
 
@@ -491,7 +491,7 @@ A checker that reproduces tokenizer, child area, element parser, number expressi
 - `LISTBOX_AUTOYSIZE`, `MENULABEL_AUTOHSCROLL` (apart from -42 px): run-time effect not examined.
 - Who requests `GAMEPLAYOPTIONS3`.
 
-## Proposed Rust data structure (`nml-formats`)
+## Proposed Rust data structure (`opennml-formats`)
 
 Goal: read and write losslessly (a later editor) **and** the same meaning as the original. Hence two levels:
 
@@ -533,7 +533,7 @@ FitSize, SetTopLeft, SetBottomRight, SetSize, StretchToBg, AlphaTest, Other(Stri
 (lossless), and `DialogMap { entries: Vec<(Word, Word)>, trailing: Trivia }`. All three without
 `wgpu`/`winit`/`egui`.
 
-## Proposed corpus test (`nml-formats`)
+## Proposed corpus test (`opennml-formats`)
 
 With `NML_GAME_DIR`, through the VFS:
 
@@ -554,13 +554,13 @@ With `NML_GAME_DIR`, through the VFS:
 
 Quirk numbers O-1 ... O-13 and O-87 apply.
 
-| Part | Code (`crates/nml-formats/src/`) | Tests |
+| Part | Code (`crates/opennml-formats/src/`) | Tests |
 |---|---|---|
 | Lexical rules, lossless tree, writing | `dlg/mod.rs`: `lex_words`, `parse_dlg` -> `DlgDocument` (words with line and trivia), `write_dlg`, `upper_word`, `prop_arity` | `dlg::tests::*` (among others `malformed_dlg_never_hangs`, `deep_nesting_is_bounded`, `upper_word_follows_the_original`), corpus `tests/corpus_menus.rs` `all_dlg_files_round_trip_without_diagnostics` (63 files byte-identical) |
 | Evaluation like the original | `dlg/expand.rs` `expand(doc, ExpandOptions { is_menu_level })` -> `Expanded` (widget tree, commands, diagnostics); `dlg/desc.rs` descriptors with the defaults of the original, `flag_bit` | `dlg::expand::tests::*` (among others `expand_stops_like_the_original`, `head_keys_after_the_first_child_abort_the_file`), corpus `all_dialogs_expand_to_the_documented_counts` (FRAME 63, BUTTON 141, COMBOBOX 114, LABEL 250, RADIOBUTTON 58, SLIDER 18, EDITFIELD 17, LISTBOX 15; `LOOP` 13, `VAR` 54, `ADD` 55), `dialog_text_ids_exist` (408 text IDs) |
 | `.bkg` | `bkg.rs` `parse_bkg`/`write_bkg`, `BkgFile::desc` | `bkg::tests::*`, corpus `all_bkg_files_round_trip` (13 files) |
 | `dialogs.map` | `dialog_map.rs` `parse_dialog_map`/`write_dialog_map` (through `lex_words`) | corpus `dialog_maps_have_60_entries` (exactly one missing path: `GAMEPLAYOPTIONS3`) |
-| Loading, names, drawing | `crates/nml-ui/src/dialog.rs` `DialogLibrary::load` (keys from `dialogs.map` and file stem), `paint_static` | `crates/nml-ui/tests/corpus_dialogs.rs` `all_dialogs_paint`, `dialog_draw_checksums_are_stable` (`DIALOG_DRAW_GOLDEN`, 1024 x 768 and 1280 x 1024) |
+| Loading, names, drawing | `crates/opennml-ui/src/dialog.rs` `DialogLibrary::load` (keys from `dialogs.map` and file stem), `paint_static` | `crates/opennml-ui/tests/corpus_dialogs.rs` `all_dialogs_paint`, `dialog_draw_checksums_are_stable` (`DIALOG_DRAW_GOLDEN`, 1024 x 768 and 1280 x 1024) |
 
 Deviations (each with a quirk entry):
 

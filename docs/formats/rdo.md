@@ -1,8 +1,8 @@
 # Models `.rdo` (container `0x7DB`)
 
-Rust: `nml_formats::rdo::parse_rdo` (standard and old format), paths and textures `nml_world::assets`.
+Rust: `opennml_formats::rdo::parse_rdo` (standard and old format), paths and textures `opennml_world::assets`.
 
-glTF export: `nml_export::model_to_glb` (mirroring `z -> -z`, corners `i0, i2, i1`, UV `(u, -v)`; skin with
+glTF export: `opennml_export::model_to_glb` (mirroring `z -> -z`, corners `i0, i2, i1`, UV `(u, -v)`; skin with
 `inverseBindMatrix = T(-rest position)`, node tracks via child nodes `<mesh>#pivot`). Deliberate limits: materials are
 unlit PBR (`metallic 0`, `roughness 1`), colors converted from sRGB to linear - plausible, not faithful to the
 original; node tracks of helper nodes (3005) are not animated; water (level export) without waves and texture motion.
@@ -91,7 +91,7 @@ the helper node hull `hitbox` serve picking (with the node scale, D-367).
 | `0x104` | `f32[3]` | `pivot` | World position of the Max node (pivot); = start value of the position track of a matching `.rdm` node track |
 | `0x110` | `f32[3]` | `position` | Translation node space -> object space (pivot + object offset) |
 | `0x11C` | `f32[4]` | `rotation_wxyz` | Rotation node space -> object space as a quaternion **(w, x, y, z)**, normalized |
-| `0x12C` | `f32[3]` | `skalierung` | Max scale of the node (Rust `RdoMesh::scale`). For meshes with vertices it is already folded into the vertices; the static node matrix computes with `(1,1,1)`. The loader does **not** overwrite the field: the game applies the file value to helper nodes. For helper nodes (3005) the stored corners are in node space (unscaled), `halbe_ausdehnung`, in contrast, is scaled. In the shipped data: 79 of 110 models with `blocking01` have a scale != 1 (e.g. palme04...06 `20/29`, half edge 36.86 -> 25.42), all 74 models with `hitbox` too: their stored corners are always a cube, the shape of the hit box arises only through the scale (e.g. SPA finca `(1, 0.082, 1)`: height +-29.9 instead of +-364.6). The reimplementation applies the scale to `blocking01` (D-365) and to the box `hitbox` and the frame corners (`nml_world::math::helper_node_matrix`, D-367); the rest position of helper nodes (`helper_rest_position`) still without scale, without effect in the shipped data (D-367) |
+| `0x12C` | `f32[3]` | `skalierung` | Max scale of the node (Rust `RdoMesh::scale`). For meshes with vertices it is already folded into the vertices; the static node matrix computes with `(1,1,1)`. The loader does **not** overwrite the field: the game applies the file value to helper nodes. For helper nodes (3005) the stored corners are in node space (unscaled), `halbe_ausdehnung`, in contrast, is scaled. In the shipped data: 79 of 110 models with `blocking01` have a scale != 1 (e.g. palme04...06 `20/29`, half edge 36.86 -> 25.42), all 74 models with `hitbox` too: their stored corners are always a cube, the shape of the hit box arises only through the scale (e.g. SPA finca `(1, 0.082, 1)`: height +-29.9 instead of +-364.6). The reimplementation applies the scale to `blocking01` (D-365) and to the box `hitbox` and the frame corners (`opennml_world::math::helper_node_matrix`, D-367); the rest position of helper nodes (`helper_rest_position`) still without scale, without effect in the shipped data (D-367) |
 | `0x138` | `i32` | `vertex_anzahl` | `nv` |
 | `0x13C` | `i32` | `dreieck_anzahl` | `nf` |
 | `0x140` | `i32` | `uv_anzahl` | `nuv` |
@@ -170,7 +170,7 @@ The material ID of a triangle is the index into this list (`< material_anzahl` i
   position keys `z -> -z`, quaternions `(w, x, y, z) -> (w, -x, -y, z)` (mirroring `M*R*M` with `M = diag(1, 1, -1)`) -
   and reverse the winding at the same time (swap the indexes `i0, i2, i1` or `front_face`), because after mirroring
   `normalized((v1 - v0) x (v2 - v0)) = -n_mirrored` holds. Equivalent is a mirroring in the view matrix plus a
-  reversed `front_face`. Without mirroring all models appear mirrored on a right-handed target. `nml-render` (wgpu)
+  reversed `front_face`. Without mirroring all models appear mirrored on a right-handed target. `opennml-render` (wgpu)
   does **not** need this: it renders with the original left-handed matrices without mirroring and compensates the
   winding with `FrontFace::Cw` (wgpu NDC corresponds to D3D NDC).
 - Convention as in Direct3D: row vectors, `v' = v * M`. Transformation rules:
