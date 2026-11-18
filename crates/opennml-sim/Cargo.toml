@@ -1,0 +1,19 @@
+[package]
+name = "opennml-sim"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-rda.workspace = true
+opennml-formats.workspace = true
+opennml-world.workspace = true
+serde.workspace = true
+postcard.workspace = true
+anyhow.workspace = true
+glam.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

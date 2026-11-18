@@ -1,6 +1,6 @@
 # Level `.lvl` and composition of a level
 
-Rust: `nml_formats::lvl::parse_level` (project file, players); composition `nml_world::level`.
+Rust: `opennml_formats::lvl::parse_level` (project file, players); composition `opennml_world::level`.
 
 A level consists of several files with the same base name. The `.lvl` is the entry point
 (text file, bracket grammar from [text.md](text.md), cp1252, CRLF): it names the project file and

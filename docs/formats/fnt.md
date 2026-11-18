@@ -1,7 +1,7 @@
 # Bitmap fonts (`.fnt`)
 
 Path: `data/fonts/<name>.fnt`, texture `data/fonts/<name>.tga` (same base name).
-Parser: `nml_formats::fnt::parse_fnt`.
+Parser: `opennml_formats::fnt::parse_fnt`.
 
 | Line | Content |
 |---|---|
@@ -17,5 +17,5 @@ largest `height`.
 `u0..u1` and `v0..v1` are normalized texture coordinates (0-1) in the 16x16 grid of the texture.
 Width/height are in pixels. The shipped fonts have 256 characters (codes 0-255, Windows-1252).
 Orientation of `v`: the atlas is stored top to bottom (`v = 0` is the top edge), and the character sits at the top
-left of its cell (`width x height` pixels from `u0`/`v0`); `nml-render/src/text.rs` draws it this way without
+left of its cell (`width x height` pixels from `u0`/`v0`); `opennml-render/src/text.rs` draws it this way without
 mirroring (checked against the texture).

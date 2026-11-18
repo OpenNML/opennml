@@ -1,8 +1,8 @@
 # Object `.cfg` (model assembly)
 
-Rust: `nml_formats::object_cfg::{parse_object_cfg, object_cfg_path}`; as in the game, a `.cfg` without an `OBJECT`
+Rust: `opennml_formats::object_cfg::{parse_object_cfg, object_cfg_path}`; as in the game, a `.cfg` without an `OBJECT`
 block yields an empty configuration (see "Layout"). Deviation from the original: `parse_object_cfg` compares the
-first word of the line (through `nml_formats::text::parse_blocks`) instead of searching for a substring as the original
+first word of the line (through `opennml_formats::text::parse_blocks`) instead of searching for a substring as the original
 parser does. In the shipped data all keys are the first word, so the result is the same; at the same time the
 mistakes of the substring search (a key name in a value or comment, `ID` matching `UPGRADEID`) and the dependence on
 the checking order disappear.

@@ -22,9 +22,9 @@ allow = [
     "Ubuntu-font-1.0",
 ]
 confidence-threshold = 0.9
-# Only the video decoder is under the LGPL (port from FFmpeg, crates/nml-bink/README.md).
+# Only the video decoder is under the LGPL (port from FFmpeg, crates/opennml-bink/README.md).
 exceptions = [
-    { allow = ["LGPL-2.1-or-later"], crate = "nml-bink" },
+    { allow = ["LGPL-2.1-or-later"], crate = "opennml-bink" },
 ]
 
 [licenses.private]

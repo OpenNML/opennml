@@ -1,6 +1,6 @@
 # Text readers: `default.dat`, `.lvl`, `defaultobjects.ini`, `upgrades.ini`, `dropdown.ini`
 
-Rust: `nml_formats::config`, `nml_formats::gifcon`, `nml_formats::targets`. All readers work with MBCS strings
+Rust: `opennml_formats::config`, `opennml_formats::gifcon`, `opennml_formats::targets`. All readers work with MBCS strings
 (cp1252 bytes). A data check against the extracted files is at the end.
 
 ## 0. Common building blocks

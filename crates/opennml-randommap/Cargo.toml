@@ -1,0 +1,19 @@
+[package]
+name = "opennml-randommap"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-rda.workspace = true
+opennml-formats.workspace = true
+opennml-world.workspace = true
+opennml-sim.workspace = true
+glam.workspace = true
+anyhow.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+clap.workspace = true

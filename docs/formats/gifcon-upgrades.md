@@ -79,7 +79,7 @@ END                         whole line; store the record
 | `EFFECT h path` | prefix of 7 characters | `0x41` | Effect at the target, height `h` |
 | `END` | whole line | - | store |
 
-Reader in the reimplementation: `nml_formats::temp_upgrades::parse_temp_upgrades` -> `TempUpgradeRecord` (GUID, flags
+Reader in the reimplementation: `opennml_formats::temp_upgrades::parse_temp_upgrades` -> `TempUpgradeRecord` (GUID, flags
 `flags::*`, `msg_start`, `msg_end`, effect path and height, `time_ms`), in the rules as `Rules::temp_upgrades` (path
 `TEMP_UPGRADES_PATH`). It follows the prefix comparisons above and quirk W-18: the current record lives on beyond
 `END`, `TEMPUPGRADETIME` is not recognized, `MSGTICK` and `MSGEND` share the slot (the later line wins). Deviation (A7):

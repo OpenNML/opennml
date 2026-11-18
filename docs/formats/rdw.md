@@ -1,6 +1,6 @@
 # Models `.rdw` (container `0x7DB`)
 
-Rust: `nml_formats::rdo::parse_rdo` (standard and old format), paths and textures `nml_world::assets`.
+Rust: `opennml_formats::rdo::parse_rdo` (standard and old format), paths and textures `opennml_world::assets`.
 
 `.rdw` is **the same binary format as `.rdo`** (identifier `0x7DB`; for layout, fields and transformation rules see
 [rdo.md](rdo.md)). It differs only in content.

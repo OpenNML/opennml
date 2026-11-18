@@ -1752,302 +1752,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nml-audio"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cpal",
- "glam",
- "log",
- "nml-formats",
- "nml-rda",
- "nml-world",
- "symphonia",
- "tempfile",
- "windows",
-]
-
-[[package]]
-name = "nml-bink"
-version = "0.1.0"
-dependencies = [
- "image",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "nml-client"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "encoding_rs",
- "glam",
- "image",
- "log",
- "nml-audio",
- "nml-bink",
- "nml-control",
- "nml-effects",
- "nml-formats",
- "nml-net",
- "nml-randommap",
- "nml-rda",
- "nml-render",
- "nml-sim",
- "nml-ui",
- "nml-world",
- "postcard",
- "serde",
- "serde_json",
- "tempfile",
- "wgpu",
- "winit",
-]
-
-[[package]]
-name = "nml-control"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "nml-effects"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "glam",
- "log",
- "nml-formats",
- "nml-rda",
- "nml-world",
- "tempfile",
-]
-
-[[package]]
-name = "nml-export"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "glam",
- "gltf",
- "image",
- "log",
- "nml-formats",
- "nml-rda",
- "nml-world",
- "serde_json",
- "tempfile",
-]
-
-[[package]]
-name = "nml-extract"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "env_logger",
- "glob",
- "log",
- "nml-export",
- "nml-formats",
- "nml-rda",
- "nml-world",
- "tempfile",
-]
-
-[[package]]
-name = "nml-formats"
-version = "0.1.0"
-dependencies = [
- "encoding_rs",
- "image",
- "nml-rda",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "nml-game"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "embed-resource",
- "env_logger",
- "image",
- "log",
- "nml-audio",
- "nml-client",
- "nml-control",
- "nml-formats",
- "nml-net",
- "nml-rda",
- "nml-render",
- "nml-sim",
- "nml-ui",
- "rfd",
- "serde_json",
- "tempfile",
- "wgpu",
- "winit",
-]
-
-[[package]]
-name = "nml-icon"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "resvg",
-]
-
-[[package]]
-name = "nml-net"
-version = "0.1.0"
-dependencies = [
- "log",
- "nml-sim",
- "postcard",
- "serde",
-]
-
-[[package]]
-name = "nml-randommap"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "glam",
- "log",
- "nml-formats",
- "nml-rda",
- "nml-sim",
- "nml-world",
- "serde_json",
-]
-
-[[package]]
-name = "nml-rda"
-version = "0.1.0"
-dependencies = [
- "encoding_rs",
- "flate2",
- "log",
- "tempfile",
- "thiserror 2.0.21",
- "winreg",
-]
-
-[[package]]
-name = "nml-render"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "glam",
- "image",
- "log",
- "nml-effects",
- "nml-formats",
- "nml-rda",
- "nml-ui",
- "nml-world",
- "pollster",
- "serde",
- "tempfile",
- "wgpu",
-]
-
-[[package]]
-name = "nml-sim"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "glam",
- "log",
- "nml-formats",
- "nml-rda",
- "nml-world",
- "postcard",
- "serde",
- "tempfile",
-]
-
-[[package]]
-name = "nml-ui"
-version = "0.1.0"
-dependencies = [
- "image",
- "log",
- "nml-formats",
- "nml-rda",
- "serde",
- "tempfile",
-]
-
-[[package]]
-name = "nml-viewer"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "egui",
- "egui-wgpu",
- "egui-winit",
- "embed-resource",
- "env_logger",
- "glam",
- "image",
- "log",
- "nml-audio",
- "nml-client",
- "nml-control",
- "nml-effects",
- "nml-formats",
- "nml-randommap",
- "nml-rda",
- "nml-render",
- "nml-sim",
- "nml-ui",
- "nml-world",
- "serde",
- "serde_json",
- "tempfile",
- "toml",
- "wgpu",
- "winit",
-]
-
-[[package]]
-name = "nml-viewer-mcp"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "nml-control",
- "rmcp",
- "schemars",
- "serde",
- "serde_json",
- "tokio",
-]
-
-[[package]]
-name = "nml-world"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "glam",
- "image",
- "log",
- "nml-formats",
- "nml-rda",
- "tempfile",
-]
-
-[[package]]
 name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2487,6 +2191,302 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "opennml-audio"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cpal",
+ "glam",
+ "log",
+ "opennml-formats",
+ "opennml-rda",
+ "opennml-world",
+ "symphonia",
+ "tempfile",
+ "windows",
+]
+
+[[package]]
+name = "opennml-bink"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "opennml-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "encoding_rs",
+ "glam",
+ "image",
+ "log",
+ "opennml-audio",
+ "opennml-bink",
+ "opennml-control",
+ "opennml-effects",
+ "opennml-formats",
+ "opennml-net",
+ "opennml-randommap",
+ "opennml-rda",
+ "opennml-render",
+ "opennml-sim",
+ "opennml-ui",
+ "opennml-world",
+ "postcard",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "opennml-control"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "opennml-effects"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "glam",
+ "log",
+ "opennml-formats",
+ "opennml-rda",
+ "opennml-world",
+ "tempfile",
+]
+
+[[package]]
+name = "opennml-export"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "glam",
+ "gltf",
+ "image",
+ "log",
+ "opennml-formats",
+ "opennml-rda",
+ "opennml-world",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "opennml-extract"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "env_logger",
+ "glob",
+ "log",
+ "opennml-export",
+ "opennml-formats",
+ "opennml-rda",
+ "opennml-world",
+ "tempfile",
+]
+
+[[package]]
+name = "opennml-formats"
+version = "0.1.0"
+dependencies = [
+ "encoding_rs",
+ "image",
+ "opennml-rda",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "opennml-game"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "embed-resource",
+ "env_logger",
+ "image",
+ "log",
+ "opennml-audio",
+ "opennml-client",
+ "opennml-control",
+ "opennml-formats",
+ "opennml-net",
+ "opennml-rda",
+ "opennml-render",
+ "opennml-sim",
+ "opennml-ui",
+ "rfd",
+ "serde_json",
+ "tempfile",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "opennml-icon"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "resvg",
+]
+
+[[package]]
+name = "opennml-net"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "opennml-sim",
+ "postcard",
+ "serde",
+]
+
+[[package]]
+name = "opennml-randommap"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "glam",
+ "log",
+ "opennml-formats",
+ "opennml-rda",
+ "opennml-sim",
+ "opennml-world",
+ "serde_json",
+]
+
+[[package]]
+name = "opennml-rda"
+version = "0.1.0"
+dependencies = [
+ "encoding_rs",
+ "flate2",
+ "log",
+ "tempfile",
+ "thiserror 2.0.21",
+ "winreg",
+]
+
+[[package]]
+name = "opennml-render"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "glam",
+ "image",
+ "log",
+ "opennml-effects",
+ "opennml-formats",
+ "opennml-rda",
+ "opennml-ui",
+ "opennml-world",
+ "pollster",
+ "serde",
+ "tempfile",
+ "wgpu",
+]
+
+[[package]]
+name = "opennml-sim"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "glam",
+ "log",
+ "opennml-formats",
+ "opennml-rda",
+ "opennml-world",
+ "postcard",
+ "serde",
+ "tempfile",
+]
+
+[[package]]
+name = "opennml-ui"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "log",
+ "opennml-formats",
+ "opennml-rda",
+ "serde",
+ "tempfile",
+]
+
+[[package]]
+name = "opennml-viewer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "egui",
+ "egui-wgpu",
+ "egui-winit",
+ "embed-resource",
+ "env_logger",
+ "glam",
+ "image",
+ "log",
+ "opennml-audio",
+ "opennml-client",
+ "opennml-control",
+ "opennml-effects",
+ "opennml-formats",
+ "opennml-randommap",
+ "opennml-rda",
+ "opennml-render",
+ "opennml-sim",
+ "opennml-ui",
+ "opennml-world",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "toml",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "opennml-viewer-mcp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "opennml-control",
+ "rmcp",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "opennml-world"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "glam",
+ "image",
+ "log",
+ "opennml-formats",
+ "opennml-rda",
+ "tempfile",
+]
 
 [[package]]
 name = "orbclient"

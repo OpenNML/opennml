@@ -48,7 +48,7 @@ More precise than the table:
   `TextExtent 20 20 800 600`, font `LoadingFont`. `StartTextBlock` does nothing, `EndTextBlock` appends the
   **template**: fields that are not named inherit from the previous block (quirk O-136).
 
-Reader in the reimplementation: `nml-formats/src/ldg.rs` (`parse_ldg`).
+Reader in the reimplementation: `opennml-formats/src/ldg.rs` (`parse_ldg`).
 
 ## Coordinate system and units
 
@@ -67,4 +67,4 @@ blocks and that the images exist in the VFS (`ldg: 32`, all without errors).
 
 Which loading screen appears when, and how background, bar and text blocks are converted to the screen: the text
 `y0` is divided by 1280, `y1` and the bar by 1024. Progress is the share of the `.wld` that has been read, in percent.
-`StartTextBlock` resets nothing. Renderer in the reimplementation: `nml-ui/src/loading.rs`.
+`StartTextBlock` resets nothing. Renderer in the reimplementation: `opennml-ui/src/loading.rs`.

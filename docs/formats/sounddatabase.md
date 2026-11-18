@@ -1,6 +1,6 @@
 # Sound database and audio configuration
 
-Rust: `nml_formats::sound`, run time in `nml_audio` (database `nml_audio::db::SoundDb`).
+Rust: `opennml_formats::sound`, run time in `opennml_audio` (database `opennml_audio::db::SoundDb`).
 
 All files are text in cp1252 with CRLF. The game reads files with a `data/...` path through the VFS ([rda.md](rda.md)),
 that is, from the archives; exceptions are music streams (see "Audio files").

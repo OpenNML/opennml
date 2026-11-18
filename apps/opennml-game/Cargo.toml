@@ -1,0 +1,38 @@
+[package]
+name = "opennml-game"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-audio.workspace = true
+opennml-client.workspace = true
+opennml-control.workspace = true
+opennml-formats.workspace = true
+opennml-net.workspace = true
+opennml-rda.workspace = true
+opennml-render.workspace = true
+opennml-sim.workspace = true
+opennml-ui.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+env_logger.workspace = true
+image.workspace = true
+log.workspace = true
+serde_json.workspace = true
+wgpu.workspace = true
+winit.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+# Folder dialog when the search does not find the game directory.
+rfd.workspace = true
+
+[dev-dependencies]
+# Setup of the test match (`game::sim_host::testkit::default_setup`) for `ui_focus_lost_pauses`.
+opennml-client = { workspace = true, features = ["testkit"] }
+tempfile.workspace = true
+
+[build-dependencies]
+# Program icon of the exe on Windows (`build.rs`).
+embed-resource.workspace = true

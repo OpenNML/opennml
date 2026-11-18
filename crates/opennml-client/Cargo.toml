@@ -1,0 +1,39 @@
+[package]
+name = "opennml-client"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-audio.workspace = true
+opennml-bink.workspace = true
+opennml-control.workspace = true
+opennml-effects.workspace = true
+opennml-formats.workspace = true
+opennml-net.workspace = true
+opennml-randommap.workspace = true
+opennml-rda.workspace = true
+opennml-render.workspace = true
+opennml-sim.workspace = true
+opennml-ui.workspace = true
+opennml-world.workspace = true
+anyhow.workspace = true
+# Local time of the savegame list and of the default name (`save_files`); only with `clock`, no new crate in the lock.
+chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
+encoding_rs.workspace = true
+glam.workspace = true
+image.workspace = true
+log.workspace = true
+postcard.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+wgpu.workspace = true
+winit.workspace = true
+
+[features]
+# Test kits of the game modules (`game::testworld`, `game::sim_host::testkit` ...) for the viewer's tests.
+testkit = []
+
+[dev-dependencies]
+tempfile.workspace = true

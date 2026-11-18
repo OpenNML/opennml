@@ -1,6 +1,6 @@
 # Programs and switches
 
-How to use `nml-game`, `nml-viewer`, `nml-extract`, `nml-icon` and the MCP server. Introduction and overview:
+How to use `opennml-game`, `opennml-viewer`, `opennml-extract`, `opennml-icon` and the MCP server. Introduction and overview:
 [README](../README.md). Every program lists all switches with a short description under `--help`.
 
 ## Game directory
@@ -31,27 +31,27 @@ German or English edition (11 archives). Invalid candidates are skipped. If ever
 every location checked with the reason and points to `--game-dir` and `NML_GAME_DIR`.
 
 **Remembered folder:** `game-dir.txt` (UTF-8, one line, absolute path) is next to the settings file.
-`nml-game`: next to `--settings`, otherwise next to `NML_SETTINGS`, otherwise in `%LOCALAPPDATA%\nml-rust\`.
-`nml-viewer`: next to `--settings`, otherwise in `%LOCALAPPDATA%\nml-rust\` (it ignores `NML_SETTINGS`).
-`nml-extract` and the random map examples: in `%LOCALAPPDATA%\nml-rust\`. Only `nml-game` writes the file, and only
+`opennml-game`: next to `--settings`, otherwise next to `NML_SETTINGS`, otherwise in `%LOCALAPPDATA%\OpenNML\`.
+`opennml-viewer`: next to `--settings`, otherwise in `%LOCALAPPDATA%\OpenNML\` (it ignores `NML_SETTINGS`).
+`opennml-extract` and the random map examples: in `%LOCALAPPDATA%\OpenNML\`. Only `opennml-game` writes the file, and only
 after a valid choice in the dialog. If the remembered folder is no longer valid later, the program keeps searching
 and asks anew as the last step.
 
-**Dialog:** if `nml-game` finds nothing, on Windows it opens the system folder dialog before the window ("Choose the
+**Dialog:** if `opennml-game` finds nothing, on Windows it opens the system folder dialog before the window ("Choose the
 folder of No Man's Land"; the parent folder is also enough if `No Man's Land` is in it). An invalid choice is
 reported with the reason and can be repeated. On cancel, or on No to the retry prompt, the error message also appears
 as a message box. No folder dialog opens if `--game-dir` or `NML_GAME_DIR` is set (a wrong `NML_GAME_DIR` at a normal
 start shows only the message box with the reason), with `--screenshot`, `--loading-shot`, `--control`, `--host` and
-`--join`, and in `nml-viewer`, `nml-extract` and the tests.
+`--join`, and in `opennml-viewer`, `opennml-extract` and the tests.
 
 The installation is never written to. The corpus tests do not use the search; they use only `NML_GAME_DIR` or the
 fixed location `original/No Man's Land` next to the repository.
 
-## nml-game
+## opennml-game
 
-    cargo run --release -p nml-game
-    cargo run --release -p nml-game -- --mute --window-mode windowed --settings ../test-run/Engine.ini
-    cargo run --release -p nml-game -- --settings ../test-run/Engine.ini --screenshot ../start.png --time-ms 1500
+    cargo run --release -p opennml-game
+    cargo run --release -p opennml-game -- --mute --window-mode windowed --settings ../test-run/Engine.ini
+    cargo run --release -p opennml-game -- --settings ../test-run/Engine.ini --screenshot ../start.png --time-ms 1500
 
 The program of the reimplementation (without egui). Like the original, it starts into the main menu `START` with the
 fly-in and the title music, and it exits through `QUIT` in the main menu or by closing the window; both write the
@@ -60,7 +60,7 @@ settings file (like the destructor of the original).
 ### What it can do
 
 - **Videos:** with `IsIntro 1` the CDV logo, the Related logo and the intro play before the main menu. The `.bik`
-  files are read from `DATA/Videos` at run time and played with the own decoder `crates/nml-bink` (no conversion, no
+  files are read from `DATA/Videos` at run time and played with the own decoder `crates/opennml-bink` (no conversion, no
   intermediate files). Any key aborts a video, the mouse never does.
 - **Single player:** profile selection (`profiles.ini` next to the settings file), "Custom game" on multiplayer maps
   or random maps with game modes including Domination and King of the Hill, computer opponents, loading screen,
@@ -76,7 +76,7 @@ settings file (like the destructor of the original).
 
 - `--game-dir <folder>`: only this location as the installation; without it the search under "Game directory".
 - `--settings <file>`: settings file in the format of `Engine.ini`. Without it the environment variable
-  `NML_SETTINGS`, otherwise `%LOCALAPPDATA%\nml-rust\Engine.ini`. A location inside the installation is an error:
+  `NML_SETTINGS`, otherwise `%LOCALAPPDATA%\OpenNML\Engine.ini`. A location inside the installation is an error:
   the `Engine.ini` of the original is never read or written. If the file is missing, the defaults of the original
   apply together with `defaultkeys.ini`; if it is corrupted, the defaults apply per key (warning in the log); it is
   overwritten only at the next save. It is written on `OPTIONS OK` and at program exit.
@@ -91,7 +91,7 @@ settings file (like the destructor of the original).
   original as linear brightness on the window image; screenshots never contain it.
 - `--control <IP:PORT>` (loopback only, port 0 = free), `--paused` (only with `--control`, not in network play):
   control channel as in the viewer with the log line `Steuerkanal: <addr>`, but only with the subset for UI, match,
-  input and network (`docs/viewer-control.md`); other commands answer with `"<name>" is not available in nml-game`.
+  input and network (`docs/viewer-control.md`); other commands answer with `"<name>" is not available in opennml-game`.
   While the clock is halted, menu and match advance only with `step`.
 - Pointer and screenshot: `HardwareCursor 0` (setting, can be switched live in the options menu) draws the pointer as
   the 3D model from `mouse.rdo`; with `HardwareCursor 1` the system shows the pointer (the reimplementation the TGA).
@@ -118,8 +118,8 @@ In the menu: "Multiplayer" -> LAN search (`LAN1`), create match (`LAN3`), lobby 
 
 On the command line (without lobby):
 
-    cargo run --release -p nml-game -- --host --net-map "data/levels/multiplayer/[4players]-exile.lvl" --net-players 2
-    cargo run --release -p nml-game -- --join 192.168.0.10
+    cargo run --release -p opennml-game -- --host --net-map "data/levels/multiplayer/[4players]-exile.lvl" --net-players 2
+    cargo run --release -p opennml-game -- --join 192.168.0.10
 
 - `--host [PORT]`: listen on PORT (without a value `NetPort` of the settings; 0 = 2302), wait for `--net-players` - 1
   clients and create the match on `--net-map`.
@@ -131,11 +131,11 @@ On the command line (without lobby):
 - `--net-name <NAME>`: player name (default: profile name, otherwise "Spieler").
 - `--net-loopback` (check runs): the host listens only on 127.0.0.1, the search also asks 127.0.0.1.
 
-## nml-viewer
+## opennml-viewer
 
-    cargo run --release -p nml-viewer -- --level data/levels/kampagne1/kamp1-1/kamp1-1.lvl
-    cargo run --release -p nml-viewer -- --model data/r3d/wid/units/tierbeschwoerer/tierbeschwoerer_wald.rdo
-    cargo run --release -p nml-viewer -- --screenshot ../nml-shot.png --time-ms 1500
+    cargo run --release -p opennml-viewer -- --level data/levels/kampagne1/kamp1-1/kamp1-1.lvl
+    cargo run --release -p opennml-viewer -- --model data/r3d/wid/units/tierbeschwoerer/tierbeschwoerer_wald.rdo
+    cargo run --release -p opennml-viewer -- --screenshot ../opennml-shot.png --time-ms 1500
 
 Tool for development and checking. It shows a level like the original (terrain, water, objects, original camera),
 plus models, effects, dialogs and random maps (`--random-map <seed>` with `--random-*`), and runs free matches with a
@@ -148,17 +148,17 @@ effects, -/+ fire strength, left mouse button rotate, mouse wheel zoom), N effec
 restart, -/+ radius of the `.hef` preview). -/+ are the keys next to the period or left of Enter on the German
 keyboard, or the numeric keypad; on the US keyboard also `-`/`=`.
 
-Settings: copy `apps/nml-viewer/nml-viewer.example.toml` to `nml-viewer.toml` in the working directory or give
+Settings: copy `apps/opennml-viewer/opennml-viewer.example.toml` to `opennml-viewer.toml` in the working directory or give
 `--config <path>` (game directory, level, aspect ratio, fog, animation, controls).
 
 ### Dialog browser
 
-    cargo run --release -p nml-viewer -- --mute --window-mode windowed --dialog options,videooptions
-    cargo run --release -p nml-viewer -- --mute --window-mode windowed --config size-1024.toml --dialog start --screenshot ../start_1024x768.png
+    cargo run --release -p opennml-viewer -- --mute --window-mode windowed --dialog options,videooptions
+    cargo run --release -p opennml-viewer -- --mute --window-mode windowed --config size-1024.toml --dialog start --screenshot ../start_1024x768.png
 
 `--dialog <NAME>[,<NAME>...]` opens dialogs of the installation over the view, in the order given (name = key from
 `dialogs.map` or file stem, case-insensitive; an unknown name is an error with a message, `--dialog` and `--model`
-exclude each other). In the window they can be operated: the same menu UI as in `nml-game`, without the start
+exclude each other). In the window they can be operated: the same menu UI as in `opennml-game`, without the start
 sequence, each dialog with fly-in and logic (click sound, subpages, sliders, prompts). While the layer is visible and
 a dialog is open, mouse and keys go to the dialogs; Esc exits the viewer only without an open dialog, `QUIT` in the
 main menu exits it. Ctrl+Page Down or Page Up opens the next or previous dialog of the library anew and alone, Ctrl+D
@@ -166,7 +166,7 @@ hides and shows the layer.
 
 Settings: without a switch the defaults of the original together with `defaultkeys.ini` apply in memory only, nothing
 is ever saved (`NML_SETTINGS` does not apply to the viewer). With `--settings <file>` (only together with `--dialog`,
-checked as in `nml-game`, never in the installation) the dialogs read this file and write it on `OPTIONS OK`. Display
+checked as in `opennml-game`, never in the installation) the dialogs read this file and write it on `OPTIONS OK`. Display
 mode and hardware pointer have no effect in the viewer.
 
 With `--screenshot` the image stays static: state of the file (what the dialog logic sets at run time, such as
@@ -179,38 +179,38 @@ dialogs (`docs/viewer-control.md`, section "UI (`ui_*`)").
 If the installation has no atlas for the window width (e.g. `MenuTitle` 39 px at 1920 x 1080), game and viewer create
 it like the original with GDI from the Windows font named in `localisation.*` (e.g. Garamond) and put `.fnt`/`.tga`
 into a cache outside the installation: environment variable `NML_FONT_CACHE` (folder), otherwise
-`%LOCALAPPDATA%\nml-rust\fonts`. Deleting the folder makes the next start create the atlases anew. Without Windows or
+`%LOCALAPPDATA%\OpenNML\fonts`. Deleting the folder makes the next start create the atlases anew. Without Windows or
 without the font, an existing atlas is used as a fallback.
 
-## nml-extract
+## opennml-extract
 
-    cargo run --release -p nml-extract -- list --filter "*.lvl"
-    cargo run --release -p nml-extract -- extract --out ../extracted
-    cargo run --release -p nml-extract -- convert --out ../extracted-png --filter "data/icons/*"
-    cargo run --release -p nml-extract -- convert --format gltf --out ../export-gltf --filter "data/levels/kampagne1/kamp1-1/kamp1-1.lvl"
-    cargo run --release -p nml-extract -- inspect data/levels/kampagne1/kamp1-1/kamp1-1.lvl
+    cargo run --release -p opennml-extract -- list --filter "*.lvl"
+    cargo run --release -p opennml-extract -- extract --out ../extracted
+    cargo run --release -p opennml-extract -- convert --out ../extracted-png --filter "data/icons/*"
+    cargo run --release -p opennml-extract -- convert --format gltf --out ../export-gltf --filter "data/levels/kampagne1/kamp1-1/kamp1-1.lvl"
+    cargo run --release -p opennml-extract -- inspect data/levels/kampagne1/kamp1-1/kamp1-1.lvl
 
 Output belongs outside the repository (no original game data in the repository).
 
-## nml-icon
+## opennml-icon
 
-    cargo run --release -p nml-icon            # regenerate PNGs and ICO from the SVG sources
-    cargo run --release -p nml-icon -- --check # check only
+    cargo run --release -p opennml-icon            # regenerate PNGs and ICO from the SVG sources
+    cargo run --release -p opennml-icon -- --check # check only
 
 Creates the program icon in `assets/icon/` (own artwork, may be in the repository); sources and sizes:
 [assets/icon/README.md](../assets/icon/README.md).
 
 ## Control channel and MCP server
 
-    cargo build --release -p nml-viewer -p nml-viewer-mcp
-    cargo run --release -p nml-viewer -- --control 127.0.0.1:0 --window-mode windowed
+    cargo build --release -p opennml-viewer -p opennml-viewer-mcp
+    cargo run --release -p opennml-viewer -- --control 127.0.0.1:0 --window-mode windowed
 
 `--control` opens a control channel (JSON lines over TCP, loopback only) for synthetic input, a haltable virtual
-clock, state queries and screenshots. `nml-viewer-mcp` makes it available to Claude Code as MCP tools (`viewer_start`,
+clock, state queries and screenshots. `opennml-viewer-mcp` makes it available to Claude Code as MCP tools (`viewer_start`,
 `viewer_input`, `viewer_time`, `viewer_screenshot`, `viewer_state`, ...; `viewer_start` with `program: game` starts
-`nml-game`, `viewer_ui` operates the menu UI). `.mcp.json` registers the server when Claude Code is started in this
+`opennml-game`, `viewer_ui` operates the menu UI). `.mcp.json` registers the server when Claude Code is started in this
 directory (confirm at the first start); from another start folder, run once there
-`claude mcp add --scope local nml-viewer -- <repo>/target/release/nml-viewer-mcp.exe`.
+`claude mcp add --scope local opennml-viewer -- <repo>/target/release/opennml-viewer-mcp.exe`.
 
-The current protocol version is in `crates/nml-control/src/protocol.rs` (`PROTOCOL_VERSION`); commands and responses
+The current protocol version is in `crates/opennml-control/src/protocol.rs` (`PROTOCOL_VERSION`); commands and responses
 are in `docs/viewer-control.md`.

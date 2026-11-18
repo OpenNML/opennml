@@ -1,6 +1,6 @@
 # Animations `.rdm` (identifier `0x3E9`/`0x3EA`)
 
-Rust: `nml_formats::rdm::parse_rdm` (standard and old format). `RdmFile::ticks_per_second` forms `ticks_je_frame * fps`
+Rust: `opennml_formats::rdm::parse_rdm` (standard and old format). `RdmFile::ticks_per_second` forms `ticks_je_frame * fps`
 in `u64` so that corrupted files do not panic by overflow (deviation from the original; 0 -> 4,800 unchanged).
 
 glTF export: bone and node tracks as an animation per `ANIMATION` of the object `.cfg` (time = `ticks_to_ms` / 1000);
@@ -159,9 +159,9 @@ positions replace the mesh positions (object space, not node space; see "Evaluat
 - **Blending between two animations** (200 ms): an element is blended only if the track kind is the same in the old and
   the new animation (static <-> node track and morph <-> others jump), node tracks with slerp, morph per vertex
   linearly (normals not normalized), bones only with a track in both animations; a second blended change within the
-  200 ms is rejected. Implemented in `nml_world::anim::AnimationPlayer`; the bone quaternions are normalized there,
+  200 ms is rejected. Implemented in `opennml_world::anim::AnimationPlayer`; the bone quaternions are normalized there,
   unlike in the original.
-- **Playback** (`nml_world::anim`): ticks = milliseconds / 1,000 * 4,800 / `zeitfaktor` (`zeitfaktor` <= 0 -> 1); with
+- **Playback** (`opennml_world::anim`): ticks = milliseconds / 1,000 * 4,800 / `zeitfaktor` (`zeitfaktor` <= 0 -> 1); with
   a loop modulo `laenge_ticks`, otherwise held at the end; length 0 -> time 0.
 
 ## Coordinate system and units

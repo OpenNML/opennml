@@ -1,6 +1,6 @@
 # World file `.wld`
 
-Rust: `nml_formats::wld::parse_world`; placement `nml_world::level::load_level`.
+Rust: `opennml_formats::wld::parse_world`; placement `opennml_world::level::load_level`.
 
 Text file (bracket grammar from [text.md](text.md), cp1252, CRLF) with the terrain parameters, named areas and
 cameras, light/shadow/fog and **all placed objects** of a level. The height and texture maps lie next to it in binary
@@ -126,7 +126,7 @@ weather; snow/rain are switched on only by scripts.
   `glam::Mat4::from_rotation_y(OBJ_YROT)` (column vectors) - the mirroring `M * Ry(theta) * M` with
   `M = diag(1, 1, -1)` gives exactly this matrix. So the world matrix is
   `Mat4::from_translation(vec3(x, y, -z)) * Mat4::from_rotation_y(theta)`, applied to the z-mirrored model vertices.
-  `nml-render` (wgpu) does **not** mirror but uses the left-handed original matrices with `FrontFace::Cw`.
+  `opennml-render` (wgpu) does **not** mirror but uses the left-handed original matrices with `FrontFace::Cw`.
 
 ## Ignored sections
 
@@ -161,10 +161,10 @@ matching `.lvl`; the loadable version is called `[5players]-viciouscircle`).
 Visual check: `kampagne1/kamp1-1` lists 1,212 objects (palms and other trees, fish, surf; Spanish buildings such as
 headquarters, shipyard, warehouse, houses, towers; English warships, pioneers, guards) with coordinates in `[0, 16384]`.
 
-**Deviations of the Rust implementation** (`nml_formats::wld::parse_terrain`, plausibility limits only against
+**Deviations of the Rust implementation** (`opennml_formats::wld::parse_terrain`, plausibility limits only against
 corrupted files; the game does not check this): `CHUNK_SIZE` above 256 and `TEXTURE_BASE_*SIZE`/`TEXTURE_ALPHA_*SIZE`
 above 1024 are rejected with `FormatError::Invalid`. The texture sizes determine image and alpha map allocations in
-`nml-world`; `CHUNK_SIZE` <= 256 ensures that the tile index `a * C + b` of a block tile list fits into `u16`. The
+`opennml-world`; `CHUNK_SIZE` <= 256 ensures that the tile index `a * C + b` of a block tile list fits into `u16`. The
 shipped data uses texture sizes 8/32 and `CHUNK_SIZE` 16.
 
 ## Open questions

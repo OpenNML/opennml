@@ -1,0 +1,17 @@
+[package]
+name = "opennml-effects"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+opennml-rda.workspace = true
+opennml-formats.workspace = true
+opennml-world.workspace = true
+glam.workspace = true
+bytemuck.workspace = true
+log.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
