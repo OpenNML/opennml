@@ -188,7 +188,8 @@ fn check_out_dir(out: &Path, root: &Path) -> anyhow::Result<()> {
         .with_context(|| format!("reading {}", out.display()))?
         .next()
         .is_none();
-    if !empty && !(out.join("README.txt").is_file() && out.join("licenses").is_dir()) {
+    let previous_output = out.join("README.txt").is_file() && out.join("licenses").is_dir();
+    if !empty && !previous_output {
         bail!(
             "refusing to clear {}: it is not empty and not a previous output",
             out.display()
