@@ -50,8 +50,9 @@ Exception in the documentation: where a file quotes third-party material (for ex
 ## Dependencies
 
 421 third-party crates in the whole workspace at the last check; 148 of them end up in the exe of `opennml-game`
-(target `x86_64-pc-windows-msvc`, feature `gui`; the list `licenses/THIRD-PARTY.txt` of the release archive). All are under licenses compatible with the GPL-3.0-or-later (mostly MIT or
-Apache-2.0, plus BSD, ISC, Zlib, Unlicense, 0BSD). Worth mentioning:
+(target `x86_64-pc-windows-msvc`, feature `gui`; the list `licenses/THIRD-PARTY.txt` of the release archive). All are
+under licenses compatible with the GPL-3.0-or-later (mostly MIT or Apache-2.0, plus BSD, ISC, Zlib, Unlicense, 0BSD).
+Worth mentioning:
 
 | License | Crates | Note |
 |---|---|---|
@@ -121,13 +122,17 @@ toolchain used here (Visual Studio Community 2026, MSVC 14.51, Windows SDK 10.0.
   libraries in `VC\Tools\MSVC\<version>\lib\x64` (`libcmt.lib`, `libvcruntime.lib`) and does not mention static
   linking. Microsoft's page "Redistribute Visual C++ Files"
   (<https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files>, 2026-04-13) does not either.
-  Microsoft documents `/MT` (static CRT) as a supported build option, and its driver documentation says that after
-  static linking "you do not need to redistribute the CRT"; neither is a license statement.
+  Microsoft documents `/MT` (static CRT) as a supported build option; its page "Using Microsoft C Runtime with
+  User-Mode Drivers and Desktop Apps"
+  (<https://learn.microsoft.com/en-us/windows-hardware/drivers/develop/using-the-microsoft-c-runtime-with-user-mode-drivers-and-apps>,
+  2021-01-08) says of the VC++ pieces: "To avoid a runtime redistribution requirement, those pieces are statically
+  linked." That describes the technique, not a license statement.
 - The text of the Visual Studio 2026 license terms itself is shown by the installer and was not available to read on
-  this machine (only the Windows SDK terms, the German `Licenses\1031\Redist.txt` and the online lists above). The
-  Distributable Code clause of the Windows SDK terms is the same template; for the Visual Studio terms it is taken from
-  the lists and from a Microsoft Q&A thread (<https://learn.microsoft.com/en-us/answers/questions/6034305/>), which
-  is a community answer and not a statement of Microsoft.
+  this machine (only the Windows SDK terms, the German `Licenses\1031\Redist.txt` and the online lists above). That the
+  Distributable Code clause of the Visual Studio terms has the same wording as the one of the Windows SDK terms is
+  **unverified**; the Visual Studio side is known only from the lists and from a Microsoft Q&A thread
+  (<https://learn.microsoft.com/en-us/answers/questions/6034305/>), which is a community answer and not a statement
+  of Microsoft.
 
 **(1) Is the statically linked runtime Distributable Code?**
 
@@ -138,26 +143,33 @@ toolchain used here (Visual Studio Community 2026, MSVC 14.51, Windows SDK 10.0.
   they are not covered. Under the usual reading, the object code of the toolchain's libraries ends up in every program
   built with it, and passing it on is what the toolchain is for. The text does not settle which reading applies.
 
-**(2) The "Excluded License" restriction.** The SDK terms forbid to distribute the source code of Distributable Code "so that any part of it becomes subject to an Excluded
-License"; an Excluded License is one that
-requires, as a condition of use, modification or distribution, that "The code be disclosed or distributed in source
-code form" or that others have the right to modify it. The GPL is such a license for the program as a whole.
+**(2) The "Excluded License" restriction.** The SDK terms forbid to distribute the source code of Distributable Code
+"so that any part of it becomes subject to an Excluded License"; an Excluded License is one that requires, as a
+condition of use, modification or distribution, that "The code be disclosed or distributed in source code form" or
+that others have the right to modify it. The GPL is such a license for the program as a whole.
 
-- The restriction speaks of the *source code* of Distributable Code. OpenNML distributes no CRT source and does not
-  modify the CRT; the exe contains only the object code that the linker took from the `.lib` files.
-- GPL-3.0 section 1 excludes the "System Libraries" of an executable work from its Corresponding Source. These are
-  things that are part of the "normal form of packaging a Major Component" such as "a compiler used to produce the
-  work", and that only enable the use of the work with it. The C runtime from the MSVC toolchain fits this
-  description, so the GPL does not require to disclose the CRT source or to license it under the GPL. The CRT stays
-  under Microsoft's terms and does not "become subject to" the GPL through our distribution.
+- The restriction speaks of the *source code* of Distributable Code. The release build does not distribute CRT source
+  and does not modify the CRT; the exe is meant to contain only the object code that the linker takes from the
+  `.lib` files.
+- GPL-3.0 section 1 excludes the "System Libraries" of an executable work from its Corresponding Source. Two
+  conditions apply: the library is "included in the normal form of packaging a Major Component" (a Major Component
+  includes "a compiler used to produce the work") without being part of it, and it "serves only to enable use of the
+  work with that Major Component". The C runtime libraries come packaged with the MSVC toolchain, which is the first
+  condition; that they serve only to enable use of the work with the toolchain is plausible (they provide the runtime
+  the compiled code needs) but not established. If both hold, the GPL does not require to disclose the CRT source or
+  to license it under the GPL, and the CRT stays under Microsoft's terms instead of "becoming subject to" the GPL.
 - Open question: the GPL exception is written for the Corresponding Source. Whether it also takes the linked object
   code out of the license grant for the whole work (section 5 c) is not settled by the text, and the Microsoft terms
   do not say how they see it. No court decision or statement of Microsoft on this was found.
 
 **Conclusion: UNCLEAR.** `libucrt.lib` is explicitly allowed. For `libcmt.lib` and `libvcruntime.lib` the terms
 neither allow nor forbid it in so many words, and the interplay of the Excluded License clause with the GPL is not
-settled. The readings above make it plausible that it is allowed (the same practice is common for GPL programs built with
-MSVC), but this is not a legal opinion. Ways to settle it: ask Microsoft licensing (VS support) in writing, or read the
-Visual Studio terms of the edition that builds the release on the CI runner. Fallback: `msvc-crt-static = false`
-(dynamic runtime) and a note in the readme to install the "Visual C++ Redistributable" from Microsoft; then the exe
-imports `vcruntime140.dll` and `ucrtbase.dll`, and the import check of `opennml-release` has to allow them.
+settled. The readings above make it plausible that it is allowed, but this is not a legal opinion and nothing found
+confirms it. Ways to settle it: ask Microsoft licensing (VS support) in writing, or read the Visual Studio terms of
+the edition that builds the release on the CI runner.
+
+**Position of the project.** OpenNML builds the release with the static runtime (`msvc-crt-static = true`). The open
+point stays recorded here: there is no explicit statement for `libcmt.lib` and `libvcruntime.lib`. The fallback
+remains as follows: `msvc-crt-static = false` (dynamic runtime) and a note in the readme to install the "Visual C++
+Redistributable" from Microsoft; then the exe imports `vcruntime140.dll` and `ucrtbase.dll`, and the import check of
+`opennml-release` has to allow them.

@@ -1,5 +1,6 @@
 //! Generates the readme and license files of the release archive.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -55,6 +56,62 @@ fn cargo_about_installed() -> bool {
         .is_ok_and(|o| o.status.success())
 }
 
+const OVERVIEW_BEGIN: &str = "@@OVERVIEW-BEGIN@@";
+const OVERVIEW_END: &str = "@@OVERVIEW-END@@";
+
+/// Replaces the marked block of `about.hbs` (lines `name version | license id`, one per license entry) by one
+/// line per crate with all its license ids, and checks that these are exactly the crates listed below it.
+fn group_overview(text: &str) -> anyhow::Result<String> {
+    let text = text.replace("\r\n", "\n");
+    let begin = text
+        .find(OVERVIEW_BEGIN)
+        .context("overview start marker missing")?;
+    let end = text
+        .find(OVERVIEW_END)
+        .context("overview end marker missing")?;
+    if end < begin {
+        bail!("overview markers are in the wrong order");
+    }
+    let block = &text[begin + OVERVIEW_BEGIN.len()..end];
+    let mut crates: BTreeMap<(&str, &str), BTreeSet<&str>> = BTreeMap::new();
+    for line in block.lines().map(str::trim).filter(|l| !l.is_empty()) {
+        let (krate, license) = line
+            .split_once(" | ")
+            .with_context(|| format!("bad overview line `{line}`"))?;
+        let (name, version) = krate
+            .split_once(' ')
+            .with_context(|| format!("bad overview line `{line}`"))?;
+        crates.entry((name, version)).or_default().insert(license);
+    }
+    let after = &text[end + OVERVIEW_END.len()..];
+    let listed: BTreeSet<(&str, &str)> = after
+        .lines()
+        .filter_map(|l| l.strip_prefix("  - "))
+        .filter_map(|l| {
+            let mut parts = l.split(' ');
+            Some((parts.next()?, parts.next()?))
+        })
+        .collect();
+    let overview: BTreeSet<(&str, &str)> = crates.keys().copied().collect();
+    if overview != listed {
+        bail!(
+            "overview has {} crates but the license texts list {}",
+            overview.len(),
+            listed.len()
+        );
+    }
+    let mut lines = String::new();
+    for ((name, version), licenses) in &crates {
+        let licenses: Vec<&str> = licenses.iter().copied().collect();
+        lines.push_str(&format!("{name} {version}  ({})\n", licenses.join(", ")));
+    }
+    let head = text[..begin].trim_end_matches('\n');
+    Ok(format!(
+        "{head}\n\n{lines}{}",
+        after.strip_prefix('\n').unwrap_or(after)
+    ))
+}
+
 fn third_party(release: &Release) -> anyhow::Result<String> {
     let output = Command::new("cargo")
         .current_dir(&release.workspace_root)
@@ -72,6 +129,7 @@ fn third_party(release: &Release) -> anyhow::Result<String> {
             "--features",
             "gui",
             "--fail",
+            "--locked",
             ABOUT_TEMPLATE,
         ])
         .output()
@@ -83,9 +141,11 @@ fn third_party(release: &Release) -> anyhow::Result<String> {
             String::from_utf8_lossy(&output.stderr)
         );
     }
-    let mut text = String::from_utf8(output.stdout).context("cargo about output is not UTF-8")?;
+    let text = String::from_utf8(output.stdout).context("cargo about output is not UTF-8")?;
+    let mut text = group_overview(&text)?;
 
     let rustc = Command::new("rustc")
+        .current_dir(&release.workspace_root)
         .arg("--version")
         .output()
         .context("running rustc --version")?;
@@ -107,12 +167,52 @@ fn third_party(release: &Release) -> anyhow::Result<String> {
     Ok(to_crlf(&text))
 }
 
+/// Refuses an output folder that would destroy something else: the workspace root, an ancestor of it, or an
+/// existing non-empty folder that is not a previous output (contains `README.txt` and `licenses`).
+fn check_out_dir(out: &Path, root: &Path) -> anyhow::Result<()> {
+    if !out.exists() {
+        return Ok(());
+    }
+    let canonical = |p: &Path| {
+        p.canonicalize()
+            .with_context(|| format!("resolving {}", p.display()))
+    };
+    let out_abs = canonical(out)?;
+    if canonical(root)?.starts_with(&out_abs) {
+        bail!(
+            "refusing to clear {}: it is the workspace root or contains it",
+            out.display()
+        );
+    }
+    let empty = fs::read_dir(out)
+        .with_context(|| format!("reading {}", out.display()))?
+        .next()
+        .is_none();
+    if !empty && !(out.join("README.txt").is_file() && out.join("licenses").is_dir()) {
+        bail!(
+            "refusing to clear {}: it is not empty and not a previous output",
+            out.display()
+        );
+    }
+    Ok(())
+}
+
+/// Clears `out` after `check_out_dir`.
+fn prepare_out_dir(out: &Path, root: &Path) -> anyhow::Result<()> {
+    check_out_dir(out, root)?;
+    if out.exists() {
+        fs::remove_dir_all(out).with_context(|| format!("clearing {}", out.display()))?;
+    }
+    Ok(())
+}
+
 /// Writes the readme and license files into `out` (cleared first).
 pub fn write_release_files(release: &Release, commit: &str, out: &Path) -> anyhow::Result<()> {
+    let root = &release.workspace_root;
+    check_out_dir(out, root)?;
     if !cargo_about_installed() {
         bail!("`cargo about` is not installed; run `{INSTALL_HINT}`");
     }
-    let root = &release.workspace_root;
     let read =
         |rel: &str| fs::read_to_string(root.join(rel)).with_context(|| format!("reading {rel}"));
     let readme = fill_template(README, release, commit)?;
@@ -125,9 +225,7 @@ pub fn write_release_files(release: &Release, commit: &str, out: &Path) -> anyho
     let cc = to_crlf(&read("LICENSE-CC-BY-SA-4.0")?);
     let third = third_party(release)?;
 
-    if out.exists() {
-        fs::remove_dir_all(out).with_context(|| format!("clearing {}", out.display()))?;
-    }
+    prepare_out_dir(out, root)?;
     fs::create_dir_all(out.join("licenses"))
         .with_context(|| format!("creating {}", out.display()))?;
     let write = |rel: &str, text: &str| {
@@ -202,6 +300,54 @@ mod tests {
             assert!(!text.contains("\r\r"), "{name}");
             assert!(!text.starts_with('\u{feff}'), "{name}");
         }
+    }
+
+    #[test]
+    fn group_overview_makes_one_line_per_crate() {
+        let text = "head\n@@OVERVIEW-BEGIN@@\nb 1.0 | MIT\na 2.0 | Zlib\nb 1.0 | Unicode-3.0\nb 1.0 | MIT\n\
+                    @@OVERVIEW-END@@\n\nTEXT\n  - a 2.0 (https://x)\n  - b 1.0\n    Source code: y\n";
+        let out = group_overview(text).unwrap();
+        assert_eq!(
+            out,
+            "head\n\na 2.0  (Zlib)\nb 1.0  (MIT, Unicode-3.0)\n\nTEXT\n  - a 2.0 (https://x)\n  - b 1.0\n    Source code: y\n"
+        );
+        // A crate in the overview that the texts do not list (or the reverse) is an error.
+        let missing = text.replace("  - b 1.0\n", "");
+        assert!(group_overview(&missing).is_err());
+        assert!(group_overview("no markers").is_err());
+    }
+
+    #[test]
+    fn out_dir_guard_protects_the_checkout() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("work").join("repo");
+        fs::create_dir_all(&root).unwrap();
+
+        // The workspace root and its ancestors are refused.
+        assert!(prepare_out_dir(&root, &root).is_err());
+        assert!(prepare_out_dir(&root.join(".."), &root).is_err());
+        assert!(prepare_out_dir(tmp.path(), &root).is_err());
+        assert!(root.exists());
+
+        // A foreign non-empty folder is refused and left alone.
+        let foreign = tmp.path().join("foreign");
+        fs::create_dir(&foreign).unwrap();
+        fs::write(foreign.join("keep.txt"), "x").unwrap();
+        assert!(prepare_out_dir(&foreign, &root).is_err());
+        assert!(foreign.join("keep.txt").exists());
+
+        // A previous output is cleared.
+        let previous = root.join("target").join("release-files");
+        fs::create_dir_all(previous.join("licenses")).unwrap();
+        fs::write(previous.join("README.txt"), "x").unwrap();
+        prepare_out_dir(&previous, &root).unwrap();
+        assert!(!previous.exists());
+
+        // An empty folder and a missing folder are fine.
+        let empty = tmp.path().join("empty");
+        fs::create_dir(&empty).unwrap();
+        prepare_out_dir(&empty, &root).unwrap();
+        prepare_out_dir(&tmp.path().join("missing"), &root).unwrap();
     }
 
     #[test]
