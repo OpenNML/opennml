@@ -5,7 +5,7 @@ mod files;
 mod pe;
 mod release;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::Context;
@@ -26,10 +26,16 @@ enum Command {
     Check { dir: PathBuf },
     /// Generate the readme and license files of the release archive.
     Files {
-        /// Output folder; it is cleared first.
+        /// Output folder; it is cleared first. A relative path is relative to the workspace root, like `include` in
+        /// `dist-workspace.toml`.
         #[arg(long, default_value = "target/release-files")]
         out: PathBuf,
     },
+}
+
+/// A relative output folder lies in the workspace root (not in the current directory), an absolute one stays as given.
+fn resolve_out(out: &Path, workspace_root: &Path) -> PathBuf {
+    workspace_root.join(out)
 }
 
 fn run(cli: Cli) -> anyhow::Result<ExitCode> {
@@ -48,6 +54,7 @@ fn run(cli: Cli) -> anyhow::Result<ExitCode> {
         }
         Command::Files { out } => {
             let release = release::load()?;
+            let out = resolve_out(&out, &release.workspace_root);
             let commit = files::git_commit(&release.workspace_root)?;
             files::write_release_files(&release, &commit, &out)?;
             println!(
@@ -80,5 +87,26 @@ fn main() -> ExitCode {
             eprintln!("error: {err:#}");
             ExitCode::from(2)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn relative_out_lies_in_workspace_root() {
+        let root = Path::new("C:/work/opennml");
+        assert_eq!(
+            resolve_out(Path::new("target/release-files"), root),
+            root.join("target/release-files")
+        );
+    }
+
+    #[test]
+    fn absolute_out_stays_as_given() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("files");
+        assert_eq!(resolve_out(&out, Path::new("elsewhere")), out);
     }
 }

@@ -53,7 +53,8 @@ hand. After a change to `dist-workspace.toml` or to the dist metadata, run `dist
   job, which creates the release, waits for it: if the check fails, there is no release.
 - `opennml-release` (`tools/opennml-release`) reads the shipped package, its version and the exe and PDB names from
   `cargo metadata`:
-  - `files [--out <folder>]` generates the readme and license files (default `target/release-files`);
+  - `files [--out <folder>]` generates the readme and license files (default `target/release-files`; a relative folder is
+    relative to the workspace root, like `include` in `dist-workspace.toml`);
   - `check <folder>` checks an unpacked archive: exactly the expected files, text files with CRLF and UTF-8 without
     BOM, the exe a 64-bit GUI program that imports only allowed system DLLs (no Visual C++ runtime). Every output line
     is one finding; the exit code is 0 only without findings;
