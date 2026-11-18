@@ -48,7 +48,8 @@ hand. After a change to `dist-workspace.toml` or to the dist metadata, run `dist
   `LIESMICH.txt`, `LICENSE.txt` and `licenses/` (LGPL and CC BY-SA texts, third-party overview from `cargo-about`)
   to `target/release-files/`. `dist` checks that the `include` paths exist only when it packs the archive.
 - `.github/workflows/check-release.yml` (`global-artifacts-jobs`): a reusable workflow `release.yml` calls after the
-  build. On `windows-latest` it fetches the built archive, unpacks it and runs
+  build. On `windows-latest` it fetches the built archive, checks that the `.sha256` file next to the ZIP
+  (exactly one) holds the SHA-256 of the ZIP, unpacks it and runs
   `cargo run --locked -p opennml-release -- check <folder>`, and logs the size of the ZIP and of the exe. The `host`
   job, which creates the release, waits for it: if the check fails, there is no release.
 - `opennml-release` (`tools/opennml-release`) reads the shipped package, its version and the exe and PDB names from

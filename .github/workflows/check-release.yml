@@ -27,6 +27,18 @@ jobs:
           pattern: artifacts-build-local-*
           path: release-artifacts
           merge-multiple: true
+      - name: Check the archive checksum
+        shell: pwsh
+        run: |
+          $zips = @(Get-ChildItem release-artifacts -Filter *.zip)
+          if ($zips.Count -ne 1) { throw "expected one zip, found $($zips.Count)" }
+          $sums = @(Get-ChildItem release-artifacts -Filter "$($zips[0].Name).sha256")
+          if ($sums.Count -ne 1) { throw "expected one $($zips[0].Name).sha256, found $($sums.Count)" }
+          # Format of the file: "<hex> *<name>".
+          $expected = (Get-Content -LiteralPath $sums[0].FullName -Raw).Trim() -split '\s+' | Select-Object -First 1
+          $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $zips[0].FullName).Hash
+          if ($expected -ine $actual) { throw "checksum mismatch: file says $expected, zip is $actual" }
+          Write-Output "$($zips[0].Name): sha256 $actual"
       - name: Unpack the archive
         shell: pwsh
         run: |
