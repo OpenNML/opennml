@@ -170,6 +170,26 @@ mod tests {
             .unwrap_or_else(|e| panic!("parsing {}: {e}", path.display()))
     }
 
+    /// The third-party overview accepts the licenses of `deny.toml` plus the LGPL of the video decoder. A license added
+    /// to `deny.toml` alone would otherwise fail only when the release files are generated.
+    #[test]
+    fn about_accepted_matches_deny_allow() {
+        let root = load().unwrap().workspace_root;
+        let names = |table: &toml::Table, key: &str| -> std::collections::BTreeSet<String> {
+            table[key]
+                .as_array()
+                .unwrap_or_else(|| panic!("`{key}` array"))
+                .iter()
+                .map(|v| v.as_str().expect("license is a string").to_owned())
+                .collect()
+        };
+        let about = read_toml(&root.join("tools/opennml-release/about.toml"));
+        let deny = read_toml(&root.join("deny.toml"));
+        let mut expected = names(deny["licenses"].as_table().expect("`[licenses]`"), "allow");
+        expected.insert("LGPL-2.1-or-later".to_owned());
+        assert_eq!(names(&about, "accepted"), expected);
+    }
+
     /// The archive `dist` packs must hold the PDB of the shipped binary, built with the `gui` feature.
     #[test]
     fn dist_config_matches_binary() {
