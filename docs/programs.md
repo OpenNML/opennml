@@ -111,6 +111,15 @@ settings file (like the destructor of the original).
 - `--loading-shot <folder>` (check runs): one image `loading-<n>-<percent>.png` per phase of the loading screen in
   the folder (not with `--screenshot`).
 
+### Feature `gui`
+
+    cargo build --release -p opennml-game --features gui
+
+The cargo feature `gui` builds `OpenNML.exe` for the Windows GUI subsystem: a double click opens no console window.
+The release archive is built with it ([releasing.md](releasing.md)). Without the feature (the default for
+`cargo run`) the exe is a console program and the log is visible in the terminal. With `gui` the log still goes to
+stderr when it is redirected (for example to a file or a pipe, as the MCP server does), and always to the log file.
+
 ### Log
 
 The program writes its log to stderr and to `logs\OpenNML.log` in the folder of the settings file (by default

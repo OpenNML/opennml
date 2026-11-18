@@ -41,12 +41,12 @@ Windows SmartScreen
 The program is not signed. Windows SmartScreen may therefore show "Windows
 protected your PC". Click "More info", then "Run anyway".
 
-To check the download, compare the SHA-256 checksum with the .sha256 file
-that belongs to the release. In PowerShell:
+To check the download, compare the SHA-256 checksum of the downloaded ZIP
+file with the .sha256 file next to it in the release. In PowerShell:
 
-  Get-FileHash .\{exe} -Algorithm SHA256
+  Get-FileHash .\<name of the ZIP file> -Algorithm SHA256
 
-The ZIP file itself can be checked the same way against its .sha256 file.
+The checksum it prints must match the one in the .sha256 file.
 
 
 Firewall (network play)

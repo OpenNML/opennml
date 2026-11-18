@@ -1,0 +1,37 @@
+# Checks the release archive before the release is created.
+# `dist` calls this workflow from release.yml (`global-artifacts-jobs` in dist-workspace.toml);
+# if it fails, the `host` job does not run and no release is created.
+name: Check release
+
+on:
+  workflow_call:
+    inputs:
+      plan:
+        required: true
+        type: string
+
+jobs:
+  check-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Fetch the archive
+        uses: actions/download-artifact@v8
+        with:
+          pattern: artifacts-build-local-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Unpack the archive
+        shell: pwsh
+        run: |
+          $zips = @(Get-ChildItem release-artifacts -Filter *.zip)
+          if ($zips.Count -ne 1) { throw "expected one zip, found $($zips.Count)" }
+          Expand-Archive -LiteralPath $zips[0].FullName -DestinationPath release-check
+          Write-Output "$($zips[0].Name): $($zips[0].Length) bytes"
+          Get-ChildItem release-check -Filter *.exe |
+            ForEach-Object { Write-Output "$($_.Name): $($_.Length) bytes" }
+      - name: Check the archive content
+        run: |
+          cargo run --locked -p opennml-release -- check release-check

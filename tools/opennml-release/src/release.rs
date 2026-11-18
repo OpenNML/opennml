@@ -162,4 +162,53 @@ mod tests {
         assert_eq!(r.version, env!("CARGO_PKG_VERSION"));
         assert!(r.exe.ends_with(".exe"));
     }
+
+    fn read_toml(path: &std::path::Path) -> toml::Table {
+        let text = std::fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("reading {}: {e}", path.display()));
+        text.parse()
+            .unwrap_or_else(|e| panic!("parsing {}: {e}", path.display()))
+    }
+
+    /// The archive `dist` packs must hold the PDB of the shipped binary, built with the `gui` feature.
+    #[test]
+    fn dist_config_matches_binary() {
+        let r = load().unwrap();
+        let config = read_toml(&r.workspace_root.join("dist-workspace.toml"));
+        let dist = config["dist"].as_table().expect("`[dist]` table");
+
+        let include: Vec<&str> = dist["include"]
+            .as_array()
+            .expect("`include` array")
+            .iter()
+            .map(|v| v.as_str().expect("`include` entry is a string"))
+            .collect();
+        let pdb = format!("target/x86_64-pc-windows-msvc/dist/{}", r.pdb);
+        assert_eq!(
+            include,
+            [
+                "target/release-files/README.txt",
+                "target/release-files/LIESMICH.txt",
+                "target/release-files/LICENSE.txt",
+                "target/release-files/licenses",
+                pdb.as_str(),
+            ]
+        );
+        assert_eq!(dist["cargo-dist-version"].as_str(), Some("0.34.0"));
+        let targets: Vec<&str> = dist["targets"]
+            .as_array()
+            .expect("`targets` array")
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect();
+        assert_eq!(targets, ["x86_64-pc-windows-msvc"]);
+        assert_eq!(dist["auto-includes"].as_bool(), Some(false));
+
+        let manifest = read_toml(&r.manifest_path);
+        let features = manifest["package"]["metadata"]["dist"]
+            .get("features")
+            .and_then(|f| f.as_array())
+            .map(|f| f.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>());
+        assert_eq!(features, Some(vec!["gui"]));
+    }
 }

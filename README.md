@@ -23,6 +23,13 @@ The project is under active development.
 - [Rust](https://rustup.rs/) - the matching version is installed automatically on the first build
 - Windows
 
+## Download
+
+Ready-to-run builds for Windows (64 bit) are on the
+[releases page](https://github.com/OpenNML/opennml/releases): download the ZIP file, unpack it to any folder and
+start `OpenNML.exe`. `README.txt` in the archive explains the first start and how to check the download against its
+`.sha256` file. Rust is only needed to build OpenNML from source (below).
+
 ## Quick start
 
 ```bash

@@ -2390,6 +2390,7 @@ dependencies = [
  "clap",
  "serde_json",
  "tempfile",
+ "toml",
 ]
 
 [[package]]

@@ -43,19 +43,20 @@ Das Programm ist nicht signiert. Windows SmartScreen kann deshalb "Der
 Computer wurde durch Windows geschützt" anzeigen. Klicken Sie auf "Weitere
 Informationen" und dann auf "Trotzdem ausführen".
 
-Den Download prüfen Sie mit der SHA-256-Prüfsumme gegen die .sha256-Datei,
-die zum Release gehört. In PowerShell:
+Den Download prüfen Sie mit der SHA-256-Prüfsumme der heruntergeladenen
+ZIP-Datei gegen die .sha256-Datei, die im Release daneben liegt. In
+PowerShell:
 
-  Get-FileHash .\{exe} -Algorithm SHA256
+  Get-FileHash .\<Name der ZIP-Datei> -Algorithm SHA256
 
-Die ZIP-Datei selbst lässt sich genauso gegen ihre .sha256-Datei prüfen.
+Die ausgegebene Prüfsumme muss mit der in der .sha256-Datei übereinstimmen.
 
 
 Firewall (Netzwerkspiel)
 ------------------------
 
-Für Spiele im lokalen Netz fragt Windows möglicherweise, ob {exe} zugelassen
-werden soll. Das Programm nutzt TCP-Port 2302 und UDP-Port 2303.
+Für Spiele im lokalen Netz fragt Windows möglicherweise, ob {exe}
+zugelassen werden soll. Das Programm nutzt TCP-Port 2302 und UDP-Port 2303.
 
 
 Wo OpenNML seine Dateien ablegt
