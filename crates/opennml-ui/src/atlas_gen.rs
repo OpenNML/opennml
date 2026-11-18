@@ -60,7 +60,7 @@ pub fn user_path_from(
         Some(path) => Some(PathBuf::from(path)),
         None => local_app_data
             .filter(|v| !v.is_empty())
-            .map(|dir| PathBuf::from(dir).join("OpenNML").join(name)),
+            .map(|dir| PathBuf::from(dir).join(opennml_rda::USER_DIR).join(name)),
     }
 }
 

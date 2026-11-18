@@ -3,6 +3,10 @@
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
+/// Name of the folder under `%LOCALAPPDATA%` that holds the user's files of the reimplementation: settings,
+/// profiles, saved games, the font cache and `game-dir.txt`.
+pub const USER_DIR: &str = "OpenNML";
+
 /// File name of the remembered choice.
 pub const REMEMBERED_FILE: &str = "game-dir.txt";
 
@@ -27,7 +31,7 @@ pub fn remembered_file_from(
     }
     local_app_data
         .filter(|value| !value.is_empty())
-        .map(|base| PathBuf::from(base).join("OpenNML").join(REMEMBERED_FILE))
+        .map(|base| PathBuf::from(base).join(USER_DIR).join(REMEMBERED_FILE))
 }
 
 /// Location of `game-dir.txt` using `NML_SETTINGS` (only if `honour_settings_env` is set) and
@@ -91,6 +95,11 @@ pub fn write_remembered(file: &Path, dir: &Path) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn user_dir_is_opennml() {
+        assert_eq!(USER_DIR, "OpenNML");
+    }
 
     #[test]
     fn file_sits_next_to_settings() {
