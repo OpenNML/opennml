@@ -111,6 +111,43 @@ settings file (like the destructor of the original).
 - `--loading-shot <folder>` (check runs): one image `loading-<n>-<percent>.png` per phase of the loading screen in
   the folder (not with `--screenshot`).
 
+### Feature `gui`
+
+    cargo build --release -p opennml-game --features gui
+
+The cargo feature `gui` builds `OpenNML.exe` for the Windows GUI subsystem: a double click opens no console window.
+The release archive is built with it ([releasing.md](releasing.md)). Without the feature (the default for
+`cargo run`) the exe is a console program and the log is visible in the terminal. With `gui` the log still goes to
+stderr when it is redirected (for example to a file or a pipe, as the MCP server does), and always to the log file.
+
+### Log
+
+The program writes its log to stderr and to `logs\OpenNML.log` in the folder of the settings file (by default
+`%LOCALAPPDATA%\OpenNML\logs\OpenNML.log`; with `--settings` or `NML_SETTINGS` the `logs` folder next to that
+file). The release build has no console, so this file is the log to send in with a report. At each start the log of
+the previous run is moved to `OpenNML.1.log`; older logs are dropped. If two programs share one user folder (host and
+client on one machine), the second one rotates the file of the first, which then continues in `OpenNML.1.log`.
+
+The file is created only after the settings file has been checked (a location inside the installation is an error),
+so the program never writes a log into the installation. Until then the lines are kept in memory. If the start fails
+before that point, the log goes to the default user folder, and only without `--settings` and `NML_SETTINGS`. A log
+file that cannot be created or written never stops the program; the log then goes to stderr only.
+
+### Errors and exit codes
+
+When the program stops on an error or a panic, it logs the error (a panic with a backtrace) and ends with exit code
+1 (error) or 101 (panic). On a plain start (no `--screenshot`, `--loading-shot`, `--control`, `--host` or `--join`)
+it also shows a message box titled `OpenNML` with the error text and the path of the log file, or "No log file was
+written." when there is none (for example with `--settings`, when the start fails before the settings file is
+checked). The folder search shows its own message boxes; such an error is not shown a second time. Check runs never
+show a message box, because it would block scripts and the MCP server: the error goes to stderr and the log only.
+
+A command line that does not parse (an unknown switch such as `--gamedir`, a missing value) ends with exit code 2.
+clap prints the message to stderr; on a plain start the same text also appears in the message box, because the release
+build has no console. The log file does not exist yet, so the box says "No log file was written." If the command line
+contains any of `--screenshot`, `--loading-shot`, `--control`, `--host` or `--join` (also as `--switch=value`), there is
+no box, only stderr and the exit code. `--help` and `--version` print to stdout and end with exit code 0, without a box.
+
 ### Network play
 
 In the menu: "Multiplayer" -> LAN search (`LAN1`), create match (`LAN3`), lobby with slots, ready, kick and chat

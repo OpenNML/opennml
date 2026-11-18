@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "gui", windows_subsystem = "windows")]
 //! `opennml-game`: the program of the Rust reimplementation. Starts into the main menu like the original: read the
 //! settings file in the format of `Engine.ini`, open the window according to `ScreenXSize`/`ScreenYSize`/
 //! `ScreenFormat`, run the menu UI (`opennml_client::menu_host::MenuHost`, `MenuApp` with `start_menu`). Quitting via
@@ -13,12 +14,17 @@
 //! (`opennml_client::net_session`); both use the transport over `std::net` (`SystemTransport`, with `--net-loopback` only
 //! 127.0.0.1).
 
+mod failure;
 mod game;
 mod game_dir;
+mod log_file;
 mod net_start;
 
+use std::ffi::OsString;
 use std::net::SocketAddr;
+use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
+use std::process::ExitCode;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -31,8 +37,10 @@ use opennml_control::parse_control_addr;
 use opennml_rda::{SearchInput, Vfs, read_remembered, remembered_file};
 use winit::event_loop::{ControlFlow, EventLoop};
 
+use crate::failure::{install_panic_hook, panic_text, report_failure};
 use crate::game::{Game, GameOptions};
 use crate::game_dir::{FolderPrompt, SystemPrompt, resolve_game_dir};
+use crate::log_file::{LogHandle, fallback_log_dir};
 
 /// Time of the screenshot without `--time-ms` (ms).
 const DEFAULT_TIME_MS: f32 = 1000.0;
@@ -142,13 +150,18 @@ impl Cli {
         self.host.is_some() || self.join.is_some()
     }
 
+    /// Is this a check run (`--screenshot`, `--loading-shot`, `--control`, `--host`, `--join`)? Such runs never get a
+    /// modal window: it would block scripts and the MCP server.
+    fn is_check_run(&self) -> bool {
+        self.screenshot.is_some()
+            || self.loading_shot.is_some()
+            || self.control.is_some()
+            || self.is_net()
+    }
+
     /// May the start open the folder dialog? Only on a plain start, never in check runs and network paths.
     fn allows_dialog(&self) -> bool {
-        self.game_dir.is_none()
-            && self.screenshot.is_none()
-            && self.loading_shot.is_none()
-            && self.control.is_none()
-            && !self.is_net()
+        self.game_dir.is_none() && !self.is_check_run()
     }
 
     /// Does the program run without the menu level? In a network path and for the screenshot.
@@ -183,15 +196,34 @@ impl Cli {
     }
 }
 
+/// The switches of [`Cli::is_check_run`] as they appear in the raw command line. A command line that clap rejects has
+/// no parsed [`Cli`], so [`raw_args_request_check_run`] looks for these. Keep both in sync (a test does).
+const RAW_CHECK_RUN_FLAGS: &[&str] = &[
+    "--screenshot",
+    "--loading-shot",
+    "--control",
+    "--host",
+    "--join",
+];
+
+/// Does the raw command line (without the program name) contain a check-run switch, alone or as `--flag=value`?
+/// Used for a command line that does not parse, where [`Cli::is_check_run`] is not available.
+fn raw_args_request_check_run(args: &[OsString]) -> bool {
+    args.iter().any(|arg| {
+        let arg = arg.to_string_lossy();
+        let name = arg.split_once('=').map_or(&*arg, |(name, _)| name);
+        RAW_CHECK_RUN_FLAGS.contains(&name)
+    })
+}
+
 /// Location of the settings file: `--settings`, otherwise `NML_SETTINGS` or `%LOCALAPPDATA%\OpenNML\Engine.ini`; a
 /// location in the installation is an error.
 fn settings_path(explicit: Option<&Path>, game_dir: &Path) -> Result<PathBuf> {
     settings_path_for(explicit, game_dir)
 }
 
-fn main() -> Result<()> {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    let cli = Cli::parse();
+/// The program after the log is set up. An error ends the program with exit code 1, see [`main`].
+fn run(cli: &Cli, log: &LogHandle) -> Result<()> {
     let remembered = remembered_file(cli.settings.as_deref(), true);
     let input = SearchInput::from_environment(
         cli.game_dir.as_deref(),
@@ -204,11 +236,17 @@ fn main() -> Result<()> {
         cli.allows_dialog()
             .then_some(&mut SystemPrompt as &mut dyn FolderPrompt),
     )?;
+    // The settings file is checked first: it proves that the user folder is not in the installation, so only now
+    // the log file may be created.
+    let settings = settings_path(cli.settings.as_deref(), &game_dir)?;
+    log.open_in(match settings.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent,
+        _ => Path::new("."),
+    });
     let vfs = Vfs::open_game_dir(&game_dir)
         .with_context(|| format!("opening archives in {}", game_dir.display()))?;
     // Blood switch of the localisation (`BloodModeEnabled`, O-392): once per program, `bloodmode` toggles it.
     opennml_client::game::blood::init_from_localisation(&vfs);
-    let settings = settings_path(cli.settings.as_deref(), &game_dir)?;
     log::info!("Settings file: {}", settings.display());
     let mut config = load_settings(&settings, &vfs);
     // `--host`, `--join` and the screenshot run without the menu level, only in memory; the settings file stays.
@@ -252,7 +290,7 @@ fn main() -> Result<()> {
         mute: cli.mute,
         gamma: !cli.no_gamma,
         paused: cli.paused,
-        loading_shot: cli.loading_shot,
+        loading_shot: cli.loading_shot.clone(),
         control: control.is_some(),
         transport,
         net_listen: !cli.net_no_listen,
@@ -274,6 +312,66 @@ fn main() -> Result<()> {
         server.wait_quit_written(Duration::from_secs(2));
     }
     game.into_result()
+}
+
+/// Help and version go to stdout with exit code 0. A command-line error goes to stderr with exit code 2, as clap does,
+/// and on a plain start also into a message box: the release build has no console, so the user would see nothing. The
+/// log file does not exist yet at this point. Check runs never get the box.
+fn report_argument_error(error: &clap::Error) -> ExitCode {
+    let _ = error.print();
+    if !error.use_stderr() {
+        return ExitCode::SUCCESS;
+    }
+    let args: Vec<OsString> = std::env::args_os().skip(1).collect();
+    if !raw_args_request_check_run(&args) {
+        let text = error.render().to_string();
+        SystemPrompt.show_error(&failure::failure_message(text.trim_end(), None));
+    }
+    ExitCode::from(2)
+}
+
+/// Exit code 1: the program stopped on an error. Exit code 101: it stopped on a panic.
+fn main() -> ExitCode {
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(error) => return report_argument_error(&error),
+    };
+    let log = log_file::init();
+    install_panic_hook();
+    log::info!(
+        "{} (build {})",
+        opennml_ui::version_line::VERSION_TEXT,
+        net_start::build_id()
+    );
+    let (error, code) = match panic::catch_unwind(AssertUnwindSafe(|| run(&cli, &log))) {
+        Ok(Ok(())) => return ExitCode::SUCCESS,
+        Ok(Err(error)) => {
+            eprintln!("Error: {error:?}");
+            (error, ExitCode::FAILURE)
+        }
+        Err(payload) => (
+            anyhow::anyhow!("Internal error: {}", panic_text(payload.as_ref())),
+            ExitCode::from(101),
+        ),
+    };
+    log::error!("{error:#}");
+    // A failure before the settings file was checked has no log file yet: use the default user folder.
+    if log.path().is_none()
+        && let Some(dir) = fallback_log_dir(
+            cli.settings.as_deref(),
+            std::env::var_os("NML_SETTINGS"),
+            std::env::var_os("LOCALAPPDATA"),
+        )
+    {
+        log.open_in(&dir);
+    }
+    report_failure(
+        !cli.is_check_run(),
+        &error,
+        log.path().as_deref(),
+        &mut SystemPrompt,
+    );
+    code
 }
 
 #[cfg(test)]
@@ -298,6 +396,67 @@ mod tests {
         ] {
             assert!(!parse(args).unwrap().allows_dialog(), "{args:?}");
         }
+    }
+
+    #[test]
+    fn failure_window_only_for_plain_start() {
+        for args in [
+            &[][..],
+            &["--game-dir", "x"],
+            &["--settings", "x.ini"],
+            &["--mute", "--window-mode", "windowed"],
+        ] {
+            assert!(!parse(args).unwrap().is_check_run(), "{args:?}");
+        }
+        for args in [
+            &["--screenshot", "x.png"][..],
+            &["--loading-shot", "x"],
+            &["--control", "127.0.0.1:0"],
+            &["--join", "127.0.0.1"],
+            &["--host", "--net-map", "m.lvl"],
+        ] {
+            assert!(parse(args).unwrap().is_check_run(), "{args:?}");
+        }
+    }
+
+    #[test]
+    fn raw_args_detect_check_run_flags() {
+        let args = |list: &[&str]| list.iter().map(OsString::from).collect::<Vec<_>>();
+        assert!(!raw_args_request_check_run(&args(&[])));
+        assert!(!raw_args_request_check_run(&args(&[
+            "--gamedir",
+            "x",
+            "--mute"
+        ])));
+        // The flag must be a whole argument, not a prefix of another flag.
+        assert!(!raw_args_request_check_run(&args(&["--controller"])));
+        assert!(raw_args_request_check_run(&args(&["--gamedir", "--join"])));
+        assert!(raw_args_request_check_run(&args(&[
+            "--control=127.0.0.1:0"
+        ])));
+        assert!(raw_args_request_check_run(&args(&["--host=2302", "x"])));
+        assert!(raw_args_request_check_run(&args(&["--screenshot=a.png"])));
+    }
+
+    #[test]
+    fn raw_check_run_flags_match_is_check_run() {
+        let value_of = |flag: &str| match flag {
+            "--screenshot" => "x.png",
+            "--loading-shot" => "x",
+            "--control" => "127.0.0.1:0",
+            "--join" => "127.0.0.1",
+            "--host" => "2302",
+            other => panic!("no test value for {other}"),
+        };
+        for flag in RAW_CHECK_RUN_FLAGS {
+            let mut args = vec![*flag, value_of(flag)];
+            if *flag == "--host" {
+                args.extend(["--net-map", "m.lvl"]);
+            }
+            assert!(parse(&args).unwrap().is_check_run(), "{flag}");
+        }
+        // Every flag that makes `is_check_run` true is in the raw list.
+        assert_eq!(RAW_CHECK_RUN_FLAGS.len(), 5);
     }
 
     #[test]

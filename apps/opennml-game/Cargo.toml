@@ -4,10 +4,19 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "OpenNML"
 path = "src/main.rs"
+
+[features]
+# Builds the exe for the Windows GUI subsystem (no console window); `dist` builds the release archive with it.
+gui = []
+
+[package.metadata.dist]
+dist = true
+features = ["gui"]
 
 [dependencies]
 opennml-audio.workspace = true

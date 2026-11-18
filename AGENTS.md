@@ -8,6 +8,8 @@ run time from the user's own installation.
 ## Language
 
 Everything is in English: documentation, comments, messages, commit messages, identifiers, file and folder names.
+The one exception is `tools/opennml-release/templates/LIESMICH.txt`, the German readme for users in the release
+archive; it follows `README.txt` in content.
 
 ## Game data
 

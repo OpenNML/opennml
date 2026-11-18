@@ -1,0 +1,35 @@
+[workspace]
+members = ["cargo:."]
+
+# Config for 'dist' (release archive, see docs/releasing.md)
+[dist]
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.34.0"
+# CI backends to support
+ci = "github"
+# The installers to generate for each app
+installers = []
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["x86_64-pc-windows-msvc"]
+# The archive format to use for windows builds (defaults .zip)
+windows-archive = ".zip"
+# Checksums to generate for each App
+checksum = "sha256"
+# Link the C runtime statically (the default, set explicitly)
+msvc-crt-static = true
+# Do not pick up README, LICENSE or CHANGELOG files on its own: the archive gets the files below
+auto-includes = false
+# Readme and license files from `opennml-release files`, and the PDB of the shipped binary
+include = [
+    "target/release-files/README.txt",
+    "target/release-files/LIESMICH.txt",
+    "target/release-files/LICENSE.txt",
+    "target/release-files/licenses",
+    "target/x86_64-pc-windows-msvc/dist/OpenNML.pdb",
+]
+# Steps before the build: install cargo-about and generate the files above
+github-build-setup = "../build-setup.yml"
+# Checks the archive before the release is created
+global-artifacts-jobs = ["./check-release"]
+# Pull requests only plan the release
+pr-run-mode = "plan"

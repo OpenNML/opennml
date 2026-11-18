@@ -1,0 +1,14 @@
+# Steps `dist` runs before the build (`github-build-setup` in dist-workspace.toml).
+# They install the toolchain of rust-toolchain.toml and write the readme and license files
+# the archive includes to target/release-files.
+- name: Install the pinned Rust toolchain
+  # rustup >= 1.28 installs it with `toolchain install`; older rustup already on `show`.
+  run: |
+    rustup show active-toolchain || rustup toolchain install --no-self-update
+- name: Install cargo-about
+  uses: taiki-e/install-action@v2
+  with:
+    tool: cargo-about@0.9.3
+- name: Generate the readme and license files
+  run: |
+    cargo run --locked -p opennml-release -- files

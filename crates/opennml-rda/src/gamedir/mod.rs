@@ -17,8 +17,8 @@ mod steam;
 mod system;
 pub use check::{Rejection, Strictness, check_candidate, check_choice};
 pub use remembered::{
-    REMEMBERED_FILE, USER_DIR, read_remembered, remembered_file, remembered_file_from,
-    write_remembered,
+    REMEMBERED_FILE, USER_DIR, read_remembered, remembered_file, remembered_file_from, user_dir,
+    user_dir_from, write_remembered,
 };
 
 /// Where a candidate comes from.

@@ -1,0 +1,107 @@
+OpenNML v{version}
+==================
+
+OpenNML ist eine originalgetreue Neuimplementierung des Echtzeit-Strategie-
+spiels "No Man's Land" (2003) in Rust. Es ist freie Software.
+
+  Version:     OpenNML v{version}
+  Commit:      {commit}
+  Quelltext:   https://github.com/OpenNML/opennml
+
+
+Voraussetzungen
+---------------
+
+- Eine eigene Originalinstallation von "No Man's Land" (deutsche oder
+  englische Fassung). Referenz ist die deutsche Fassung mit Patch. OpenNML
+  enthält keine Spieldaten; es liest die Dateien aus Ihrer Installation.
+- Windows 10 oder 11, 64 Bit.
+- Eine Grafikkarte mit DirectX 12 oder Vulkan.
+
+
+Starten
+-------
+
+1. Die ZIP-Datei in einen beliebigen Ordner entpacken.
+2. {exe} doppelklicken.
+
+OpenNML sucht die Originalinstallation selbst: neben dem Programm, in den
+Steam-Bibliotheken, in der Registry und in den üblichen Programmordnern.
+Findet es nichts, fragt es in einem Dialog nach dem Ordner von "No Man's
+Land". Der gewählte Ordner wird gemerkt.
+
+Für Sonderfälle können Sie den Ordner selbst nennen: {exe} mit
+--game-dir "C:\Pfad\Zu\No Man's Land" starten (zum Beispiel über eine
+Verknüpfung oder in der Eingabeaufforderung). In die Installation selbst wird
+nie geschrieben.
+
+
+Windows SmartScreen
+-------------------
+
+Das Programm ist nicht signiert. Windows SmartScreen kann deshalb "Der
+Computer wurde durch Windows geschützt" anzeigen. Klicken Sie auf "Weitere
+Informationen" und dann auf "Trotzdem ausführen".
+
+Den Download prüfen Sie mit der SHA-256-Prüfsumme der heruntergeladenen
+ZIP-Datei gegen die .sha256-Datei, die im Release daneben liegt. In
+PowerShell:
+
+  Get-FileHash .\<Name der ZIP-Datei> -Algorithm SHA256
+
+Die ausgegebene Prüfsumme muss mit der in der .sha256-Datei übereinstimmen.
+
+
+Firewall (Netzwerkspiel)
+------------------------
+
+Für Spiele im lokalen Netz fragt Windows möglicherweise, ob {exe}
+zugelassen werden soll. Das Programm nutzt TCP-Port 2302 und UDP-Port 2303.
+
+
+Wo OpenNML seine Dateien ablegt
+-------------------------------
+
+Einstellungen, Profile, Spielstände und die Protokolldatei liegen in
+
+  %LOCALAPPDATA%\OpenNML\
+
+Die Protokolldatei ist logs\OpenNML.log in diesem Ordner (der vorige Lauf
+bleibt als logs\OpenNML.1.log erhalten). Meldet das Programm einen Fehler
+oder funktioniert etwas nicht, legen Sie Ihrer Meldung bitte die
+Protokolldatei bei.
+
+
+Entfernen
+---------
+
+Löschen Sie den Ordner, in den Sie die ZIP-Datei entpackt haben, und den
+Ordner %LOCALAPPDATA%\OpenNML\, wenn Sie Einstellungen und Spielstände nicht
+mehr brauchen. Die Originalinstallation bleibt unberührt.
+
+
+Rechtliches
+-----------
+
+OpenNML ist kein offizielles Produkt. "No Man's Land" ist ein Spiel von
+Related Designs, veröffentlicht von CDV Software; die Namen und Marken
+gehören ihren Inhabern. Dieses Projekt steht in keiner Verbindung zu den
+Rechteinhabern.
+
+Zum Spielen brauchen Sie Ihre eigene Originalinstallation. OpenNML enthält
+keine Spieldateien, Grafiken, Klänge oder Texte des Originals.
+
+OpenNML steht unter der GNU General Public License, Version 3 oder später;
+siehe LICENSE.txt. Der Videodekoder steht unter der LGPL 2.1 oder später, die
+Dokumentation und die Grafiken unter CC BY-SA 4.0, die Bibliotheken von
+Dritten unter ihren eigenen Lizenzen. Alle Lizenztexte und die Liste der
+Bibliotheken von Dritten liegen im Ordner licenses\ (siehe
+licenses\THIRD-PARTY.txt).
+
+
+Quelltext
+---------
+
+Der Quelltext dieser Version ist unter https://github.com/OpenNML/opennml
+erhältlich und als Archiv "Source code" an diesem Release angehängt
+(GPL-3.0 Abschnitt 6).

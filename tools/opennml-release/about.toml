@@ -1,0 +1,26 @@
+# Settings for `cargo about generate` (cargo-about 0.9.3); used by `opennml-release files`.
+# Rationale for the license list: docs/licensing.md, `deny.toml`.
+
+# The `allow` list of `deny.toml` plus LGPL-2.1-or-later (the video decoder `opennml-bink`).
+accepted = [
+    "GPL-3.0-or-later",
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "0BSD",
+    "Unlicense",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "OFL-1.1",
+    "Ubuntu-font-1.0",
+    "LGPL-2.1-or-later",
+]
+targets = ["x86_64-pc-windows-msvc"]
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+# The project's own crates are not third-party crates.
+private = { ignore = true }
