@@ -124,6 +124,15 @@ so the program never writes a log into the installation. Until then the lines ar
 before that point, the log goes to the default user folder, and only without `--settings` and `NML_SETTINGS`. A log
 file that cannot be created or written never stops the program; the log then goes to stderr only.
 
+### Errors and exit codes
+
+When the program stops on an error or a panic, it logs the error (a panic with a backtrace) and ends with exit code
+1 (error) or 101 (panic). On a plain start (no `--screenshot`, `--loading-shot`, `--control`, `--host` or `--join`)
+it also shows a message box titled `OpenNML` with the error text and the path of the log file, or "No log file was
+written." when there is none (for example with `--settings`, when the start fails before the settings file is
+checked). The folder search shows its own message boxes; such an error is not shown a second time. Check runs never
+show a message box, because it would block scripts and the MCP server: the error goes to stderr and the log only.
+
 ### Network play
 
 In the menu: "Multiplayer" -> LAN search (`LAN1`), create match (`LAN3`), lobby with slots, ready, kick and chat

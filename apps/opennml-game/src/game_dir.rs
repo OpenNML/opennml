@@ -7,6 +7,7 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::failure::Reported;
 use anyhow::Result;
 use opennml_client::settings::settings_path_for;
 use opennml_rda::{RdaError, SearchInput, Source, check_choice, search, write_remembered};
@@ -72,6 +73,11 @@ impl FolderPrompt for SystemPrompt {
     fn show_error(&mut self, _message: &str) {}
 }
 
+/// Marks an error the prompt has already shown, so the failure report does not show it again.
+fn shown(error: anyhow::Error) -> anyhow::Error {
+    error.context(Reported)
+}
+
 /// Finds the game folder: the search, otherwise (only with `prompt`) the dialog. A valid choice is remembered in
 /// `remembered_file` after `settings_path_for` has passed against it.
 pub fn resolve_game_dir(
@@ -91,25 +97,25 @@ pub fn resolve_game_dir(
     if explicit {
         // A wrong explicit location is otherwise invisible on a double click; no folder dialog.
         prompt.show_error(&error.to_string());
-        return Err(error.into());
+        return Err(shown(error.into()));
     }
     loop {
         let Some(chosen) = prompt.pick_folder() else {
             prompt.show_error(&error.to_string());
-            return Err(error.into());
+            return Err(shown(error.into()));
         };
         match check_choice(&chosen) {
             Err(reason) => {
                 let message = format!("{}: {reason}\n\nChoose another folder?", chosen.display());
                 if !prompt.ask_retry(&message) {
                     prompt.show_error(&error.to_string());
-                    return Err(error.into());
+                    return Err(shown(error.into()));
                 }
             }
             Ok((dir, version)) => {
                 if let Err(e) = settings_path_for(settings, &dir) {
                     prompt.show_error(&format!("{e:#}"));
-                    return Err(e);
+                    return Err(shown(e));
                 }
                 if let Some(file) = remembered_file
                     && let Err(e) = write_remembered(file, &dir)
@@ -131,6 +137,7 @@ pub fn resolve_game_dir(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::failure::Reported;
     use opennml_rda::read_remembered;
     use opennml_rda::testutil::write_fake_install;
     use std::collections::VecDeque;
@@ -186,6 +193,20 @@ mod tests {
     }
 
     #[test]
+    fn shown_errors_are_marked_reported() {
+        let t = tempfile::tempdir().unwrap();
+        let input = SearchInput {
+            explicit: Some(t.path().join("absent")),
+            ..SearchInput::default()
+        };
+        let mut fake = FakePrompt::default();
+        let err = resolve_game_dir(&input, None, None, Some(&mut fake)).unwrap_err();
+        assert!(err.downcast_ref::<Reported>().is_some());
+        let err = resolve_game_dir(&input, None, None, None).unwrap_err();
+        assert!(err.downcast_ref::<Reported>().is_none());
+    }
+
+    #[test]
     fn cancel_shows_error_and_fails() {
         let mut fake = FakePrompt::default();
         fake.picks.push_back(None);
@@ -193,7 +214,7 @@ mod tests {
             resolve_game_dir(&SearchInput::default(), None, None, Some(&mut fake)).unwrap_err();
         assert_eq!(fake.errors.len(), 1);
         assert!(fake.errors[0].contains("--game-dir"), "{}", fake.errors[0]);
-        assert!(err.to_string().contains("--game-dir"));
+        assert!(format!("{err:#}").contains("--game-dir"));
     }
 
     #[test]

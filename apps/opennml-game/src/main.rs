@@ -13,13 +13,16 @@
 //! (`opennml_client::net_session`); both use the transport over `std::net` (`SystemTransport`, with `--net-loopback` only
 //! 127.0.0.1).
 
+mod failure;
 mod game;
 mod game_dir;
 mod log_file;
 mod net_start;
 
 use std::net::SocketAddr;
+use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
+use std::process::ExitCode;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -32,8 +35,10 @@ use opennml_control::parse_control_addr;
 use opennml_rda::{SearchInput, Vfs, read_remembered, remembered_file};
 use winit::event_loop::{ControlFlow, EventLoop};
 
+use crate::failure::{install_panic_hook, panic_text, report_failure};
 use crate::game::{Game, GameOptions};
 use crate::game_dir::{FolderPrompt, SystemPrompt, resolve_game_dir};
+use crate::log_file::{LogHandle, fallback_log_dir};
 
 /// Time of the screenshot without `--time-ms` (ms).
 const DEFAULT_TIME_MS: f32 = 1000.0;
@@ -143,6 +148,15 @@ impl Cli {
         self.host.is_some() || self.join.is_some()
     }
 
+    /// Is this a check run (`--screenshot`, `--loading-shot`, `--control`, `--host`, `--join`)? Such runs never get a
+    /// modal window: it would block scripts and the MCP server.
+    fn is_check_run(&self) -> bool {
+        self.screenshot.is_some()
+            || self.loading_shot.is_some()
+            || self.control.is_some()
+            || self.is_net()
+    }
+
     /// May the start open the folder dialog? Only on a plain start, never in check runs and network paths.
     fn allows_dialog(&self) -> bool {
         self.game_dir.is_none()
@@ -190,14 +204,8 @@ fn settings_path(explicit: Option<&Path>, game_dir: &Path) -> Result<PathBuf> {
     settings_path_for(explicit, game_dir)
 }
 
-fn main() -> Result<()> {
-    let log = log_file::init();
-    log::info!(
-        "{} (build {})",
-        opennml_ui::version_line::VERSION_TEXT,
-        net_start::build_id()
-    );
-    let cli = Cli::parse();
+/// The program after the log is set up. An error ends the program with exit code 1, see [`main`].
+fn run(cli: &Cli, log: &LogHandle) -> Result<()> {
     let remembered = remembered_file(cli.settings.as_deref(), true);
     let input = SearchInput::from_environment(
         cli.game_dir.as_deref(),
@@ -264,7 +272,7 @@ fn main() -> Result<()> {
         mute: cli.mute,
         gamma: !cli.no_gamma,
         paused: cli.paused,
-        loading_shot: cli.loading_shot,
+        loading_shot: cli.loading_shot.clone(),
         control: control.is_some(),
         transport,
         net_listen: !cli.net_no_listen,
@@ -288,6 +296,47 @@ fn main() -> Result<()> {
     game.into_result()
 }
 
+/// Exit code 1: the program stopped on an error. Exit code 101: it stopped on a panic.
+fn main() -> ExitCode {
+    let cli = Cli::parse();
+    let log = log_file::init();
+    install_panic_hook();
+    log::info!(
+        "{} (build {})",
+        opennml_ui::version_line::VERSION_TEXT,
+        net_start::build_id()
+    );
+    let (error, code) = match panic::catch_unwind(AssertUnwindSafe(|| run(&cli, &log))) {
+        Ok(Ok(())) => return ExitCode::SUCCESS,
+        Ok(Err(error)) => {
+            eprintln!("Error: {error:?}");
+            (error, ExitCode::FAILURE)
+        }
+        Err(payload) => (
+            anyhow::anyhow!("Internal error: {}", panic_text(payload.as_ref())),
+            ExitCode::from(101),
+        ),
+    };
+    log::error!("{error:#}");
+    // A failure before the settings file was checked has no log file yet: use the default user folder.
+    if log.path().is_none()
+        && let Some(dir) = fallback_log_dir(
+            cli.settings.as_deref(),
+            std::env::var_os("NML_SETTINGS"),
+            std::env::var_os("LOCALAPPDATA"),
+        )
+    {
+        log.open_in(&dir);
+    }
+    report_failure(
+        !cli.is_check_run(),
+        &error,
+        log.path().as_deref(),
+        &mut SystemPrompt,
+    );
+    code
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -309,6 +358,27 @@ mod tests {
             &["--host", "--net-map", "m.lvl"],
         ] {
             assert!(!parse(args).unwrap().allows_dialog(), "{args:?}");
+        }
+    }
+
+    #[test]
+    fn failure_window_only_for_plain_start() {
+        for args in [
+            &[][..],
+            &["--game-dir", "x"],
+            &["--settings", "x.ini"],
+            &["--mute", "--window-mode", "windowed"],
+        ] {
+            assert!(!parse(args).unwrap().is_check_run(), "{args:?}");
+        }
+        for args in [
+            &["--screenshot", "x.png"][..],
+            &["--loading-shot", "x"],
+            &["--control", "127.0.0.1:0"],
+            &["--join", "127.0.0.1"],
+            &["--host", "--net-map", "m.lvl"],
+        ] {
+            assert!(parse(args).unwrap().is_check_run(), "{args:?}");
         }
     }
 

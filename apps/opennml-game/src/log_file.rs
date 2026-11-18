@@ -69,21 +69,27 @@ impl Write for LogWriter {
     /// Always succeeds: a failing stderr (no console) or log file must not turn into a logger error.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let _ = self.stderr.write_all(buf);
-        let mut target = lock(&self.shared);
-        let failed = match &mut *target {
-            Target::Buffer(lines) => {
-                lines.extend_from_slice(buf);
-                None
+        let failed = {
+            let mut target = lock(&self.shared);
+            let failed = match &mut *target {
+                Target::Buffer(lines) => {
+                    lines.extend_from_slice(buf);
+                    None
+                }
+                Target::File(file, path) => file
+                    .write_all(buf)
+                    .and_then(|()| file.flush())
+                    .err()
+                    .map(|error| (error, path.clone())),
+                Target::Off => None,
+            };
+            if failed.is_some() {
+                *target = Target::Off;
             }
-            Target::File(file, path) => file
-                .write_all(buf)
-                .and_then(|()| file.flush())
-                .err()
-                .map(|error| (error, path.clone())),
-            Target::Off => None,
+            failed
         };
+        // The lock is released before the one-time warning goes to stderr.
         if let Some((error, path)) = failed {
-            *target = Target::Off;
             let _ = writeln!(
                 self.stderr,
                 "[WARN  opennml_game::log_file] writing {} failed, the log file is off: {error}",
@@ -137,7 +143,6 @@ impl LogHandle {
     }
 
     /// Path of the open log file.
-    #[cfg_attr(not(test), expect(dead_code, reason = "used by the failure report"))]
     pub fn path(&self) -> Option<PathBuf> {
         match &*lock(&self.shared) {
             Target::File(_, path) => Some(path.clone()),
@@ -179,7 +184,6 @@ fn rotate(dir: &Path) -> io::Result<(File, PathBuf)> {
 
 /// Folder for the log when the start fails before the settings file is checked: the default user folder, only
 /// without `--settings` and without a non-empty `NML_SETTINGS` (such a path may lie in the installation).
-#[cfg_attr(not(test), expect(dead_code, reason = "used by the failure report"))]
 pub fn fallback_log_dir(
     settings: Option<&Path>,
     settings_env: Option<OsString>,
@@ -251,6 +255,10 @@ mod tests {
             fs::read_to_string(logs.join(PREVIOUS_LOG_FILE)).unwrap(),
             "run 2\n"
         );
+        for entry in fs::read_dir(&logs).unwrap() {
+            let text = fs::read_to_string(entry.unwrap().path()).unwrap();
+            assert!(!text.contains("run 1"), "run 1 must be gone: {text}");
+        }
     }
 
     #[test]
