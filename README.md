@@ -1,4 +1,4 @@
-# OpenNML - No Man's Land in Rust
+# OpenNML
 
 <img src="assets/icon/opennml-128.png" alt="OpenNML icon" width="96" align="right">
 
@@ -13,15 +13,14 @@ and assets are not included.
 
 The project is under active development.
 
-- **Playable:** single player with custom matches, random maps, computer opponents and all four campaigns
-- **In progress:** multiplayer on a local network
-- **Planned:** improvements beyond the original, such as modding and presentation
+- **Playable:** single player with custom matches, random maps, computer opponents and all four campaigns;
+  multiplayer on a local network
+- **Planned:** improvements beyond the original, such as modding and a map and scenario editor
 
 ## Requirements
 
-- Original installation of *No Man's Land* (German or English edition)
-- Only to build from source: [Rust](https://rustup.rs/) - the matching version is installed automatically on the
-  first build
+- Original installation of *No Man's Land: Fight for your Rights!* (German or English edition), available for
+  example [on Steam](https://store.steampowered.com/app/3863620/)
 - Windows
 
 ## Download
@@ -29,13 +28,7 @@ The project is under active development.
 Ready-to-run builds for Windows (64 bit) are on the
 [releases page](https://github.com/OpenNML/opennml/releases): download the ZIP file, unpack it to any folder and
 start `OpenNML.exe`. `README.txt` in the archive explains the first start and how to check the download against its
-`.sha256` file. Rust is only needed to build OpenNML from source (below).
-
-## Quick start
-
-```bash
-cargo run --release -p opennml-game
-```
+`.sha256` file.
 
 The game finds the original installation itself (next to the program, in Steam and at the usual locations) and
 otherwise asks for the folder once. With `--game-dir <folder>` or the environment variable `NML_GAME_DIR` you can
@@ -54,7 +47,11 @@ Each program shows more options with `--help`; in more detail in [docs/programs.
 
 ## Development
 
+Building from source needs [Rust](https://rustup.rs/); the matching version is installed automatically on the first
+build.
+
 ```bash
+cargo run --release -p opennml-game
 cargo test --workspace
 ```
 
