@@ -2383,6 +2383,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "opennml-release"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
 name = "opennml-render"
 version = "0.1.0"
 dependencies = [

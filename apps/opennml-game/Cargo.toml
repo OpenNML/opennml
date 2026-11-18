@@ -9,6 +9,9 @@ license.workspace = true
 name = "OpenNML"
 path = "src/main.rs"
 
+[package.metadata.dist]
+dist = true
+
 [dependencies]
 opennml-audio.workspace = true
 opennml-client.workspace = true
