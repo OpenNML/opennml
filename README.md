@@ -20,7 +20,8 @@ The project is under active development.
 ## Requirements
 
 - Original installation of *No Man's Land* (German or English edition)
-- [Rust](https://rustup.rs/) - the matching version is installed automatically on the first build
+- Only to build from source: [Rust](https://rustup.rs/) - the matching version is installed automatically on the
+  first build
 - Windows
 
 ## Download
