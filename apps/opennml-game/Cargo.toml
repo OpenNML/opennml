@@ -9,6 +9,10 @@ license.workspace = true
 name = "OpenNML"
 path = "src/main.rs"
 
+[features]
+# Builds the exe for the Windows GUI subsystem (no console window); the release archive uses it.
+gui = []
+
 [package.metadata.dist]
 dist = true
 

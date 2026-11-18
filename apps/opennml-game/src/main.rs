@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "gui", windows_subsystem = "windows")]
 //! `opennml-game`: the program of the Rust reimplementation. Starts into the main menu like the original: read the
 //! settings file in the format of `Engine.ini`, open the window according to `ScreenXSize`/`ScreenYSize`/
 //! `ScreenFormat`, run the menu UI (`opennml_client::menu_host::MenuHost`, `MenuApp` with `start_menu`). Quitting via
