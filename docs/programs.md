@@ -111,6 +111,19 @@ settings file (like the destructor of the original).
 - `--loading-shot <folder>` (check runs): one image `loading-<n>-<percent>.png` per phase of the loading screen in
   the folder (not with `--screenshot`).
 
+### Log
+
+The program writes its log to stderr and to `logs\OpenNML.log` in the folder of the settings file (by default
+`%LOCALAPPDATA%\OpenNML\logs\OpenNML.log`; with `--settings` or `NML_SETTINGS` the `logs` folder next to that
+file). The release build has no console, so this file is the log to send in with a report. At each start the log of
+the previous run is moved to `OpenNML.1.log`; older logs are dropped. If two programs share one user folder (host and
+client on one machine), the second one rotates the file of the first, which then continues in `OpenNML.1.log`.
+
+The file is created only after the settings file has been checked (a location inside the installation is an error),
+so the program never writes a log into the installation. Until then the lines are kept in memory. If the start fails
+before that point, the log goes to the default user folder, and only without `--settings` and `NML_SETTINGS`. A log
+file that cannot be created or written never stops the program; the log then goes to stderr only.
+
 ### Network play
 
 In the menu: "Multiplayer" -> LAN search (`LAN1`), create match (`LAN3`), lobby with slots, ready, kick and chat

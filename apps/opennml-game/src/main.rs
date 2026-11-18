@@ -15,6 +15,7 @@
 
 mod game;
 mod game_dir;
+mod log_file;
 mod net_start;
 
 use std::net::SocketAddr;
@@ -190,7 +191,12 @@ fn settings_path(explicit: Option<&Path>, game_dir: &Path) -> Result<PathBuf> {
 }
 
 fn main() -> Result<()> {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    let log = log_file::init();
+    log::info!(
+        "{} (build {})",
+        opennml_ui::version_line::VERSION_TEXT,
+        net_start::build_id()
+    );
     let cli = Cli::parse();
     let remembered = remembered_file(cli.settings.as_deref(), true);
     let input = SearchInput::from_environment(
@@ -204,11 +210,17 @@ fn main() -> Result<()> {
         cli.allows_dialog()
             .then_some(&mut SystemPrompt as &mut dyn FolderPrompt),
     )?;
+    // The settings file is checked first: it proves that the user folder is not in the installation, so only now
+    // the log file may be created.
+    let settings = settings_path(cli.settings.as_deref(), &game_dir)?;
+    log.open_in(match settings.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent,
+        _ => Path::new("."),
+    });
     let vfs = Vfs::open_game_dir(&game_dir)
         .with_context(|| format!("opening archives in {}", game_dir.display()))?;
     // Blood switch of the localisation (`BloodModeEnabled`, O-392): once per program, `bloodmode` toggles it.
     opennml_client::game::blood::init_from_localisation(&vfs);
-    let settings = settings_path(cli.settings.as_deref(), &game_dir)?;
     log::info!("Settings file: {}", settings.display());
     let mut config = load_settings(&settings, &vfs);
     // `--host`, `--join` and the screenshot run without the menu level, only in memory; the settings file stays.
