@@ -1113,8 +1113,8 @@ fn net_start_plays_the_nation_music_of_the_own_slot() {
 // real maps (`real_levels`), silently skipped without `NML_GAME_DIR`.
 
 use crate::game::net_driver::NetPaths;
-use crate::net_session::{KICKED_TEXT, NetIdentity, NetPhase, NetSession};
-use opennml_net::{LobbyState, MemTransport, RasterStage};
+use crate::net_session::{InlineWorker, KICKED_TEXT, NetIdentity, NetPhase, NetSession};
+use opennml_net::{DataState, LobbyState, MemTransport, RasterStage};
 use opennml_ui::input::{MouseButton as UiButton, UiInput};
 use opennml_ui::msg::{AppCmd, LobbyAction};
 
@@ -1195,6 +1195,7 @@ impl Lan {
             let mut session =
                 NetSession::new(Box::new(transport), identity, net_paths(dir.path(), i));
             session.set_fixed_clock(Some(NET_CLOCK));
+            session.set_rules_worker(Box::new(InlineWorker::default()));
             run.flow.set_net_session(session);
             runs.push(run);
         }
@@ -1209,6 +1210,26 @@ impl Lan {
     /// Storage locations of machine `i` (savegames, network logs).
     pub(super) fn paths(&self, i: usize) -> NetPaths {
         net_paths(self.dir.path(), i)
+    }
+
+    /// Installation of machine `i`: the game file `game_path` changed by `edit` as a loose file of its own (shadows
+    /// the archive entry, [`opennml_rda::testutil::with_loose_file`]); the other machines keep theirs. Call before
+    /// the rules of a session are computed.
+    pub(super) fn change_file(
+        &mut self,
+        i: usize,
+        game_path: &str,
+        edit: impl FnOnce(&mut Vec<u8>),
+    ) {
+        let run = &mut self.runs[i];
+        let mut bytes = run.vfs.read(game_path).expect("game file");
+        edit(&mut bytes);
+        let disk = self.dir.path().join(format!("install-{i}"));
+        std::fs::create_dir_all(&disk).expect("folder");
+        let name = game_path.rsplit('/').next().expect("file name");
+        let disk = disk.join(name);
+        std::fs::write(&disk, &bytes).expect("loose file");
+        run.vfs = opennml_rda::testutil::with_loose_file(&run.vfs, game_path, &disk);
     }
 
     pub(super) fn frame(&mut self) {
@@ -1370,13 +1391,24 @@ impl Lan {
         self.click(i, "lan1", "join");
     }
 
-    /// Like [`Self::click_join`], then up to the lobby.
+    /// Like [`Self::click_join`], then up to the lobby and the verdict of the game data check on the own row (only
+    /// with `Equal` does the core take `READY`).
     pub(super) fn join(&mut self, i: usize) {
         self.click_join(i);
         self.frames_until("lobby of the client", |l| {
             l.phase(i) == NetPhase::Lobby && l.in_lobby(i)
         });
+        self.frames_until("verdict of the game data check", |l| {
+            l.own_data(i).is_some_and(|d| d != DataState::Pending)
+        });
         self.settle();
+    }
+
+    /// Verdict of the game data check on the own row of machine `i` in its last lobby state.
+    pub(super) fn own_data(&self, i: usize) -> Option<DataState> {
+        let status = self.session(i).status();
+        let row = usize::from(status.own_row?);
+        status.lobby?.rows.get(row).map(|r| r.data.clone())
     }
 
     /// Lobby request of the UI as from `LAN2`/`CHATFRAME` (`UiEffect::Lobby`).
@@ -1943,18 +1975,17 @@ fn host_abort_after_loading_before_go_returns_to_the_main_menu() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Map change in the network session (host: `LobbyAction::ChangeGame`; client: map check per lobby state). The draft
-// of `LAN31` is re-created here via `set_lobby_draft`, a missing or differing map via `HostCore::set_session` (both
-// machines share the corpus).
+// Map change in the network session (host: `LobbyAction::ChangeGame`; client: game data check per session revision).
+// The draft of `LAN31` is re-created here via `set_lobby_draft`, a missing or differing map via
+// `HostCore::set_session`; differing game data via an installation of its own per machine ([`Lan::change_file`]).
 
 use std::sync::{Arc, Mutex};
 
-use crate::net_session::{MAP_MISSING_REASON, map_available, map_checksum};
+use crate::net_session::{map_available, map_checksum};
 use opennml_net::{
     Beacon, Connecting, Link, LinkEvent, Listener, MapId, NetMessage, Seeker, Transport,
 };
 use opennml_ui::draft::{DraftSettings, MapCatalogEntry};
-use opennml_ui::own_texts::MAP_MISSING;
 
 /// `Bye` reasons that a machine has sent.
 type Byes = Arc<Mutex<Vec<String>>>;
@@ -2055,6 +2086,7 @@ impl Lan {
         };
         let mut session = NetSession::new(Box::new(transport), identity, self.paths(i));
         session.set_fixed_clock(Some(NET_CLOCK));
+        session.set_rules_worker(Box::new(InlineWorker::default()));
         self.runs[i].flow.set_net_session(session);
         byes
     }
@@ -2162,57 +2194,48 @@ fn ready_pair() -> Option<(Lan, Byes)> {
     Some((n, byes))
 }
 
-/// The host sets the session with the map `map`; the client does not have it: exactly one `Bye` with the reason, lobby
-/// closed, `LAN1` with message 99 105 without a follow-up command, no session; on the host the row is open and `START`
-/// locked.
-fn assert_client_leaves(mut n: Lan, byes: &Byes, map: MapId) {
+/// The host switches the session in its core to the map `map` ("Other map"); one frame later the client's row is
+/// `Pending` in the host's state.
+fn switch_session(n: &mut Lan, map: MapId) {
     let mut s = n.lobby(0).session;
     s.map = map;
     s.map_name = "Other map".into();
     n.host_core_mut()
         .set_session(s)
         .expect("switch in the core");
-    n.frames_until("message on the client", |l| {
-        message_id(&l.runs[1]).is_some()
-    });
-    n.settle();
-    n.frames(120);
-    assert_eq!(message_id(&n.runs[1]), Some(MAP_MISSING));
-    let d = n.dialogs(1);
-    assert!(d.contains(&"lan1".to_string()), "{d:?}");
-    assert!(!LOBBY.iter().any(|l| d.iter().any(|x| x == l)), "{d:?}");
-    assert_eq!(d.iter().filter(|x| *x == "msgbox").count(), 1, "{d:?}");
-    assert!(session_closed(&n, 1));
-    assert!(
-        matches!(n.phase(1), NetPhase::Idle | NetPhase::Searching),
-        "{:?}",
-        n.phase(1)
-    );
-    assert_eq!(
-        *byes.lock().unwrap(),
-        vec![MAP_MISSING_REASON.to_string()],
-        "exactly one Bye"
-    );
-    n.frames_until("row open on the host", |l| {
-        l.lobby(0).rows[1].peer.is_none()
-    });
-    let row = &n.lobby(0).rows[1];
-    assert_eq!((row.kind, row.ready), (0, false));
-    assert!(!n.host_core_mut().can_start());
-    assert!(n.in_lobby(0));
-    // "OK" without a follow-up command: the message closes, `LAN1` stays.
-    n.click(1, "msgbox", "ok");
-    let d = n.dialogs(1);
-    assert!(d.contains(&"lan1".to_string()), "{d:?}");
-    assert!(!d.iter().any(|x| x == "msgbox"), "{d:?}");
-    assert_eq!(byes.lock().unwrap().len(), 1);
+    n.frame();
+    assert_eq!(n.lobby(0).rows[1].data, DataState::Pending);
 }
 
-/// Deviates from E-322: The new fixed map is missing on the client.
+/// The client's row gets the verdict `data`, and the client stays in the lobby: no `Bye`, lobby open on both, the row
+/// keeps its machine but loses its Ready flag, `READY` of the client is discarded and `START` stays locked.
+fn assert_client_blocked(n: &mut Lan, byes: &Byes, data: &DataState) {
+    n.frames_until("verdict on the host", |l| l.lobby(0).rows[1].data == *data);
+    n.settle();
+    n.frames(120);
+    assert_eq!(
+        n.own_data(1).as_ref(),
+        Some(data),
+        "the client sees its verdict"
+    );
+    assert!(n.in_lobby(1), "{:?}", n.dialogs(1));
+    assert_eq!(n.phase(1), NetPhase::Lobby);
+    assert!(byes.lock().unwrap().is_empty(), "no Bye");
+    n.ready(1, 1);
+    n.frames(30);
+    let row = &n.lobby(0).rows[1];
+    assert_eq!((row.peer, row.ready), (Some(1), false));
+    assert_eq!(&row.data, data);
+    assert!(!n.host_core_mut().can_start());
+    assert!(n.in_lobby(0));
+}
+
+/// Deviates from E-322 (new form): the new fixed map is missing on the client. It reports `Missing` and stays in the
+/// lobby; `START` stays locked until the host chooses another map or removes the client.
 // QUIRK E-322: deviation
 #[test]
-fn client_without_the_new_map_leaves_the_lobby() {
-    let Some((n, byes)) = ready_pair() else {
+fn client_without_the_new_map_stays_and_blocks_start() {
+    let Some((mut n, byes)) = ready_pair() else {
         return;
     };
     let map = MapId::Fixed {
@@ -2220,14 +2243,15 @@ fn client_without_the_new_map_leaves_the_lobby() {
         checksum: 1,
     };
     assert!(!map_available(&n.runs[1].vfs, &map));
-    assert_client_leaves(n, &byes, map);
+    switch_session(&mut n, map);
+    assert_client_blocked(&mut n, &byes, &DataState::Missing);
 }
 
-/// The same path, but a different map checksum on the host (the map differs).
+/// The same path, but a different map checksum on the host (the map differs): `Missing` like a missing map.
 // QUIRK E-322: deviation
 #[test]
-fn changed_checksum_also_leaves() {
-    let Some((n, byes)) = ready_pair() else {
+fn changed_map_checksum_blocks_start() {
+    let Some((mut n, byes)) = ready_pair() else {
         return;
     };
     let MapId::Fixed { path, checksum } = n.lobby(0).session.map else {
@@ -2237,18 +2261,19 @@ fn changed_checksum_also_leaves() {
         path,
         checksum: checksum ^ 1,
     };
-    assert_client_leaves(n, &byes, map);
+    switch_session(&mut n, map);
+    assert_client_blocked(&mut n, &byes, &DataState::Missing);
 }
 
-/// The client does not check random maps (like the game list); it stays in the lobby, no `Bye`.
+/// A random map is checked through its rules like every map: the client computes them, the row is `Equal` again, no
+/// `Bye`, and the ready flags stay (E-302), so `START` holds.
 // QUIRK E-322: deviation
 #[test]
-fn random_map_change_never_leaves() {
+fn random_map_change_is_checked_by_rules() {
     let Some((mut n, byes)) = ready_pair() else {
         return;
     };
-    let mut s = n.lobby(0).session;
-    s.map = MapId::Random {
+    let map = MapId::Random {
         seed_text: "12345".into(),
         size: 0,
         players: 2,
@@ -2256,18 +2281,182 @@ fn random_map_change_never_leaves() {
         landscape: 0,
         daytime: 0,
     };
-    s.map_name = "12345".into();
-    n.host_core_mut()
-        .set_session(s.clone())
-        .expect("switch in the core");
-    n.frames_until("state on the client", |l| l.lobby(1).session.map == s.map);
+    switch_session(&mut n, map.clone());
+    n.frames_until("verdict on the host", |l| {
+        l.lobby(0).rows[1].data == DataState::Equal
+    });
     n.frames(120);
+    assert_eq!(n.lobby(1).session.map, map);
+    assert!(n.lobby(0).rules_checksum.is_some());
     assert!(n.in_lobby(1), "{:?}", n.dialogs(1));
     assert_eq!(n.phase(1), NetPhase::Lobby);
-    assert_eq!(message_id(&n.runs[1]), None);
     assert!(byes.lock().unwrap().is_empty());
     assert_eq!(n.lobby(0), n.lobby(1));
     assert!(n.host_core_mut().can_start(), "ready flags stay (E-302)");
+}
+
+/// Deviates from E-322: the host changes from a map the client lacks to one it has: the row becomes `Equal` again, the
+/// client can become ready, and `START` holds.
+// QUIRK E-322: deviation
+#[test]
+fn host_change_to_another_map_clears_missing() {
+    let Some((mut n, byes)) = ready_pair() else {
+        return;
+    };
+    let old = n.lobby(0).session.map;
+    let missing = MapId::Fixed {
+        path: "multiplayer/gibtesnicht.lvl".into(),
+        checksum: 1,
+    };
+    switch_session(&mut n, missing);
+    assert_client_blocked(&mut n, &byes, &DataState::Missing);
+    switch_session(&mut n, old);
+    n.frames_until("verdict on the host", |l| {
+        l.lobby(0).rows[1].data == DataState::Equal
+    });
+    n.all_ready(&[(1, 1)]);
+    assert!(byes.lock().unwrap().is_empty());
+}
+
+/// Game file of the rules of every map (bonus values of the objects).
+const BONUS_INI: &str = "data/gifcon/bonus.ini";
+
+/// Map types, landscapes and game modes of the random maps (input of the generator).
+const RANDOM_MAP_TYPES: &str = "data/gifcon/randommaptypes.ini";
+
+/// Changes the last digit of the file (a digit of a value, so that the file still parses).
+fn bump_last_digit(bytes: &mut [u8]) {
+    let at = bytes.iter().rposition(u8::is_ascii_digit).expect("a digit");
+    bytes[at] = if bytes[at] == b'9' {
+        b'8'
+    } else {
+        bytes[at] + 1
+    };
+}
+
+/// Verdict of a client whose `bonus.ini` differs.
+fn bonus_differs() -> DataState {
+    DataState::Differs {
+        files: vec![BONUS_INI.to_string()],
+        more: 0,
+    }
+}
+
+/// Host Anna and client Bert (recorded `Bye`s) on "Tintebariver", Bert with a changed `bonus.ini`; the host is ready.
+fn bonus_pair() -> Option<(Lan, Byes)> {
+    let mut n = Lan::corpus(&["Anna", "Bert"])?;
+    let byes = n.count_byes(1, "Bert");
+    n.change_file(1, BONUS_INI, |b| bump_last_digit(b));
+    n.host(0, Some("tinte"));
+    n.join(1);
+    n.ready(0, 0);
+    Some((n, byes))
+}
+
+/// Two installations of their own with the same game data (both with the same changed `bonus.ini`): the row becomes
+/// `Equal`, `START` holds, and both compute the same up to tick 200.
+#[test]
+fn equal_installations_start_as_before() {
+    let Some(mut n) = Lan::corpus(&["Anna", "Bert"]) else {
+        return;
+    };
+    for i in 0..2 {
+        n.change_file(i, BONUS_INI, |b| bump_last_digit(b));
+    }
+    n.host(0, Some("tinte"));
+    n.join(1);
+    assert_eq!(n.lobby(0).rows[1].data, DataState::Equal);
+    let path = fixed_path(&n.lobby(0).session);
+    start_from_lobby(&mut n);
+    run_and_compare(&mut n, 200, &path);
+}
+
+/// Deviates from E-354: the client's `bonus.ini` differs from the host's. Its row names the file, the client stays in
+/// the lobby and cannot become ready, `START` stays locked.
+// QUIRK E-354: deviation
+#[test]
+fn changed_bonus_ini_blocks_start_and_names_the_file() {
+    let Some((mut n, byes)) = bonus_pair() else {
+        return;
+    };
+    assert_client_blocked(&mut n, &byes, &bonus_differs());
+    assert!(n.lobby(0).rows[0].ready);
+}
+
+/// A map change to another map whose own files are the same on both still differs in the shared `bonus.ini`.
+// QUIRK E-354: deviation
+#[test]
+fn map_change_to_a_clean_map_still_differs_for_shared_files() {
+    let Some((mut n, byes)) = bonus_pair() else {
+        return;
+    };
+    assert_client_blocked(&mut n, &byes, &bonus_differs());
+    let old = fixed_path(&n.lobby(0).session);
+    let next = n.catalog_map(0, |m| {
+        !m.entry.path.eq_ignore_ascii_case(&old) && m.players() == 2
+    });
+    let checksum = map_checksum(&n.runs[0].vfs, &next.entry.path).expect("map checksum");
+    assert_eq!(
+        map_checksum(&n.runs[1].vfs, &next.entry.path),
+        Some(checksum)
+    );
+    switch_session(
+        &mut n,
+        MapId::Fixed {
+            path: next.entry.path.clone(),
+            checksum,
+        },
+    );
+    let revision = n.lobby(0).session_revision;
+    assert_client_blocked(&mut n, &byes, &bonus_differs());
+    assert_eq!(n.lobby(0).session_revision, revision);
+    assert_eq!(fixed_path(&n.lobby(0).session), next.entry.path);
+}
+
+/// A random map whose generator data differ on the client (`randommaptypes.ini`: the map type of the session runs
+/// another script there): the rules differ, the row names the file.
+// QUIRK E-354: deviation
+#[test]
+fn random_map_with_other_generator_data_differs() {
+    let Some(mut n) = Lan::corpus_with(&["Anna", "Bert"], |i, cfg| {
+        if i == 0 {
+            random_values(cfg, "Netz");
+            cfg.level_type = 1;
+        }
+    }) else {
+        return;
+    };
+    // The first map type (`terrain` 0 of the session) gets the script of the second.
+    n.change_file(1, RANDOM_MAP_TYPES, |bytes| {
+        // Byte by byte (the file is not UTF-8 throughout).
+        let text: String = bytes.iter().map(|&b| char::from(b)).collect();
+        let scripts: Vec<&str> = text
+            .lines()
+            .filter_map(|l| l.strip_prefix("MSCRIPT "))
+            .collect();
+        assert!(scripts.len() >= 2, "{scripts:?}");
+        let changed = text.replacen(
+            &format!("MSCRIPT {}", scripts[0]),
+            &format!("MSCRIPT {}", scripts[1]),
+            1,
+        );
+        *bytes = changed.chars().map(|c| c as u8).collect();
+    });
+    n.host_random(0);
+    n.join(1);
+    let DataState::Differs { files, more } = n.lobby(0).rows[1].data.clone() else {
+        panic!("Differs expected: {:?}", n.lobby(0).rows[1].data);
+    };
+    assert!(
+        files.iter().any(|f| f == RANDOM_MAP_TYPES),
+        "{files:?} and {more} more"
+    );
+    assert!(!n.lobby(0).rows[1].ready);
+    n.ready(0, 0);
+    n.ready(1, 1);
+    n.frames(30);
+    assert!(!n.host_core_mut().can_start());
+    assert!(n.in_lobby(1), "{:?}", n.dialogs(1));
 }
 
 /// The host cleans the computer names of the rows when creating them (`[`/`]` are dropped); host and client show the
