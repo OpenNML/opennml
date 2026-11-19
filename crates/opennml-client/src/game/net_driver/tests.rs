@@ -1122,8 +1122,9 @@ fn mirror_commands_go_out_only_from_the_host() {
     }
 }
 
-/// E-293: If loading fails at the host, the session aborts for all. Every client gets `Bye`, reports `failed` and
-/// stands in `Phase::Ended`; nobody computes a tick.
+/// E-293: If loading fails at the host, the session aborts for all. Every client gets `LoadFailed` with the host's
+/// name and `Bye`, reports `failed` and stands in `Phase::Ended`; nobody computes a tick. The error itself stays in
+/// the host's log.
 #[test]
 fn host_load_failure_ends_the_session_for_all() {
     let mut t = Table::loading();
@@ -1135,11 +1136,14 @@ fn host_load_failure_ends_the_session_for_all() {
     for (i, m) in t.machines.iter().enumerate() {
         assert_eq!(m.phase(), Phase::Ended, "machine {i}");
         let text = m.failed.as_deref().unwrap_or_default();
-        assert!(text.contains("Map missing"), "machine {i}: {text}");
+        assert!(
+            text.contains("\"Host\" could not load the match"),
+            "machine {i}: {text}"
+        );
         assert_eq!(m.sim.state.steps, 0, "nobody computes");
         // Whoever is already in the loaded match gets an end with a message.
         assert!(
-            matches!(m.finish.as_slice(), [NetFinish::Failed(f)] if f.contains("Map missing")),
+            matches!(m.finish.as_slice(), [NetFinish::Failed(f)] if f.contains("could not load the match")),
             "machine {i}: {:?}",
             m.finish
         );

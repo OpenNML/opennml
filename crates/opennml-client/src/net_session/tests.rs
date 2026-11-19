@@ -120,6 +120,7 @@ fn row(kind: i32, team: i32, color: i32) -> LobbyRow {
         color,
         ready: false,
         peer: None,
+        data: DataState::Equal,
     }
 }
 
@@ -635,6 +636,7 @@ fn rows_fit_matches_in_ui_and_core() {
                         color: row,
                         ready: false,
                         peer: None,
+                        data: DataState::Equal,
                     }
                 })
                 .collect();

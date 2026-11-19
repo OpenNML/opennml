@@ -265,6 +265,22 @@ impl ClientCore {
         self.host_gone(reason);
     }
 
+    /// `LoadFailed` from the host (only in `Loading`): a machine could not load the match, the start is cancelled.
+    /// `CoreEvent::LoadFailed` with the cleaned name instead of `Failed`, then `Phase::Ended` (the `Bye` behind it has
+    /// no effect any more).
+    fn on_load_failed(&mut self, name: &str) {
+        if self.phase != Phase::Loading {
+            log::warn!(
+                "Network (client): LoadFailed in phase {:?} discarded",
+                self.phase
+            );
+            return;
+        }
+        let name = clean_name(name);
+        log::warn!("Network (client): \"{name}\" could not load the match, start cancelled");
+        self.end_with(CoreEvent::LoadFailed { name });
+    }
+
     /// `Reject` from the host: before the `Welcome` it is the rejection of the sign-on (`Rejected`), afterwards a
     /// failure; the reason cleaned ([`clean_reason`]).
     fn on_reject(&mut self, reason: String) {
@@ -770,6 +786,7 @@ impl Lockstep for ClientCore {
             NetMessage::Bundle(b) => self.on_bundle(b),
             NetMessage::Resume => self.on_resume(),
             NetMessage::Bye { reason } => self.on_bye(&reason),
+            NetMessage::LoadFailed { name } => self.on_load_failed(&name),
             NetMessage::Lobby(state) => self.on_lobby(*state),
             NetMessage::Chat { row, text } => self.on_chat(row, &text),
             NetMessage::Probe { id } => self.on_probe(id),

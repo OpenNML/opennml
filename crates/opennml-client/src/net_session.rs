@@ -40,11 +40,11 @@ use std::time::SystemTime;
 
 use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{
-    Announcement, Beacon, ClientCore, Connecting, CoreEvent, FoundGame, HOST_PEER, Hello, HostCore,
-    HostEdit, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyRules, LobbyState, LobbyWish,
-    LocalTime, Lockstep, MapId, NET_VERSION, Phase, QUERY_INTERVAL_MS, RasterStage, RuleVerdict,
-    Seat, SeatClaim, Seeker, SessionInfo, SessionList, SessionSettings, StartInfo, Transport,
-    TurnConfig, clean_name, clean_session_name, valid_save_name,
+    Announcement, Beacon, ClientCore, Connecting, CoreEvent, DataState, FoundGame, HOST_PEER,
+    Hello, HostCore, HostEdit, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyRules, LobbyState,
+    LobbyWish, LocalTime, Lockstep, MapId, NET_VERSION, Phase, QUERY_INTERVAL_MS, RasterStage,
+    RuleVerdict, Seat, SeatClaim, Seeker, SessionInfo, SessionList, SessionSettings, StartInfo,
+    Transport, TurnConfig, clean_name, clean_session_name, valid_save_name,
 };
 use opennml_rda::testutil::{GameVersion, game_version};
 use opennml_rda::{ReadEntry, Vfs};
@@ -330,6 +330,7 @@ pub fn rows_from_draft(draft: &MatchDraft, players: u8) -> Vec<LobbyRow> {
                 color: slot.map_or(row, |s| s.color),
                 ready: false,
                 peer: None,
+                data: DataState::Equal,
             }
         })
         .collect()
@@ -1032,6 +1033,7 @@ impl NetSession {
                     color: p.color,
                     ready: false,
                     peer: None,
+                    data: DataState::Equal,
                 }
             })
             .collect();

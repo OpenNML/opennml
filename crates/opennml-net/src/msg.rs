@@ -55,6 +55,9 @@ pub enum NetMessage {
     Rejoin(Box<Rejoin>),
     /// New host -> client: migration completed.
     Migrated(Box<Migrated>),
+    /// Host -> clients (in `Loading`, right before the `Bye`): the machine of the player `name` could not load the
+    /// match, the start is cancelled (E-352). The client shows its own text with the name.
+    LoadFailed { name: String },
 }
 
 /// Entry of the successor list: a client with peer, slot and the address it listens at (`None` = not reachable from

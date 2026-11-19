@@ -241,6 +241,7 @@ mod tests {
             color: team,
             ready: false,
             peer: None,
+            data: crate::lobby::DataState::Equal,
         };
         LobbyBook::loaded(session, vec![row(0), row(1)], vec![2, 5], 5, "Host")
             .unwrap()
@@ -355,6 +356,23 @@ mod tests {
             }),
             NetMessage::LobbyWish(crate::lobby::LobbyWish::Ready(true)),
             NetMessage::LobbyWish(crate::lobby::LobbyWish::Chat("hello".into())),
+            NetMessage::LobbyWish(crate::lobby::LobbyWish::Data {
+                session_revision: 4,
+                report: crate::lobby::DataReport::Rules {
+                    checksum: None,
+                    inputs: vec![crate::lobby::DataInput {
+                        path: "units/a.ini".into(),
+                        hash: Some(9),
+                    }],
+                },
+            }),
+            NetMessage::LobbyWish(crate::lobby::LobbyWish::Data {
+                session_revision: 5,
+                report: crate::lobby::DataReport::Missing,
+            }),
+            NetMessage::LoadFailed {
+                name: "Bert".into(),
+            },
             NetMessage::Chat {
                 row: 2,
                 text: "hello".into(),

@@ -864,6 +864,7 @@ fn net_status_shows_the_loaded_lobby() {
             color: i32::from(seat),
             ready: false,
             peer: None,
+            data: DataState::Equal,
         })
         .to_vec();
     let book = LobbyBook::loaded(session, rows, vec![1, 3, 4], 3, "Anna").unwrap();

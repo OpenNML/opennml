@@ -42,10 +42,10 @@ use opennml_control::{
 };
 use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{
-    AcceptAll, ClientCore, Connecting, CoreEvent, DEFAULT_PORT, FoundGame, HaltReason, Hello,
-    HostCore, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyState, LobbyWish, Lockstep, MapId,
-    Peer, Phase, RasterStage, Seat, SessionInfo, SessionSettings, StartInfo, Transport, TurnConfig,
-    clean_name,
+    AcceptAll, ClientCore, Connecting, CoreEvent, DEFAULT_PORT, DataState, FoundGame, HaltReason,
+    Hello, HostCore, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyState, LobbyWish, Lockstep,
+    MapId, Peer, Phase, RasterStage, Seat, SessionInfo, SessionSettings, StartInfo, Transport,
+    TurnConfig, clean_name,
 };
 use opennml_rda::Vfs;
 use opennml_sim::rules::Rules;
@@ -346,6 +346,7 @@ pub fn host_core(hello: Hello, plan: &HostPlan) -> Result<HostCore, String> {
             color: entry.color,
             ready: false,
             peer: None,
+            data: DataState::Equal,
         })
         .collect();
     let mut session = SessionInfo::plain(

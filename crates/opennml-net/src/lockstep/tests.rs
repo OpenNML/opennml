@@ -14,7 +14,10 @@
 use super::*;
 use crate::link::Link;
 use crate::link::mem::{MemLink, MemNet};
-use crate::lobby::{AcceptAll, HostEdit, KIND_HUMAN, LobbyBook, LobbyWish, SessionInfo};
+use crate::lobby::{
+    AcceptAll, DataInput, DataReport, DataState, HostEdit, KIND_HUMAN, LobbyBook, LobbyWish,
+    SessionInfo,
+};
 use crate::msg::{
     Hello, MAX_GAME_SPEED, NetMessage, Seat, SeatClaim, StartInfo, Successor, TurnContribution,
     valid_save_name,
@@ -632,6 +635,17 @@ fn start_waits_for_every_loaded() {
     }
 }
 
+/// Names from the `LoadFailed` events of machine `i`.
+fn load_failures(rig: &Rig, i: usize) -> Vec<String> {
+    rig.events[i]
+        .iter()
+        .filter_map(|e| match e {
+            CoreEvent::LoadFailed { name } => Some(name.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
 // QUIRK E-293: deviation
 #[test]
 fn load_error_aborts_for_everyone() {
@@ -644,21 +658,81 @@ fn load_error_aborts_for_everyone() {
     rig.clients[1].loaded(Some("Different rules checksum".into()));
     rig.frames_until(|r| r.all_in(&Phase::Ended));
     for i in 0..3 {
-        let failed: Vec<&String> = rig.events[i]
-            .iter()
-            .filter_map(|e| match e {
-                CoreEvent::Failed(t) => Some(t),
-                _ => None,
-            })
-            .collect();
-        assert_eq!(failed.len(), 1, "machine {i}: {:?}", rig.events[i]);
-        assert!(
-            failed[0].contains("Different rules checksum"),
-            "{}",
-            failed[0]
+        assert_eq!(
+            load_failures(&rig, i),
+            vec!["Client 2".to_string()],
+            "machine {i}: {:?}",
+            rig.events[i]
         );
+        assert!(!rig.has_event(i, is_failed), "machine {i}");
         assert!(!rig.has_event(i, |e| e == &CoreEvent::Go));
     }
+}
+
+/// A client's loading error: the host sends `LoadFailed` with the player's name before the `Bye` to every client
+/// (also the failing one); every machine reports `CoreEvent::LoadFailed` with the name instead of `Failed`, the host
+/// closes the connections after the `Bye`.
+// QUIRK E-293: deviation
+#[test]
+fn load_error_sends_load_failed_with_the_name() {
+    let mut rig = Rig::new(&[10, 20]);
+    rig.clients[1] = ClientCore::new(hello("Bert"));
+    rig.close_after_bye = true;
+    rig.frames_until(|r| r.clients.iter().all(|c| c.peer().is_some()));
+    rig.start();
+    rig.frames_until(|r| r.clients.iter().all(|c| c.phase() == &Phase::Loading));
+    rig.clients[1].loaded(Some("Different rules checksum".into()));
+    rig.frames_until(|r| r.all_in(&Phase::Ended));
+    for i in 0..3 {
+        assert_eq!(
+            load_failures(&rig, i),
+            vec!["Bert".to_string()],
+            "machine {i}"
+        );
+        // A `Bye` before the `LoadFailed` would have been a `Failed` at the clients.
+        assert!(
+            !rig.has_event(i, is_failed),
+            "machine {i}: {:?}",
+            rig.events[i]
+        );
+    }
+    let mut closed = rig.closed.clone();
+    closed.sort_unstable();
+    assert_eq!(closed, vec![1, 2], "Bye to every client");
+}
+
+/// The host's own loading error: `LoadFailed` with the host's name before the `Bye` to every client, the host itself
+/// reports `CoreEvent::LoadFailed` too; a second report has no effect.
+// QUIRK E-293: deviation
+#[test]
+fn host_load_error_sends_load_failed_with_its_name() {
+    let mut rig = Rig::new(&[10, 20]);
+    rig.close_after_bye = true;
+    rig.frames_until(|r| r.clients.iter().all(|c| c.peer().is_some()));
+    rig.start();
+    rig.frames_until(|r| r.clients.iter().all(|c| c.phase() == &Phase::Loading));
+    rig.clients[0].loaded(None);
+    rig.host.load_failed("Map is missing".into());
+    assert_eq!(rig.host.phase(), &Phase::Ended);
+    rig.frames_until(|r| r.all_in(&Phase::Ended));
+    for i in 0..3 {
+        assert_eq!(
+            load_failures(&rig, i),
+            vec!["Host".to_string()],
+            "machine {i}"
+        );
+        assert!(
+            !rig.has_event(i, is_failed),
+            "machine {i}: {:?}",
+            rig.events[i]
+        );
+    }
+    let mut closed = rig.closed.clone();
+    closed.sort_unstable();
+    assert_eq!(closed, vec![1, 2]);
+    rig.host.load_failed("once more".into());
+    assert!(rig.host.outbox().is_empty());
+    assert!(rig.host.events().is_empty());
 }
 
 // QUIRK E-263: deviation
@@ -3165,6 +3239,78 @@ fn change_game_reaches_every_client() {
     }
 }
 
+/// Data check on the host: the host's checksum and every verdict reach every client with the lobby state; a client
+/// with other rules stays out of `Ready`, `START` waits for every row.
+#[test]
+fn data_state_reaches_every_client() {
+    let mut rig = Rig::new(&[20, 30]);
+    rig.close_after_bye = true;
+    rig.host.enable_data_check();
+    rig.frames_until(|r| r.clients.iter().all(|c| c.peer().is_some()));
+    rig.frames_until(Rig::lobbies_agree);
+    let pending: Vec<DataState> = rig.host.lobby().rows[..3]
+        .iter()
+        .map(|r| r.data.clone())
+        .collect();
+    assert_eq!(
+        pending,
+        vec![DataState::Equal, DataState::Pending, DataState::Pending]
+    );
+    let input = |path: &str, hash: u64| DataInput {
+        path: path.into(),
+        hash: Some(hash),
+    };
+    let host_inputs = vec![input("maps/a.ini", 1), input("maps/b.ini", 2)];
+    let session = rig.host.lobby().session_revision;
+    assert!(
+        !rig.host
+            .set_rules(session + 1, Some(7), host_inputs.clone())
+    );
+    assert_eq!(rig.host.lobby().rules_checksum, None, "other revision");
+    assert!(rig.host.set_rules(session, Some(7), host_inputs));
+    rig.frames_until(|r| {
+        r.clients
+            .iter()
+            .all(|c| c.lobby().is_some_and(|l| l.rules_checksum == Some(7)))
+    });
+    rig.clients[0].lobby_wish(LobbyWish::Data {
+        session_revision: session,
+        report: DataReport::Rules {
+            checksum: Some(7),
+            inputs: Vec::new(),
+        },
+    });
+    rig.clients[1].lobby_wish(LobbyWish::Data {
+        session_revision: session,
+        report: DataReport::Rules {
+            checksum: Some(8),
+            inputs: vec![input("maps/a.ini", 1), input("maps/b.ini", 20)],
+        },
+    });
+    rig.frames_until(|r| r.host.lobby().rows[2].data != DataState::Pending);
+    rig.frames_until(Rig::lobbies_agree);
+    let state = rig.host.lobby().clone();
+    assert_eq!(state.rows[1].data, DataState::Equal);
+    assert_eq!(
+        state.rows[2].data,
+        DataState::Differs {
+            files: vec!["maps/b.ini".into()],
+            more: 0
+        }
+    );
+    for (i, c) in rig.clients.iter().enumerate() {
+        assert_eq!(c.lobby(), Some(&state), "Client {}", i + 1);
+    }
+    rig.host.lobby_wish(LobbyWish::Ready(true));
+    for c in &mut rig.clients {
+        c.lobby_wish(LobbyWish::Ready(true));
+    }
+    rig.frames_until(|r| r.host.lobby().rows[1].ready);
+    rig.run_for(500);
+    assert!(!rig.host.lobby().rows[2].ready, "Ready without Equal");
+    assert!(!rig.host.can_start());
+}
+
 /// The game host checks the rows (`rows_fit` holds), then a join takes row 3; the switch to three players is rejected
 /// in the core, state and announcement stay with the old session.
 // QUIRK E-307: deviation
@@ -3229,6 +3375,7 @@ fn loaded_book(seats: &[u8], host_seat: u8) -> LobbyBook {
             color: i32::from(s),
             ready: false,
             peer: None,
+            data: DataState::Equal,
         })
         .collect();
     LobbyBook::loaded(
