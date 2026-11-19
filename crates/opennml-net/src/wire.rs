@@ -631,11 +631,11 @@ mod tests {
     }
 
     #[test]
-    fn frame_of_version_3_is_rejected() {
-        assert_eq!(NET_VERSION, 4);
-        let mut r = std::io::Cursor::new(header(3, 0));
+    fn frame_of_version_4_is_rejected() {
+        assert_eq!(NET_VERSION, 5);
+        let mut r = std::io::Cursor::new(header(4, 0));
         match read_frame(&mut r) {
-            Err(WireError::Version { got }) => assert_eq!(got, 3),
+            Err(WireError::Version { got }) => assert_eq!(got, 4),
             other => panic!("expected Version, got {other:?}"),
         }
     }
