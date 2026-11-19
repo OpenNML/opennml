@@ -655,3 +655,130 @@ fn rows_fit_matches_in_ui_and_core() {
     }
     assert!(cases > 90_000);
 }
+
+/// Fixed multiplayer map of the corpus tests.
+const FIXED_MAP: &str = "data/levels/multiplayer/[2players]-tintebariver.lvl";
+
+fn request(level: &str, info: LevelInfoData) -> MatchRequest {
+    MatchRequest {
+        level: level.into(),
+        game_type: 0,
+        slots: Vec::new(),
+        settings: DraftSettings::default(),
+        info,
+    }
+}
+
+fn random_request() -> MatchRequest {
+    request(
+        "",
+        LevelInfoData {
+            name: "77".into(),
+            players: 2,
+            level_type: 1,
+            ..LevelInfoData::default()
+        },
+    )
+}
+
+fn corpus_vfs() -> Option<Vfs> {
+    let dir = opennml_rda::testutil::corpus_game_dir()?;
+    Some(Vfs::open_game_dir(dir).expect("corpus installation"))
+}
+
+fn has(entries: &[opennml_rda::ReadEntry], path: &str) -> bool {
+    entries.iter().any(|e| e.path == path && e.hash.is_some())
+}
+
+#[test]
+fn recorded_inputs_cover_the_rules_files() {
+    let Some(vfs) = corpus_vfs() else {
+        return;
+    };
+    let fixed = request(FIXED_MAP, LevelInfoData::default());
+    let (rules, entries) = net_rules_recorded(&vfs, &fixed);
+    let rules = rules.expect("rules of the fixed map");
+    assert_eq!(rules.checksum, net_rules(&vfs, &fixed).unwrap().checksum);
+    for path in [
+        "data/gifcon/bonus.ini",
+        "data/levels/multiplayer/[2players]-tintebariver.lvl",
+    ] {
+        assert!(has(&entries, path), "{path}");
+    }
+    for ext in [".wld", ".hlm"] {
+        assert!(
+            entries
+                .iter()
+                .any(|e| e.path.ends_with(ext) && e.hash.is_some()),
+            "{ext}"
+        );
+    }
+    assert!(
+        entries
+            .iter()
+            .any(|e| e.path.ends_with("nml.db") && e.hash.is_some())
+    );
+    assert!(
+        entries.windows(2).all(|w| w[0].path < w[1].path),
+        "ascending, once"
+    );
+
+    let random = random_request();
+    let (rules, entries) = net_rules_recorded(&vfs, &random);
+    let rules = rules.expect("rules of the random map");
+    assert_eq!(rules.checksum, net_rules(&vfs, &random).unwrap().checksum);
+    assert!(has(&entries, "data/gifcon/randommaptypes.ini"));
+    assert!(
+        entries
+            .iter()
+            .any(|e| e.path.ends_with(".rnd") && e.hash.is_some())
+    );
+}
+
+#[test]
+fn changed_loose_file_changes_its_entry_and_the_checksum() {
+    let Some(vfs) = corpus_vfs() else {
+        return;
+    };
+    let req = request(FIXED_MAP, LevelInfoData::default());
+    let (rules, before) = net_rules_recorded(&vfs, &req);
+    let rules = rules.unwrap();
+    let mut bytes = vfs.read("data/gifcon/bonus.ini").unwrap();
+    // A digit of a value, so that the file still parses.
+    let at = bytes.iter().rposition(u8::is_ascii_digit).expect("a digit");
+    bytes[at] = if bytes[at] == b'9' {
+        b'8'
+    } else {
+        bytes[at] + 1
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let disk = dir.path().join("bonus.ini");
+    std::fs::write(&disk, &bytes).unwrap();
+    let other = opennml_rda::testutil::with_loose_file(&vfs, "data/gifcon/bonus.ini", &disk);
+    let (changed, after) = net_rules_recorded(&other, &req);
+    assert_ne!(changed.unwrap().checksum, rules.checksum);
+    let diff: Vec<_> = before
+        .iter()
+        .zip(&after)
+        .filter(|(a, b)| a != b)
+        .map(|(a, _)| a.path.as_str())
+        .collect();
+    assert_eq!(before.len(), after.len());
+    assert_eq!(diff, ["data/gifcon/bonus.ini"]);
+}
+
+#[test]
+fn recorded_inputs_are_deterministic() {
+    let Some(vfs) = corpus_vfs() else {
+        return;
+    };
+    for req in [
+        request(FIXED_MAP, LevelInfoData::default()),
+        random_request(),
+    ] {
+        let (_, first) = net_rules_recorded(&vfs, &req);
+        let (_, second) = net_rules_recorded(&vfs, &req);
+        assert!(!first.is_empty());
+        assert_eq!(first, second);
+    }
+}

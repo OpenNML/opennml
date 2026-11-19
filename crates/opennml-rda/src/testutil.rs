@@ -78,6 +78,13 @@ pub fn game_version(vfs: &Vfs) -> Result<GameVersion, String> {
     crate::version::detect_version(vfs)
 }
 
+/// Clone of `vfs` with the loose file `game_path` taken from `disk` (added or replacing an existing
+/// loose file; it shadows an archive entry of the same name): a "second installation" for tests
+/// without copying one.
+pub fn with_loose_file(vfs: &Vfs, game_path: &str, disk: &Path) -> Vfs {
+    vfs.with_loose(game_path, disk)
+}
+
 /// Creates an artificial installation: `NML0.RDA` through `NML{archives-1}.RDA`, each with one small
 /// file; with `german`, `NML0.RDA` additionally contains the hero voice line by which the German
 /// edition is recognized.

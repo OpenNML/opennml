@@ -46,8 +46,8 @@ use opennml_net::{
     Seat, SeatClaim, Seeker, SessionInfo, SessionList, SessionSettings, StartInfo, Transport,
     TurnConfig, clean_name, clean_session_name, valid_save_name,
 };
-use opennml_rda::Vfs;
 use opennml_rda::testutil::{GameVersion, game_version};
+use opennml_rda::{ReadEntry, Vfs};
 use opennml_sim::setup::{FORMAT_VERSION, MatchSetup, start_package};
 use opennml_ui::app::MenuApp;
 use opennml_ui::assets::Texts;
@@ -1822,6 +1822,18 @@ pub fn net_rules(vfs: &Vfs, req: &MatchRequest) -> Result<opennml_sim::rules::Ru
         None => load_rules(vfs, &req.level),
     }
     .map_err(|e| format!("{e:#}"))
+}
+
+/// [`net_rules`] on a recording copy of `vfs`: besides the rules (or the reason text) the game files the rules were
+/// read from, ascending by normalized path with the hash of their bytes (`None`: reading failed). The files are the
+/// input of the game data check; `vfs` itself notes nothing.
+pub fn net_rules_recorded(
+    vfs: &Vfs,
+    req: &MatchRequest,
+) -> (Result<opennml_sim::rules::Rules, String>, Vec<ReadEntry>) {
+    let (recording, log) = vfs.recording();
+    let rules = net_rules(&recording, req);
+    (rules, log.take())
 }
 
 /// Start information per human row: slot from [`row_slots`], occupation of all slots (humans with their machine and

@@ -245,6 +245,7 @@ fn run(cli: &Cli, log: &LogHandle) -> Result<()> {
     });
     let vfs = Vfs::open_game_dir(&game_dir)
         .with_context(|| format!("opening archives in {}", game_dir.display()))?;
+    log_game_data(&vfs);
     // Blood switch of the localisation (`BloodModeEnabled`, O-392): once per program, `bloodmode` toggles it.
     opennml_client::game::blood::init_from_localisation(&vfs);
     log::info!("Settings file: {}", settings.display());
@@ -372,6 +373,45 @@ fn main() -> ExitCode {
         &mut SystemPrompt,
     );
     code
+}
+
+/// Most loose files named individually in the startup log line.
+const LOOSE_NAMES_SHOWN: usize = 20;
+
+/// Logs which archives were opened and which loose files in the game folder shadow an archive entry (they change
+/// the game data and so the network data check).
+fn log_game_data(vfs: &Vfs) {
+    let names: Vec<String> = vfs
+        .archives()
+        .iter()
+        .map(|archive| {
+            archive
+                .path()
+                .file_name()
+                .map_or_else(String::new, |n| n.to_string_lossy().into_owned())
+        })
+        .collect();
+    log::info!("Game data: {} archives ({})", names.len(), names.join(", "));
+    let loose = vfs.overriding_loose_files();
+    if !loose.is_empty() {
+        let shown = loose
+            .iter()
+            .take(LOOSE_NAMES_SHOWN)
+            .cloned()
+            .collect::<Vec<_>>();
+        let more = loose.len().saturating_sub(LOOSE_NAMES_SHOWN);
+        let tail = if more > 0 {
+            format!(", ... and {more} more")
+        } else {
+            String::new()
+        };
+        log::info!(
+            "Game data: {} loose files replace archive entries: {}{}",
+            loose.len(),
+            shown.join(", "),
+            tail
+        );
+    }
 }
 
 #[cfg(test)]

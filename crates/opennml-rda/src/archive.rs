@@ -32,7 +32,7 @@ impl Entry {
 }
 
 /// An opened RDA archive. Data is not read until [`Archive::read`] is called.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Archive {
     path: PathBuf,
     entries: Vec<Entry>,

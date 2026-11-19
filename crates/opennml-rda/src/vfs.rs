@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use crate::{Archive, Entry, RdaError};
 
@@ -24,13 +25,60 @@ pub fn normalize_path(path: &str) -> String {
 /// loaded in ascending order up to the first missing number, a later archive overrides
 /// earlier entries with the same path, and a loose file on disk takes precedence over all
 /// archives.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Vfs {
     archives: Vec<Archive>,
     index: BTreeMap<String, (usize, usize)>,
     /// Loose files in the game directory (normalized path -> file), read once when opening;
     /// empty for [`Vfs::from_archives`].
     loose: BTreeMap<String, PathBuf>,
+    /// Set in clones made by [`Vfs::recording`]: every [`Vfs::read`] is noted here.
+    log: Option<ReadLog>,
+}
+
+/// One file read through a recording [`Vfs`] (see [`Vfs::recording`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReadEntry {
+    /// Normalized game path ([`normalize_path`]), as the lookup in [`Vfs::read`] uses it.
+    pub path: String,
+    /// FNV-1a 64 of the bytes read; `None` if reading failed (missing file, I/O error). If a path
+    /// was read several times, the last result counts.
+    pub hash: Option<u64>,
+}
+
+/// Shared record of the reads of a recording [`Vfs`] and its clones.
+#[derive(Debug, Clone, Default)]
+pub struct ReadLog {
+    entries: Arc<Mutex<BTreeMap<String, Option<u64>>>>,
+}
+
+impl ReadLog {
+    /// The files read so far, ascending by path, one entry per path.
+    pub fn take(&self) -> Vec<ReadEntry> {
+        let entries = self.entries.lock().unwrap_or_else(|e| e.into_inner());
+        entries
+            .iter()
+            .map(|(path, hash)| ReadEntry {
+                path: path.clone(),
+                hash: *hash,
+            })
+            .collect()
+    }
+
+    fn note(&self, path: String, hash: Option<u64>) {
+        let mut entries = self.entries.lock().unwrap_or_else(|e| e.into_inner());
+        entries.insert(path, hash);
+    }
+}
+
+/// FNV-1a 64 (offset `0xcbf29ce484222325`, prime `0x100000001b3`).
+fn fnv1a64(bytes: &[u8]) -> u64 {
+    let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+    for &byte in bytes {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
 }
 
 impl Vfs {
@@ -82,6 +130,7 @@ impl Vfs {
             archives,
             index,
             loose: BTreeMap::new(),
+            log: None,
         }
     }
 
@@ -121,6 +170,45 @@ impl Vfs {
 
     /// Reads a file: first loose from disk, otherwise from the effective archive.
     pub fn read(&self, path: &str) -> Result<Vec<u8>, RdaError> {
+        let result = self.read_unrecorded(path);
+        if let Some(log) = &self.log {
+            log.note(
+                normalize_path(path),
+                result.as_ref().ok().map(|bytes| fnv1a64(bytes)),
+            );
+        }
+        result
+    }
+
+    /// A clone that notes every [`Vfs::read`] in the returned [`ReadLog`]; the original stays
+    /// unchanged and notes nothing. Clones of the clone share the log.
+    pub fn recording(&self) -> (Vfs, ReadLog) {
+        let log = ReadLog::default();
+        let mut vfs = self.clone();
+        vfs.log = Some(log.clone());
+        (vfs, log)
+    }
+
+    /// Normalized paths of the loose files that shadow an archive entry of the same name,
+    /// ascending.
+    pub fn overriding_loose_files(&self) -> Vec<String> {
+        self.loose
+            .keys()
+            .filter(|key| self.index.contains_key(*key))
+            .cloned()
+            .collect()
+    }
+
+    /// Clone with the loose file `game_path` pointing to `disk` (added or replaced); for tests
+    /// that need a second installation without copying one.
+    pub(crate) fn with_loose(&self, game_path: &str, disk: &Path) -> Vfs {
+        let mut vfs = self.clone();
+        vfs.loose
+            .insert(normalize_path(game_path), disk.to_path_buf());
+        vfs
+    }
+
+    fn read_unrecorded(&self, path: &str) -> Result<Vec<u8>, RdaError> {
         if let Some(file) = self.loose_file(path) {
             return std::fs::read(&file).map_err(|source| RdaError::Io { path: file, source });
         }
@@ -410,5 +498,100 @@ mod tests {
             Vfs::open_game_dir(empty.path()),
             Err(RdaError::NoArchives(_))
         ));
+    }
+
+    /// Installation with `data/a.txt` and `data/b.txt` in the archive.
+    fn two_files() -> (tempfile::TempDir, Vfs) {
+        let dir = game_dir(&[(
+            "NML0.RDA",
+            &[
+                TestFile {
+                    path: "data/a.txt",
+                    data: b"alpha",
+                    compress: true,
+                },
+                TestFile {
+                    path: "data/b.txt",
+                    data: b"beta",
+                    compress: false,
+                },
+            ],
+        )]);
+        let vfs = Vfs::open_game_dir(dir.path()).unwrap();
+        (dir, vfs)
+    }
+
+    #[test]
+    fn fnv1a64_matches_reference_values() {
+        assert_eq!(fnv1a64(b""), 0xcbf2_9ce4_8422_2325);
+        assert_eq!(fnv1a64(b"a"), 0xaf63_dc4c_8601_ec8c);
+        assert_eq!(fnv1a64(b"foobar"), 0x8594_4171_f739_67e8);
+    }
+
+    #[test]
+    fn recording_lists_every_read_once() {
+        let (_dir, vfs) = two_files();
+        let (rec, log) = vfs.recording();
+        assert_eq!(rec.read("data/a.txt").unwrap(), b"alpha");
+        assert_eq!(rec.read(r".\DATA\A.TXT").unwrap(), b"alpha");
+        assert!(rec.read("data/missing.txt").is_err());
+        assert_eq!(
+            log.take(),
+            [
+                ReadEntry {
+                    path: "data/a.txt".into(),
+                    hash: Some(fnv1a64(b"alpha")),
+                },
+                ReadEntry {
+                    path: "data/missing.txt".into(),
+                    hash: None,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn recording_does_not_touch_the_original() {
+        let (_dir, vfs) = two_files();
+        let (rec, log) = vfs.recording();
+        vfs.read("data/b.txt").unwrap();
+        assert!(log.take().is_empty());
+        rec.clone().read("data/b.txt").unwrap();
+        assert_eq!(log.take().len(), 1, "clones of the recorder share the log");
+        let (_other, other_log) = vfs.recording();
+        assert!(other_log.take().is_empty());
+    }
+
+    #[test]
+    fn overriding_loose_files_lists_only_shadowed_entries() {
+        let (dir, _) = two_files();
+        std::fs::create_dir(dir.path().join("Data")).unwrap();
+        std::fs::write(dir.path().join("Data").join("B.TXT"), b"loose b").unwrap();
+        std::fs::write(dir.path().join("Data").join("A.TXT"), b"loose a").unwrap();
+        std::fs::write(dir.path().join("Data").join("new.txt"), b"new").unwrap();
+        let vfs = Vfs::open_game_dir(dir.path()).unwrap();
+        assert_eq!(vfs.overriding_loose_files(), ["data/a.txt", "data/b.txt"]);
+        assert_eq!(vfs.read("data/b.txt").unwrap(), b"loose b");
+    }
+
+    #[test]
+    fn clone_reads_the_same_bytes() {
+        let (_dir, vfs) = two_files();
+        let copy = vfs.clone();
+        for path in ["data/a.txt", "data/b.txt"] {
+            assert_eq!(copy.read(path).unwrap(), vfs.read(path).unwrap());
+        }
+        assert_eq!(copy.len(), vfs.len());
+    }
+
+    #[test]
+    fn with_loose_file_adds_and_replaces() {
+        let (dir, vfs) = two_files();
+        let disk = dir.path().join("x.bin");
+        std::fs::write(&disk, b"changed").unwrap();
+        let other = crate::testutil::with_loose_file(&vfs, r"Data\A.txt", &disk);
+        assert_eq!(other.read("data/a.txt").unwrap(), b"changed");
+        assert_eq!(vfs.read("data/a.txt").unwrap(), b"alpha");
+        assert_eq!(other.overriding_loose_files(), ["data/a.txt"]);
     }
 }
