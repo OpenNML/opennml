@@ -1273,9 +1273,10 @@ fn changed_file_before_start_aborts_the_start() {
     );
     n.click(0, "lan4", "start");
     n.frames_until("host aborts", |l| message(&l.runs[0]).is_some());
-    // The host names the machine whose loading failed (`LoadFailed`), no longer its reason.
+    // The host names the machine whose loading failed (99 113), no longer its reason.
     let text = message(&n.runs[0]).unwrap();
-    assert!(text.contains("\"Bert\" could not load the match"), "{text}");
+    let texts = &n.runs[0].host.layer.texts;
+    assert_eq!(text, fill(&texts.display(LOAD_FAILED), &["Bert"]));
     assert!(!n.runs[1].flow.running(), "Bert has not loaded");
     assert_all_back_in_the_main_menu(&mut n);
 }

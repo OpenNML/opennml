@@ -34,9 +34,10 @@
 //! - **Game data check** (re/multiplayer-menus L.18, new lobbies of the menu path): host and client compute the rules
 //!   of the session map for every session revision in the [`RulesWorker`]; the host publishes its checksum, a client
 //!   reports `Missing` or its checksum (with its read recording if it differs); a row without `Equal` cannot become
-//!   ready, `START` waits. A client without the map stays in the lobby.
+//!   ready, `START` waits. A client without the map stays in the lobby. The differing client and the host see one
+//!   message per row and session revision ([`data_message`], one after the other, "OK" without a follow-up command).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
 use std::net::SocketAddr;
 use std::path::Path;
@@ -46,10 +47,10 @@ use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{
     Announcement, Beacon, ClientCore, Connecting, CoreEvent, DataInput, DataReport, DataState,
     FoundGame, HOST_PEER, Hello, HostCore, HostEdit, KIND_HUMAN, Listener, LobbyBook, LobbyRow,
-    LobbyRules, LobbyState, LobbyWish, LocalTime, Lockstep, MapId, NET_VERSION, Phase,
-    QUERY_INTERVAL_MS, RasterStage, RuleVerdict, Seat, SeatClaim, Seeker, SessionInfo, SessionList,
-    SessionSettings, StartInfo, Transport, TurnConfig, clean_name, clean_session_name, inputs_fit,
-    valid_save_name,
+    LobbyRules, LobbyState, LobbyWish, LocalTime, Lockstep, MapId, NET_VERSION, Peer, Phase,
+    QUERY_INTERVAL_MS, RasterStage, RuleVerdict, SHOWN_FILES, Seat, SeatClaim, Seeker, SessionInfo,
+    SessionList, SessionSettings, StartInfo, Transport, TurnConfig, clean_name, clean_session_name,
+    inputs_fit, valid_save_name,
 };
 use opennml_rda::testutil::{GameVersion, game_version};
 use opennml_rda::{ReadEntry, Vfs};
@@ -61,7 +62,10 @@ use opennml_ui::draft::{
     NetMenuView, SlotDraft,
 };
 use opennml_ui::msg::{AppCmd, LobbyAction};
-use opennml_ui::own_texts::{SAVE_NOT_LOADED, SAVE_ONE_PLAYER, SAVE_SLOT_OUT};
+use opennml_ui::own_texts::{
+    DATA_DIFFERS, FILE_UNKNOWN, FILES_MORE, MAP_MISSING, ROW_DIFFERS, ROW_MAP_MISSING,
+    SAVE_NOT_LOADED, SAVE_ONE_PLAYER, SAVE_SLOT_OUT, fill,
+};
 use opennml_ui::profiles::{name_field, name_text, name_units};
 use opennml_ui::screens::chatframe::chat_line;
 use opennml_ui::screens::lan4::{self, close_lan4, open_lan4};
@@ -70,7 +74,7 @@ use opennml_ui::screens::{
 };
 
 use crate::game::map::{MapSource, load_random_rules, load_rules};
-use crate::game::net_driver::{LEAVE_REASON, NetDriver, NetPaths};
+use crate::game::net_driver::{LEAVE_REASON, NetDriver, NetPaths, latin1_text};
 use crate::game_flow::config_speed;
 use crate::game_save::{GameSaveFile, sim_checksum};
 use crate::match_request::{active_slots, random_map_spec, row_slots, to_net_setup};
@@ -511,6 +515,124 @@ fn data_inputs(entries: Vec<ReadEntry>) -> Vec<DataInput> {
         .collect()
 }
 
+/// Message of the game data check for the verdict `state` of a row (re/multiplayer-menus L.18; deviation from E-354,
+/// E-322 in a new form), filled for the edition of `texts`; `None` for `Pending` and `Equal`. `row_name` `None`: the
+/// own row of a client (99 110, 99 105); otherwise the host's message about the row of that player (99 111, 99 112).
+/// The file list has up to [`SHOWN_FILES`] paths with `, `, then 99 114 with the number of the others, or 99 115
+/// without a known file. Paths come from a foreign read recording: every character outside printable ASCII becomes `?`
+/// (MSGBOX, O-61, E-296); the name keeps the characters up to U+00FF ([`latin1_text`]).
+pub fn data_message(state: &DataState, row_name: Option<&str>, texts: &Texts) -> Option<String> {
+    let name = row_name.map(latin1_text);
+    let text = match (state, &name) {
+        (DataState::Pending | DataState::Equal, _) => return None,
+        (DataState::Missing, None) => texts.display(MAP_MISSING),
+        (DataState::Missing, Some(name)) => fill(&texts.display(ROW_MAP_MISSING), &[name]),
+        (DataState::Differs { files, more }, None) => fill(
+            &texts.display(DATA_DIFFERS),
+            &[&file_list(files, *more, texts)],
+        ),
+        (DataState::Differs { files, more }, Some(name)) => fill(
+            &texts.display(ROW_DIFFERS),
+            &[name, &file_list(files, *more, texts)],
+        ),
+    };
+    Some(text)
+}
+
+/// File list of a differing row: up to [`SHOWN_FILES`] paths ([`shown_path`]) with `, ` (none: 99 115), then 99 114
+/// with the number of the others (`more` and paths beyond [`SHOWN_FILES`] in the list itself).
+fn file_list(files: &[String], more: u16, texts: &Texts) -> String {
+    let shown: Vec<String> = files
+        .iter()
+        .take(SHOWN_FILES)
+        .map(|f| shown_path(f))
+        .collect();
+    let mut list = if shown.is_empty() {
+        texts.display(FILE_UNKNOWN)
+    } else {
+        shown.join(", ")
+    };
+    let others = usize::from(more) + files.len().saturating_sub(SHOWN_FILES);
+    if others > 0 {
+        list.push_str(&fill(&texts.display(FILES_MORE), &[&others.to_string()]));
+    }
+    list
+}
+
+/// A path for the `MSGBOX`: printable ASCII and spaces stay, every other character becomes `?`.
+fn shown_path(path: &str) -> String {
+    path.chars()
+        .map(|c| {
+            if c.is_ascii_graphic() || c == ' ' {
+                c
+            } else {
+                '?'
+            }
+        })
+        .collect()
+}
+
+/// A message of the game data check waiting for its display: the verdict `data` of row `row` (machine `peer`, player
+/// `name` for the host's message, `None` for the own row of a client) for the session revision `session_revision`.
+#[derive(Debug, Clone, PartialEq)]
+struct DataNotice {
+    row: u8,
+    peer: Option<Peer>,
+    session_revision: u32,
+    name: Option<String>,
+    data: DataState,
+}
+
+/// Messages of the game data check of a lobby (re/multiplayer-menus L.18): the host about every row with the machine
+/// of a client, a client about its own row; each row (with its machine) and session revision once, for `Missing` and
+/// `Differs`. One after the other: the next only when no message is open; a waiting one whose row has another verdict
+/// or machine in the meantime, is gone or belongs to an older session revision is dropped.
+#[derive(Debug, Default)]
+struct DataNotices {
+    /// Rows already noted for the current session revision: (row, machine, session revision).
+    told: BTreeSet<(u8, Option<Peer>, u32)>,
+    waiting: VecDeque<DataNotice>,
+}
+
+impl DataNotices {
+    /// Takes the verdicts of the lobby state `lobby` (`own_row`: the client's row; `is_host`: this machine is host).
+    fn update(&mut self, lobby: &LobbyState, own_row: Option<u8>, is_host: bool) {
+        let revision = lobby.session_revision;
+        self.told.retain(|&(_, _, r)| r == revision);
+        self.waiting.retain(|n| {
+            n.session_revision == revision
+                && lobby
+                    .rows
+                    .get(usize::from(n.row))
+                    .is_some_and(|r| r.peer == n.peer && r.data == n.data)
+        });
+        for (row, r) in (0u8..).zip(&lobby.rows) {
+            let concerned = if is_host {
+                r.peer.is_some_and(|p| p != HOST_PEER)
+            } else {
+                own_row == Some(row)
+            };
+            if !concerned || !matches!(r.data, DataState::Missing | DataState::Differs { .. }) {
+                continue;
+            }
+            if self.told.insert((row, r.peer, revision)) {
+                self.waiting.push_back(DataNotice {
+                    row,
+                    peer: r.peer,
+                    session_revision: revision,
+                    name: is_host.then(|| r.name.clone()),
+                    data: r.data.clone(),
+                });
+            }
+        }
+    }
+
+    /// The next message to show, if no message is `open`.
+    fn next(&mut self, open: bool) -> Option<DataNotice> {
+        if open { None } else { self.waiting.pop_front() }
+    }
+}
+
 /// The host listens and announces.
 struct HostParts {
     listener: Box<dyn Listener>,
@@ -598,6 +720,8 @@ pub struct NetSession {
     kept_rules: Option<(u32, opennml_sim::rules::Rules)>,
     /// Client: own result of the data check, waiting for the host's checksum of the same session revision.
     held_report: Option<HeldReport>,
+    /// Messages of the data check, shown and waiting ([`Self::tell_data`]).
+    notices: DataNotices,
 }
 
 /// Own result of the game data check of a client, until the host's checksum for its session revision is there.
@@ -647,6 +771,7 @@ impl NetSession {
             data_job: None,
             kept_rules: None,
             held_report: None,
+            notices: DataNotices::default(),
         }
     }
 
@@ -1132,6 +1257,7 @@ impl NetSession {
         self.own_row = None;
         self.told = false;
         self.forget_data_check();
+        self.notices = DataNotices::default();
     }
 
     /// Data check of a new session from the start: nothing checked, no outstanding job, no kept rules, no held report.
@@ -1279,11 +1405,36 @@ impl NetSession {
     /// One frame of the session (in every frame): search, connect, accept, announce, driver, lobby events into
     /// application commands, game data check ([`Self::check_data`], map catalog of the menu), finally the state to the
     /// UI (`MenuData::net`, draft of the lobby).
-    pub fn pump(&mut self, now_ms: u64, app: &mut MenuApp, vfs: &Vfs) {
+    pub fn pump(&mut self, now_ms: u64, app: &mut MenuApp, vfs: &Vfs, texts: &Texts) {
         self.now_ms = now_ms;
         self.pump_search(vfs);
         self.pump_stage(app, vfs);
+        self.tell_data(app, texts);
         self.publish(app);
+    }
+
+    /// Messages of the game data check in a new lobby ([`DataNotices`], [`data_message`]): the next one as `MSGBOX`
+    /// with "OK" without a follow-up command, the lobby below it, as soon as no message is open
+    /// ([`MenuApp::message_open`]). Outside the lobby the waiting ones are dropped.
+    fn tell_data(&mut self, app: &mut MenuApp, texts: &Texts) {
+        let in_lobby = matches!(self.stage, Stage::Lobby { .. });
+        let Some(lobby) = self.lobby.as_ref().filter(|l| in_lobby && !l.is_loaded()) else {
+            self.notices.waiting.clear();
+            return;
+        };
+        self.notices.update(lobby, self.own_row, self.is_host);
+        let Some(notice) = self.notices.next(app.message_open()) else {
+            return;
+        };
+        if let Some(text) = data_message(&notice.data, notice.name.as_deref(), texts) {
+            log::info!(
+                "Network (data check): message for row {} of session {}: {:?}",
+                notice.row,
+                notice.session_revision,
+                notice.data
+            );
+            app.tell_text(text, None);
+        }
     }
 
     fn pump_search(&mut self, vfs: &Vfs) {

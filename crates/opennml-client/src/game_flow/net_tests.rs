@@ -2459,6 +2459,117 @@ fn random_map_with_other_generator_data_differs() {
     assert!(n.in_lobby(1), "{:?}", n.dialogs(1));
 }
 
+// --- Messages of the game data check and of a failed load (re/multiplayer-menus L.18) --------------------------------
+
+use opennml_ui::own_texts::{DATA_DIFFERS, LOAD_FAILED, ROW_DIFFERS, fill};
+
+/// Own text `id` of machine `i`, filled with `args`.
+fn own_text(n: &Lan, i: usize, id: i32, args: &[&str]) -> String {
+    fill(&n.runs[i].host.layer.texts.display(id), args)
+}
+
+/// Host Anna and clients Bert and Carl on a map with three slots; the machines `changed` with a changed `bonus.ini`.
+fn bonus_trio(changed: &[usize]) -> Option<Lan> {
+    let mut n = Lan::corpus(&["Anna", "Bert", "Carl"])?;
+    for &i in changed {
+        n.change_file(i, BONUS_INI, |b| bump_last_digit(b));
+    }
+    n.host_by(0, |m| m.players() >= 3);
+    n.join(1);
+    n.join(2);
+    n.frames(30);
+    n.settle();
+    Some(n)
+}
+
+/// Bert's game data differ, Carl's do not: Bert and the host see one message each ("OK" without a follow-up command,
+/// the lobby stays), Carl none.
+#[test]
+fn only_the_differing_client_and_the_host_see_a_message() {
+    let Some(mut n) = bonus_trio(&[1]) else {
+        return;
+    };
+    assert_eq!(n.lobby(0).rows[2].data, DataState::Equal);
+    assert_eq!(message(&n.runs[2]), None, "Carl sees nothing");
+    let host = own_text(&n, 0, ROW_DIFFERS, &["Bert", BONUS_INI]);
+    assert_eq!(message(&n.runs[0]), Some(host));
+    let bert = own_text(&n, 1, DATA_DIFFERS, &[BONUS_INI]);
+    assert_eq!(message(&n.runs[1]), Some(bert));
+    for i in 0..2 {
+        n.click(i, "msgbox", "ok");
+    }
+    n.frames(120);
+    for i in 0..3 {
+        assert_eq!(message(&n.runs[i]), None, "machine {i}");
+        assert!(n.in_lobby(i), "machine {i}: {:?}", n.dialogs(i));
+        assert_eq!(n.phase(i), NetPhase::Lobby, "machine {i}");
+    }
+}
+
+/// Bert's and Carl's game data differ: each sees its own message once; the host sees Bert's, after its "OK" Carl's,
+/// then none; the lobby stays on all.
+#[test]
+fn host_sees_two_differing_clients_in_turn() {
+    let Some(mut n) = bonus_trio(&[1, 2]) else {
+        return;
+    };
+    for i in 1..3 {
+        let own = own_text(&n, i, DATA_DIFFERS, &[BONUS_INI]);
+        assert_eq!(message(&n.runs[i]), Some(own), "machine {i}");
+    }
+    for name in ["Bert", "Carl"] {
+        let row = own_text(&n, 0, ROW_DIFFERS, &[name, BONUS_INI]);
+        assert_eq!(message(&n.runs[0]), Some(row));
+        n.click(0, "msgbox", "ok");
+    }
+    for i in 1..3 {
+        n.click(i, "msgbox", "ok");
+    }
+    n.frames(120);
+    for i in 0..3 {
+        assert_eq!(message(&n.runs[i]), None, "machine {i}");
+        assert!(n.in_lobby(i), "machine {i}: {:?}", n.dialogs(i));
+    }
+    assert!(!n.host_core_mut().can_start());
+}
+
+/// Deviates from E-352: loading fails despite the check (Bert's `bonus.ini` changes after the verdict `Equal`). The
+/// host names the machine to everyone: host, Carl and Bert himself show 99 113 with "Bert" (the reason stays in the
+/// log); "OK" leads each to the main menu, the sessions are closed, nobody panics.
+// QUIRK E-352: deviation
+#[test]
+fn load_failure_names_the_machine_for_everyone() {
+    let Some(mut n) = bonus_trio(&[]) else {
+        return;
+    };
+    for i in 1..3 {
+        assert_eq!(n.lobby(0).rows[i].data, DataState::Equal, "row {i}");
+    }
+    n.change_file(1, BONUS_INI, |b| bump_last_digit(b));
+    n.all_ready(&[(0, 0), (1, 1), (2, 2)]);
+    n.frames_until("START visible", start_shown);
+    n.runs[0].click("lan2", "start");
+    n.frames_until("message on all", |l| {
+        l.runs.iter().all(|r| message(r).is_some())
+    });
+    n.settle();
+    for i in 0..3 {
+        let expected = own_text(&n, i, LOAD_FAILED, &["Bert"]);
+        assert_eq!(message(&n.runs[i]), Some(expected), "machine {i}");
+    }
+    assert!(!n.runs[1].flow.running(), "Bert has not loaded");
+    for run in &mut n.runs {
+        run.click("msgbox", "ok");
+    }
+    n.frames_until("main menu on all", |l| l.runs.iter().all(in_main_menu));
+    for i in 0..3 {
+        assert_eq!(n.phase(i), NetPhase::Idle, "machine {i}");
+        assert!(session_closed(&n, i), "machine {i}");
+        assert!(!n.runs[i].flow.running(), "machine {i}: no match");
+        assert_eq!(n.runs[i].host.app.data().accounting, None, "machine {i}");
+    }
+}
+
 /// The host cleans the computer names of the rows when creating them (`[`/`]` are dropped); host and client show the
 /// same name.
 #[test]
@@ -3571,7 +3682,7 @@ fn failure_before_go_still_goes_to_the_main_menu() {
     n.runs[1].view.fail_level = Some(level);
     n.frames_until("message on the host", |l| message(&l.runs[0]).is_some());
     let text = message(&n.runs[0]).unwrap();
-    assert!(text.contains("could not load the match"), "{text}");
+    assert_eq!(text, own_text(&n, 0, LOAD_FAILED, &["Bert"]));
     assert!(
         !n.runs[0].view.net().expect("driver in the match").started(),
         "no Go"

@@ -62,7 +62,9 @@ use crate::game::hud::HudOptions;
 use crate::game::input::CameraKeys;
 use crate::game::input_gate::{InputGate, sim_gate};
 use crate::game::map::MapSource;
-use crate::game::net_driver::{LEAVE_REASON, NetDriver, NetFinish, NetFrame, NetPaths, NetSave};
+use crate::game::net_driver::{
+    LEAVE_REASON, NetDriver, NetFinish, NetFrame, NetPaths, NetSave, load_failed_message,
+};
 use crate::game::options::{Controls, ViewOptions};
 use crate::game::pause::PauseState;
 use crate::game::pointer::PointerChoice;
@@ -1165,7 +1167,7 @@ impl GameFlow {
             let saved = finish
                 .save_name()
                 .is_some_and(|name| written.iter().any(|w| w == name));
-            let text = finish.message(saved);
+            let text = finish.message(saved, texts);
             log::warn!("Network: match over: {text}");
             // The message carries the end.
             self.ended = true;
@@ -1870,7 +1872,7 @@ impl GameFlow {
         let Some(net) = self.net.as_mut() else {
             return;
         };
-        net.pump(now, app, env.vfs);
+        net.pump(now, app, env.vfs, env.texts);
         net.follow_match(view.net(), running);
         let Some(driver) = net.take_start() else {
             return;
@@ -2067,7 +2069,9 @@ impl GameFlow {
     }
 
     /// Failed network start: a half-started match does not stay (none was running before), `Loaded { error }` to the
-    /// driver (for the host an abort for everyone), menu music and main menu on again; the driver goes back.
+    /// driver (for the host an abort for everyone), menu music and main menu on again; the driver goes back. Over the
+    /// main menu message 99 113 with the own cleaned name, like on the other machines from the host's `LoadFailed`
+    /// (deviation from E-352); "OK" without a follow-up command. The reason itself stays in the log.
     fn net_start_failed(
         mut net: NetDriver,
         error: String,
@@ -2079,6 +2083,8 @@ impl GameFlow {
         net.loaded(Some(error.clone()));
         view.restore_menu_music(env.vfs);
         app.open_main_menu();
+        let name = opennml_net::clean_name(&name_text(&app.config().net_name));
+        app.tell_text(load_failed_message(&name, env.texts), None);
         Box::new(NetStartFailure { error, net })
     }
 

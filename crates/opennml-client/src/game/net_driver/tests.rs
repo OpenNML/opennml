@@ -1124,7 +1124,7 @@ fn mirror_commands_go_out_only_from_the_host() {
 
 /// E-293: If loading fails at the host, the session aborts for all. Every client gets `LoadFailed` with the host's
 /// name and `Bye`, reports `failed` and stands in `Phase::Ended`; nobody computes a tick. The error itself stays in
-/// the host's log.
+/// the host's log; the end names the player (deviation from E-352: message 99 113).
 #[test]
 fn host_load_failure_ends_the_session_for_all() {
     let mut t = Table::loading();
@@ -1141,11 +1141,13 @@ fn host_load_failure_ends_the_session_for_all() {
             "machine {i}: {text}"
         );
         assert_eq!(m.sim.state.steps, 0, "nobody computes");
-        // Whoever is already in the loaded match gets an end with a message.
-        assert!(
-            matches!(m.finish.as_slice(), [NetFinish::Failed(f)] if f.contains("could not load the match")),
-            "machine {i}: {:?}",
-            m.finish
+        // Whoever is already in the loaded match gets an end with the player's name for the message.
+        assert_eq!(
+            m.finish,
+            [NetFinish::LoadFailed {
+                name: "Host".into()
+            }],
+            "machine {i}"
         );
     }
 }
@@ -1899,31 +1901,48 @@ fn client_leave_says_bye_and_loses_the_slot() {
 // QUIRK E-296: kept
 #[test]
 fn finish_messages_name_the_save() {
+    let texts = own_texts();
     let name = "netz_2026_11_06_1415".to_string();
     assert_eq!(
-        NetFinish::HostEnded { name: name.clone() }.message(true),
+        NetFinish::HostEnded { name: name.clone() }.message(true, &texts),
         "The host has ended the match. It was saved as \"netz_2026_11_06_1415\"."
     );
     assert_eq!(
-        NetFinish::HostLost { name: name.clone() }.message(true),
+        NetFinish::HostLost { name: name.clone() }.message(true, &texts),
         "The connection to the host was aborted. The match was saved as \"netz_2026_11_06_1415\"."
     );
     assert_eq!(
         NetFinish::Stopped {
             name: "checksumerror_2026_11_06_1415".into()
         }
-        .message(true),
+        .message(true, &texts),
         "The match is no longer in sync (checksum error). It was stopped and saved as \
          \"checksumerror_2026_11_06_1415\"."
     );
     assert_eq!(
-        NetFinish::HostLost { name }.message(false),
+        NetFinish::HostLost { name }.message(false, &texts),
         "The connection to the host was aborted. The match could not be saved."
     );
     assert_eq!(
-        NetFinish::Failed("The resync with the host failed.".into()).message(false),
+        NetFinish::Failed("The resync with the host failed.".into()).message(false, &texts),
         "The resync with the host failed."
     );
+    assert_eq!(
+        NetFinish::LoadFailed {
+            name: "Bert".into()
+        }
+        .message(false, &texts),
+        "[CENTER]Bert konnte die Partie nicht laden. Der Start wurde abgebrochen."
+    );
+}
+
+/// Texts without an installation: only the own texts, German (no edition detected).
+fn own_texts() -> Texts {
+    let (_dir, vfs) = crate::testutil::install(&[]);
+    Texts::load(
+        &vfs,
+        &opennml_formats::localisation::Localisation::default(),
+    )
 }
 
 /// The network messages appear in the `MSGBOX` through the text path of the original, which takes only the lower byte
@@ -1933,6 +1952,7 @@ fn finish_messages_name_the_save() {
 // QUIRK E-296: kept
 #[test]
 fn net_messages_stay_within_latin1() {
+    let own = own_texts();
     let name = "netz_2026_11_06_1415".to_string();
     let mut texts = Vec::new();
     for saved in [true, false] {
@@ -1944,9 +1964,12 @@ fn net_messages_stay_within_latin1() {
             NetFinish::HostLost { name: name.clone() },
             NetFinish::Failed(HOST_LOST.into()),
             NetFinish::Failed("Savegame „x“ – damaged (café) … ≠ ‚y‘".into()),
+            NetFinish::LoadFailed {
+                name: "Zo\u{eb} \u{674e}".into(),
+            },
             NetFinish::HandedOver,
         ] {
-            texts.push(finish.message(saved));
+            texts.push(finish.message(saved, &own));
         }
     }
     texts.extend([HOST_LOST, LEAVE_REASON].map(String::from));
@@ -1958,7 +1981,7 @@ fn net_messages_stay_within_latin1() {
         );
     }
     assert_eq!(
-        NetFinish::Failed("Savegame „x“ – damaged (café) … ≠ ‚y‘".into()).message(false),
+        NetFinish::Failed("Savegame „x“ – damaged (café) … ≠ ‚y‘".into()).message(false, &own),
         "Savegame \"x\" - damaged (café) ... != 'y'"
     );
 }

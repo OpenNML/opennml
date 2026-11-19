@@ -903,7 +903,7 @@ impl Pair {
         self.now += 16;
         self.net.advance_to(self.now);
         for m in &mut self.machines {
-            m.session.pump(self.now, &mut m.app, &m.vfs);
+            m.session.pump(self.now, &mut m.app, &m.vfs, &self.texts);
         }
     }
 
@@ -911,6 +911,31 @@ impl Pair {
         for _ in 0..n {
             self.frame();
         }
+    }
+
+    /// Installation of machine `i`: the game file `game_path` changed by `edit` as a loose file of its own (shadows
+    /// the archive entry); the other machine keeps its own. Call before the rules of the session are computed.
+    fn change_file(&mut self, i: usize, game_path: &str, edit: impl FnOnce(&mut Vec<u8>)) {
+        let m = &mut self.machines[i];
+        let mut bytes = m.vfs.read(game_path).expect("game file");
+        edit(&mut bytes);
+        let disk = self._dir.path().join(format!("install-{i}"));
+        std::fs::create_dir_all(&disk).expect("folder");
+        let disk = disk.join(game_path.rsplit('/').next().expect("file name"));
+        std::fs::write(&disk, &bytes).expect("loose file");
+        m.vfs = opennml_rda::testutil::with_loose_file(&m.vfs, game_path, &disk);
+    }
+
+    /// Free text of the last message of machine `i` and the number of `MSGBOX` openings in its queue (the menu of
+    /// [`Pair`] runs no frames: every message stays queued and counts as open).
+    fn messages(&self, i: usize) -> (Option<String>, usize) {
+        let app = &self.machines[i].app;
+        let opened = app
+            .queue()
+            .iter()
+            .filter(|c| matches!(c, AppCmd::Open { name, .. } if name == "msgbox"))
+            .count();
+        (app.screen_state().info_free.clone(), opened)
     }
 
     fn frames_until(&mut self, what: &str, cond: impl Fn(&Self) -> bool) {
@@ -1171,4 +1196,343 @@ fn second_change_discards_the_running_check() {
     let rules = net_rules(&p.machines[0].vfs, &p.host_request()).unwrap();
     assert_eq!(lobby.rules_checksum, Some(rules.checksum));
     assert!(p.host_core().can_start(), "ready flags stay (E-302)");
+}
+
+// --- Messages of the game data check (re/multiplayer-menus L.18) -----------------------------------------------------
+
+use opennml_ui::own_texts::{
+    DATA_DIFFERS, FILE_UNKNOWN, FILES_MORE, MAP_MISSING, ROW_DIFFERS, ROW_MAP_MISSING, fill,
+};
+
+/// Game file of the rules of every map (bonus values of the objects).
+const BONUS_INI: &str = "data/gifcon/bonus.ini";
+
+/// Changes the last digit of the file (a digit of a value, so that the file still parses).
+fn bump_last_digit(bytes: &mut [u8]) {
+    let at = bytes.iter().rposition(u8::is_ascii_digit).expect("a digit");
+    bytes[at] = if bytes[at] == b'9' {
+        b'8'
+    } else {
+        bytes[at] + 1
+    };
+}
+
+fn differs(files: &[&str], more: u16) -> DataState {
+    DataState::Differs {
+        files: files.iter().map(|f| f.to_string()).collect(),
+        more,
+    }
+}
+
+/// Host Anna and client Bert on the small 2-player map, Bert with a changed `bonus.ini`; up to the verdict of Bert's
+/// row.
+fn bonus_pair() -> Option<Pair> {
+    let mut p = Pair::corpus(Box::new(InlineWorker::default()))?;
+    p.change_file(1, BONUS_INI, |b| bump_last_digit(b));
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.frames_until("verdict of the client", |p| {
+        p.client_data() != DataState::Pending
+    });
+    assert_eq!(p.client_data(), differs(&[BONUS_INI], 0));
+    p.frames(20);
+    Some(p)
+}
+
+/// More lobby states of the same session revision: the host toggles its Ready flag a few times.
+fn more_lobby_states(p: &mut Pair) {
+    let revision = p.host_lobby().revision;
+    let session = p.host_lobby().session_revision;
+    for ready in [true, false, true] {
+        let m = &mut p.machines[0];
+        let wish = LobbyAction::Ready { row: 0, ready };
+        m.session.on_lobby(&wish, &mut m.app, &m.vfs, &p.texts);
+        p.frames(10);
+    }
+    let lobby = p.host_lobby();
+    assert!(lobby.revision > revision, "new lobby states");
+    assert_eq!(lobby.session_revision, session, "same session revision");
+}
+
+/// The differing client sees its files once per session revision ("OK" without a follow-up command, the lobby below
+/// it), also after further lobby states; a new session revision with the same verdict brings one more.
+#[test]
+fn client_sees_its_differing_files_once() {
+    let Some(mut p) = bonus_pair() else {
+        return;
+    };
+    let expected = fill(&p.texts.display(DATA_DIFFERS), &[BONUS_INI]);
+    assert_eq!(p.messages(1), (Some(expected.clone()), 1));
+    assert!(p.machines[1].app.screen_state().info_ok.is_none());
+    more_lobby_states(&mut p);
+    assert_eq!(p.messages(1), (Some(expected), 1));
+    assert!(p.machines[1].session.notices.waiting.is_empty());
+    // A map change to another map with the same `bonus.ini` difference: one message for the new revision, waiting
+    // behind the open one.
+    let next = p.two_player_maps()[1].clone();
+    p.switch(&next);
+    p.frames_until("verdict for the new map", |p| {
+        p.client_data() != DataState::Pending
+    });
+    p.frames(10);
+    let waiting: Vec<DataState> = p.machines[1]
+        .session
+        .notices
+        .waiting
+        .iter()
+        .map(|n| n.data.clone())
+        .collect();
+    assert_eq!(waiting, [differs(&[BONUS_INI], 0)]);
+    assert_eq!(p.messages(1).1, 1, "waits for the OK");
+}
+
+/// The host sees the name of the row and its files once per session revision.
+#[test]
+fn host_sees_the_row_name_and_files_once() {
+    let Some(mut p) = bonus_pair() else {
+        return;
+    };
+    let expected = fill(&p.texts.display(ROW_DIFFERS), &["Bert", BONUS_INI]);
+    assert_eq!(p.messages(0), (Some(expected.clone()), 1));
+    assert!(p.machines[0].app.screen_state().info_ok.is_none());
+    more_lobby_states(&mut p);
+    assert_eq!(p.messages(0), (Some(expected), 1));
+    assert!(p.machines[0].session.notices.waiting.is_empty());
+    assert!(p.machines[0].session.is_host_lobby(), "the lobby stays");
+}
+
+/// The fixed map of the session is missing on the client: 99 105 there (own row), 99 112 with the name on the host.
+#[test]
+fn missing_map_shows_99_105_and_99_112() {
+    let Some(mut p) = Pair::corpus(Box::new(InlineWorker::default())) else {
+        return;
+    };
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.frames_until("first verdict", |p| p.client_data() == DataState::Equal);
+    p.frames(10);
+    assert_eq!(p.messages(0), (None, 0), "no message with Equal");
+    assert_eq!(p.messages(1), (None, 0), "no message with Equal");
+    let mut s = p.host_lobby().session;
+    s.map = MapId::Fixed {
+        path: "multiplayer/gibtesnicht.lvl".into(),
+        checksum: 1,
+    };
+    p.host_core_mut().set_session(s).expect("map change");
+    p.frames_until("verdict Missing", |p| p.client_data() == DataState::Missing);
+    p.frames(10);
+    assert_eq!(p.messages(1), (Some(p.texts.display(MAP_MISSING)), 1));
+    let host = fill(&p.texts.display(ROW_MAP_MISSING), &["Bert"]);
+    assert_eq!(p.messages(0), (Some(host), 1));
+}
+
+/// Up to three paths with `, `, then " and %d more" with the number of the others - from `more` and from paths beyond
+/// three in the list itself; `Pending` and `Equal` have no message.
+#[test]
+fn five_files_show_three_and_two_more() {
+    let texts = texts();
+    let three = differs(&["a.ini", "b.ini", "c.ini"], 2);
+    let expected = fill(
+        &texts.display(ROW_DIFFERS),
+        &[
+            "Bert",
+            &format!(
+                "a.ini, b.ini, c.ini{}",
+                fill(&texts.display(FILES_MORE), &["2"])
+            ),
+        ],
+    );
+    assert_eq!(
+        expected,
+        "[CENTER]Die Spieldaten von Bert weichen ab: a.ini, b.ini, c.ini und 2 weitere. Die Partie kann so nicht \
+         beginnen."
+    );
+    assert_eq!(
+        data_message(&three, Some("Bert"), &texts),
+        Some(expected.clone())
+    );
+    let five = differs(&["a.ini", "b.ini", "c.ini", "d.ini", "e.ini"], 0);
+    assert_eq!(data_message(&five, Some("Bert"), &texts), Some(expected));
+    let own = data_message(
+        &differs(&["a.ini", "b.ini", "c.ini", "d.ini"], 1),
+        None,
+        &texts,
+    );
+    assert_eq!(
+        own.as_deref(),
+        Some(
+            "[CENTER]Ihre Spieldaten für diese Karte weichen vom Host ab: a.ini, b.ini, c.ini und 2 weitere. Sie \
+             können erst mitspielen, wenn die Dateien übereinstimmen."
+        )
+    );
+    for state in [DataState::Pending, DataState::Equal] {
+        assert_eq!(data_message(&state, Some("Bert"), &texts), None);
+        assert_eq!(data_message(&state, None, &texts), None);
+    }
+}
+
+/// `Differs` without a known file (e.g. a read recording beyond the limits of the wire): "file unknown".
+#[test]
+fn unknown_file_text_for_an_empty_list() {
+    let texts = texts();
+    let unknown = texts.display(FILE_UNKNOWN);
+    assert_eq!(unknown, "Datei unbekannt");
+    let empty = differs(&[], 0);
+    assert_eq!(
+        data_message(&empty, None, &texts),
+        Some(fill(&texts.display(DATA_DIFFERS), &[&unknown]))
+    );
+    assert_eq!(
+        data_message(&empty, Some("Bert"), &texts),
+        Some(fill(&texts.display(ROW_DIFFERS), &["Bert", &unknown]))
+    );
+}
+
+/// Paths come from a foreign read recording: every character outside printable ASCII becomes `?` (MSGBOX, O-61,
+/// E-296), the name keeps the characters up to U+00FF; no panic.
+#[test]
+fn paths_are_ascii_in_the_message() {
+    let texts = texts();
+    let state = differs(
+        &[
+            "data/b\u{f6}nus.ini",
+            "data/\u{7}x\ty.ini",
+            "data/\u{65e5}\u{672c}.ini",
+        ],
+        0,
+    );
+    let text = data_message(&state, Some("Zo\u{eb} \u{674e}"), &texts).expect("message");
+    assert_eq!(
+        text,
+        fill(
+            &texts.display(ROW_DIFFERS),
+            &["Zo\u{eb} ?", "data/b?nus.ini, data/?x?y.ini, data/??.ini"]
+        )
+    );
+    assert!(text.chars().all(|c| u32::from(c) <= 0xFF), "{text}");
+    // A long hostile path: shown as given (the wire limits the length), still without a panic.
+    let long = format!("{}\u{1F600}", "x".repeat(300));
+    let text = data_message(&differs(&[&long], u16::MAX), None, &texts).expect("message");
+    assert!(text.contains(&format!("{}?", "x".repeat(300))), "{text}");
+    assert!(text.contains("65535"), "{text}");
+}
+
+/// Lobby row of the tests of the message queue: a human on `peer` named `name` with the verdict `data`.
+fn data_row(peer: u8, name: &str, data: DataState) -> LobbyRow {
+    LobbyRow {
+        kind: KIND_HUMAN,
+        name: name.into(),
+        peer: Some(peer),
+        data,
+        ..row(KIND_HUMAN, i32::from(peer), i32::from(peer))
+    }
+}
+
+/// Lobby state with host Anna (row 0) and the rows `rows` behind it, for the session revision `session_revision`.
+fn data_lobby(session_revision: u32, rows: Vec<LobbyRow>) -> LobbyState {
+    let mut all = vec![data_row(HOST_PEER, "Anna", DataState::Equal)];
+    all.extend(rows);
+    LobbyState {
+        revision: session_revision,
+        session_revision,
+        rules_checksum: Some(1),
+        session: SessionInfo::plain("Round", "x.lvl", 3, TurnConfig::default()),
+        rows: all,
+        max_rtt_ms: None,
+        seats: Vec::new(),
+    }
+}
+
+/// Name and verdict of the next message to show (the box is closed).
+fn next_shown(notices: &mut DataNotices) -> Option<(Option<String>, DataState)> {
+    notices.next(false).map(|n| (n.name, n.data))
+}
+
+/// A client sees only the verdict of its own row, without a name; the host sees every row with a machine.
+#[test]
+fn other_clients_see_nothing() {
+    let bert = differs(&[BONUS_INI], 0);
+    let lobby = data_lobby(
+        0,
+        vec![
+            data_row(1, "Bert", bert.clone()),
+            data_row(2, "Carl", DataState::Equal),
+        ],
+    );
+    let mut carl = DataNotices::default();
+    carl.update(&lobby, Some(2), false);
+    assert_eq!(next_shown(&mut carl), None);
+    let mut bert_notices = DataNotices::default();
+    bert_notices.update(&lobby, Some(1), false);
+    assert_eq!(next_shown(&mut bert_notices), Some((None, bert.clone())));
+    let mut host = DataNotices::default();
+    host.update(&lobby, Some(0), true);
+    assert_eq!(next_shown(&mut host), Some((Some("Bert".into()), bert)));
+    assert_eq!(next_shown(&mut host), None);
+}
+
+/// Two differing rows on the host: one message after the other, each after the "OK" of the one before; a waiting
+/// message whose row has another verdict in the meantime or is gone is dropped; no "OK" gets lost, and every row and
+/// session revision has its message only once.
+#[test]
+fn two_differing_rows_show_two_messages_in_turn() {
+    let bert = differs(&[BONUS_INI], 0);
+    let carl = DataState::Missing;
+    let both = |session: u32, b: &DataState, c: &DataState| {
+        data_lobby(
+            session,
+            vec![
+                data_row(1, "Bert", b.clone()),
+                data_row(2, "Carl", c.clone()),
+            ],
+        )
+    };
+    let mut host = DataNotices::default();
+    host.update(&both(0, &bert, &carl), Some(0), true);
+    assert_eq!(
+        next_shown(&mut host),
+        Some((Some("Bert".into()), bert.clone()))
+    );
+    // Bert's message is open: Carl's waits, also over further lobby states.
+    assert!(host.next(true).is_none());
+    let mut later = both(0, &bert, &carl);
+    later.revision = 5;
+    host.update(&later, Some(0), true);
+    assert!(host.next(true).is_none());
+    // "OK": Carl's comes, then nothing more for this session revision.
+    assert_eq!(
+        next_shown(&mut host),
+        Some((Some("Carl".into()), carl.clone()))
+    );
+    host.update(&later, Some(0), true);
+    assert_eq!(next_shown(&mut host), None);
+    // New session revision: Bert's comes; Carl's row becomes `Equal` before the "OK" - his message is dropped.
+    host.update(&both(1, &bert, &carl), Some(0), true);
+    assert_eq!(
+        next_shown(&mut host),
+        Some((Some("Bert".into()), bert.clone()))
+    );
+    host.update(&both(1, &bert, &DataState::Equal), Some(0), true);
+    assert_eq!(next_shown(&mut host), None);
+    // Next revision: Carl leaves (open row) before the "OK" of Bert's message - his message is dropped.
+    host.update(&both(2, &bert, &carl), Some(0), true);
+    assert_eq!(
+        next_shown(&mut host),
+        Some((Some("Bert".into()), bert.clone()))
+    );
+    let mut gone = both(2, &bert, &carl);
+    gone.rows[2] = row(0, 2, 2);
+    host.update(&gone, Some(0), true);
+    assert_eq!(next_shown(&mut host), None);
+    // A changed verdict of the same row and revision (another file) is the same row and revision: no second message.
+    host.update(&both(3, &bert, &DataState::Equal), Some(0), true);
+    assert_eq!(next_shown(&mut host), Some((Some("Bert".into()), bert)));
+    host.update(
+        &both(3, &differs(&["x.ini"], 0), &DataState::Equal),
+        Some(0),
+        true,
+    );
+    assert_eq!(next_shown(&mut host), None);
 }
