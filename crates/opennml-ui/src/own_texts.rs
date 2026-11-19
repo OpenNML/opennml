@@ -2,9 +2,10 @@
 //! network rows in `LEVELINFO` (the selection field `TURNRASTER` in `LAN3` was dropped), the messages when hosting
 //! from a network savegame, and the messages of the game data check in the lobby and of a failed network start
 //! (re/multiplayer-menus L.18). Placeholders `%s` and `%d` are filled in order when a text is shown ([`fill`]). One
-//! text per edition (German, English); [`crate::assets::Texts::load`] inserts the texts of the detected edition into the table (only numbers
-//! that the installation does not occupy itself), afterwards [`crate::assets::Texts::resolve`] resolves them like
-//! texts from `localisation.*`. Without a detected edition the German ones apply.
+//! text per edition (German, English); [`crate::assets::Texts::load`] inserts the texts of the detected edition into
+//! the table (only numbers that the installation does not occupy itself), afterwards
+//! [`crate::assets::Texts::resolve`] resolves them like texts from `localisation.*`. Without a detected edition the
+//! German ones apply.
 
 use opennml_rda::testutil::GameVersion;
 

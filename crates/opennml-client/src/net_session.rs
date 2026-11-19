@@ -242,9 +242,8 @@ pub fn map_checksum(vfs: &Vfs, lvl: &str) -> Option<u64> {
 /// Does this machine have the map `map` of the session (map filter of the game list, re/multiplayer-menus L.1.3; in
 /// the lobby the first step of the game data check, `NetSession::check_data`)? Fixed map: `.lvl` and `.wld` readable
 /// with the same [`map_checksum`]; random map: always (differing generator data show in the rules checksum of the
-/// data check). Network savegame
-/// (`MapId::Saved`): always returns `false` and must never be asked for it - it lies in the savegame folder of the
-/// machine, which the session checks itself (`NetSession::saved_here`, `read_net_head`).
+/// data check). Network savegame (`MapId::Saved`): always returns `false` and must never be asked for it - it lies in
+/// the savegame folder of the machine, which the session checks itself (`NetSession::saved_here`, `read_net_head`).
 pub fn map_available(vfs: &Vfs, map: &MapId) -> bool {
     match map {
         MapId::Fixed { path, checksum } => map_checksum(vfs, path) == Some(*checksum),
@@ -563,17 +562,26 @@ fn file_list(files: &[String], more: u16, texts: &Texts) -> String {
     list
 }
 
-/// A path for the `MSGBOX`: printable ASCII and spaces stay, every other character becomes `?`.
+/// Longest path in the `MSGBOX` in characters, `...` included (the paths of the game data have at most 76).
+const SHOWN_PATH_CHARS: usize = 80;
+
+/// A path for the `MSGBOX`: printable ASCII and spaces stay, every other character and the brackets of the text tags
+/// become `?` (no markup from the network, as for names and chat); longer than [`SHOWN_PATH_CHARS`] it is cut with
+/// `...`.
 fn shown_path(path: &str) -> String {
-    path.chars()
-        .map(|c| {
-            if c.is_ascii_graphic() || c == ' ' {
-                c
-            } else {
-                '?'
-            }
-        })
-        .collect()
+    let shown = |c: char| {
+        if (c.is_ascii_graphic() || c == ' ') && c != '[' && c != ']' {
+            c
+        } else {
+            '?'
+        }
+    };
+    if path.chars().count() <= SHOWN_PATH_CHARS {
+        return path.chars().map(shown).collect();
+    }
+    let mut cut: String = path.chars().take(SHOWN_PATH_CHARS - 3).map(shown).collect();
+    cut.push_str("...");
+    cut
 }
 
 /// A message of the game data check waiting for its display: the verdict `data` of row `row` (machine `peer`, player
@@ -1059,7 +1067,8 @@ impl NetSession {
         let session = session_from_draft(&draft, name, vfs, raster)?;
         let rows = rows_from_draft(&draft, session.players);
         let mut book = LobbyBook::new(session, rows, player.clone())?;
-        // Menu path: the game data check applies (re/multiplayer-menus L.18; the command line checks only when loading).
+        // Menu path: the game data check applies (re/multiplayer-menus L.18; the command line checks only when
+        // loading).
         book.enable_data_check();
         self.start_hosting(book, player)
     }
@@ -1411,6 +1420,21 @@ impl NetSession {
                 color,
             }),
             LobbyAction::Ready { row, ready } if Some(row) == own => {
+                // The core discards `Ready(true)` of a row without `Equal` (re/multiplayer-menus L.18) without a new
+                // state. If the own state has no `Equal` yet (the host's may be newer, so the wish goes out anyway),
+                // the next state to the UI is sent even without a change: it clears a checkmark the handler set
+                // locally, and the host's next state sets it again if it took the wish.
+                let unequal = self.lobby.as_ref().is_some_and(|l| {
+                    l.rows
+                        .get(usize::from(row))
+                        .is_some_and(|r| r.data != DataState::Equal)
+                });
+                if ready && unequal {
+                    log::info!(
+                        "Network: READY before the verdict Equal, shown again from the state"
+                    );
+                    self.shown = None;
+                }
                 core.lobby_wish(LobbyWish::Ready(ready));
             }
             LobbyAction::Chat(text) => core.lobby_wish(LobbyWish::Chat(text)),
@@ -1787,15 +1811,16 @@ impl NetSession {
                 inputs
             } else {
                 log::warn!(
-                    "Network (data check): read recording beyond the limits of the wire ({} entries), sent without files",
+                    "Network (data check): recording beyond the wire limits ({} entries), sent without files",
                     inputs.len()
                 );
                 Vec::new()
             }
         };
         log::info!(
-            "Network (data check): session {revision}, own checksum {:?}, host {host:#018X}",
+            "Network (data check): session {revision}, own checksum {}, host {host:#018X}",
             held.checksum
+                .map_or_else(|| "none".to_string(), |c| format!("{c:#018X}"))
         );
         core.lobby_wish(LobbyWish::Data {
             session_revision: revision,
@@ -2040,10 +2065,18 @@ impl NetSession {
         let l = self.lobby.as_ref()?;
         let mut ready = [false; 8];
         let mut peers = [false; 8];
+        let mut data_locked = [false; 8];
         for (i, r) in l.rows.iter().enumerate().take(8) {
             ready[i] = r.ready;
             peers[i] = r.peer.is_some();
+            data_locked[i] = r.data != DataState::Equal;
         }
+        let start_locked = match &self.stage {
+            Stage::Lobby { driver } if self.is_host => {
+                driver.host_core().is_some_and(HostCore::data_holds_start)
+            }
+            _ => false,
+        };
         Some(LobbyView {
             is_host: self.is_host,
             own_row: self.own_row.unwrap_or(0),
@@ -2052,6 +2085,8 @@ impl NetSession {
             chat: self.chat.clone(),
             stage: stage_of(l.session.spacing, l.session.lead),
             max_rtt_ms: if self.is_host { l.max_rtt_ms } else { None },
+            data_locked,
+            start_locked,
         })
     }
 
@@ -2068,10 +2103,10 @@ impl NetSession {
     /// draft - never from `Info` or what `LAN31` last showed (deviating from E-281). Then rules of the map
     /// ([`net_rules`]: `.lvl` or random map), setup [`to_net_setup`] with the seed of the identity, slots of the rows
     /// from the same calculation ([`row_slots`]), start package, start information per row (game speed `GameSpeed` of
-    /// the host, session name), then [`HostCore::start_from_lobby`] (checks the lobby once more). The rules are those of
-    /// the game data check if they belong to the current session revision ([`Self::check_data`]). Success: the driver
-    /// with its own start for `GameFlow::start_net_match`, listener and announcement closed. Error (reason as text):
-    /// the lobby stays.
+    /// the host, session name), then [`HostCore::start_from_lobby`] (checks the lobby once more). The rules are those
+    /// of the game data check if they belong to the current session revision ([`Self::check_data`]). Success: the
+    /// driver with its own start for `GameFlow::start_net_match`, listener and announcement closed. Error (reason as
+    /// text): the lobby stays.
     pub fn start_host_match(
         &mut self,
         maps: &MapCatalog,

@@ -632,9 +632,9 @@ impl LobbyBook {
 
     /// Data report of the machine `peer` in row `row` (only with the data check, not from the host): discarded for
     /// another session revision; `Missing` -> `Missing`; rules without the host's checksum -> discarded; the same
-    /// checksum -> `Equal`; otherwise `Differs` with the files from [`compare_inputs`] (none if the recording is empty).
-    /// A recording beyond the limits ([`inputs_fit`]) is rejected and the row becomes `Differs` without files (`Err`
-    /// for the log). A row that becomes `Missing` or `Differs` loses its checkmark.
+    /// checksum -> `Equal`; otherwise `Differs` with the files from [`compare_inputs`] (none if the recording is
+    /// empty). A recording beyond the limits ([`inputs_fit`]) is rejected and the row becomes `Differs` without files
+    /// (`Err` for the log). A row that becomes `Missing` or `Differs` loses its checkmark.
     fn report(
         &mut self,
         peer: u8,
@@ -860,13 +860,17 @@ impl LobbyBook {
         }
         let used = self.state.rows.iter().filter(|r| r.kind != 0);
         let session = &self.state.session;
-        let data = !self.checking()
-            || (self.state.rules_checksum.is_some()
-                && self.state.rows.iter().all(|r| r.data == DataState::Equal));
         used.clone().count() >= 2
             && used.clone().all(|r| r.ready)
             && (!session.map_name.is_empty() || matches!(session.map, MapId::Random { .. }))
-            && data
+            && !self.data_holds_start()
+    }
+
+    /// The data check holds `START` back: switched on, and the host's checksum is missing or a row is not `Equal`.
+    pub fn data_holds_start(&self) -> bool {
+        self.checking()
+            && (self.state.rules_checksum.is_none()
+                || self.state.rows.iter().any(|r| r.data != DataState::Equal))
     }
 
     /// New session data (map change `LAN31 CHANGEGAME`, E-307 deviation). If a row that would be dropped is occupied

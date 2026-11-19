@@ -1285,8 +1285,8 @@ pub struct CliState {
 }
 
 /// State of the driver of the match for [`net_guard`]: `None` without a match driver, otherwise `Some(free)` - free
-/// after `Go` and after a failure before `Go` (then the driver reports `NetFinish::Failed`, and the input must be free
-/// for the "OK" of the message).
+/// after `Go` and after a failure before `Go` (then the driver reports `NetFinish::Failed` or `NetFinish::LoadFailed`,
+/// and the input must be free for the "OK" of the message).
 pub fn match_state(driver: Option<&NetDriver>) -> Option<bool> {
     driver.map(|d| d.started() || d.failure().is_some())
 }

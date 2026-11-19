@@ -290,6 +290,11 @@ impl HostCore {
         self.phase == Phase::Gathering && self.check_start().is_ok()
     }
 
+    /// The game data check holds `START` back ([`LobbyBook::data_holds_start`]).
+    pub fn data_holds_start(&self) -> bool {
+        self.book.data_holds_start()
+    }
+
     /// Lobby state of the host.
     pub fn lobby(&self) -> &LobbyState {
         self.book.state()
@@ -541,8 +546,8 @@ impl HostCore {
     }
 
     /// Aborts the session for everyone (E-293; e.g. the host could not set up the match; its own loading error goes
-    /// through [`Self::load_failed`]): `Bye { reason: text }` to every active client, then `CoreEvent::Failed(text)` and
-    /// `Phase::Ended`. The driver closes the connections after sending. In `Phase::Ended` it has no effect (log).
+    /// through [`Self::load_failed`]): `Bye { reason: text }` to every active client, then `CoreEvent::Failed(text)`
+    /// and `Phase::Ended`. The driver closes the connections after sending. In `Phase::Ended` it has no effect (log).
     pub fn abort(&mut self, text: String) {
         if self.phase == Phase::Ended {
             log::warn!("Network (host): abort after the end discarded: {text}");

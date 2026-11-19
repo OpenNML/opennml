@@ -923,12 +923,19 @@ struct Pair {
 impl Pair {
     /// Both machines on the corpus; the host's rules come from `host_worker`, the client's from an [`InlineWorker`].
     fn corpus(host_worker: Box<dyn RulesWorker>) -> Option<Self> {
+        Self::corpus_with(host_worker, Box::new(InlineWorker::default()))
+    }
+
+    /// Like [`Self::corpus`], the client's rules from `client_worker`.
+    fn corpus_with(
+        host_worker: Box<dyn RulesWorker>,
+        client_worker: Box<dyn RulesWorker>,
+    ) -> Option<Self> {
         let vfs = corpus_vfs()?;
         let layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
         let dir = tempfile::tempdir().unwrap();
         let net = opennml_net::MemNet::new();
-        let mut workers: Vec<Box<dyn RulesWorker>> =
-            vec![host_worker, Box::new(InlineWorker::default())];
+        let mut workers: Vec<Box<dyn RulesWorker>> = vec![host_worker, client_worker];
         let mut machines = Vec::new();
         for (i, name) in ["Anna", "Bert"].into_iter().enumerate() {
             let opts = opennml_ui::app::MenuOptions {
@@ -1269,6 +1276,99 @@ fn second_change_discards_the_running_check() {
     assert!(p.host_core().can_start(), "ready flags stay (E-302)");
 }
 
+/// The same on the client: a second map change while the client still computes the first. Its result for the first
+/// change is discarded (no report, the row stays `Pending`, `START` locked); the verdict comes from the computation for
+/// the current session revision.
+#[test]
+fn second_change_discards_the_running_client_check() {
+    let worker = ManualWorker::default();
+    let Some(mut p) =
+        Pair::corpus_with(Box::new(InlineWorker::default()), Box::new(worker.clone()))
+    else {
+        return;
+    };
+    let maps = p.two_player_maps();
+    assert!(maps.len() >= 3, "three 2-player maps");
+    p.host(&maps[0]);
+    p.join();
+    p.frames(5);
+    assert_eq!(worker.waiting(), [0]);
+    worker.release();
+    p.frames_until("first verdict", |p| p.client_data() == DataState::Equal);
+    p.ready();
+    assert!(p.host_core().can_start());
+    let first = p.switch(&maps[1]);
+    let second = p.switch(&maps[2]);
+    assert_eq!(
+        worker.waiting(),
+        [first, second],
+        "the client computes both"
+    );
+    assert!(
+        p.host_lobby().rules_checksum.is_some(),
+        "the host's checksum is there"
+    );
+    worker.release();
+    p.frames(20);
+    assert_eq!(
+        p.client_data(),
+        DataState::Pending,
+        "no report for the old change"
+    );
+    assert!(p.machines[1].session.held_report.is_none());
+    assert!(!p.host_core().can_start());
+    worker.release();
+    p.frames_until("verdict for the second change", |p| {
+        p.client_data() == DataState::Equal
+    });
+    assert_eq!(p.host_lobby().session_revision, second);
+    assert!(p.host_core().can_start(), "ready flags stay (E-302)");
+}
+
+/// A `READY` click of the client before the verdict `Equal`: the host's core discards the wish without a new state, and
+/// the session shows its state again, so the checkmark the handler set locally disappears.
+#[test]
+fn refused_ready_restores_the_local_copy() {
+    let worker = ManualWorker::default();
+    let Some(mut p) = Pair::corpus(Box::new(worker.clone())) else {
+        return;
+    };
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.frames(5);
+    assert_eq!(p.client_data(), DataState::Pending);
+    let m = &mut p.machines[1];
+    let shown = m.app.data().net.clone().expect("state of the client");
+    let lobby = shown.lobby.as_ref().expect("lobby of the client");
+    assert!(lobby.data_locked[1] && !lobby.ready[1]);
+    // What the handler of `READY1` does: local checkmark, then the wish.
+    let mut ticked = shown.clone();
+    ticked.lobby.as_mut().unwrap().ready[1] = true;
+    m.app.set_net(Some(ticked));
+    let ready = LobbyAction::Ready {
+        row: 1,
+        ready: true,
+    };
+    m.session.on_lobby(&ready, &mut m.app, &m.vfs, &p.texts);
+    p.frames(20);
+    assert_eq!(
+        p.machines[1].app.data().net.as_ref(),
+        Some(&shown),
+        "checkmark gone"
+    );
+    assert!(!p.host_lobby().rows[1].ready);
+    // The host's start is held back by the data check.
+    let host = p.machines[0].app.data().net.clone().unwrap().lobby.unwrap();
+    assert!(host.start_locked && host.data_locked[1]);
+    worker.release();
+    p.frames_until("verdict of the client", |p| {
+        p.client_data() == DataState::Equal
+    });
+    let host = p.machines[0].app.data().net.clone().unwrap().lobby.unwrap();
+    assert!(!host.start_locked && !host.data_locked[1]);
+}
+
 // --- Messages of the game data check (re/multiplayer-menus L.18) -----------------------------------------------------
 
 use opennml_ui::own_texts::{
@@ -1483,11 +1583,20 @@ fn paths_are_ascii_in_the_message() {
         )
     );
     assert!(text.chars().all(|c| u32::from(c) <= 0xFF), "{text}");
-    // A long hostile path: shown as given (the wire limits the length), still without a panic.
+    // Brackets of the text tags from a foreign recording become `?` (no markup from the network).
+    let text =
+        data_message(&differs(&["data/[COLOR FFFF0000]x.ini"], 0), None, &texts).expect("message");
+    assert!(text.contains("data/?COLOR FFFF0000?x.ini"), "{text}");
+    // A long hostile path: cut to 80 characters with `...`, without a panic; 80 characters stay whole.
     let long = format!("{}\u{1F600}", "x".repeat(300));
     let text = data_message(&differs(&[&long], u16::MAX), None, &texts).expect("message");
-    assert!(text.contains(&format!("{}?", "x".repeat(300))), "{text}");
+    assert!(text.contains(&format!("{}...", "x".repeat(77))), "{text}");
+    assert!(!text.contains(&"x".repeat(78)), "{text}");
     assert!(text.contains("65535"), "{text}");
+    let whole = format!("data/{}.ini", "y".repeat(71));
+    assert_eq!(whole.len(), 80);
+    let text = data_message(&differs(&[&whole], 0), None, &texts).expect("message");
+    assert!(text.contains(&whole), "{text}");
 }
 
 /// Lobby row of the tests of the message queue: a human on `peer` named `name` with the verdict `data`.

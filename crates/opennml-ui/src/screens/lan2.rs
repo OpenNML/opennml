@@ -14,7 +14,9 @@
 //! handler additionally checks against the status rule (in the original only the lock of the element prevents it) so
 //! that a foreign row never triggers a request; the network host checks the right itself anyway. `START` sends only
 //! the request: checking, closing the lobby and the start are done by the network session of the host. `CHANGEGAME`
-//! is seen only by the host; the click closes its lobby and opens `LAN31`, the core stays in the lobby.
+//! is seen only by the host; the click closes its lobby and opens `LAN31`, the core stays in the lobby. With the game
+//! data check (re/multiplayer-menus L.18) `READY` of a row without the verdict `Equal` is locked and `START` stays
+//! hidden while the check holds the start back, both from the state of the network host ([`LobbyView`]).
 
 use super::player_slots::{
     COLOR_TEXT, DISABLE, HANDICAP_TEXT, HIDE, OPEN_TEXT, RACE_TEXT, check_change, color_list, int,
@@ -127,6 +129,11 @@ fn status(env: &ScreenEnv, lobby: &LobbyView, col: Column, key: i32) -> i32 {
     if col == Column::Handicap && (1..=3).contains(&slot.kind) {
         return DISABLE;
     }
+    // Deviation (re/multiplayer-menus L.18): `READY` of a row without the data verdict `Equal` is locked, the core
+    // would discard the wish.
+    if col == Column::Ready && row_of(key).is_some_and(|r| lobby.data_locked[usize::from(r)]) {
+        return DISABLE;
+    }
     0
 }
 
@@ -201,13 +208,15 @@ pub(super) fn handle(msg: &mut ElementMsg, env: &mut ScreenEnv) -> i32 {
 }
 
 /// Start condition L.3.4: host, every row with type != 0 ready (`FUN_004E8DF0`), map name not empty
-/// (`FUN_004BA6E0`), at least two rows with type != 0 (`FUN_004BA8F0`).
+/// (`FUN_004BA6E0`), at least two rows with type != 0 (`FUN_004BA8F0`). Additionally (re/multiplayer-menus L.18) not
+/// while the data check holds the start back ([`LobbyView::start_locked`]).
 fn can_start(env: &ScreenEnv) -> bool {
     let Some(lobby) = lobby(env) else {
         return false;
     };
     let draft = &env.data.draft;
     lobby.is_host
+        && !lobby.start_locked
         && !draft.info.name.is_empty()
         && occupied(draft) >= 2
         && draft

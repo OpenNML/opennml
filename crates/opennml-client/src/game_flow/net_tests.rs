@@ -2339,6 +2339,125 @@ fn host_change_to_another_map_clears_missing() {
     assert!(byes.lock().unwrap().is_empty());
 }
 
+/// Rules worker whose computations never end (a check that is still running).
+struct IdleWorker;
+
+impl crate::net_session::RulesWorker for IdleWorker {
+    fn submit(&mut self, _: crate::net_session::RulesJob) {}
+
+    fn poll(&mut self) -> Option<crate::net_session::RulesDone> {
+        None
+    }
+}
+
+/// Deviates from E-354: the client clicks `READY` while its row is `Pending` (its check is still running). The box is
+/// locked: no checkmark on the client, none on the host; with the verdict `Equal` the same click takes.
+// QUIRK E-354: deviation
+#[test]
+fn ready_click_before_the_verdict_sets_no_checkmark() {
+    let Some(mut n) = Lan::corpus(&["Anna", "Bert"]) else {
+        return;
+    };
+    n.runs[1]
+        .flow
+        .net_session_mut()
+        .expect("session of the client")
+        .set_rules_worker(Box::new(IdleWorker));
+    n.host(0, Some("tinte"));
+    n.click_join(1);
+    n.frames_until("lobby of the client", |l| {
+        l.phase(1) == NetPhase::Lobby && l.in_lobby(1)
+    });
+    n.settle();
+    n.frames(60);
+    assert_eq!(n.own_data(1), Some(DataState::Pending));
+    let ready = element(&n, 1, "lan2", "ready1").expect("READY1");
+    assert!(!ready.enabled, "READY locked: {ready:?}");
+    n.click(1, "lan2", "ready1");
+    n.frames(60);
+    let lobby = |n: &Lan| {
+        n.runs[1]
+            .host
+            .app
+            .data()
+            .net
+            .clone()
+            .and_then(|v| v.lobby)
+            .expect("lobby of the client")
+    };
+    assert!(!lobby(&n).ready[1], "no local checkmark");
+    assert_eq!(
+        element(&n, 1, "lan2", "ready1").expect("READY1").checked,
+        Some(false)
+    );
+    assert!(!n.lobby(0).rows[1].ready, "nothing on the host");
+
+    // The check ends: the row becomes `Equal`, `READY` is free and the click takes.
+    n.runs[1]
+        .flow
+        .net_session_mut()
+        .expect("session of the client")
+        .set_rules_worker(Box::new(InlineWorker::default()));
+    let map = n.lobby(0).session.map;
+    switch_session(
+        &mut n,
+        MapId::Random {
+            seed_text: "12345".into(),
+            size: 0,
+            players: 2,
+            terrain: 0,
+            landscape: 0,
+            daytime: 0,
+        },
+    );
+    assert_ne!(n.lobby(0).session.map, map);
+    n.frames_until("verdict on the host", |l| {
+        l.lobby(0).rows[1].data == DataState::Equal
+    });
+    n.frames(60);
+    assert!(element(&n, 1, "lan2", "ready1").expect("READY1").enabled);
+    n.click(1, "lan2", "ready1");
+    n.frames(30);
+    assert!(lobby(&n).ready[1]);
+    assert!(n.lobby(0).rows[1].ready, "the host takes it");
+}
+
+/// Deviates from E-354: after a map change the ready flags stay (E-302), but while the host's own check still runs
+/// (and so the client's row stays `Pending`) `START` stays hidden; the core would discard the click.
+// QUIRK E-354: deviation
+#[test]
+fn start_hidden_while_the_check_holds_it() {
+    let Some((mut n, _byes)) = ready_pair() else {
+        return;
+    };
+    n.frames_until("START before the change", start_shown);
+    n.runs[0]
+        .flow
+        .net_session_mut()
+        .expect("session of the host")
+        .set_rules_worker(Box::new(IdleWorker));
+    switch_session(
+        &mut n,
+        MapId::Random {
+            seed_text: "12345".into(),
+            size: 0,
+            players: 2,
+            terrain: 0,
+            landscape: 0,
+            daytime: 0,
+        },
+    );
+    n.frames(60);
+    let lobby = n.lobby(0);
+    assert!(
+        lobby.rows.iter().all(|r| r.ready),
+        "ready flags stay (E-302)"
+    );
+    assert_eq!(lobby.rules_checksum, None);
+    assert!(!n.host_core_mut().can_start());
+    n.frames_until("START held back", |l| !start_shown(l));
+}
+
 /// Game file of the rules of every map (bonus values of the objects).
 pub(super) const BONUS_INI: &str = "data/gifcon/bonus.ini";
 

@@ -2452,7 +2452,7 @@ Example at the host after Bert joined with a changed `bonus.ini`:
               "rows": [{"row": 0, "name": "Anna", ..., "ready": false, "peer": 0, "seat": null, "data": "equal"},
                        {"row": 1, "name": "Bert", ..., "ready": false, "peer": 1, "seat": null,
                         "data": {"differs": {"files": ["data/gifcon/bonus.ini"], "more": 0}}}, ...],
-              "chat": [], "max_rtt_ms": 3, "saved": null, "session_revision": 1,
+              "chat": [], "max_rtt_ms": 3, "saved": null, "session_revision": 0,
               "rules_checksum": "0123456789abcdef"}
 
 ### Replays
