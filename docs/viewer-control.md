@@ -2428,6 +2428,33 @@ Example at the host in `LAN4` (Anna plays slot 3, Bert has joined):
                        {"row": 1, "kind": 999, "name": "Anna", ..., "ready": false, "peer": 0, "seat": 3}],
               "chat": [], "max_rtt_ms": 3, "saved": "netz1"}
 
+### Network play (game data check)
+
+Before a network match from the menu every machine checks in the background whether it has the same game data for the
+map of the session as the host (rules checksum of the match). Next protocol version (the number is set on release); old
+responses stay readable (`session_revision` then counts as 0, `rules_checksum` as `null`, `data` as `equal`).
+
+- **`net_status.lobby.session_revision`:** lobby revision of the last session change (creation, `CHANGEGAME`); the
+  checksum and the verdicts belong to it.
+- **`net_status.lobby.rules_checksum`:** the host's rules checksum for `session_revision` as 16 hex digits (like
+  `sim_hash.checksum`), `null` while it computes, when its computation failed, and without the check (command-line
+  path, loaded lobby `LAN4`).
+- **`net_status.lobby.rows[].data`:** verdict of the row: `"pending"` (the machine has not reported for this session
+  revision yet), `"equal"` (same checksum; also the host's row, computers, open rows and without the check),
+  `"missing"` (the fixed map is missing on the machine or its map checksum differs) or
+  `{"differs": {"files": [...], "more": n}}` (up to three differing paths, ascending, and the number of the others;
+  an empty list means the files are not known). Only rows with `equal` can become ready; `START` needs a checksum and
+  `equal` in every row.
+
+Example at the host after Bert joined with a changed `bonus.ini`:
+
+    "lobby": {"session": "Session - Anna", "map": "data/levels/multiplayer/...lvl", "stage": "original", "own_row": 0,
+              "rows": [{"row": 0, "name": "Anna", ..., "ready": false, "peer": 0, "seat": null, "data": "equal"},
+                       {"row": 1, "name": "Bert", ..., "ready": false, "peer": 1, "seat": null,
+                        "data": {"differs": {"files": ["data/gifcon/bonus.ini"], "more": 0}}}, ...],
+              "chat": [], "max_rtt_ms": 3, "saved": null, "session_revision": 1,
+              "rules_checksum": "0123456789abcdef"}
+
 ### Replays
 
 Recording after `SAVEREPLAY` and playback through `LOADAUTOPLAY` in `opennml-game`. Protocol 47. Old lines stay readable

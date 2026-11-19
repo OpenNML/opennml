@@ -35,10 +35,10 @@ use opennml_client::game_flow::config_speed;
 use opennml_client::net_session::{NetPhase, NetSessionStatus, map_checksum, session_name};
 use opennml_client::settings::savegame_dir;
 use opennml_control::{
-    Command, NetDebugAction, NetFoundData, NetHaltName, NetLinkData, NetLobbyData, NetLobbyRowData,
-    NetMigrationData, NetMigrationPhaseName, NetPartHash, NetPartHashesData, NetPeerData,
-    NetPhaseName, NetRoleName, NetRttData, NetSeatData, NetStatusData, NetSuccessorData,
-    NetWaitName, hex_checksum,
+    Command, NetDataState, NetDebugAction, NetFoundData, NetHaltName, NetLinkData, NetLobbyData,
+    NetLobbyRowData, NetMigrationData, NetMigrationPhaseName, NetPartHash, NetPartHashesData,
+    NetPeerData, NetPhaseName, NetRoleName, NetRttData, NetSeatData, NetStatusData,
+    NetSuccessorData, NetWaitName, hex_checksum,
 };
 use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{
@@ -989,6 +989,7 @@ fn lobby_data(l: &LobbyState, own_row: Option<u8>, chat: &[String]) -> NetLobbyD
                 ready: r.ready,
                 peer: r.peer,
                 seat: l.seats.get(i).copied(),
+                data: data_state(&r.data),
             })
             .collect(),
         chat: chat.to_vec(),
@@ -996,6 +997,21 @@ fn lobby_data(l: &LobbyState, own_row: Option<u8>, chat: &[String]) -> NetLobbyD
         saved: match &s.map {
             MapId::Saved { name, .. } => Some(name.clone()),
             MapId::Fixed { .. } | MapId::Random { .. } => None,
+        },
+        session_revision: l.session_revision,
+        rules_checksum: l.rules_checksum.map(hex_checksum),
+    }
+}
+
+/// Verdict of the game data check of a lobby row for `net_status`.
+fn data_state(data: &DataState) -> NetDataState {
+    match data {
+        DataState::Pending => NetDataState::Pending,
+        DataState::Equal => NetDataState::Equal,
+        DataState::Missing => NetDataState::Missing,
+        DataState::Differs { files, more } => NetDataState::Differs {
+            files: files.clone(),
+            more: *more,
         },
     }
 }

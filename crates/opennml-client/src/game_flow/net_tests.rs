@@ -1232,6 +1232,23 @@ impl Lan {
         run.vfs = opennml_rda::testutil::with_loose_file(&run.vfs, game_path, &disk);
     }
 
+    /// Installation of machine `i` without the game file `game_path`: a loose file of its own that does not exist on
+    /// disk shadows the archive entry, so reading it fails as for a file deleted after the program start (the `Vfs`
+    /// keeps its index). The other machines keep theirs; the map catalog of the menu stays as loaded.
+    pub(super) fn hide_file(&mut self, i: usize, game_path: &str) {
+        let name = game_path.rsplit('/').next().expect("file name");
+        let disk = self
+            .dir
+            .path()
+            .join(format!("install-{i}"))
+            .join("hidden")
+            .join(name);
+        assert!(!disk.exists(), "{disk:?} must not exist");
+        let run = &mut self.runs[i];
+        run.vfs = opennml_rda::testutil::with_loose_file(&run.vfs, game_path, &disk);
+        assert!(run.vfs.read(game_path).is_err(), "{game_path} hidden");
+    }
+
     pub(super) fn frame(&mut self) {
         self.net.advance_to(self.runs[0].now);
         for run in &mut self.runs {
@@ -2102,7 +2119,11 @@ impl Lan {
     }
 
     /// First map of the catalog of machine `i` (with `.lvl` and `.wld`) for which `pick` holds.
-    fn catalog_map(&self, i: usize, pick: impl Fn(&MapCatalogEntry) -> bool) -> MapCatalogEntry {
+    pub(super) fn catalog_map(
+        &self,
+        i: usize,
+        pick: impl Fn(&MapCatalogEntry) -> bool,
+    ) -> MapCatalogEntry {
         self.runs[i]
             .host
             .app
@@ -2319,13 +2340,13 @@ fn host_change_to_another_map_clears_missing() {
 }
 
 /// Game file of the rules of every map (bonus values of the objects).
-const BONUS_INI: &str = "data/gifcon/bonus.ini";
+pub(super) const BONUS_INI: &str = "data/gifcon/bonus.ini";
 
 /// Map types, landscapes and game modes of the random maps (input of the generator).
 const RANDOM_MAP_TYPES: &str = "data/gifcon/randommaptypes.ini";
 
 /// Changes the last digit of the file (a digit of a value, so that the file still parses).
-fn bump_last_digit(bytes: &mut [u8]) {
+pub(super) fn bump_last_digit(bytes: &mut [u8]) {
     let at = bytes.iter().rposition(u8::is_ascii_digit).expect("a digit");
     bytes[at] = if bytes[at] == b'9' {
         b'8'
@@ -2464,7 +2485,7 @@ fn random_map_with_other_generator_data_differs() {
 use opennml_ui::own_texts::{DATA_DIFFERS, LOAD_FAILED, ROW_DIFFERS, fill};
 
 /// Own text `id` of machine `i`, filled with `args`.
-fn own_text(n: &Lan, i: usize, id: i32, args: &[&str]) -> String {
+pub(super) fn own_text(n: &Lan, i: usize, id: i32, args: &[&str]) -> String {
     fill(&n.runs[i].host.layer.texts.display(id), args)
 }
 

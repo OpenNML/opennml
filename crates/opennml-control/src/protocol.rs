@@ -73,6 +73,9 @@ use crate::keys::check_key;
 /// 50 = host migration: `net_status.successors` (successor list: `peer`, `slot`,
 /// `addr`) and `net_status.migration` (`phase` `dialing`/`rejoining`/`gathering`, `peer`, `expected`, `arrived`);
 /// `net_debug` with `mute` and `unmute`.
+/// Next version (number set on release) = game data check: `net_status.lobby.session_revision` (lobby revision of
+/// the last session change), `net_status.lobby.rules_checksum` (the host's rules checksum as hex text or `null`) and
+/// `net_status.lobby.rows[].data` (`pending`, `equal`, `missing` or `differs` with `files` and `more`).
 pub const PROTOCOL_VERSION: u32 = 50;
 
 /// Error message of the control channel when the viewer no longer accepts commands (event loop

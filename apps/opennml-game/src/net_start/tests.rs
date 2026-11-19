@@ -930,6 +930,69 @@ fn net_status_shows_the_loaded_lobby() {
     assert_eq!(value["saved"], Value::Null);
 }
 
+/// `net_status` reports the game data check of the lobby: session revision, the host's rules checksum as hex text
+/// (`null` while it computes) and the verdict per row in all four forms.
+#[test]
+fn net_status_shows_the_data_check() {
+    let book = LobbyBook::open(
+        SessionInfo::plain(
+            "Session - Anna",
+            "data/levels/multiplayer/m.lvl",
+            4,
+            RasterStage::Lan.config(),
+        ),
+        "Anna",
+    )
+    .unwrap();
+    let mut state = book.state().clone();
+    state.session_revision = 3;
+    state.rules_checksum = Some(0x00AB_CDEF_0123_4567);
+    let verdicts = [
+        DataState::Equal,
+        DataState::Pending,
+        DataState::Missing,
+        DataState::Differs {
+            files: vec!["data/bonus.ini".into()],
+            more: 2,
+        },
+    ];
+    for (row, data) in state.rows.iter_mut().zip(verdicts) {
+        row.data = data;
+    }
+    let source = |state: &LobbyState| NetSessionStatus {
+        phase: NetPhase::Lobby,
+        is_host: true,
+        games: vec![],
+        lobby: Some(state.clone()),
+        own_row: Some(0),
+        rtt_ms: vec![],
+        port: Some(2302),
+        chat: vec![],
+    };
+    let status = status_data(&session_source(source(&state), None).unwrap(), None);
+    let value = serde_json::to_value(status.lobby.expect("lobby state")).unwrap();
+    assert_eq!(value["session_revision"], 3);
+    assert_eq!(value["rules_checksum"], "00abcdef01234567");
+    let data: Vec<Value> = value["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["data"].clone())
+        .collect();
+    assert_eq!(
+        data,
+        [
+            json!("equal"),
+            json!("pending"),
+            json!("missing"),
+            json!({"differs": {"files": ["data/bonus.ini"], "more": 2}})
+        ]
+    );
+    state.rules_checksum = None;
+    let status = status_data(&session_source(source(&state), None).unwrap(), None);
+    assert_eq!(status.lobby.unwrap().rules_checksum, None);
+}
+
 /// `--join` listens on a free port once connected (not the game port) and reports it in the `Hello`; the host
 /// probes it, and the successor list in `Go` carries the address of the client. With `listen: false`
 /// (`--net-no-listen`) the client reports no port and stands without an address in the list.

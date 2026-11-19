@@ -58,12 +58,12 @@ pub use state::{
     AnimationState, AspectName, AudioState, BeamState, BrowserState, CameraState, CaptureState,
     ChargeState, ClockMode, ClockState, CursorState, EffectBrowserState, EffectState,
     EnvironmentState, FrameStats, FrameTimes, FreeCameraState, HoveredObject, MarkCount,
-    MusicState, NetFoundData, NetHaltName, NetLinkData, NetLobbyData, NetLobbyRowData,
-    NetMigrationData, NetMigrationPhaseName, NetPartHash, NetPartHashesData, NetPeerData,
-    NetPhaseName, NetRoleName, NetRttData, NetSeatData, NetStatusData, NetSuccessorData,
-    NetWaitName, OrbitState, PendingSwitch, RallyFlagState, RandomMapState, RecentSoundState,
-    RecentVoiceState, ShadowState, StateSnapshot, Toggles, ViewName, VoiceState, WindowState,
-    WorldDisplayState,
+    MusicState, NetDataState, NetFoundData, NetHaltName, NetLinkData, NetLobbyData,
+    NetLobbyRowData, NetMigrationData, NetMigrationPhaseName, NetPartHash, NetPartHashesData,
+    NetPeerData, NetPhaseName, NetRoleName, NetRttData, NetSeatData, NetStatusData,
+    NetSuccessorData, NetWaitName, OrbitState, PendingSwitch, RallyFlagState, RandomMapState,
+    RecentSoundState, RecentVoiceState, ShadowState, StateSnapshot, Toggles, ViewName, VoiceState,
+    WindowState, WorldDisplayState,
 };
 pub use ui::{
     GAME_UI_DIALOG, UI_CLICK_MIDDLE, UiAccountingRow, UiDialogData, UiEffectData, UiEffectKind,
