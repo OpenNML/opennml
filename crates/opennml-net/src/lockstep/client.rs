@@ -161,7 +161,8 @@ impl ClientCore {
     pub fn lobby_wish(&mut self, w: LobbyWish) {
         if self.phase != Phase::Gathering || self.peer.is_none() {
             log::warn!(
-                "Network (client): lobby wish {w:?} in phase {:?} (connection {:?}) discarded",
+                "Network (client): lobby wish {} in phase {:?} (connection {:?}) discarded",
+                w.summary(),
                 self.phase,
                 self.peer
             );

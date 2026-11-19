@@ -195,6 +195,28 @@ pub enum LobbyWish {
     },
 }
 
+impl LobbyWish {
+    /// Short form for the log: a data wish with the number of its recording entries instead of the entries (a
+    /// recording can hold thousands of them, a foreign one up to a whole frame); every other wish as `Debug`.
+    pub fn summary(&self) -> String {
+        match self {
+            LobbyWish::Data {
+                session_revision,
+                report: DataReport::Missing,
+            } => format!("Data {{ session_revision: {session_revision}, report: Missing }}"),
+            LobbyWish::Data {
+                session_revision,
+                report: DataReport::Rules { checksum, inputs },
+            } => format!(
+                "Data {{ session_revision: {session_revision}, report: Rules {{ checksum: {checksum:?}, \
+                 inputs: {} }} }}",
+                inputs.len()
+            ),
+            other => format!("{other:?}"),
+        }
+    }
+}
+
 /// Change by the host.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum HostEdit {

@@ -418,14 +418,20 @@ impl HostCore {
     /// loaded lobby there are neither wishes nor chat: log, nothing else.
     fn apply_wish(&mut self, from: Peer, w: LobbyWish) {
         if self.book.state().is_loaded() {
-            log::info!("Network (host): wish {w:?} from peer {from} rejected in the loaded lobby");
+            log::info!(
+                "Network (host): wish {} from peer {from} rejected in the loaded lobby",
+                w.summary()
+            );
             return;
         }
         match w {
             LobbyWish::Chat(text) => self.chat(from, &text),
             w => {
                 if let Err(reason) = self.book.wish(from, &w, self.rules.as_ref()) {
-                    log::info!("Network (host): wish {w:?} from peer {from} rejected: {reason}");
+                    log::info!(
+                        "Network (host): wish {} from peer {from} rejected: {reason}",
+                        w.summary()
+                    );
                 }
             }
         }

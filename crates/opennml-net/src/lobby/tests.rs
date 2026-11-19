@@ -1406,3 +1406,26 @@ fn set_rules_for_an_old_revision_is_ignored() {
     assert_eq!(b.state().rules_checksum, Some(HOST_SUM));
     assert_eq!(b.state().revision, before.revision + 1);
 }
+
+/// The log form of a data wish names only the number of entries, not the entries; other wishes stay `Debug`.
+#[test]
+fn data_wish_summary_counts_the_inputs() {
+    let inputs: Vec<DataInput> = (0..5000).map(|i| input(&format!("f/{i}.ini"), 1)).collect();
+    let wish = LobbyWish::Data {
+        session_revision: 4,
+        report: rules(Some(9), inputs),
+    };
+    assert_eq!(
+        wish.summary(),
+        "Data { session_revision: 4, report: Rules { checksum: Some(9), inputs: 5000 } }"
+    );
+    let missing = LobbyWish::Data {
+        session_revision: 5,
+        report: DataReport::Missing,
+    };
+    assert_eq!(
+        missing.summary(),
+        "Data { session_revision: 5, report: Missing }"
+    );
+    assert_eq!(LobbyWish::Ready(true).summary(), "Ready(true)");
+}
