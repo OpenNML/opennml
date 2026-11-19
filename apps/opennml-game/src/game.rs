@@ -741,8 +741,8 @@ impl Game {
 
     /// Locks in the network ([`net_start::net_guard`]): command-line path until `Go`, menu path while loading;
     /// `pause`/`step` in every network session. A driver of the match that failed before `Go` does not lock
-    /// ([`net_start::match_state`]): it then reports `NetFinish::Failed`, the flow shows the message, and its "OK"
-    /// leads to the main menu.
+    /// ([`net_start::match_state`]): it then reports `NetFinish::Failed` or `NetFinish::LoadFailed`, the flow shows
+    /// the message, and its "OK" leads to the main menu.
     fn net_guard(&self) -> NetGuard {
         let cli = self
             .net

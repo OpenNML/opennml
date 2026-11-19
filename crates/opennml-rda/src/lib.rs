@@ -16,4 +16,4 @@ pub use gamedir::{
     remembered_file_from, search, user_dir, user_dir_from, write_remembered,
 };
 pub use version::{GameVersion, detect_version};
-pub use vfs::{Vfs, normalize_path};
+pub use vfs::{ReadEntry, ReadLog, Vfs, normalize_path};

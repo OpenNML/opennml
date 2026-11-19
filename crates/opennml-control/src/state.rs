@@ -957,6 +957,26 @@ pub struct NetLobbyRowData {
     pub peer: Option<u8>,
     /// Player slot 0 ... 7 of the row in a loaded match; `None` in a new lobby.
     pub seat: Option<u8>,
+    /// Verdict of the game data check for the row (`equal` for the host row, computers, open rows and without the
+    /// check). Old responses without the field read as `equal`.
+    #[serde(default)]
+    pub data: NetDataState,
+}
+
+/// Verdict of the game data check for a lobby row (`net_status.lobby.rows[].data`): `"pending"`, `"equal"`,
+/// `"missing"` or `{"differs": {"files": [...], "more": n}}`.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NetDataState {
+    /// The machine of the row has not reported for the current session revision yet.
+    Pending,
+    /// Same rules checksum as the host.
+    #[default]
+    Equal,
+    /// The fixed map is missing on the machine or its map checksum differs.
+    Missing,
+    /// The rules differ: the first differing paths (at most three, ascending) and the number of the others.
+    Differs { files: Vec<String>, more: u16 },
 }
 
 /// Lobby state (`net_status.lobby`): for the host its own, for the client the one last received from the host.
@@ -977,6 +997,13 @@ pub struct NetLobbyData {
     pub max_rtt_ms: Option<u32>,
     /// Name of the network savegame of a loaded session (`savegame/multiplayer/<name>`); otherwise `None`.
     pub saved: Option<String>,
+    /// Lobby revision of the last session change (creation or map change); the data verdicts refer to it.
+    #[serde(default)]
+    pub session_revision: u32,
+    /// The host's rules checksum for `session_revision` as 16 hex digits; `None` while it computes, when its
+    /// computation failed, and without the game data check (command-line path, loaded lobby).
+    #[serde(default)]
+    pub rules_checksum: Option<String>,
 }
 
 /// A found game of the search (`net_status.found`).
@@ -1352,10 +1379,13 @@ mod tests {
                     ready: true,
                     peer: Some(1),
                     seat: None,
+                    data: NetDataState::Equal,
                 }],
                 chat: vec!["Anna: Hello".into()],
                 max_rtt_ms: Some(12),
                 saved: None,
+                session_revision: 1,
+                rules_checksum: None,
             }),
             found: vec![],
             successors: vec![],
@@ -1435,6 +1465,7 @@ mod tests {
             ready: false,
             peer,
             seat: Some(seat),
+            data: NetDataState::Equal,
         };
         let lobby = NetLobbyData {
             session: "Session - Anna".into(),
@@ -1445,6 +1476,8 @@ mod tests {
             chat: vec![],
             max_rtt_ms: None,
             saved: Some("net1".into()),
+            session_revision: 0,
+            rules_checksum: None,
         };
         let value = serde_json::to_value(&lobby).unwrap();
         assert_eq!(value["saved"], "net1");
@@ -1463,6 +1496,82 @@ mod tests {
         let old: NetLobbyData = serde_json::from_value(old).unwrap();
         assert_eq!(old.saved, None);
         assert!(old.rows.iter().all(|r| r.seat.is_none()));
+    }
+
+    /// `net_status.lobby` carries the session revision, the host's rules checksum (hex text or `null`) and the data
+    /// verdict per row in all four forms; round trip over JSON, old lobby states without the fields read as revision
+    /// 0, `null` and `equal`.
+    #[test]
+    fn net_status_reports_data_states() {
+        let row = |row: u8, data: NetDataState| NetLobbyRowData {
+            row,
+            kind: 999,
+            name: format!("P{row}"),
+            nation: 0,
+            team: 0,
+            handicap: 0,
+            color: i32::from(row),
+            ready: false,
+            peer: Some(row),
+            seat: None,
+            data,
+        };
+        let mut lobby = NetLobbyData {
+            session: "Session - Anna".into(),
+            map: "data/levels/multiplayer/m.lvl".into(),
+            stage: "original".into(),
+            own_row: Some(0),
+            rows: vec![
+                row(0, NetDataState::Equal),
+                row(1, NetDataState::Pending),
+                row(2, NetDataState::Missing),
+                row(
+                    3,
+                    NetDataState::Differs {
+                        files: vec!["data/a.ini".into(), "data/b.ini".into()],
+                        more: 4,
+                    },
+                ),
+            ],
+            chat: vec![],
+            max_rtt_ms: None,
+            saved: None,
+            session_revision: 7,
+            rules_checksum: Some(crate::hex_checksum(0x0123_4567_89ab_cdef)),
+        };
+        let value = serde_json::to_value(&lobby).unwrap();
+        assert_eq!(value["session_revision"], 7);
+        assert_eq!(value["rules_checksum"], "0123456789abcdef");
+        assert_eq!(value["rows"][0]["data"], "equal");
+        assert_eq!(value["rows"][1]["data"], "pending");
+        assert_eq!(value["rows"][2]["data"], "missing");
+        assert_eq!(
+            value["rows"][3]["data"],
+            json!({"differs": {"files": ["data/a.ini", "data/b.ini"], "more": 4}})
+        );
+        assert_eq!(
+            serde_json::from_value::<NetLobbyData>(value.clone()).unwrap(),
+            lobby
+        );
+
+        lobby.rules_checksum = None;
+        let value = serde_json::to_value(&lobby).unwrap();
+        assert_eq!(value["rules_checksum"], Value::Null);
+        assert_eq!(
+            serde_json::from_value::<NetLobbyData>(value.clone()).unwrap(),
+            lobby
+        );
+
+        let mut old = value;
+        for key in ["session_revision", "rules_checksum"] {
+            old.as_object_mut().unwrap().remove(key);
+        }
+        for r in old["rows"].as_array_mut().unwrap() {
+            r.as_object_mut().unwrap().remove("data");
+        }
+        let old: NetLobbyData = serde_json::from_value(old).unwrap();
+        assert_eq!((old.session_revision, &old.rules_checksum), (0, &None));
+        assert!(old.rows.iter().all(|r| r.data == NetDataState::Equal));
     }
 
     /// `net_status` carries the successor list and migration; round trip over JSON, old responses without the

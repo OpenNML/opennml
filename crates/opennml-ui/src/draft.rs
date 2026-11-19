@@ -497,6 +497,11 @@ pub struct LobbyView {
     pub stage: i32,
     /// Largest measured round trip in ms (host only, once measured).
     pub max_rtt_ms: Option<u32>,
+    /// Row whose game data the data check has not found equal to the host's (yet): its `READY` is locked
+    /// (re/multiplayer-menus L.18).
+    pub data_locked: [bool; 8],
+    /// Host: the data check holds `START` back (no own checksum yet or a row not equal).
+    pub start_locked: bool,
 }
 
 /// Start order of the command `0x0D` (re/singleplayer-menus part 2, 5): everything that `Game_StartLevel` reads from

@@ -131,6 +131,8 @@ impl HostCore {
             log::warn!("Network (new host): no lobby state from the old host, using an empty one");
             LobbyState {
                 revision: 0,
+                session_revision: 0,
+                rules_checksum: None,
                 session: SessionInfo::plain("", "", 0, cfg),
                 rows: Vec::new(),
                 max_rtt_ms: None,

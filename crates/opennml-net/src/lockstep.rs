@@ -211,6 +211,9 @@ pub enum CoreEvent {
     Resumed,
     /// The session has failed (text); afterwards the core is in `Phase::Ended`.
     Failed(String),
+    /// Host and client, instead of `Failed`: the machine of the player `name` (the host's own too) could not load the
+    /// match, the start is cancelled for everyone (`NetMessage::LoadFailed`); afterwards the core is in `Phase::Ended`.
+    LoadFailed { name: String },
     /// The lobby state has changed (host: after the broadcast; client: new state from the host).
     LobbyChanged,
     /// Chat line of the lobby from row `row` with the name of that row (host and client).

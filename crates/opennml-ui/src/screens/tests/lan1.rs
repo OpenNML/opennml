@@ -477,13 +477,15 @@ fn own_texts_resolve_per_edition() {
     assert_eq!(
         own_texts::text(99_105, German),
         Some(
-            "[CENTER]Die Karte der Partie fehlt auf diesem Rechner oder weicht ab. Sie haben die Lobby verlassen."
+            "[CENTER]Die Karte der Partie fehlt auf diesem Rechner. Sie können erst mitspielen, wenn der Host \
+             eine andere Karte wählt."
         )
     );
     assert_eq!(
         own_texts::text(99_105, English),
         Some(
-            "[CENTER]The game's map is missing on this computer or differs. You have left the lobby."
+            "[CENTER]The game's map is missing on this computer. You can only take part once the host chooses \
+             another map."
         )
     );
     // 99 106 ... 99 108 (messages when hosting from a network savegame).
@@ -522,8 +524,54 @@ fn own_texts_resolve_per_edition() {
         own_texts::text(99_109, English),
         Some("[CENTER]The recording cannot be played back.")
     );
-    assert_eq!(own_texts::text(99_110, German), None);
-    assert_eq!(own_texts::all(English).count(), 10);
+    // 99 110 ... 99 115 (game data check in the lobby, failed network start).
+    let data = [
+        (
+            own_texts::DATA_DIFFERS,
+            99_110,
+            "[CENTER]Ihre Spieldaten für diese Karte weichen vom Host ab: %s. Sie können erst mitspielen, wenn \
+             die Dateien übereinstimmen.",
+            "[CENTER]Your game data for this map differs from the host's: %s. You can only take part once the \
+             files match.",
+        ),
+        (
+            own_texts::ROW_DIFFERS,
+            99_111,
+            "[CENTER]Die Spieldaten von %s weichen ab: %s. Die Partie kann so nicht beginnen.",
+            "[CENTER]%s's game data differs: %s. The game cannot start like this.",
+        ),
+        (
+            own_texts::ROW_MAP_MISSING,
+            99_112,
+            "[CENTER]%s fehlt die Karte der Partie. Die Partie kann so nicht beginnen.",
+            "[CENTER]%s does not have the game's map. The game cannot start like this.",
+        ),
+        (
+            own_texts::LOAD_FAILED,
+            99_113,
+            "[CENTER]%s konnte die Partie nicht laden. Der Start wurde abgebrochen.",
+            "[CENTER]%s could not load the game. The start was cancelled.",
+        ),
+        (
+            own_texts::FILES_MORE,
+            99_114,
+            " und %d weitere",
+            " and %d more",
+        ),
+        (
+            own_texts::FILE_UNKNOWN,
+            99_115,
+            "Datei unbekannt",
+            "file unknown",
+        ),
+    ];
+    for (id, number, de, en) in data {
+        assert_eq!(id, number);
+        assert_eq!(own_texts::text(id, German), Some(de));
+        assert_eq!(own_texts::text(id, English), Some(en));
+    }
+    assert_eq!(own_texts::text(99_116, German), None);
+    assert_eq!(own_texts::all(English).count(), 16);
 
     let mut texts = Texts::from_entries(&[(99_101, "Own")]);
     texts.add_own_texts(English);

@@ -20,8 +20,8 @@ use opennml_ui::input::{MouseButton, UiInput};
 use opennml_ui::saves::{SaveDir, SaveFiles};
 
 use super::net_tests::{
-    CHANGE, Lan, NET_MENU, in_accounting, in_main_menu, lan_match, leave_accounting, message,
-    random_values, start_shown,
+    BONUS_INI, CHANGE, Lan, NET_MENU, bump_last_digit, in_accounting, in_main_menu, lan_match,
+    leave_accounting, message, own_text, random_values, start_shown,
 };
 use super::tests::{KAMP1_1, Run, S1024, TWO_PLAYERS};
 use super::*;
@@ -87,7 +87,16 @@ use opennml_net::MapId;
 /// `MemTransport` from the menu, start, Anna (host) gives up and leaves the end screen, handover to Bert, 200 ticks on
 /// Bert and Cara with equal checksums. Measured German edition with patch, debug = release, the same twice; the fifteen
 /// other values are unchanged.
-const UI_GOLDEN: [(&str, u64); 16] = [
+/// Changed (intended): the lobby state carries the game data check (session revision, the host's rules checksum,
+/// a data verdict per row, more revisions while the verdicts arrive), and [`hash_lan`] now hashes the whole lobby
+/// state. The network sections with a lobby (`net_lobby_start`, `net_change_random`, `net_match_end`,
+/// `net_load_saved`, `net_host_migration`) are measured again; their simulation part is unchanged (`hash_at` the same
+/// before and after: `B6EAAFD38AD53393`, `0403B574E03ED720`, `93D8578F9F4A5453`, `367979C3011D9D1E`). Added behind
+/// `net_lobby_start`: `net_data_differs` ([`net_data_differs`]: client with a changed `bonus.ini`, messages, `READY`
+/// and `START` locked, removed) and `net_map_missing` ([`net_map_missing`]: map change to a map the client lacks,
+/// messages, change back, start, 100 ticks). Measured German edition with patch, debug = release, the same twice;
+/// the eleven sections without a lobby are unchanged.
+const UI_GOLDEN: [(&str, u64); 18] = [
     ("profile", 0xB4A04C43CD99F1AA),
     ("create_game", 0x1BD2E55D8426EFAC),
     ("match_200_steps", 0xF29AC29C452E2345),
@@ -97,13 +106,15 @@ const UI_GOLDEN: [(&str, u64); 16] = [
     ("main_menu", 0xB9A5AAA395D36BA8),
     ("campaign_video", 0x6AD79EEAFA195FBB),
     ("campaign_level_won", 0xD71A1D9056258B44),
-    ("net_lobby_start", 0xB57192C28EDD4531),
-    ("net_change_random", 0xBFAD861C11AC4D23),
-    ("net_match_end", 0x8B2DA8D6A7C24F16),
-    ("net_load_saved", 0x029233175ADAE7DC),
+    ("net_lobby_start", 0x04B1ACD10EB05ED1),
+    ("net_data_differs", 0xDD123E4EF22D4C4A),
+    ("net_map_missing", 0x5DE79500805B9CDD),
+    ("net_change_random", 0x3F4E0596F0604268),
+    ("net_match_end", 0x88DC293C462DCB49),
+    ("net_load_saved", 0x996C5737C7E2759D),
     ("menu_level", 0x29F789ECEC8CF1DA),
     ("replay", 0x4EF40E9395F25B65),
-    ("net_host_migration", 0x0F847567C79E3540),
+    ("net_host_migration", 0x2B95664543F37ED6),
 ];
 
 /// Name of the profile in the circle.
@@ -523,6 +534,8 @@ fn circle() -> Option<Vec<(&'static str, u64)>> {
     r.section("campaign_level_won");
 
     c.sections.push(("net_lobby_start", net_lobby_start()?));
+    c.sections.push(("net_data_differs", net_data_differs()?));
+    c.sections.push(("net_map_missing", net_map_missing()?));
     c.sections.push(("net_change_random", net_change_random()?));
     c.sections.push(("net_match_end", net_match_end()?));
     c.sections.push(("net_load_saved", net_load_saved()?));
@@ -550,19 +563,9 @@ fn hash_lan(n: &Lan, h: &mut Fnv, sim: bool) {
         match n.session(i).status().lobby {
             Some(lobby) => {
                 h.bytes(&[1]);
-                // The fields from before loaded lobbies existed as a tuple in their order (the same bytes as the
-                // struct then), the slots of a loaded lobby only if there are any: this way the old sections stay
-                // the same.
-                let old = (
-                    lobby.revision,
-                    &lobby.session,
-                    &lobby.rows,
-                    lobby.max_rtt_ms,
-                );
-                h.bytes(&postcard::to_allocvec(&old).expect("lobby state"));
-                if !lobby.seats.is_empty() {
-                    h.bytes(&postcard::to_allocvec(&lobby.seats).expect("slots"));
-                }
+                // The whole lobby state: revisions, session, the host's rules checksum, rows with their data
+                // verdicts, round-trip time and the slots of a loaded lobby.
+                h.bytes(&postcard::to_allocvec(&lobby).expect("lobby state"));
             }
             None => h.bytes(&[0]),
         }
@@ -667,6 +670,173 @@ fn net_lobby_start() -> Option<u64> {
         h.bytes(&sum.to_le_bytes());
     }
     Some(h.0)
+}
+
+/// Section `net_data_differs`: host "Anna" on the fixed map "Tintebariver", client "Bert" with an installation of its
+/// own whose `bonus.ini` differs ([`Lan::change_file`]; the check runs with the `InlineWorker`). Bert joins, his row
+/// becomes `Differs` with the file; Anna sees 99 111, Bert 99 110, "OK" on both (the lobby stays); Bert's `READY` is
+/// discarded (the hashed state stays the same); Anna ready, her `START` stays hidden and a start request is discarded;
+/// Anna sets Bert's row to "Open", Bert sees 15212. [`LanTrace`] after every step.
+fn net_data_differs() -> Option<u64> {
+    use crate::net_session::KICKED_TEXT;
+    use opennml_net::DataState;
+    use opennml_ui::msg::LobbyAction;
+    use opennml_ui::own_texts::{DATA_DIFFERS, ROW_DIFFERS};
+    let mut n = Lan::corpus(&["Anna", "Bert"])?;
+    n.change_file(1, BONUS_INI, |b| bump_last_digit(b));
+    let mut t = LanTrace::new();
+    n.host(0, Some("tinte"));
+    assert!(n.lobby(0).rules_checksum.is_some(), "the host has computed");
+    t.menu(&n, "lobby of the host");
+    n.join(1);
+    let differs = DataState::Differs {
+        files: vec![BONUS_INI.to_string()],
+        more: 0,
+    };
+    assert_eq!(n.lobby(0).rows[1].data, differs);
+    n.frames_until("message on both", |l| {
+        message(&l.runs[0]).is_some() && message(&l.runs[1]).is_some()
+    });
+    n.settle();
+    assert_eq!(
+        message(&n.runs[0]),
+        Some(own_text(&n, 0, ROW_DIFFERS, &["Bert", BONUS_INI]))
+    );
+    assert_eq!(
+        message(&n.runs[1]),
+        Some(own_text(&n, 1, DATA_DIFFERS, &[BONUS_INI]))
+    );
+    t.menu(&n, "Bert joins, messages");
+    n.click(0, "msgbox", "ok");
+    assert_eq!(message(&n.runs[0]), None);
+    assert!(n.in_lobby(0), "{:?}", n.dialogs(0));
+    t.menu(&n, "OK on Anna");
+    n.click(1, "msgbox", "ok");
+    assert_eq!(message(&n.runs[1]), None);
+    assert!(n.in_lobby(1), "{:?}", n.dialogs(1));
+    t.menu(&n, "OK on Bert");
+    let before = LanTrace::digest(&n, false);
+    n.ready(1, 1);
+    n.frames(30);
+    n.settle();
+    assert!(
+        !n.lobby(0).rows[1].ready,
+        "READY without Equal is discarded"
+    );
+    assert_eq!(LanTrace::digest(&n, false), before, "state unchanged");
+    t.record(&n, "Bert READY discarded");
+    n.ready(0, 0);
+    n.frames_until("Anna ready", |l| l.lobby(0).rows[0].ready);
+    // `START` asks for its status every second (code 5).
+    n.frames(70);
+    assert!(!start_shown(&n), "START hidden");
+    n.wish(0, LobbyAction::Start);
+    n.settle();
+    assert!(!n.runs[0].flow.running() && n.in_lobby(0) && n.in_lobby(1));
+    assert_eq!(n.lobby(0).rows[1].data, differs);
+    t.menu(&n, "Anna ready, START locked");
+    n.wish(0, LobbyAction::Kind { row: 1, kind: 0 });
+    n.frames_until("message on Bert", |l| {
+        l.runs[1].dialogs().iter().any(|d| d == "msgbox")
+    });
+    n.settle();
+    assert_eq!(
+        n.runs[1].host.app.screen_state().info_text,
+        Some(KICKED_TEXT)
+    );
+    let row = &n.lobby(0).rows[1];
+    assert_eq!((row.kind, row.peer), (0, None));
+    t.menu(&n, "Anna removes Bert");
+    Some(t.h.0)
+}
+
+/// Section `net_map_missing`: host "Anna" and client "Bert" on "Tintebariver"; Bert lacks a second two-player map (its
+/// `.lvl` and `.wld` hidden in his installation, [`Lan::hide_file`]). Anna `CHANGEGAME` -> `LAN31` -> that map ->
+/// `CHANGEGAME`: Bert's row becomes `Missing`, Bert sees 99 105, Anna 99 112; "OK" on both; Anna changes back to
+/// "Tintebariver", the row is `Equal` again; both ready, `START`, 100 ticks. [`LanTrace`] after every step, finally the
+/// checksums of both simulations at tick 100 (equal).
+fn net_map_missing() -> Option<u64> {
+    use opennml_net::DataState;
+    use opennml_ui::own_texts::{MAP_MISSING, ROW_MAP_MISSING};
+    let mut n = Lan::corpus(&["Anna", "Bert"])?;
+    let second = n
+        .catalog_map(0, |m| {
+            m.players() == 2 && !m.name.to_lowercase().contains("tinte")
+        })
+        .entry
+        .path;
+    let world = format!("{}.wld", &second[..second.len() - 4]);
+    n.hide_file(1, &second);
+    n.hide_file(1, &world);
+    let mut t = LanTrace::new();
+    n.host(0, Some("tinte"));
+    let first = match n.lobby(0).session.map {
+        MapId::Fixed { path, .. } => path,
+        other => panic!("fixed map expected: {other:?}"),
+    };
+    t.menu(&n, "lobby of the host");
+    n.join(1);
+    assert_eq!(n.lobby(0).rows[1].data, DataState::Equal);
+    t.menu(&n, "Bert joins");
+    let change_to = |n: &mut Lan, t: &mut LanTrace, path: &str, step: &str| {
+        n.open_change();
+        t.menu(n, &format!("LAN31 ({step})"));
+        let row = n.map_row(0, |m| m.entry.path.eq_ignore_ascii_case(path));
+        // The selection in the list is not part of the hashed state; the step after `CHANGEGAME` shows it.
+        n.list_row(0, "loadmultiplayermap", "levels", row);
+        n.click(0, CHANGE, "changegame");
+        assert!(n.in_lobby(0), "{:?}", n.dialogs(0));
+        let MapId::Fixed { path: now, .. } = n.lobby(0).session.map else {
+            panic!("fixed map expected");
+        };
+        assert!(now.eq_ignore_ascii_case(path), "{now} instead of {path}");
+    };
+    change_to(&mut n, &mut t, &second, "second map");
+    n.frames_until("message on both", |l| {
+        message(&l.runs[0]).is_some() && message(&l.runs[1]).is_some()
+    });
+    n.settle();
+    assert_eq!(n.lobby(0).rows[1].data, DataState::Missing);
+    assert_eq!(
+        message(&n.runs[0]),
+        Some(own_text(&n, 0, ROW_MAP_MISSING, &["Bert"]))
+    );
+    assert_eq!(message(&n.runs[1]), Some(own_text(&n, 1, MAP_MISSING, &[])));
+    assert!(n.in_lobby(1), "Bert stays in the lobby: {:?}", n.dialogs(1));
+    t.menu(&n, "CHANGEGAME, messages");
+    for i in 0..2 {
+        n.click(i, "msgbox", "ok");
+        assert_eq!(message(&n.runs[i]), None, "machine {i}");
+    }
+    t.menu(&n, "OK on both");
+    change_to(&mut n, &mut t, &first, "back");
+    n.frames_until("Equal again", |l| {
+        l.lobby(0).rows[1].data == DataState::Equal && l.lobby(1).rows[1].data == DataState::Equal
+    });
+    n.settle();
+    assert_eq!(message(&n.runs[0]), None);
+    assert_eq!(message(&n.runs[1]), None);
+    t.menu(&n, "CHANGEGAME back");
+    n.all_ready(&[(0, 0), (1, 1)]);
+    n.frames_until("START visible", start_shown);
+    t.menu(&n, "both ready");
+    lan_match(&mut n, 100);
+    t.ticks(&n, "100 ticks");
+    let sums: Vec<u64> = n
+        .runs
+        .iter()
+        .map(|r| {
+            r.view
+                .sim()
+                .and_then(|s| s.hash_at(100))
+                .expect("checksum at tick 100")
+        })
+        .collect();
+    assert_eq!(sums[0], sums[1], "both machines compute equally");
+    for sum in sums {
+        t.h.bytes(&sum.to_le_bytes());
+    }
+    Some(t.h.0)
 }
 
 /// Checksum of a network section step by step via [`snap_lan`]. Every step must change the hashed state, otherwise it

@@ -409,6 +409,17 @@ impl MenuApp {
         &self.queue
     }
 
+    /// A message `MSGBOX` or a confirmation prompt `INFOFRAME` is open or its opening is still in the queue: a message
+    /// of the session that must not replace it waits until its "OK".
+    pub fn message_open(&self) -> bool {
+        let is_box = |name: &str| name == "msgbox" || name == "infoframe";
+        self.menu.open_names().iter().any(|n| is_box(n))
+            || self
+                .queue
+                .iter()
+                .any(|c| matches!(c, AppCmd::Open { name, .. } if is_box(name)))
+    }
+
     /// After every frame the host reports whether a speech sample is still playing (`SOUNDOPTIONS`).
     pub fn set_speech_playing(&mut self, playing: bool) {
         self.screens.speech_playing = playing;

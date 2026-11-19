@@ -10,8 +10,20 @@
 //! Loaded lobby (waiting room `LAN4`, [`LobbyBook::loaded`]): one row per human slot in the match with the slot per
 //! row in [`LobbyState::seats`]; the host stands in the row of its slot, clients join only in their own slot
 //! ([`LobbyBook::join_seat`]). There are no wishes, Ready, host changes or map changes there.
+//!
+//! Game data check (re/multiplayer-menus L.18, switched on with [`LobbyBook::enable_data_check`], only in a new
+//! lobby): the state carries the session revision and the host's rules checksum, every row a verdict ([`DataState`]).
+//! A client reports its result with [`LobbyWish::Data`]; a row without `Equal` cannot become ready, and `START` needs
+//! the host's checksum and `Equal` everywhere.
 
 use serde::{Deserialize, Serialize};
+
+mod data;
+
+pub use data::{
+    DataInput, DataReport, DataState, MAX_DATA_INPUT_BYTES, MAX_DATA_INPUTS, MAX_DATA_PATH,
+    SHOWN_FILES, compare_inputs, inputs_fit,
+};
 
 use crate::lockstep::HOST_PEER;
 use crate::msg::{clean_name, clean_session_name, valid_save_name};
@@ -136,12 +148,20 @@ pub struct LobbyRow {
     pub color: i32,
     pub ready: bool,
     pub peer: Option<u8>,
+    /// Verdict of the game data check; `Equal` for the host's row, computers, open rows and without the check.
+    pub data: DataState,
 }
 
 /// The state that the host distributes to everyone.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct LobbyState {
     pub revision: u32,
+    /// `revision` of the last session change (creation or [`LobbyBook::set_session`]): data reports and the host's
+    /// checksum belong to it.
+    pub session_revision: u32,
+    /// The host's rules checksum for `session_revision`; `None` while it computes, when its computation failed or
+    /// without the check.
+    pub rules_checksum: Option<u64>,
     pub session: SessionInfo,
     pub rows: Vec<LobbyRow>,
     /// Largest latency of all clients in milliseconds (display in `LEVELINFO`).
@@ -168,6 +188,33 @@ pub enum LobbyWish {
     },
     Ready(bool),
     Chat(String),
+    /// Result of the game data check for the session with `session_revision`.
+    Data {
+        session_revision: u32,
+        report: DataReport,
+    },
+}
+
+impl LobbyWish {
+    /// Short form for the log: a data wish with the number of its recording entries instead of the entries (a
+    /// recording can hold thousands of them, a foreign one up to a whole frame); every other wish as `Debug`.
+    pub fn summary(&self) -> String {
+        match self {
+            LobbyWish::Data {
+                session_revision,
+                report: DataReport::Missing,
+            } => format!("Data {{ session_revision: {session_revision}, report: Missing }}"),
+            LobbyWish::Data {
+                session_revision,
+                report: DataReport::Rules { checksum, inputs },
+            } => format!(
+                "Data {{ session_revision: {session_revision}, report: Rules {{ checksum: {checksum:?}, \
+                 inputs: {} }} }}",
+                inputs.len()
+            ),
+            other => format!("{other:?}"),
+        }
+    }
 }
 
 /// Change by the host.
@@ -233,6 +280,10 @@ impl LobbyRules for AcceptAll {
 #[derive(Debug, Clone)]
 pub struct LobbyBook {
     state: LobbyState,
+    /// Game data check switched on ([`Self::enable_data_check`]).
+    data_check: bool,
+    /// The host's read recording for `session_revision` (not distributed; compared with a differing client's).
+    host_inputs: Vec<DataInput>,
 }
 
 impl LobbyBook {
@@ -257,6 +308,7 @@ impl LobbyBook {
         }
         for (i, row) in rows.iter_mut().enumerate() {
             row.peer = None;
+            row.data = DataState::Equal;
             if i == 0 {
                 row.kind = KIND_HUMAN;
                 row.name = clean_name(&host_name);
@@ -266,15 +318,24 @@ impl LobbyBook {
                 return Err(format!("Row {i} has the invalid type {}.", row.kind));
             }
         }
-        Ok(Self {
-            state: LobbyState {
-                revision: 0,
-                session: session.cleaned(),
-                rows,
-                max_rtt_ms: None,
-                seats: Vec::new(),
-            },
-        })
+        Ok(Self::with_state(LobbyState {
+            revision: 0,
+            session_revision: 0,
+            rules_checksum: None,
+            session: session.cleaned(),
+            rows,
+            max_rtt_ms: None,
+            seats: Vec::new(),
+        }))
+    }
+
+    /// Book around `state`, data check off.
+    fn with_state(state: LobbyState) -> Self {
+        Self {
+            state,
+            data_check: false,
+            host_inputs: Vec::new(),
+        }
     }
 
     /// State with only open rows behind the host (nation 0, team and color = row): command-line path and tests.
@@ -289,6 +350,7 @@ impl LobbyBook {
                 color: i32::from(i),
                 ready: false,
                 peer: None,
+                data: DataState::Equal,
             })
             .collect();
         Self::new(session, rows, host_name.to_string())
@@ -337,6 +399,7 @@ impl LobbyBook {
         }
         for (row, &seat) in rows.iter_mut().zip(&seats) {
             row.ready = false;
+            row.data = DataState::Equal;
             if seat == host_seat {
                 row.kind = KIND_HUMAN;
                 row.name = clean_name(host_name);
@@ -347,15 +410,15 @@ impl LobbyBook {
                 row.peer = None;
             }
         }
-        Ok(Self {
-            state: LobbyState {
-                revision: 0,
-                session: session.cleaned(),
-                rows,
-                max_rtt_ms: None,
-                seats,
-            },
-        })
+        Ok(Self::with_state(LobbyState {
+            revision: 0,
+            session_revision: 0,
+            rules_checksum: None,
+            session: session.cleaned(),
+            rows,
+            max_rtt_ms: None,
+            seats,
+        }))
     }
 
     pub fn state(&self) -> &LobbyState {
@@ -365,7 +428,59 @@ impl LobbyBook {
     /// Frozen state for the new host of a running match: the last state the client had from the old host, without any
     /// check. Only after the start: the core then no longer changes it.
     pub fn frozen(state: LobbyState) -> Self {
-        Self { state }
+        Self::with_state(state)
+    }
+
+    /// Switches the game data check on (menu path; the command-line path checks only when loading): from now on a
+    /// joining machine's row is `Pending` until its [`LobbyWish::Data`], a map change makes every row with a machine
+    /// except the host's `Pending`, Ready and `START` need `Equal`. Rows with a machine already there become
+    /// `Pending`. Has no effect in a loaded lobby (its rows match through the savegame).
+    pub fn enable_data_check(&mut self) {
+        if self.state.is_loaded() || self.data_check {
+            return;
+        }
+        self.data_check = true;
+        if self.pend_machine_rows() {
+            self.bump();
+        }
+    }
+
+    /// The data check applies (switched on, new lobby).
+    fn checking(&self) -> bool {
+        self.data_check && !self.state.is_loaded()
+    }
+
+    /// Every row with a machine except the host's becomes `Pending`; `true` if one changed.
+    fn pend_machine_rows(&mut self) -> bool {
+        let mut changed = false;
+        for r in &mut self.state.rows {
+            if r.peer.is_some_and(|p| p != HOST_PEER) && r.data != DataState::Pending {
+                r.data = DataState::Pending;
+                changed = true;
+            }
+        }
+        changed
+    }
+
+    /// The host's rules checksum (`None`: its computation failed) and read recording for the session with
+    /// `session_revision`. `false` without effect for another session revision (a result of the computation before a
+    /// newer map change) and without the data check. Rows keep their verdict: clients report only once the checksum is
+    /// in the state.
+    pub fn set_rules(
+        &mut self,
+        session_revision: u32,
+        checksum: Option<u64>,
+        inputs: Vec<DataInput>,
+    ) -> bool {
+        if !self.checking() || session_revision != self.state.session_revision {
+            return false;
+        }
+        self.host_inputs = inputs;
+        if self.state.rules_checksum != checksum {
+            self.state.rules_checksum = checksum;
+            self.bump();
+        }
+        true
     }
 
     fn bump(&mut self) {
@@ -382,7 +497,8 @@ impl LobbyBook {
     }
 
     /// A machine joins (E-282): first client index without a machine, also replacing a computer. The row becomes
-    /// human with name, handicap 0, Ready 0; nation, team and color stay. In a loaded lobby only with a slot claim
+    /// human with name, handicap 0, Ready 0; nation, team and color stay. With the data check only this row becomes
+    /// `Pending` (the others keep their verdict for the same session). In a loaded lobby only with a slot claim
     /// ([`Self::join_seat`]).
     pub fn join(&mut self, peer: u8, name: &str) -> Result<u8, String> {
         if self.state.is_loaded() {
@@ -395,12 +511,18 @@ impl LobbyBook {
         else {
             return Err("The match is full".to_string());
         };
+        let pending = self.checking();
         let r = &mut self.state.rows[row];
         r.kind = KIND_HUMAN;
         r.name = clean_name(name);
         r.handicap = 0;
         r.ready = false;
         r.peer = Some(peer);
+        r.data = if pending {
+            DataState::Pending
+        } else {
+            DataState::Equal
+        };
         self.bump();
         Ok(row as u8)
     }
@@ -453,7 +575,7 @@ impl LobbyBook {
         Some(row)
     }
 
-    /// Row open: type 0, Ready 0, handicap 0, team = row, no machine; the name stays.
+    /// Row open: type 0, Ready 0, handicap 0, team = row, no machine, data `Equal`; the name stays.
     fn open_row(&mut self, row: u8) {
         let r = &mut self.state.rows[usize::from(row)];
         r.kind = 0;
@@ -461,9 +583,11 @@ impl LobbyBook {
         r.handicap = 0;
         r.team = i32::from(row);
         r.peer = None;
+        r.data = DataState::Equal;
     }
 
     /// Wish of a machine for its own row. Chat does not change the state. In a loaded lobby there are no wishes.
+    /// `Ready(true)` for a row without `Equal` is rejected when the data check applies; `Data` see [`Self::report`].
     pub fn wish(
         &mut self,
         peer: u8,
@@ -476,26 +600,97 @@ impl LobbyBook {
         let row = self
             .row_of(peer)
             .ok_or_else(|| "The machine has no row in the lobby.".to_string())?;
-        match *wish {
+        match wish {
             LobbyWish::Chat(_) => Ok(()),
-            LobbyWish::Ready(ready) => {
-                self.set_ready(row, ready);
-                Ok(())
-            }
+            LobbyWish::Ready(ready) => self.set_ready(row, *ready),
             LobbyWish::Row {
                 nation,
                 team,
                 handicap,
                 color,
-            } => self.set_row(row, nation, team, handicap, color, rules),
+            } => self.set_row(row, *nation, *team, *handicap, *color, rules),
+            LobbyWish::Data {
+                session_revision,
+                report,
+            } => self.report(peer, row, *session_revision, report),
         }
     }
 
-    fn set_ready(&mut self, row: u8, ready: bool) {
-        if self.state.rows[usize::from(row)].ready != ready {
-            self.state.rows[usize::from(row)].ready = ready;
+    /// Ready flag of a row; with the data check a row without `Equal` cannot become ready.
+    fn set_ready(&mut self, row: u8, ready: bool) -> Result<(), String> {
+        let check = self.checking();
+        let r = &mut self.state.rows[usize::from(row)];
+        if ready && check && r.data != DataState::Equal {
+            return Err("The row's game data does not match the host's yet.".to_string());
+        }
+        if r.ready != ready {
+            r.ready = ready;
             self.bump();
         }
+        Ok(())
+    }
+
+    /// Data report of the machine `peer` in row `row` (only with the data check, not from the host): discarded for
+    /// another session revision; `Missing` -> `Missing`; rules without the host's checksum -> discarded; the same
+    /// checksum -> `Equal`; otherwise `Differs` with the files from [`compare_inputs`] (none if the recording is
+    /// empty). A recording beyond the limits ([`inputs_fit`]) is rejected and the row becomes `Differs` without files
+    /// (`Err` for the log). A row that becomes `Missing` or `Differs` loses its checkmark.
+    fn report(
+        &mut self,
+        peer: u8,
+        row: u8,
+        session_revision: u32,
+        report: &DataReport,
+    ) -> Result<(), String> {
+        if !self.checking() {
+            return Err("The lobby does not check game data.".to_string());
+        }
+        if peer == HOST_PEER {
+            return Err("The host's row needs no data report.".to_string());
+        }
+        if session_revision != self.state.session_revision {
+            return Err(format!(
+                "Data report for session {session_revision} instead of {}.",
+                self.state.session_revision
+            ));
+        }
+        let (verdict, result) = match report {
+            DataReport::Missing => (DataState::Missing, Ok(())),
+            DataReport::Rules { inputs, .. } if !inputs_fit(inputs) => (
+                DataState::Differs {
+                    files: Vec::new(),
+                    more: 0,
+                },
+                Err(format!(
+                    "Read recording beyond the limits ({} entries).",
+                    inputs.len()
+                )),
+            ),
+            DataReport::Rules { checksum, inputs } => match self.state.rules_checksum {
+                None => return Err("The host's checksum is not there yet.".to_string()),
+                Some(host) if *checksum == Some(host) => (DataState::Equal, Ok(())),
+                // The client leaves its recording out when it exceeds the limits: nothing to compare.
+                Some(_) if inputs.is_empty() => (
+                    DataState::Differs {
+                        files: Vec::new(),
+                        more: 0,
+                    },
+                    Ok(()),
+                ),
+                Some(_) => {
+                    let (files, more) = compare_inputs(&self.host_inputs, inputs);
+                    (DataState::Differs { files, more }, Ok(()))
+                }
+            },
+        };
+        let r = &mut self.state.rows[usize::from(row)];
+        let ready = r.ready && verdict == DataState::Equal;
+        if r.data != verdict || r.ready != ready {
+            r.data = verdict;
+            r.ready = ready;
+            self.bump();
+        }
+        result
     }
 
     /// Set nation, team, color, handicap of a row; `rules` checks team and color. Ready stays (E-302).
@@ -609,7 +804,7 @@ impl LobbyBook {
                 if row != 0 && current_kind == KIND_HUMAN {
                     return Err("A human's checkmark can only be set by that player.".to_string());
                 }
-                self.set_ready(row, ready);
+                self.set_ready(row, ready)?;
                 Ok(EditOutcome::Changed)
             }
         }
@@ -633,6 +828,7 @@ impl LobbyBook {
         let r = &mut self.state.rows[usize::from(row)];
         r.kind = kind;
         r.peer = None;
+        r.data = DataState::Equal;
         if kind == 0 {
             r.handicap = 0;
             r.ready = false;
@@ -652,7 +848,8 @@ impl LobbyBook {
 
     /// `START` condition: every row with type != 0 ready, at least two such rows, map name not empty. With a random map
     /// an empty map name suffices: the seed text is never empty, sanitized it can be (only spaces or brackets); the
-    /// original starts with such a seed. In a loaded lobby: every row of type 999 with a machine, without Ready.
+    /// original starts with such a seed. With the data check additionally the host's checksum and `Equal` in every row.
+    /// In a loaded lobby: every row of type 999 with a machine, without Ready.
     pub fn can_start(&self) -> bool {
         if self.state.is_loaded() {
             return self
@@ -666,12 +863,21 @@ impl LobbyBook {
         used.clone().count() >= 2
             && used.clone().all(|r| r.ready)
             && (!session.map_name.is_empty() || matches!(session.map, MapId::Random { .. }))
+            && !self.data_holds_start()
+    }
+
+    /// The data check holds `START` back: switched on, and the host's checksum is missing or a row is not `Equal`.
+    pub fn data_holds_start(&self) -> bool {
+        self.checking()
+            && (self.state.rules_checksum.is_none()
+                || self.state.rows.iter().any(|r| r.data != DataState::Equal))
     }
 
     /// New session data (map change `LAN31 CHANGEGAME`, E-307 deviation). If a row that would be dropped is occupied
     /// ([`rows_fit`]), `Err` without change. Otherwise the rows `≥ players` are dropped or added as open rows (team =
     /// row, first free color); teams `≥ players` of the remaining rows are set to the row number; Ready flags stay
-    /// (E-302). Not in a loaded lobby (no map change).
+    /// (E-302). The session revision moves to the new `revision`; with the data check the host's checksum is forgotten
+    /// and every row with a machine except the host's becomes `Pending`. Not in a loaded lobby (no map change).
     pub fn set_session(&mut self, session: SessionInfo) -> Result<(), String> {
         if self.state.is_loaded() {
             return Err(LOADED_FIXED.to_string());
@@ -703,6 +909,7 @@ impl LobbyBook {
                 color,
                 ready: false,
                 peer: None,
+                data: DataState::Equal,
             });
         }
         for (i, r) in self.state.rows.iter_mut().enumerate() {
@@ -711,7 +918,13 @@ impl LobbyBook {
             }
         }
         self.state.session = session;
+        if self.checking() {
+            self.state.rules_checksum = None;
+            self.host_inputs.clear();
+            self.pend_machine_rows();
+        }
         self.bump();
+        self.state.session_revision = self.state.revision;
         Ok(())
     }
 

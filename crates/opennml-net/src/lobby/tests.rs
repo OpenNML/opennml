@@ -33,6 +33,7 @@ fn row(i: i32, kind: i32) -> LobbyRow {
         color: i,
         ready: false,
         peer: None,
+        data: DataState::Equal,
     }
 }
 
@@ -673,6 +674,7 @@ fn saved_rows(seats: &[u8]) -> Vec<LobbyRow> {
             color: i32::from(s),
             ready: true,
             peer: Some(s),
+            data: DataState::Pending,
         })
         .collect()
 }
@@ -719,7 +721,15 @@ fn loaded_book_puts_the_host_on_his_seat() {
             (seat + 10, seat % 2, seat, 1),
             "slot {seat}"
         );
+        assert_eq!(r.data, DataState::Equal, "slot {seat}");
     }
+    // A loaded lobby does not check game data over the wire.
+    let mut checked = loaded_book();
+    checked.enable_data_check();
+    checked.join_seat(7, "Bert", 4).unwrap();
+    checked.join_seat(8, "Cora", 1).unwrap();
+    assert_eq!(checked.state().rows[2].data, DataState::Equal);
+    assert!(checked.can_start());
     // The host's name is cleaned; a new lobby is not loaded.
     let b = LobbyBook::loaded(
         saved_session(2),
@@ -896,4 +906,526 @@ fn loaded_can_start_needs_every_row_taken() {
     assert!(b.can_start(), "all rows occupied");
     b.leave(8);
     assert!(!b.can_start(), "row 2 open again");
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Game data check
+// ---------------------------------------------------------------------------------------------------------------
+
+fn input(path: &str, hash: u64) -> DataInput {
+    DataInput {
+        path: path.to_string(),
+        hash: Some(hash),
+    }
+}
+
+/// Read recording of the host in these tests.
+fn host_inputs() -> Vec<DataInput> {
+    vec![
+        input("maps/a.ini", 1),
+        input("maps/b.ini", 2),
+        input("maps/c.ini", 3),
+    ]
+}
+
+/// Rules checksum of the host in these tests.
+const HOST_SUM: u64 = 0x5EED;
+
+/// [`book`] with the data check switched on.
+fn checked_book() -> LobbyBook {
+    let mut b = book();
+    b.enable_data_check();
+    b
+}
+
+/// Data wish for the current session.
+fn data_wish(b: &LobbyBook, report: DataReport) -> LobbyWish {
+    LobbyWish::Data {
+        session_revision: b.state().session_revision,
+        report,
+    }
+}
+
+fn rules(checksum: Option<u64>, inputs: Vec<DataInput>) -> DataReport {
+    DataReport::Rules { checksum, inputs }
+}
+
+/// The host's checksum and recording for the current session.
+fn host_rules(b: &mut LobbyBook) {
+    let revision = b.state().session_revision;
+    assert!(b.set_rules(revision, Some(HOST_SUM), host_inputs()));
+}
+
+fn data(b: &LobbyBook, row: usize) -> DataState {
+    b.state().rows[row].data.clone()
+}
+
+fn differs(files: &[&str], more: u16) -> DataState {
+    DataState::Differs {
+        files: files.iter().map(|f| f.to_string()).collect(),
+        more,
+    }
+}
+
+/// Without [`LobbyBook::enable_data_check`] (command-line path) every row stays `Equal`, data wishes and the host's
+/// rules have no effect, and `START` follows the old rule.
+#[test]
+fn data_check_off_keeps_the_old_start_rule() {
+    let mut b = book();
+    b.join(5, "Bert").unwrap();
+    assert!(b.state().rows.iter().all(|r| r.data == DataState::Equal));
+    let revision = b.state().session_revision;
+    assert!(!b.set_rules(revision, Some(HOST_SUM), host_inputs()));
+    assert_eq!(b.state().rules_checksum, None);
+    let before = b.state().clone();
+    assert!(
+        b.wish(5, &data_wish(&b, DataReport::Missing), &AcceptAll)
+            .is_err()
+    );
+    assert_eq!(b.state(), &before);
+    b.wish(5, &LobbyWish::Ready(true), &AcceptAll).unwrap();
+    b.edit(
+        &HostEdit::Ready {
+            row: 0,
+            ready: true,
+        },
+        &AcceptAll,
+    )
+    .unwrap();
+    assert!(b.can_start(), "without the host's checksum");
+    let mut s = session(4);
+    s.map_name = "Other".into();
+    b.set_session(s).unwrap();
+    assert!(b.state().rows.iter().all(|r| r.data == DataState::Equal));
+    assert!(b.can_start());
+}
+
+/// A join sets only the new row to `Pending`; a map change sets every row with a machine except the host's, forgets
+/// the host's checksum and moves the session revision. Host, computer and open rows stay `Equal`.
+#[test]
+fn join_and_map_change_set_rows_pending() {
+    let mut b = checked_book();
+    assert!(b.state().rows.iter().all(|r| r.data == DataState::Equal));
+    assert_eq!(b.state().session_revision, b.state().revision);
+    host_rules(&mut b);
+    assert_eq!(b.join(5, "Bert").unwrap(), 1);
+    assert_eq!(data(&b, 1), DataState::Pending);
+    b.wish(
+        5,
+        &data_wish(&b, rules(Some(HOST_SUM), Vec::new())),
+        &AcceptAll,
+    )
+    .unwrap();
+    assert_eq!(data(&b, 1), DataState::Equal);
+    assert_eq!(b.join(6, "Cora").unwrap(), 2);
+    assert_eq!(data(&b, 1), DataState::Equal, "a join leaves the others");
+    assert_eq!(data(&b, 2), DataState::Pending);
+    b.edit(&HostEdit::Kind { row: 3, kind: 2 }, &AcceptAll)
+        .unwrap();
+    let mut s = session(4);
+    s.map = MapId::Fixed {
+        path: "maps/y.nml".into(),
+        checksum: 9,
+    };
+    b.set_session(s).unwrap();
+    let state = b.state();
+    assert_eq!(state.session_revision, state.revision);
+    assert_eq!(state.rules_checksum, None);
+    let verdicts: Vec<DataState> = state.rows.iter().map(|r| r.data.clone()).collect();
+    assert_eq!(
+        verdicts,
+        vec![
+            DataState::Equal,
+            DataState::Pending,
+            DataState::Pending,
+            DataState::Equal
+        ]
+    );
+    // Leaving and kicking open the row: `Equal` again.
+    b.leave(6);
+    assert_eq!(data(&b, 2), DataState::Equal);
+    b.edit(&HostEdit::Kind { row: 1, kind: 0 }, &AcceptAll)
+        .unwrap();
+    assert_eq!(data(&b, 1), DataState::Equal);
+}
+
+#[test]
+fn equal_checksum_makes_the_row_equal() {
+    let mut b = checked_book();
+    host_rules(&mut b);
+    b.join(5, "Bert").unwrap();
+    let revision = b.state().revision;
+    b.wish(
+        5,
+        &data_wish(&b, rules(Some(HOST_SUM), Vec::new())),
+        &AcceptAll,
+    )
+    .unwrap();
+    assert_eq!(data(&b, 1), DataState::Equal);
+    assert_eq!(b.state().revision, revision + 1);
+    // The same verdict again changes nothing.
+    b.wish(
+        5,
+        &data_wish(&b, rules(Some(HOST_SUM), Vec::new())),
+        &AcceptAll,
+    )
+    .unwrap();
+    assert_eq!(b.state().revision, revision + 1);
+}
+
+/// `Missing` needs no checksum of the host.
+#[test]
+fn missing_report_makes_the_row_missing() {
+    let mut b = checked_book();
+    b.join(5, "Bert").unwrap();
+    b.wish(5, &data_wish(&b, DataReport::Missing), &AcceptAll)
+        .unwrap();
+    assert_eq!(data(&b, 1), DataState::Missing);
+}
+
+/// Five differing paths: the first three ascending, two more. A path only at the client and one only at the host
+/// count as well; equal paths do not.
+#[test]
+fn differing_inputs_name_the_first_three_files() {
+    let mut b = checked_book();
+    let revision = b.state().session_revision;
+    let host = vec![
+        input("maps/a.ini", 1),
+        input("maps/d.ini", 4),
+        input("maps/b.ini", 2),
+        input("maps/only_host.ini", 5),
+        input("maps/c.ini", 3),
+    ];
+    assert!(b.set_rules(revision, Some(HOST_SUM), host.clone()));
+    b.join(5, "Bert").unwrap();
+    let client = vec![
+        input("maps/c.ini", 30),
+        input("maps/a.ini", 1),
+        input("maps/e_client.ini", 6),
+        input("maps/b.ini", 20),
+        input("maps/d.ini", 40),
+    ];
+    assert_eq!(
+        compare_inputs(&host, &client),
+        (
+            vec![
+                "maps/b.ini".to_string(),
+                "maps/c.ini".to_string(),
+                "maps/d.ini".to_string()
+            ],
+            2
+        )
+    );
+    b.wish(5, &data_wish(&b, rules(Some(0xBAD), client)), &AcceptAll)
+        .unwrap();
+    assert_eq!(
+        data(&b, 1),
+        differs(&["maps/b.ini", "maps/c.ini", "maps/d.ini"], 2)
+    );
+    // Only-at-one-side paths sort in like any other.
+    assert_eq!(
+        compare_inputs(&host, &[input("maps/0.ini", 1)]),
+        (
+            vec![
+                "maps/0.ini".to_string(),
+                "maps/a.ini".to_string(),
+                "maps/b.ini".to_string()
+            ],
+            3
+        )
+    );
+    // A failed read differs from a hash and from a missing entry, two failed reads are equal.
+    let failed = [DataInput {
+        path: "x.ini".into(),
+        hash: None,
+    }];
+    assert_eq!(
+        compare_inputs(&failed, &[input("x.ini", 1)]),
+        (vec!["x.ini".to_string()], 0)
+    );
+    assert_eq!(compare_inputs(&failed, &[]), (vec!["x.ini".to_string()], 0));
+    assert_eq!(compare_inputs(&failed, &failed), (vec![], 0));
+}
+
+/// A client whose own computation failed (`checksum: None`) differs, named by its recording. A differing checksum
+/// without a recording (the client's list exceeded the limits) differs without files.
+#[test]
+fn failed_client_rules_differ_with_their_inputs() {
+    let mut b = checked_book();
+    host_rules(&mut b);
+    b.join(5, "Bert").unwrap();
+    let client = vec![
+        input("maps/a.ini", 1),
+        input("maps/b.ini", 99),
+        input("maps/c.ini", 3),
+    ];
+    b.wish(5, &data_wish(&b, rules(None, client)), &AcceptAll)
+        .unwrap();
+    assert_eq!(data(&b, 1), differs(&["maps/b.ini"], 0));
+    b.wish(5, &data_wish(&b, rules(Some(8), Vec::new())), &AcceptAll)
+        .unwrap();
+    assert_eq!(data(&b, 1), differs(&[], 0));
+}
+
+/// A data wish for an old session (the client computed for the map before a second change) is discarded: the row
+/// stays `Pending`; the wish for the new session applies.
+#[test]
+fn stale_data_wish_is_discarded() {
+    let mut b = checked_book();
+    host_rules(&mut b);
+    b.join(5, "Bert").unwrap();
+    let old = data_wish(&b, rules(Some(HOST_SUM), Vec::new()));
+    let mut s = session(4);
+    s.map_name = "Other".into();
+    b.set_session(s).unwrap();
+    host_rules(&mut b);
+    let before = b.state().clone();
+    assert!(b.wish(5, &old, &AcceptAll).is_err());
+    assert_eq!(b.state(), &before);
+    assert_eq!(data(&b, 1), DataState::Pending);
+    b.wish(
+        5,
+        &data_wish(&b, rules(Some(HOST_SUM), Vec::new())),
+        &AcceptAll,
+    )
+    .unwrap();
+    assert_eq!(data(&b, 1), DataState::Equal);
+}
+
+/// `Ready(true)` for a row without `Equal` is discarded, as a wish and as a host change (a human's checkmark is the
+/// player's anyway); `Ready(false)` always applies.
+#[test]
+fn ready_without_equal_is_discarded() {
+    let mut b = checked_book();
+    host_rules(&mut b);
+    b.join(5, "Bert").unwrap();
+    let ready = LobbyWish::Ready(true);
+    assert!(b.wish(5, &ready, &AcceptAll).is_err(), "pending");
+    let host_ready = HostEdit::Ready {
+        row: 1,
+        ready: true,
+    };
+    assert!(b.edit(&host_ready, &AcceptAll).is_err());
+    assert!(!b.state().rows[1].ready);
+    for report in [DataReport::Missing, rules(Some(1), Vec::new())] {
+        b.wish(5, &data_wish(&b, report.clone()), &AcceptAll)
+            .unwrap();
+        assert!(b.wish(5, &ready, &AcceptAll).is_err(), "{report:?}");
+        assert!(b.edit(&host_ready, &AcceptAll).is_err(), "{report:?}");
+        assert!(!b.state().rows[1].ready);
+    }
+    b.wish(
+        5,
+        &data_wish(&b, rules(Some(HOST_SUM), Vec::new())),
+        &AcceptAll,
+    )
+    .unwrap();
+    b.wish(5, &ready, &AcceptAll).unwrap();
+    assert!(b.state().rows[1].ready);
+    b.wish(5, &LobbyWish::Ready(false), &AcceptAll).unwrap();
+    assert!(!b.state().rows[1].ready);
+    // The host's row and computers are always `Equal`.
+    b.edit(
+        &HostEdit::Ready {
+            row: 0,
+            ready: true,
+        },
+        &AcceptAll,
+    )
+    .unwrap();
+    b.edit(&HostEdit::Kind { row: 2, kind: 4 }, &AcceptAll)
+        .unwrap();
+    b.edit(
+        &HostEdit::Ready {
+            row: 2,
+            ready: false,
+        },
+        &AcceptAll,
+    )
+    .unwrap();
+    b.edit(
+        &HostEdit::Ready {
+            row: 2,
+            ready: true,
+        },
+        &AcceptAll,
+    )
+    .unwrap();
+    assert!(b.state().rows[0].ready && b.state().rows[2].ready);
+}
+
+/// A map change keeps the checkmark (E-302) and makes the row `Pending`; a verdict `Missing` or `Differs` takes it.
+#[test]
+fn differing_row_loses_its_ready_flag() {
+    for report in [
+        DataReport::Missing,
+        rules(None, host_inputs()[..1].to_vec()),
+    ] {
+        let mut b = checked_book();
+        host_rules(&mut b);
+        b.join(5, "Bert").unwrap();
+        b.wish(
+            5,
+            &data_wish(&b, rules(Some(HOST_SUM), Vec::new())),
+            &AcceptAll,
+        )
+        .unwrap();
+        b.wish(5, &LobbyWish::Ready(true), &AcceptAll).unwrap();
+        let mut s = session(4);
+        s.map_name = "Other".into();
+        b.set_session(s).unwrap();
+        assert_eq!(data(&b, 1), DataState::Pending);
+        assert!(b.state().rows[1].ready, "E-302");
+        host_rules(&mut b);
+        b.wish(5, &data_wish(&b, report.clone()), &AcceptAll)
+            .unwrap();
+        assert!(!b.state().rows[1].ready, "{report:?}");
+    }
+}
+
+/// With the check `START` needs the host's checksum and `Equal` in every row, besides the old rule.
+#[test]
+fn can_start_needs_the_host_checksum_and_equal_rows() {
+    // Host and a ready computer only: the host's checksum is missing.
+    let mut b = checked_book();
+    b.edit(
+        &HostEdit::Ready {
+            row: 0,
+            ready: true,
+        },
+        &AcceptAll,
+    )
+    .unwrap();
+    b.edit(
+        &HostEdit::Ready {
+            row: 1,
+            ready: true,
+        },
+        &AcceptAll,
+    )
+    .unwrap();
+    assert!(!b.can_start(), "no checksum of the host");
+    let revision = b.state().session_revision;
+    assert!(b.set_rules(revision, None, Vec::new()));
+    assert!(!b.can_start(), "the host's computation failed");
+    assert!(b.set_rules(revision, Some(HOST_SUM), host_inputs()));
+    assert!(b.can_start());
+    // A human takes the computer's row: `Pending` blocks, `Equal` and Ready start.
+    b.join(5, "Bert").unwrap();
+    assert!(!b.can_start());
+    b.wish(
+        5,
+        &data_wish(&b, rules(Some(HOST_SUM), Vec::new())),
+        &AcceptAll,
+    )
+    .unwrap();
+    assert!(!b.can_start(), "not ready yet");
+    b.wish(5, &LobbyWish::Ready(true), &AcceptAll).unwrap();
+    assert!(b.can_start());
+    // Map change: checkmarks stay, but row and checksum are pending.
+    let mut s = session(4);
+    s.map_name = "Other".into();
+    b.set_session(s).unwrap();
+    assert!(!b.can_start());
+    host_rules(&mut b);
+    assert!(!b.can_start(), "row still pending");
+    b.wish(
+        5,
+        &data_wish(&b, rules(Some(HOST_SUM), Vec::new())),
+        &AcceptAll,
+    )
+    .unwrap();
+    assert!(b.can_start());
+}
+
+/// A recording beyond the limits (entries, path length, sum of the path lengths) is rejected, the row becomes
+/// `Differs` without files. A recording at the limits is accepted and fits a frame of the wire.
+#[test]
+fn oversized_data_wish_is_rejected() {
+    let short = |i: usize| input(&format!("f/{i:05}.ini"), 1);
+    let too_many: Vec<DataInput> = (0..=MAX_DATA_INPUTS).map(short).collect();
+    let long_path = vec![input(&"p".repeat(MAX_DATA_PATH + 1), 1)];
+    let too_long_sum: Vec<DataInput> = (0..MAX_DATA_INPUT_BYTES / 250 + 1)
+        .map(|i| input(&format!("{i:0250}"), 1))
+        .collect();
+    assert!(too_long_sum.len() < MAX_DATA_INPUTS);
+    for (name, inputs) in [
+        ("entries", too_many),
+        ("path", long_path),
+        ("sum", too_long_sum),
+    ] {
+        assert!(!inputs_fit(&inputs), "{name}");
+        let mut b = checked_book();
+        host_rules(&mut b);
+        b.join(5, "Bert").unwrap();
+        let wish = data_wish(&b, rules(Some(1), inputs));
+        assert!(b.wish(5, &wish, &AcceptAll).is_err(), "{name}");
+        assert_eq!(data(&b, 1), differs(&[], 0), "{name}");
+    }
+    // At the limits: accepted, the files are named, and the wish fits a frame.
+    let at_limit: Vec<DataInput> = (0..MAX_DATA_INPUTS)
+        .map(|i| DataInput {
+            path: format!("{i:032}"),
+            hash: Some(u64::MAX),
+        })
+        .collect();
+    assert_eq!(
+        at_limit.iter().map(|i| i.path.len()).sum::<usize>(),
+        MAX_DATA_INPUT_BYTES
+    );
+    assert!(inputs_fit(&at_limit));
+    assert!(inputs_fit(&[input(&"p".repeat(MAX_DATA_PATH), 1)]));
+    let mut b = checked_book();
+    host_rules(&mut b);
+    b.join(5, "Bert").unwrap();
+    let wish = data_wish(&b, rules(Some(1), at_limit));
+    let frame = crate::wire::encode(&crate::msg::NetMessage::LobbyWish(wish.clone()));
+    assert!(frame.is_ok(), "{:?}", frame.err());
+    b.wish(5, &wish, &AcceptAll).unwrap();
+    // All 16 384 client paths and the 3 host paths differ.
+    assert!(matches!(
+        data(&b, 1),
+        DataState::Differs { files, more } if files.len() == 3 && usize::from(more) == MAX_DATA_INPUTS
+    ));
+}
+
+/// The host's result for an old session (second map change while its computation ran) is ignored.
+#[test]
+fn set_rules_for_an_old_revision_is_ignored() {
+    let mut b = checked_book();
+    let first = b.state().session_revision;
+    let mut s = session(4);
+    s.map_name = "Other".into();
+    b.set_session(s).unwrap();
+    let second = b.state().session_revision;
+    assert_ne!(first, second);
+    let before = b.state().clone();
+    assert!(!b.set_rules(first, Some(HOST_SUM), host_inputs()));
+    assert_eq!(b.state(), &before);
+    assert!(b.set_rules(second, Some(HOST_SUM), host_inputs()));
+    assert_eq!(b.state().rules_checksum, Some(HOST_SUM));
+    assert_eq!(b.state().revision, before.revision + 1);
+}
+
+/// The log form of a data wish names only the number of entries, not the entries; other wishes stay `Debug`.
+#[test]
+fn data_wish_summary_counts_the_inputs() {
+    let inputs: Vec<DataInput> = (0..5000).map(|i| input(&format!("f/{i}.ini"), 1)).collect();
+    let wish = LobbyWish::Data {
+        session_revision: 4,
+        report: rules(Some(9), inputs),
+    };
+    assert_eq!(
+        wish.summary(),
+        "Data { session_revision: 4, report: Rules { checksum: Some(9), inputs: 5000 } }"
+    );
+    let missing = LobbyWish::Data {
+        session_revision: 5,
+        report: DataReport::Missing,
+    };
+    assert_eq!(
+        missing.summary(),
+        "Data { session_revision: 5, report: Missing }"
+    );
+    assert_eq!(LobbyWish::Ready(true).summary(), "Ready(true)");
 }

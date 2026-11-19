@@ -13,8 +13,9 @@ pub const MAGIC: [u8; 4] = *b"NMLN";
 /// Version of the wire; any other value is rejected. History: 1 first version; 2 lobby, discovery and latency
 /// messages, `Hello.build`, `StartInfo` with `spacing`/`lead`; 3 `Hello::seat`, `StartInfo::saved`,
 /// `LobbyState::seats`, `MapId::Saved`; 4 `Hello::listen_port`, `Go::successors`, `Rejoin`, `Migrated`,
-/// `NetControl::Handover`.
-pub const NET_VERSION: u16 = 4;
+/// `NetControl::Handover`; 5 game data check: `LobbyState::session_revision`, `LobbyState::rules_checksum`,
+/// `LobbyRow::data`, `LobbyWish::Data`, `NetMessage::LoadFailed`.
+pub const NET_VERSION: u16 = 5;
 /// Largest allowed body in bytes.
 pub const MAX_FRAME: usize = 1 << 20;
 /// Payload per piece.
@@ -241,6 +242,7 @@ mod tests {
             color: team,
             ready: false,
             peer: None,
+            data: crate::lobby::DataState::Equal,
         };
         LobbyBook::loaded(session, vec![row(0), row(1)], vec![2, 5], 5, "Host")
             .unwrap()
@@ -355,6 +357,23 @@ mod tests {
             }),
             NetMessage::LobbyWish(crate::lobby::LobbyWish::Ready(true)),
             NetMessage::LobbyWish(crate::lobby::LobbyWish::Chat("hello".into())),
+            NetMessage::LobbyWish(crate::lobby::LobbyWish::Data {
+                session_revision: 4,
+                report: crate::lobby::DataReport::Rules {
+                    checksum: None,
+                    inputs: vec![crate::lobby::DataInput {
+                        path: "units/a.ini".into(),
+                        hash: Some(9),
+                    }],
+                },
+            }),
+            NetMessage::LobbyWish(crate::lobby::LobbyWish::Data {
+                session_revision: 5,
+                report: crate::lobby::DataReport::Missing,
+            }),
+            NetMessage::LoadFailed {
+                name: "Bert".into(),
+            },
             NetMessage::Chat {
                 row: 2,
                 text: "hello".into(),
@@ -612,11 +631,11 @@ mod tests {
     }
 
     #[test]
-    fn frame_of_version_3_is_rejected() {
-        assert_eq!(NET_VERSION, 4);
-        let mut r = std::io::Cursor::new(header(3, 0));
+    fn frame_of_version_4_is_rejected() {
+        assert_eq!(NET_VERSION, 5);
+        let mut r = std::io::Cursor::new(header(4, 0));
         match read_frame(&mut r) {
-            Err(WireError::Version { got }) => assert_eq!(got, 3),
+            Err(WireError::Version { got }) => assert_eq!(got, 4),
             other => panic!("expected Version, got {other:?}"),
         }
     }

@@ -81,6 +81,77 @@ fn test_hello() -> Hello {
     }
 }
 
+/// The map checksum covers the bytes of `.lvl` and `.wld`, in order: swapped lines change it. The `.hlm` is not part of
+/// it (the rules checksum of the data check covers it).
+// QUIRK E-353: deviation
+#[test]
+fn map_checksum_covers_lvl_and_wld_bytes() {
+    let lvl = "data/levels/multiplayer/[2players]-test.lvl";
+    let wld = "data/levels/multiplayer/[2players]-test.wld";
+    let sum = |level: &[u8], world: &[u8]| {
+        let (_dir, vfs) = install(&[(lvl, level.to_vec()), (wld, world.to_vec())]);
+        map_checksum(&vfs, lvl).expect("checksum")
+    };
+    let base = sum(
+        b"line one
+line two
+",
+        b"world one
+world two
+",
+    );
+    assert_ne!(
+        base,
+        sum(
+            b"line two
+line one
+",
+            b"world one
+world two
+"
+        )
+    );
+    assert_ne!(
+        base,
+        sum(
+            b"line one
+line two
+",
+            b"world two
+world one
+"
+        )
+    );
+
+    // A changed `.hlm` leaves the map checksum, but the rules checksum differs.
+    let Some(vfs) = corpus_vfs() else {
+        return;
+    };
+    let req = request(FIXED_MAP, LevelInfoData::default());
+    let (rules, entries) = net_rules_recorded(&vfs, &req);
+    let rules = rules.unwrap();
+    let hlm = entries
+        .iter()
+        .find(|e| e.path.ends_with(".hlm") && e.hash.is_some())
+        .expect("a .hlm of the map")
+        .path
+        .clone();
+    let mut bytes = vfs.read(&hlm).unwrap();
+    *bytes.last_mut().expect("bytes") ^= 1;
+    let dir = tempfile::tempdir().unwrap();
+    let disk = dir.path().join("changed.hlm");
+    std::fs::write(&disk, &bytes).unwrap();
+    let other = opennml_rda::testutil::with_loose_file(&vfs, &hlm, &disk);
+    assert_eq!(
+        map_checksum(&other, FIXED_MAP),
+        map_checksum(&vfs, FIXED_MAP)
+    );
+    assert_ne!(
+        net_rules(&other, &req).map(|r| r.checksum),
+        Ok(rules.checksum)
+    );
+}
+
 #[test]
 fn map_checksum_hides_a_changed_map() {
     // FNV-1a 64 over `.lvl` and `.wld`; the list shows a game only with the same checksum of the local map. A
@@ -120,6 +191,7 @@ fn row(kind: i32, team: i32, color: i32) -> LobbyRow {
         color,
         ready: false,
         peer: None,
+        data: DataState::Equal,
     }
 }
 
@@ -635,6 +707,7 @@ fn rows_fit_matches_in_ui_and_core() {
                         color: row,
                         ready: false,
                         peer: None,
+                        data: DataState::Equal,
                     }
                 })
                 .collect();
@@ -654,4 +727,992 @@ fn rows_fit_matches_in_ui_and_core() {
         }
     }
     assert!(cases > 90_000);
+}
+
+/// Fixed multiplayer map of the corpus tests.
+const FIXED_MAP: &str = "data/levels/multiplayer/[2players]-tintebariver.lvl";
+
+fn request(level: &str, info: LevelInfoData) -> MatchRequest {
+    MatchRequest {
+        level: level.into(),
+        game_type: 0,
+        slots: Vec::new(),
+        settings: DraftSettings::default(),
+        info,
+    }
+}
+
+fn random_request() -> MatchRequest {
+    request(
+        "",
+        LevelInfoData {
+            name: "77".into(),
+            players: 2,
+            level_type: 1,
+            ..LevelInfoData::default()
+        },
+    )
+}
+
+fn corpus_vfs() -> Option<Vfs> {
+    let dir = opennml_rda::testutil::corpus_game_dir()?;
+    Some(Vfs::open_game_dir(dir).expect("corpus installation"))
+}
+
+fn has(entries: &[opennml_rda::ReadEntry], path: &str) -> bool {
+    entries.iter().any(|e| e.path == path && e.hash.is_some())
+}
+
+#[test]
+fn recorded_inputs_cover_the_rules_files() {
+    let Some(vfs) = corpus_vfs() else {
+        return;
+    };
+    let fixed = request(FIXED_MAP, LevelInfoData::default());
+    let (rules, entries) = net_rules_recorded(&vfs, &fixed);
+    let rules = rules.expect("rules of the fixed map");
+    assert_eq!(rules.checksum, net_rules(&vfs, &fixed).unwrap().checksum);
+    for path in [
+        "data/gifcon/bonus.ini",
+        "data/levels/multiplayer/[2players]-tintebariver.lvl",
+    ] {
+        assert!(has(&entries, path), "{path}");
+    }
+    for ext in [".wld", ".hlm"] {
+        assert!(
+            entries
+                .iter()
+                .any(|e| e.path.ends_with(ext) && e.hash.is_some()),
+            "{ext}"
+        );
+    }
+    assert!(
+        entries
+            .iter()
+            .any(|e| e.path.ends_with("nml.db") && e.hash.is_some())
+    );
+    assert!(
+        entries.windows(2).all(|w| w[0].path < w[1].path),
+        "ascending, once"
+    );
+
+    let random = random_request();
+    let (rules, entries) = net_rules_recorded(&vfs, &random);
+    let rules = rules.expect("rules of the random map");
+    assert_eq!(rules.checksum, net_rules(&vfs, &random).unwrap().checksum);
+    assert!(has(&entries, "data/gifcon/randommaptypes.ini"));
+    assert!(
+        entries
+            .iter()
+            .any(|e| e.path.ends_with(".rnd") && e.hash.is_some())
+    );
+}
+
+#[test]
+fn changed_loose_file_changes_its_entry_and_the_checksum() {
+    let Some(vfs) = corpus_vfs() else {
+        return;
+    };
+    let req = request(FIXED_MAP, LevelInfoData::default());
+    let (rules, before) = net_rules_recorded(&vfs, &req);
+    let rules = rules.unwrap();
+    let mut bytes = vfs.read("data/gifcon/bonus.ini").unwrap();
+    // A digit of a value, so that the file still parses.
+    let at = bytes.iter().rposition(u8::is_ascii_digit).expect("a digit");
+    bytes[at] = if bytes[at] == b'9' {
+        b'8'
+    } else {
+        bytes[at] + 1
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let disk = dir.path().join("bonus.ini");
+    std::fs::write(&disk, &bytes).unwrap();
+    let other = opennml_rda::testutil::with_loose_file(&vfs, "data/gifcon/bonus.ini", &disk);
+    let (changed, after) = net_rules_recorded(&other, &req);
+    assert_ne!(changed.unwrap().checksum, rules.checksum);
+    let diff: Vec<_> = before
+        .iter()
+        .zip(&after)
+        .filter(|(a, b)| a != b)
+        .map(|(a, _)| a.path.as_str())
+        .collect();
+    assert_eq!(before.len(), after.len());
+    assert_eq!(diff, ["data/gifcon/bonus.ini"]);
+}
+
+#[test]
+fn recorded_inputs_are_deterministic() {
+    let Some(vfs) = corpus_vfs() else {
+        return;
+    };
+    for req in [
+        request(FIXED_MAP, LevelInfoData::default()),
+        random_request(),
+    ] {
+        let (_, first) = net_rules_recorded(&vfs, &req);
+        let (_, second) = net_rules_recorded(&vfs, &req);
+        assert!(!first.is_empty());
+        assert_eq!(first, second);
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Game data check of the session (re/multiplayer-menus L.18): host and client compute the rules of the session in the
+// rules worker; the host publishes its checksum, the client reports once it is there.
+
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
+
+use opennml_ui::draft::MapCatalogEntry;
+
+/// Rules worker that computes only on [`Self::release`] and returns every result, also of older jobs - like threads
+/// that keep running after a newer job.
+#[derive(Clone, Default)]
+struct ManualWorker {
+    jobs: Arc<Mutex<VecDeque<RulesJob>>>,
+    done: Arc<Mutex<VecDeque<RulesDone>>>,
+}
+
+impl ManualWorker {
+    /// Session revisions of the waiting jobs, oldest first.
+    fn waiting(&self) -> Vec<u32> {
+        let jobs = self.jobs.lock().unwrap();
+        jobs.iter().map(|j| j.session_revision).collect()
+    }
+
+    /// Computes the oldest waiting job; its result comes with the next poll.
+    fn release(&self) {
+        let job = self
+            .jobs
+            .lock()
+            .unwrap()
+            .pop_front()
+            .expect("a waiting job");
+        let done = job.run();
+        self.done.lock().unwrap().push_back(done);
+    }
+}
+
+impl RulesWorker for ManualWorker {
+    fn submit(&mut self, job: RulesJob) {
+        self.jobs.lock().unwrap().push_back(job);
+    }
+
+    fn poll(&mut self) -> Option<RulesDone> {
+        self.done.lock().unwrap().pop_front()
+    }
+}
+
+/// A machine of [`Pair`]: menu without frames, network session, installation.
+struct Machine {
+    app: MenuApp,
+    session: NetSession,
+    vfs: Vfs,
+}
+
+/// Host Anna (machine 0) and client Bert (machine 1) on the corpus over a `MemNet`, without the menu flow: the
+/// sessions are pumped directly, application commands stay in the queue.
+struct Pair {
+    net: opennml_net::MemNet,
+    machines: Vec<Machine>,
+    texts: Texts,
+    now: u64,
+    _dir: tempfile::TempDir,
+}
+
+impl Pair {
+    /// Both machines on the corpus; the host's rules come from `host_worker`, the client's from an [`InlineWorker`].
+    fn corpus(host_worker: Box<dyn RulesWorker>) -> Option<Self> {
+        Self::corpus_with(host_worker, Box::new(InlineWorker::default()))
+    }
+
+    /// Like [`Self::corpus`], the client's rules from `client_worker`.
+    fn corpus_with(
+        host_worker: Box<dyn RulesWorker>,
+        client_worker: Box<dyn RulesWorker>,
+    ) -> Option<Self> {
+        let vfs = corpus_vfs()?;
+        let layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let net = opennml_net::MemNet::new();
+        let mut workers: Vec<Box<dyn RulesWorker>> = vec![host_worker, client_worker];
+        let mut machines = Vec::new();
+        for (i, name) in ["Anna", "Bert"].into_iter().enumerate() {
+            let opts = opennml_ui::app::MenuOptions {
+                start_menu: false,
+                ..opennml_ui::app::MenuOptions::default()
+            };
+            let config = crate::testutil::test_config(&vfs);
+            let mut app = MenuApp::new(&vfs, &layer.texts, config, opts).unwrap();
+            let units: Vec<u16> = name.encode_utf16().collect();
+            app.set_net_name(&units);
+            let identity = NetIdentity {
+                hello: Hello {
+                    name: name.into(),
+                    ..test_hello()
+                },
+                port: 2302,
+                seed: Box::new(|| 1),
+                listen: true,
+            };
+            let transport = opennml_net::MemTransport::new(&net, 10 * i as u64);
+            let mut session = NetSession::new(
+                Box::new(transport),
+                identity,
+                crate::testutil::net_paths(dir.path(), i),
+            );
+            session.set_rules_worker(workers.remove(0));
+            machines.push(Machine {
+                app,
+                session,
+                vfs: vfs.clone(),
+            });
+        }
+        Some(Self {
+            net,
+            machines,
+            texts: layer.texts,
+            now: 0,
+            _dir: dir,
+        })
+    }
+
+    fn frame(&mut self) {
+        self.now += 16;
+        self.net.advance_to(self.now);
+        for m in &mut self.machines {
+            m.session.pump(self.now, &mut m.app, &m.vfs, &self.texts);
+        }
+    }
+
+    fn frames(&mut self, n: u32) {
+        for _ in 0..n {
+            self.frame();
+        }
+    }
+
+    /// Installation of machine `i`: the game file `game_path` changed by `edit` as a loose file of its own (shadows
+    /// the archive entry); the other machine keeps its own. Call before the rules of the session are computed.
+    fn change_file(&mut self, i: usize, game_path: &str, edit: impl FnOnce(&mut Vec<u8>)) {
+        let m = &mut self.machines[i];
+        let mut bytes = m.vfs.read(game_path).expect("game file");
+        edit(&mut bytes);
+        let disk = self._dir.path().join(format!("install-{i}"));
+        std::fs::create_dir_all(&disk).expect("folder");
+        let disk = disk.join(game_path.rsplit('/').next().expect("file name"));
+        std::fs::write(&disk, &bytes).expect("loose file");
+        m.vfs = opennml_rda::testutil::with_loose_file(&m.vfs, game_path, &disk);
+    }
+
+    /// Free text of the last message of machine `i` and the number of `MSGBOX` openings in its queue (the menu of
+    /// [`Pair`] runs no frames: every message stays queued and counts as open).
+    fn messages(&self, i: usize) -> (Option<String>, usize) {
+        let app = &self.machines[i].app;
+        let opened = app
+            .queue()
+            .iter()
+            .filter(|c| matches!(c, AppCmd::Open { name, .. } if name == "msgbox"))
+            .count();
+        (app.screen_state().info_free.clone(), opened)
+    }
+
+    fn frames_until(&mut self, what: &str, cond: impl Fn(&Self) -> bool) {
+        for _ in 0..2_000 {
+            if cond(self) {
+                return;
+            }
+            self.frame();
+        }
+        panic!("{what}: not reached");
+    }
+
+    fn host_core(&self) -> &HostCore {
+        self.machines[0]
+            .session
+            .driver()
+            .and_then(NetDriver::host_core)
+            .expect("core of the host")
+    }
+
+    fn host_core_mut(&mut self) -> &mut HostCore {
+        self.machines[0]
+            .session
+            .driver_mut()
+            .and_then(NetDriver::host_core_mut)
+            .expect("core of the host")
+    }
+
+    /// Lobby state of the host's core.
+    fn host_lobby(&self) -> LobbyState {
+        self.host_core().lobby().clone()
+    }
+
+    /// Verdict of the client's row on the host.
+    fn client_data(&self) -> DataState {
+        self.host_lobby().rows[1].data.clone()
+    }
+
+    /// Fixed 2-player maps of the catalog with `.lvl` and `.wld`, the small "Tintebariver" first.
+    fn two_player_maps(&self) -> Vec<MapCatalogEntry> {
+        let mut maps: Vec<MapCatalogEntry> = self.machines[0]
+            .app
+            .data()
+            .maps
+            .maps
+            .iter()
+            .filter(|m| m.level_read && m.world_read && m.players() == 2)
+            .cloned()
+            .collect();
+        maps.sort_by_key(|m| !m.entry.path.to_lowercase().contains("tinte"));
+        maps
+    }
+
+    /// The host creates the session on the fixed map `map` (`{8}` with the draft of `LAN3`).
+    fn host(&mut self, map: &MapCatalogEntry) {
+        let info = LevelInfoData {
+            name: map.name.clone(),
+            path: map.entry.path.clone(),
+            size_class: map.size_class,
+            players: map.players(),
+            level_type: 0,
+            ..LevelInfoData::default()
+        };
+        let m = &mut self.machines[0];
+        m.app
+            .set_lobby_draft(Vec::new(), info, DraftSettings::default());
+        assert!(
+            m.session
+                .on_app_cmd(&AppCmd::Host, &mut m.app, &m.vfs, &self.texts)
+        );
+        assert!(m.session.is_host_lobby(), "hosting failed");
+    }
+
+    /// The client finds the game and joins, up to its row in the host's lobby.
+    fn join(&mut self) {
+        self.machines[1].session.search(true);
+        self.frames_until("game in the list", |p| {
+            !p.machines[1].session.list.games().is_empty()
+        });
+        let m = &mut self.machines[1];
+        let game = m.session.list.games()[0].clone();
+        m.session.join_game(&game, &mut m.app);
+        self.frames_until("client in the lobby", |p| {
+            p.machines[1].session.phase() == NetPhase::Lobby
+                && p.host_lobby().rows[1].peer.is_some()
+        });
+    }
+
+    /// Both ready (the host for its own row, the client by its wish); the core takes the client's only with `Equal`.
+    fn ready(&mut self) {
+        for (i, row) in [(0usize, 0u8), (1, 1)] {
+            let m = &mut self.machines[i];
+            let ready = LobbyAction::Ready { row, ready: true };
+            m.session.on_lobby(&ready, &mut m.app, &m.vfs, &self.texts);
+        }
+        self.frames(20);
+    }
+
+    /// Start request of the host from its lobby state.
+    fn host_request(&self) -> MatchRequest {
+        request_from_lobby(&self.host_lobby(), &self.machines[0].app.data().maps)
+    }
+
+    /// The host switches the session to the fixed map `map` in its core; returns the new session revision.
+    fn switch(&mut self, map: &MapCatalogEntry) -> u32 {
+        let mut s = self.host_lobby().session;
+        let path = map.entry.path.clone();
+        s.map = MapId::Fixed {
+            checksum: map_checksum(&self.machines[0].vfs, &path).expect("map checksum"),
+            path,
+        };
+        s.map_name = map.name.clone();
+        self.host_core_mut().set_session(s).expect("map change");
+        self.frames(5);
+        self.host_lobby().session_revision
+    }
+}
+
+/// After `CREATE` the host computes the rules of the session and publishes their checksum with the session revision.
+#[test]
+fn host_publishes_its_checksum_after_create() {
+    let Some(mut p) = Pair::corpus(Box::new(InlineWorker::default())) else {
+        return;
+    };
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    assert_eq!(
+        p.host_lobby().rules_checksum,
+        None,
+        "before the first frame"
+    );
+    p.frames(2);
+    let lobby = p.host_lobby();
+    let rules = net_rules(&p.machines[0].vfs, &p.host_request()).unwrap();
+    assert_eq!(lobby.rules_checksum, Some(rules.checksum));
+    assert_eq!(lobby.session_revision, 0);
+}
+
+/// While the host computes, `START` stays locked and the client cannot become ready; with the host's checksum the
+/// client reports, its row becomes `Equal`, and the start condition holds.
+#[test]
+fn start_waits_for_the_host_checksum() {
+    let worker = ManualWorker::default();
+    let Some(mut p) = Pair::corpus(Box::new(worker.clone())) else {
+        return;
+    };
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.ready();
+    assert_eq!(worker.waiting(), [0]);
+    assert_eq!(p.host_lobby().rules_checksum, None);
+    assert_eq!(p.client_data(), DataState::Pending);
+    assert!(
+        !p.host_lobby().rows[1].ready,
+        "Ready without Equal discarded"
+    );
+    assert!(!p.host_core().can_start());
+    worker.release();
+    p.frames_until("verdict of the client", |p| {
+        p.client_data() == DataState::Equal
+    });
+    assert!(p.host_lobby().rules_checksum.is_some());
+    assert!(!p.host_core().can_start(), "the client is not ready yet");
+    p.ready();
+    assert!(p.host_core().can_start());
+}
+
+/// The start takes the rules the host kept from the check: no file is read again.
+#[test]
+fn start_uses_the_kept_rules() {
+    let Some(mut p) = Pair::corpus(Box::new(InlineWorker::default())) else {
+        return;
+    };
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.frames_until("verdict of the client", |p| {
+        p.client_data() == DataState::Equal
+    });
+    p.ready();
+    assert!(p.host_core().can_start());
+    let checksum = p.host_lobby().rules_checksum.expect("checksum of the host");
+    let (recording, log) = p.machines[0].vfs.recording();
+    let maps = p.machines[0].app.data().maps.clone();
+    let cfg = p.machines[0].app.config().clone();
+    let driver = p.machines[0]
+        .session
+        .start_host_match(&maps, &cfg, &recording, &p.texts)
+        .expect("start");
+    assert!(log.take().is_empty(), "no rules computed at the start");
+    let info = driver.start_info().expect("own start");
+    assert_eq!(info.package.rules_checksum, checksum);
+}
+
+/// The client computes its rules at once, but sends its report only when the host's checksum for the same session
+/// revision is in the state (an earlier report would be discarded by the core).
+#[test]
+fn client_waits_for_the_host_checksum() {
+    let worker = ManualWorker::default();
+    let Some(mut p) = Pair::corpus(Box::new(worker.clone())) else {
+        return;
+    };
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.frames(20);
+    let held = p.machines[1]
+        .session
+        .held_report
+        .as_ref()
+        .map(|h| h.session_revision);
+    assert_eq!(held, Some(p.host_lobby().session_revision), "result held");
+    assert_eq!(p.client_data(), DataState::Pending);
+    worker.release();
+    p.frames_until("verdict of the client", |p| {
+        p.client_data() == DataState::Equal
+    });
+    assert!(p.machines[1].session.held_report.is_none());
+}
+
+/// A second map change while the host still computes the first: the result for the first change is discarded, the
+/// checksum and the verdict come only from the computation for the current session revision.
+#[test]
+fn second_change_discards_the_running_check() {
+    let worker = ManualWorker::default();
+    let Some(mut p) = Pair::corpus(Box::new(worker.clone())) else {
+        return;
+    };
+    let maps = p.two_player_maps();
+    assert!(maps.len() >= 3, "three 2-player maps");
+    p.host(&maps[0]);
+    p.join();
+    worker.release();
+    p.frames_until("first verdict", |p| p.client_data() == DataState::Equal);
+    p.ready();
+    assert!(p.host_core().can_start());
+    let checksum = p.host_lobby().rules_checksum;
+    let first = p.switch(&maps[1]);
+    let second = p.switch(&maps[2]);
+    assert_eq!(worker.waiting(), [first, second]);
+    worker.release();
+    p.frames(20);
+    assert_eq!(
+        p.host_lobby().rules_checksum,
+        None,
+        "result of the first change discarded"
+    );
+    assert_eq!(p.client_data(), DataState::Pending);
+    assert!(!p.host_core().can_start());
+    worker.release();
+    p.frames_until("verdict for the second change", |p| {
+        p.client_data() == DataState::Equal
+    });
+    let lobby = p.host_lobby();
+    assert_eq!(lobby.session_revision, second);
+    assert_ne!(lobby.rules_checksum, checksum, "checksum of the new map");
+    let rules = net_rules(&p.machines[0].vfs, &p.host_request()).unwrap();
+    assert_eq!(lobby.rules_checksum, Some(rules.checksum));
+    assert!(p.host_core().can_start(), "ready flags stay (E-302)");
+}
+
+/// The same on the client: a second map change while the client still computes the first. Its result for the first
+/// change is discarded (no report, the row stays `Pending`, `START` locked); the verdict comes from the computation for
+/// the current session revision.
+#[test]
+fn second_change_discards_the_running_client_check() {
+    let worker = ManualWorker::default();
+    let Some(mut p) =
+        Pair::corpus_with(Box::new(InlineWorker::default()), Box::new(worker.clone()))
+    else {
+        return;
+    };
+    let maps = p.two_player_maps();
+    assert!(maps.len() >= 3, "three 2-player maps");
+    p.host(&maps[0]);
+    p.join();
+    p.frames(5);
+    assert_eq!(worker.waiting(), [0]);
+    worker.release();
+    p.frames_until("first verdict", |p| p.client_data() == DataState::Equal);
+    p.ready();
+    assert!(p.host_core().can_start());
+    let first = p.switch(&maps[1]);
+    let second = p.switch(&maps[2]);
+    assert_eq!(
+        worker.waiting(),
+        [first, second],
+        "the client computes both"
+    );
+    assert!(
+        p.host_lobby().rules_checksum.is_some(),
+        "the host's checksum is there"
+    );
+    worker.release();
+    p.frames(20);
+    assert_eq!(
+        p.client_data(),
+        DataState::Pending,
+        "no report for the old change"
+    );
+    assert!(p.machines[1].session.held_report.is_none());
+    assert!(!p.host_core().can_start());
+    worker.release();
+    p.frames_until("verdict for the second change", |p| {
+        p.client_data() == DataState::Equal
+    });
+    assert_eq!(p.host_lobby().session_revision, second);
+    assert!(p.host_core().can_start(), "ready flags stay (E-302)");
+}
+
+/// A `READY` click of the client before the verdict `Equal`: the host's core discards the wish without a new state, and
+/// the session shows its state again, so the checkmark the handler set locally disappears.
+#[test]
+fn refused_ready_restores_the_local_copy() {
+    let worker = ManualWorker::default();
+    let Some(mut p) = Pair::corpus(Box::new(worker.clone())) else {
+        return;
+    };
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.frames(5);
+    assert_eq!(p.client_data(), DataState::Pending);
+    let m = &mut p.machines[1];
+    let shown = m.app.data().net.clone().expect("state of the client");
+    let lobby = shown.lobby.as_ref().expect("lobby of the client");
+    assert!(lobby.data_locked[1] && !lobby.ready[1]);
+    // What the handler of `READY1` does: local checkmark, then the wish.
+    let mut ticked = shown.clone();
+    ticked.lobby.as_mut().unwrap().ready[1] = true;
+    m.app.set_net(Some(ticked));
+    let ready = LobbyAction::Ready {
+        row: 1,
+        ready: true,
+    };
+    m.session.on_lobby(&ready, &mut m.app, &m.vfs, &p.texts);
+    p.frames(20);
+    assert_eq!(
+        p.machines[1].app.data().net.as_ref(),
+        Some(&shown),
+        "checkmark gone"
+    );
+    assert!(!p.host_lobby().rows[1].ready);
+    // The host's start is held back by the data check.
+    let host = p.machines[0].app.data().net.clone().unwrap().lobby.unwrap();
+    assert!(host.start_locked && host.data_locked[1]);
+    worker.release();
+    p.frames_until("verdict of the client", |p| {
+        p.client_data() == DataState::Equal
+    });
+    let host = p.machines[0].app.data().net.clone().unwrap().lobby.unwrap();
+    assert!(!host.start_locked && !host.data_locked[1]);
+}
+
+// --- Messages of the game data check (re/multiplayer-menus L.18) -----------------------------------------------------
+
+use opennml_ui::own_texts::{
+    DATA_DIFFERS, FILE_UNKNOWN, FILES_MORE, MAP_MISSING, ROW_DIFFERS, ROW_MAP_MISSING, fill,
+};
+
+/// Game file of the rules of every map (bonus values of the objects).
+const BONUS_INI: &str = "data/gifcon/bonus.ini";
+
+/// Changes the last digit of the file (a digit of a value, so that the file still parses).
+fn bump_last_digit(bytes: &mut [u8]) {
+    let at = bytes.iter().rposition(u8::is_ascii_digit).expect("a digit");
+    bytes[at] = if bytes[at] == b'9' {
+        b'8'
+    } else {
+        bytes[at] + 1
+    };
+}
+
+fn differs(files: &[&str], more: u16) -> DataState {
+    DataState::Differs {
+        files: files.iter().map(|f| f.to_string()).collect(),
+        more,
+    }
+}
+
+/// Host Anna and client Bert on the small 2-player map, Bert with a changed `bonus.ini`; up to the verdict of Bert's
+/// row.
+fn bonus_pair() -> Option<Pair> {
+    let mut p = Pair::corpus(Box::new(InlineWorker::default()))?;
+    p.change_file(1, BONUS_INI, |b| bump_last_digit(b));
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.frames_until("verdict of the client", |p| {
+        p.client_data() != DataState::Pending
+    });
+    assert_eq!(p.client_data(), differs(&[BONUS_INI], 0));
+    p.frames(20);
+    Some(p)
+}
+
+/// More lobby states of the same session revision: the host toggles its Ready flag a few times.
+fn more_lobby_states(p: &mut Pair) {
+    let revision = p.host_lobby().revision;
+    let session = p.host_lobby().session_revision;
+    for ready in [true, false, true] {
+        let m = &mut p.machines[0];
+        let wish = LobbyAction::Ready { row: 0, ready };
+        m.session.on_lobby(&wish, &mut m.app, &m.vfs, &p.texts);
+        p.frames(10);
+    }
+    let lobby = p.host_lobby();
+    assert!(lobby.revision > revision, "new lobby states");
+    assert_eq!(lobby.session_revision, session, "same session revision");
+}
+
+/// The differing client sees its files once per session revision ("OK" without a follow-up command, the lobby below
+/// it), also after further lobby states; a new session revision with the same verdict brings one more.
+#[test]
+fn client_sees_its_differing_files_once() {
+    let Some(mut p) = bonus_pair() else {
+        return;
+    };
+    let expected = fill(&p.texts.display(DATA_DIFFERS), &[BONUS_INI]);
+    assert_eq!(p.messages(1), (Some(expected.clone()), 1));
+    assert!(p.machines[1].app.screen_state().info_ok.is_none());
+    more_lobby_states(&mut p);
+    assert_eq!(p.messages(1), (Some(expected), 1));
+    assert!(p.machines[1].session.notices.waiting.is_empty());
+    // A map change to another map with the same `bonus.ini` difference: one message for the new revision, waiting
+    // behind the open one.
+    let next = p.two_player_maps()[1].clone();
+    p.switch(&next);
+    p.frames_until("verdict for the new map", |p| {
+        p.client_data() != DataState::Pending
+    });
+    p.frames(10);
+    let waiting: Vec<DataState> = p.machines[1]
+        .session
+        .notices
+        .waiting
+        .iter()
+        .map(|n| n.data.clone())
+        .collect();
+    assert_eq!(waiting, [differs(&[BONUS_INI], 0)]);
+    assert_eq!(p.messages(1).1, 1, "waits for the OK");
+}
+
+/// The host sees the name of the row and its files once per session revision.
+#[test]
+fn host_sees_the_row_name_and_files_once() {
+    let Some(mut p) = bonus_pair() else {
+        return;
+    };
+    let expected = fill(&p.texts.display(ROW_DIFFERS), &["Bert", BONUS_INI]);
+    assert_eq!(p.messages(0), (Some(expected.clone()), 1));
+    assert!(p.machines[0].app.screen_state().info_ok.is_none());
+    more_lobby_states(&mut p);
+    assert_eq!(p.messages(0), (Some(expected), 1));
+    assert!(p.machines[0].session.notices.waiting.is_empty());
+    assert!(p.machines[0].session.is_host_lobby(), "the lobby stays");
+}
+
+/// The fixed map of the session is missing on the client: 99 105 there (own row), 99 112 with the name on the host.
+#[test]
+fn missing_map_shows_99_105_and_99_112() {
+    let Some(mut p) = Pair::corpus(Box::new(InlineWorker::default())) else {
+        return;
+    };
+    let map = p.two_player_maps()[0].clone();
+    p.host(&map);
+    p.join();
+    p.frames_until("first verdict", |p| p.client_data() == DataState::Equal);
+    p.frames(10);
+    assert_eq!(p.messages(0), (None, 0), "no message with Equal");
+    assert_eq!(p.messages(1), (None, 0), "no message with Equal");
+    let mut s = p.host_lobby().session;
+    s.map = MapId::Fixed {
+        path: "multiplayer/gibtesnicht.lvl".into(),
+        checksum: 1,
+    };
+    p.host_core_mut().set_session(s).expect("map change");
+    p.frames_until("verdict Missing", |p| p.client_data() == DataState::Missing);
+    p.frames(10);
+    assert_eq!(p.messages(1), (Some(p.texts.display(MAP_MISSING)), 1));
+    let host = fill(&p.texts.display(ROW_MAP_MISSING), &["Bert"]);
+    assert_eq!(p.messages(0), (Some(host), 1));
+}
+
+/// Up to three paths with `, `, then " and %d more" with the number of the others - from `more` and from paths beyond
+/// three in the list itself; `Pending` and `Equal` have no message.
+#[test]
+fn five_files_show_three_and_two_more() {
+    let texts = texts();
+    let three = differs(&["a.ini", "b.ini", "c.ini"], 2);
+    let expected = fill(
+        &texts.display(ROW_DIFFERS),
+        &[
+            "Bert",
+            &format!(
+                "a.ini, b.ini, c.ini{}",
+                fill(&texts.display(FILES_MORE), &["2"])
+            ),
+        ],
+    );
+    assert_eq!(
+        expected,
+        "[CENTER]Die Spieldaten von Bert weichen ab: a.ini, b.ini, c.ini und 2 weitere. Die Partie kann so nicht \
+         beginnen."
+    );
+    assert_eq!(
+        data_message(&three, Some("Bert"), &texts),
+        Some(expected.clone())
+    );
+    let five = differs(&["a.ini", "b.ini", "c.ini", "d.ini", "e.ini"], 0);
+    assert_eq!(data_message(&five, Some("Bert"), &texts), Some(expected));
+    let own = data_message(
+        &differs(&["a.ini", "b.ini", "c.ini", "d.ini"], 1),
+        None,
+        &texts,
+    );
+    assert_eq!(
+        own.as_deref(),
+        Some(
+            "[CENTER]Ihre Spieldaten für diese Karte weichen vom Host ab: a.ini, b.ini, c.ini und 2 weitere. Sie \
+             können erst mitspielen, wenn die Dateien übereinstimmen."
+        )
+    );
+    for state in [DataState::Pending, DataState::Equal] {
+        assert_eq!(data_message(&state, Some("Bert"), &texts), None);
+        assert_eq!(data_message(&state, None, &texts), None);
+    }
+}
+
+/// `Differs` without a known file (e.g. a read recording beyond the limits of the wire): "file unknown".
+#[test]
+fn unknown_file_text_for_an_empty_list() {
+    let texts = texts();
+    let unknown = texts.display(FILE_UNKNOWN);
+    assert_eq!(unknown, "Datei unbekannt");
+    let empty = differs(&[], 0);
+    assert_eq!(
+        data_message(&empty, None, &texts),
+        Some(fill(&texts.display(DATA_DIFFERS), &[&unknown]))
+    );
+    assert_eq!(
+        data_message(&empty, Some("Bert"), &texts),
+        Some(fill(&texts.display(ROW_DIFFERS), &["Bert", &unknown]))
+    );
+}
+
+/// Paths come from a foreign read recording: every character outside printable ASCII becomes `?` (MSGBOX, O-61,
+/// E-296), the name keeps the characters up to U+00FF; no panic.
+#[test]
+fn paths_are_ascii_in_the_message() {
+    let texts = texts();
+    let state = differs(
+        &[
+            "data/b\u{f6}nus.ini",
+            "data/\u{7}x\ty.ini",
+            "data/\u{65e5}\u{672c}.ini",
+        ],
+        0,
+    );
+    let text = data_message(&state, Some("Zo\u{eb} \u{674e}"), &texts).expect("message");
+    assert_eq!(
+        text,
+        fill(
+            &texts.display(ROW_DIFFERS),
+            &["Zo\u{eb} ?", "data/b?nus.ini, data/?x?y.ini, data/??.ini"]
+        )
+    );
+    assert!(text.chars().all(|c| u32::from(c) <= 0xFF), "{text}");
+    // Brackets of the text tags from a foreign recording become `?` (no markup from the network).
+    let text =
+        data_message(&differs(&["data/[COLOR FFFF0000]x.ini"], 0), None, &texts).expect("message");
+    assert!(text.contains("data/?COLOR FFFF0000?x.ini"), "{text}");
+    // A long hostile path: cut to 80 characters with `...`, without a panic; 80 characters stay whole.
+    let long = format!("{}\u{1F600}", "x".repeat(300));
+    let text = data_message(&differs(&[&long], u16::MAX), None, &texts).expect("message");
+    assert!(text.contains(&format!("{}...", "x".repeat(77))), "{text}");
+    assert!(!text.contains(&"x".repeat(78)), "{text}");
+    assert!(text.contains("65535"), "{text}");
+    let whole = format!("data/{}.ini", "y".repeat(71));
+    assert_eq!(whole.len(), 80);
+    let text = data_message(&differs(&[&whole], 0), None, &texts).expect("message");
+    assert!(text.contains(&whole), "{text}");
+}
+
+/// Lobby row of the tests of the message queue: a human on `peer` named `name` with the verdict `data`.
+fn data_row(peer: u8, name: &str, data: DataState) -> LobbyRow {
+    LobbyRow {
+        kind: KIND_HUMAN,
+        name: name.into(),
+        peer: Some(peer),
+        data,
+        ..row(KIND_HUMAN, i32::from(peer), i32::from(peer))
+    }
+}
+
+/// Lobby state with host Anna (row 0) and the rows `rows` behind it, for the session revision `session_revision`.
+fn data_lobby(session_revision: u32, rows: Vec<LobbyRow>) -> LobbyState {
+    let mut all = vec![data_row(HOST_PEER, "Anna", DataState::Equal)];
+    all.extend(rows);
+    LobbyState {
+        revision: session_revision,
+        session_revision,
+        rules_checksum: Some(1),
+        session: SessionInfo::plain("Round", "x.lvl", 3, TurnConfig::default()),
+        rows: all,
+        max_rtt_ms: None,
+        seats: Vec::new(),
+    }
+}
+
+/// Name and verdict of the next message to show (the box is closed).
+fn next_shown(notices: &mut DataNotices) -> Option<(Option<String>, DataState)> {
+    notices.next(false).map(|n| (n.name, n.data))
+}
+
+/// A client sees only the verdict of its own row, without a name; the host sees every row with a machine.
+#[test]
+fn other_clients_see_nothing() {
+    let bert = differs(&[BONUS_INI], 0);
+    let lobby = data_lobby(
+        0,
+        vec![
+            data_row(1, "Bert", bert.clone()),
+            data_row(2, "Carl", DataState::Equal),
+        ],
+    );
+    let mut carl = DataNotices::default();
+    carl.update(&lobby, Some(2), false);
+    assert_eq!(next_shown(&mut carl), None);
+    let mut bert_notices = DataNotices::default();
+    bert_notices.update(&lobby, Some(1), false);
+    assert_eq!(next_shown(&mut bert_notices), Some((None, bert.clone())));
+    let mut host = DataNotices::default();
+    host.update(&lobby, Some(0), true);
+    assert_eq!(next_shown(&mut host), Some((Some("Bert".into()), bert)));
+    assert_eq!(next_shown(&mut host), None);
+}
+
+/// Two differing rows on the host: one message after the other, each after the "OK" of the one before; a waiting
+/// message whose row has another verdict in the meantime or is gone is dropped; no "OK" gets lost, and every row and
+/// session revision has its message only once.
+#[test]
+fn two_differing_rows_show_two_messages_in_turn() {
+    let bert = differs(&[BONUS_INI], 0);
+    let carl = DataState::Missing;
+    let both = |session: u32, b: &DataState, c: &DataState| {
+        data_lobby(
+            session,
+            vec![
+                data_row(1, "Bert", b.clone()),
+                data_row(2, "Carl", c.clone()),
+            ],
+        )
+    };
+    let mut host = DataNotices::default();
+    host.update(&both(0, &bert, &carl), Some(0), true);
+    assert_eq!(
+        next_shown(&mut host),
+        Some((Some("Bert".into()), bert.clone()))
+    );
+    // Bert's message is open: Carl's waits, also over further lobby states.
+    assert!(host.next(true).is_none());
+    let mut later = both(0, &bert, &carl);
+    later.revision = 5;
+    host.update(&later, Some(0), true);
+    assert!(host.next(true).is_none());
+    // "OK": Carl's comes, then nothing more for this session revision.
+    assert_eq!(
+        next_shown(&mut host),
+        Some((Some("Carl".into()), carl.clone()))
+    );
+    host.update(&later, Some(0), true);
+    assert_eq!(next_shown(&mut host), None);
+    // New session revision: Bert's comes; Carl's row becomes `Equal` before the "OK" - his message is dropped.
+    host.update(&both(1, &bert, &carl), Some(0), true);
+    assert_eq!(
+        next_shown(&mut host),
+        Some((Some("Bert".into()), bert.clone()))
+    );
+    host.update(&both(1, &bert, &DataState::Equal), Some(0), true);
+    assert_eq!(next_shown(&mut host), None);
+    // Next revision: Carl leaves (open row) before the "OK" of Bert's message - his message is dropped.
+    host.update(&both(2, &bert, &carl), Some(0), true);
+    assert_eq!(
+        next_shown(&mut host),
+        Some((Some("Bert".into()), bert.clone()))
+    );
+    let mut gone = both(2, &bert, &carl);
+    gone.rows[2] = row(0, 2, 2);
+    host.update(&gone, Some(0), true);
+    assert_eq!(next_shown(&mut host), None);
+    // A changed verdict of the same row and revision (another file) is the same row and revision: no second message.
+    host.update(&both(3, &bert, &DataState::Equal), Some(0), true);
+    assert_eq!(next_shown(&mut host), Some((Some("Bert".into()), bert)));
+    host.update(
+        &both(3, &differs(&["x.ini"], 0), &DataState::Equal),
+        Some(0),
+        true,
+    );
+    assert_eq!(next_shown(&mut host), None);
 }

@@ -415,6 +415,39 @@ fn start_visible_only_when_ready() {
     assert_eq!(c.lobby_status("start"), Some(HIDE));
 }
 
+/// Deviation (re/multiplayer-menus L.18): the data check of the network host locks `READY` of a row without the
+/// verdict `Equal` (the click sets no local checkmark and sends nothing) and hides `START` while it holds the start
+/// back, even with every checkmark set.
+// QUIRK E-354: deviation
+#[test]
+fn data_check_locks_ready_and_start() {
+    let mut c = Logic::lobby(&[HUMAN, HUMAN], 1);
+    c.view().data_locked[1] = true;
+    assert_eq!(c.lobby_status("ready1"), Some(DISABLE));
+    assert_eq!(c.send_int(LAN2, "ready1", code::VALUE_CHANGED, 1).0, 0);
+    assert!(!c.view().ready[1], "no local checkmark");
+    assert!(c.lobby_effects().is_empty());
+    assert_eq!(
+        c.lobby_status("race1"),
+        Some(0),
+        "the rest of the row stays free"
+    );
+    c.view().data_locked[1] = false;
+    assert_eq!(c.lobby_status("ready1"), Some(0));
+    assert_eq!(c.send_int(LAN2, "ready1", code::VALUE_CHANGED, 1).0, 1);
+    assert!(c.view().ready[1]);
+
+    let mut h = Logic::lobby(&[HUMAN, HUMAN, 2], 0);
+    h.view().ready = [true; 8];
+    assert_eq!(h.lobby_status("start"), Some(0));
+    h.view().start_locked = true;
+    assert_eq!(
+        h.lobby_status("start"),
+        Some(HIDE),
+        "held back by the data check"
+    );
+}
+
 // QUIRK E-285: kept
 #[test]
 fn exit_goes_to_the_main_menu() {

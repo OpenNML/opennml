@@ -72,6 +72,8 @@
 //!   clients continue computing, one of them becomes host. If nobody can take over when the bundle is formed, it
 //!   carries `End`, and the orderly end applies.
 //! - Otherwise failed (resync, error of the host after `Go`): [`NetFinish::Failed`] without savegame.
+//! - A machine could not load the match (`LoadFailed` from the host, also for the host itself; deviation from E-352):
+//!   before `Go` [`NetFinish::LoadFailed`] with the player name, message 99 113 on every machine in the match.
 //! - Leaving ([`NetDriver::leave`]): `Bye` to the peer(s), connections closed, no end event; the host treats the `Bye`
 //!   of a client like a dropout, a leaving host is an abort for the clients.
 //!
@@ -97,6 +99,8 @@ use opennml_net::{
 use opennml_sim::command::Command;
 use opennml_sim::save::{RecordedCommand, SaveGame};
 use opennml_sim::state::SimEvent;
+use opennml_ui::assets::Texts;
+use opennml_ui::own_texts::{LOAD_FAILED, fill};
 
 use crate::game::pause::PauseState;
 use crate::game::sim_host::{RoundStep, Rounds, SimHost};
@@ -189,6 +193,9 @@ pub enum NetFinish {
     HostLost { name: String },
     /// Otherwise failed (error message), without savegame.
     Failed(String),
+    /// The machine of the player `name` could not load the match (`LoadFailed` of the host, deviation from E-352):
+    /// message 99 113 with the name, without savegame; the reason stays in the log.
+    LoadFailed { name: String },
     /// The host handed the match over in an orderly way: it computed until the execution tick of the handover bundle,
     /// writes nothing and goes into the accounting without a message; a client plays on as host.
     HandedOver,
@@ -201,18 +208,19 @@ impl NetFinish {
             NetFinish::Stopped { name }
             | NetFinish::HostEnded { name }
             | NetFinish::HostLost { name } => Some(name),
-            NetFinish::Failed(_) | NetFinish::HandedOver => None,
+            NetFinish::Failed(_) | NetFinish::LoadFailed { .. } | NetFinish::HandedOver => None,
         }
     }
 
     /// Message for the player; `saved`: the network savegame is written. The text for the abort follows
-    /// [`HOST_LOST`].
+    /// [`HOST_LOST`], the one for a failed load is the own text 99 113 of the edition of `texts`
+    /// ([`load_failed_message`]).
     ///
     /// Only characters up to U+00FF (E-296): The `MSGBOX` sets the text via the path of the original, which takes only
     /// the low byte of each UTF-16 unit as atlas code (O-61); typographic quotation marks would become boxes. The
     /// name is therefore enclosed in ASCII `"`, and foreign text in [`NetFinish::Failed`] (error chains of other
     /// parts) goes through [`latin1_text`].
-    pub fn message(&self, saved: bool) -> String {
+    pub fn message(&self, saved: bool, texts: &Texts) -> String {
         match (self, saved) {
             (NetFinish::Stopped { name }, true) => format!(
                 "The match is no longer in sync (checksum error). It was stopped and saved as \"{name}\"."
@@ -235,10 +243,18 @@ impl NetFinish {
                 format!("{HOST_LOST} The match could not be saved.")
             }
             (NetFinish::Failed(text), _) => latin1_text(text),
+            (NetFinish::LoadFailed { name }, _) => load_failed_message(name, texts),
             // Without a message; the text is only for the log and for a caller that shows one anyway.
             (NetFinish::HandedOver, _) => "The match was handed over to another player.".into(),
         }
     }
+}
+
+/// Message 99 113 ("<name> could not load the game. The start was cancelled.") of the edition of `texts`, the name
+/// converted for the `MSGBOX` ([`latin1_text`]): on every machine of a start that failed because one machine could
+/// not load it (deviation from E-352).
+pub fn load_failed_message(name: &str, texts: &Texts) -> String {
+    fill(&texts.display(LOAD_FAILED), &[&latin1_text(name)])
 }
 
 /// Converts a text for the text path of the original (O-61: atlas code = low byte of the UTF-16 unit): characters up
@@ -490,6 +506,9 @@ pub struct NetDriver {
     /// Reason of the first failure of the session (`CoreEvent::Failed`), stays after the frame is fetched
     /// ([`Self::failure`]: start abort and `net_status`).
     failure: Option<String>,
+    /// Name of the player whose machine could not load the match, if that was the first failure
+    /// (`CoreEvent::LoadFailed`): the end before `Go` is then [`NetFinish::LoadFailed`].
+    load_failed: Option<String>,
     /// Events of the lobby since the last [`Self::take_lobby_events`].
     lobby_events: Vec<CoreEvent>,
     /// Client: running election of the new host ([`MigrationRun`]); for the new host [`HostCore::migrating`]
@@ -580,6 +599,7 @@ impl NetDriver {
             ending: false,
             settling: false,
             failure: None,
+            load_failed: None,
             lobby_events: Vec::new(),
             migration: None,
             gone_reason: None,
@@ -674,15 +694,16 @@ impl NetDriver {
     }
 
     /// Loading finished (`None`) or failed. Host: `loaded_self` or abort of the session for everyone
-    /// ([`HostCore::abort`]: `Bye` to every client, connections closed); client: `Loaded` to the host.
+    /// ([`HostCore::load_failed`]: `LoadFailed` and `Bye` to every client, connections closed); client: `Loaded` to the
+    /// host.
     pub fn loaded(&mut self, error: Option<String>) {
         match (&mut self.core, error) {
             (Core::Host(h), None) => h.loaded_self(),
             (Core::Host(h), Some(e)) => {
-                // Abort for everyone; `flush` sends the `Bye`, closes the connections and reports `failed`.
-                let text = format!("The host could not load the match: {e}");
-                log::error!("Network: {text}");
-                h.abort(text);
+                // Abort for everyone; `flush` sends `LoadFailed` and `Bye`, closes the connections and reports
+                // `failed`.
+                log::error!("Network: the host could not load the match: {e}");
+                h.load_failed(e);
                 self.flush();
             }
             (Core::Client(c), error) => c.loaded(error),
@@ -1192,17 +1213,16 @@ impl NetDriver {
                 self.resync_bytes = Some(bytes);
             }
             CoreEvent::Resumed => log::info!("Network: halt lifted"),
-            CoreEvent::Failed(text) => {
-                self.failure.get_or_insert_with(|| text.clone());
-                self.close_all(&text);
-                if self.in_play && !self.finished && !self.gave_up {
-                    match self.core {
-                        // Abort of the host: state and message in the next `advance` (it needs the game host).
-                        Core::Client(_) => self.abort_due = true,
-                        Core::Host(_) => self.finish(NetFinish::Failed(text.clone())),
-                    }
+            CoreEvent::Failed(text) => self.failed(text),
+            // Like `Failed`; the English sentence is for the log and `net_status`, the message names the player
+            // (99 113).
+            CoreEvent::LoadFailed { name } => {
+                if self.failure.is_none() {
+                    self.load_failed = Some(name.clone());
                 }
-                self.frame.failed.get_or_insert(text);
+                self.failed(format!(
+                    "\"{name}\" could not load the match. The start was cancelled."
+                ));
             }
             CoreEvent::LobbyChanged | CoreEvent::Chat { .. } => self.lobby_events.push(ev),
             CoreEvent::Kicked => self.lobby_end(CoreEvent::Kicked, KICKED.to_string()),
@@ -1216,6 +1236,21 @@ impl NetDriver {
             CoreEvent::MigrationDone { lost } => self.migration_done(lost),
             CoreEvent::MigrationFailed { reason } => self.migration_failed(&reason),
         }
+    }
+
+    /// The session has failed (`CoreEvent::Failed`, `CoreEvent::LoadFailed`): reason in [`Self::failure`], connections
+    /// closed; in the match the abort follows.
+    fn failed(&mut self, text: String) {
+        self.failure.get_or_insert_with(|| text.clone());
+        self.close_all(&text);
+        if self.in_play && !self.finished && !self.gave_up {
+            match self.core {
+                // Abort of the host: state and message in the next `advance` (it needs the game host).
+                Core::Client(_) => self.abort_due = true,
+                Core::Host(_) => self.finish(NetFinish::Failed(text.clone())),
+            }
+        }
+        self.frame.failed.get_or_insert(text);
     }
 
     /// End of the lobby for this client: like a failure before the start (reason in [`Self::failure`], connection
@@ -1258,7 +1293,11 @@ impl NetDriver {
             && self.start.is_some()
             && let Some(text) = self.failure.clone()
         {
-            self.finish(NetFinish::Failed(text));
+            let finish = match self.load_failed.clone() {
+                Some(name) => NetFinish::LoadFailed { name },
+                None => NetFinish::Failed(text),
+            };
+            self.finish(finish);
         }
         // A state that arrived while the machine already stood after `e(k)`.
         self.try_adopt(sim);

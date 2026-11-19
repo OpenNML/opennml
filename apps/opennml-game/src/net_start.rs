@@ -35,17 +35,17 @@ use opennml_client::game_flow::config_speed;
 use opennml_client::net_session::{NetPhase, NetSessionStatus, map_checksum, session_name};
 use opennml_client::settings::savegame_dir;
 use opennml_control::{
-    Command, NetDebugAction, NetFoundData, NetHaltName, NetLinkData, NetLobbyData, NetLobbyRowData,
-    NetMigrationData, NetMigrationPhaseName, NetPartHash, NetPartHashesData, NetPeerData,
-    NetPhaseName, NetRoleName, NetRttData, NetSeatData, NetStatusData, NetSuccessorData,
-    NetWaitName, hex_checksum,
+    Command, NetDataState, NetDebugAction, NetFoundData, NetHaltName, NetLinkData, NetLobbyData,
+    NetLobbyRowData, NetMigrationData, NetMigrationPhaseName, NetPartHash, NetPartHashesData,
+    NetPeerData, NetPhaseName, NetRoleName, NetRttData, NetSeatData, NetStatusData,
+    NetSuccessorData, NetWaitName, hex_checksum,
 };
 use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{
-    AcceptAll, ClientCore, Connecting, CoreEvent, DEFAULT_PORT, FoundGame, HaltReason, Hello,
-    HostCore, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyState, LobbyWish, Lockstep, MapId,
-    Peer, Phase, RasterStage, Seat, SessionInfo, SessionSettings, StartInfo, Transport, TurnConfig,
-    clean_name,
+    AcceptAll, ClientCore, Connecting, CoreEvent, DEFAULT_PORT, DataState, FoundGame, HaltReason,
+    Hello, HostCore, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyState, LobbyWish, Lockstep,
+    MapId, Peer, Phase, RasterStage, Seat, SessionInfo, SessionSettings, StartInfo, Transport,
+    TurnConfig, clean_name,
 };
 use opennml_rda::Vfs;
 use opennml_sim::rules::Rules;
@@ -346,6 +346,7 @@ pub fn host_core(hello: Hello, plan: &HostPlan) -> Result<HostCore, String> {
             color: entry.color,
             ready: false,
             peer: None,
+            data: DataState::Equal,
         })
         .collect();
     let mut session = SessionInfo::plain(
@@ -988,6 +989,7 @@ fn lobby_data(l: &LobbyState, own_row: Option<u8>, chat: &[String]) -> NetLobbyD
                 ready: r.ready,
                 peer: r.peer,
                 seat: l.seats.get(i).copied(),
+                data: data_state(&r.data),
             })
             .collect(),
         chat: chat.to_vec(),
@@ -995,6 +997,21 @@ fn lobby_data(l: &LobbyState, own_row: Option<u8>, chat: &[String]) -> NetLobbyD
         saved: match &s.map {
             MapId::Saved { name, .. } => Some(name.clone()),
             MapId::Fixed { .. } | MapId::Random { .. } => None,
+        },
+        session_revision: l.session_revision,
+        rules_checksum: l.rules_checksum.map(hex_checksum),
+    }
+}
+
+/// Verdict of the game data check of a lobby row for `net_status`.
+fn data_state(data: &DataState) -> NetDataState {
+    match data {
+        DataState::Pending => NetDataState::Pending,
+        DataState::Equal => NetDataState::Equal,
+        DataState::Missing => NetDataState::Missing,
+        DataState::Differs { files, more } => NetDataState::Differs {
+            files: files.clone(),
+            more: *more,
         },
     }
 }
@@ -1268,8 +1285,8 @@ pub struct CliState {
 }
 
 /// State of the driver of the match for [`net_guard`]: `None` without a match driver, otherwise `Some(free)` - free
-/// after `Go` and after a failure before `Go` (then the driver reports `NetFinish::Failed`, and the input must be free
-/// for the "OK" of the message).
+/// after `Go` and after a failure before `Go` (then the driver reports `NetFinish::Failed` or `NetFinish::LoadFailed`,
+/// and the input must be free for the "OK" of the message).
 pub fn match_state(driver: Option<&NetDriver>) -> Option<bool> {
     driver.map(|d| d.started() || d.failure().is_some())
 }

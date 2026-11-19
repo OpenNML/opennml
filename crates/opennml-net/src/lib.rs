@@ -20,8 +20,10 @@ pub use link::mem::{MemLink, MemNet};
 pub use link::tcp::{DEFAULT_PORT, HEARTBEAT_MS, TcpHost, TcpLink};
 pub use link::{Link, LinkEvent, Outbox};
 pub use lobby::{
-    AcceptAll, EditOutcome, HostEdit, KIND_HUMAN, LobbyBook, LobbyRow, LobbyRules, LobbyState,
-    LobbyWish, MapId, RuleVerdict, SessionInfo, SessionSettings, rows_fit,
+    AcceptAll, DataInput, DataReport, DataState, EditOutcome, HostEdit, KIND_HUMAN, LobbyBook,
+    LobbyRow, LobbyRules, LobbyState, LobbyWish, MAX_DATA_INPUT_BYTES, MAX_DATA_INPUTS,
+    MAX_DATA_PATH, MapId, RuleVerdict, SHOWN_FILES, SessionInfo, SessionSettings, compare_inputs,
+    inputs_fit, rows_fit,
 };
 pub use lockstep::{
     ClientCore, CoreEvent, HOST_LOST, HOST_PEER, HaltReason, HostCore, LocalTime, Lockstep,

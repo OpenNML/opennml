@@ -31,8 +31,13 @@
 //!   `GameFlow::start_match` -> [`NetSession::start_host_match`] (`to_net_setup` -> `start_package` ->
 //!   `HostCore::start_from_lobby`, checks once more) -> `GameFlow::start_net_match`. The client loads after the
 //!   `Start` of the host ([`NetSession::take_start`]).
+//! - **Game data check** (re/multiplayer-menus L.18, new lobbies of the menu path): host and client compute the rules
+//!   of the session map for every session revision in the [`RulesWorker`]; the host publishes its checksum, a client
+//!   reports `Missing` or its checksum (with its read recording if it differs); a row without `Equal` cannot become
+//!   ready, `START` waits. A client without the map stays in the lobby. The differing client and the host see one
+//!   message per row and session revision ([`data_message`], one after the other, "OK" without a follow-up command).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
 use std::net::SocketAddr;
 use std::path::Path;
@@ -40,14 +45,15 @@ use std::time::SystemTime;
 
 use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{
-    Announcement, Beacon, ClientCore, Connecting, CoreEvent, FoundGame, HOST_PEER, Hello, HostCore,
-    HostEdit, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyRules, LobbyState, LobbyWish,
-    LocalTime, Lockstep, MapId, NET_VERSION, Phase, QUERY_INTERVAL_MS, RasterStage, RuleVerdict,
-    Seat, SeatClaim, Seeker, SessionInfo, SessionList, SessionSettings, StartInfo, Transport,
-    TurnConfig, clean_name, clean_session_name, valid_save_name,
+    Announcement, Beacon, ClientCore, Connecting, CoreEvent, DataInput, DataReport, DataState,
+    FoundGame, HOST_PEER, Hello, HostCore, HostEdit, KIND_HUMAN, Listener, LobbyBook, LobbyRow,
+    LobbyRules, LobbyState, LobbyWish, LocalTime, Lockstep, MapId, NET_VERSION, Peer, Phase,
+    QUERY_INTERVAL_MS, RasterStage, RuleVerdict, SHOWN_FILES, Seat, SeatClaim, Seeker, SessionInfo,
+    SessionList, SessionSettings, StartInfo, Transport, TurnConfig, clean_name, clean_session_name,
+    inputs_fit, valid_save_name,
 };
-use opennml_rda::Vfs;
 use opennml_rda::testutil::{GameVersion, game_version};
+use opennml_rda::{ReadEntry, Vfs};
 use opennml_sim::setup::{FORMAT_VERSION, MatchSetup, start_package};
 use opennml_ui::app::MenuApp;
 use opennml_ui::assets::Texts;
@@ -56,7 +62,10 @@ use opennml_ui::draft::{
     NetMenuView, SlotDraft,
 };
 use opennml_ui::msg::{AppCmd, LobbyAction};
-use opennml_ui::own_texts::{MAP_MISSING, SAVE_NOT_LOADED, SAVE_ONE_PLAYER, SAVE_SLOT_OUT};
+use opennml_ui::own_texts::{
+    DATA_DIFFERS, FILE_UNKNOWN, FILES_MORE, MAP_MISSING, ROW_DIFFERS, ROW_MAP_MISSING,
+    SAVE_NOT_LOADED, SAVE_ONE_PLAYER, SAVE_SLOT_OUT, fill,
+};
 use opennml_ui::profiles::{name_field, name_text, name_units};
 use opennml_ui::screens::chatframe::chat_line;
 use opennml_ui::screens::lan4::{self, close_lan4, open_lan4};
@@ -64,11 +73,14 @@ use opennml_ui::screens::{
     CHANGE_GAME_REFUSED, TeamColor, close_change_game, close_lobby, open_lobby, team_color_check,
 };
 
-use crate::game::map::{load_random_rules, load_rules};
-use crate::game::net_driver::{LEAVE_REASON, NetDriver, NetPaths};
+use crate::game::map::{MapSource, load_random_rules, load_rules};
+use crate::game::net_driver::{LEAVE_REASON, NetDriver, NetPaths, latin1_text};
 use crate::game_flow::config_speed;
 use crate::game_save::{GameSaveFile, sim_checksum};
 use crate::match_request::{active_slots, random_map_spec, row_slots, to_net_setup};
+
+mod rules_worker;
+pub use rules_worker::{InlineWorker, RulesDone, RulesJob, RulesWorker, ThreadWorker};
 
 /// Deadline of a join from `LAN1` to the first lobby state (like `--join`).
 pub const JOIN_TIMEOUT_MS: u64 = 10_000;
@@ -80,10 +92,11 @@ pub const KICKED_TEXT: i32 = 15212;
 const MAX_CHAT_LINES: usize = 64;
 /// Reason in the `Bye` when the join is aborted without an answer.
 const NO_ANSWER: &str = "No answer to the sign-on";
+/// Reason in the `Bye` of a client whose rules differ from those stored in its own network savegame.
+pub const SAVE_RULES_REASON: &str =
+    "The rules of this installation differ from those of the savegame.";
 /// Dialog "Change game" (`lan31.dlg`).
 const CHANGE_DIALOG: &str = "lan31";
-/// Reason in the `Bye` of the client that lacks the map after a map change (E-322).
-pub const MAP_MISSING_REASON: &str = "The map of the match is missing on this machine.";
 
 /// Who this machine is on the network (from the program): own sign-on (versions, game edition, build ID; the session
 /// sets the name when hosting and joining from `NetName`), game port of the host and the source of the seed of a
@@ -217,19 +230,20 @@ fn fnv(mut hash: u64, bytes: &[u8]) -> u64 {
 const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
 
 /// Map checksum: FNV-1a 64 over the bytes of the `.lvl` and then of the `.wld`; if one is missing, `None`. The
-/// original compares only the line checksum of the `.lvl` (re/multiplayer-menus L.1.3); the
-/// reimplementation also covers the `.wld`.
+/// original (`FUN_004BDDA0`, `FUN_004BD3D0`) sums the lines of the `.lvl` and, with the `".wld"` at `0x00619408`,
+/// also covers the `.wld` (re/multiplayer-menus L.18); the reimplementation hashes the bytes instead of the lines.
+/// The `.hlm` is not part of it: the rules checksum of the data check covers it.
 pub fn map_checksum(vfs: &Vfs, lvl: &str) -> Option<u64> {
     let level = vfs.read(lvl).ok()?;
     let world = vfs.read(&world_path(lvl)).ok()?;
     Some(fnv(fnv(FNV_OFFSET, &level), &world))
 }
 
-/// Does this machine have the map `map` of the session (map filter of the game list, re/multiplayer-menus L.1.3;
-/// also after a map change)? Fixed map: `.lvl` and `.wld` readable with the same [`map_checksum`]; random map:
-/// always (differing generator data are rejected by the rules checksum when loading). Network savegame
-/// (`MapId::Saved`): always returns `false` and must never be asked for it - it lies in the savegame folder of the
-/// machine, which the session checks itself (`NetSession::saved_here`, `read_net_head`).
+/// Does this machine have the map `map` of the session (map filter of the game list, re/multiplayer-menus L.1.3; in
+/// the lobby the first step of the game data check, `NetSession::check_data`)? Fixed map: `.lvl` and `.wld` readable
+/// with the same [`map_checksum`]; random map: always (differing generator data show in the rules checksum of the
+/// data check). Network savegame (`MapId::Saved`): always returns `false` and must never be asked for it - it lies in
+/// the savegame folder of the machine, which the session checks itself (`NetSession::saved_here`, `read_net_head`).
 pub fn map_available(vfs: &Vfs, map: &MapId) -> bool {
     match map {
         MapId::Fixed { path, checksum } => map_checksum(vfs, path) == Some(*checksum),
@@ -330,6 +344,7 @@ pub fn rows_from_draft(draft: &MatchDraft, players: u8) -> Vec<LobbyRow> {
                 color: slot.map_or(row, |s| s.color),
                 ready: false,
                 peer: None,
+                data: DataState::Equal,
             }
         })
         .collect()
@@ -476,6 +491,160 @@ fn lobby_draft(
     (slots, info, settings)
 }
 
+/// Start request from a lobby state: slots, map description and settings like the draft of the lobby
+/// ([`lobby_draft`], map catalog `maps`), open rows removed ([`MatchDraft::remove_open_slots`]), then
+/// [`MatchRequest::from_draft`] - the same request as before via `{0x0D}` from the draft of the host. Host and client
+/// compute the rules of the game data check from it ([`net_source`]).
+fn request_from_lobby(l: &LobbyState, maps: &MapCatalog) -> MatchRequest {
+    let (slots, info, settings) = lobby_draft(l, maps);
+    let mut draft = MatchDraft {
+        map: None,
+        info,
+        slots,
+        settings,
+    };
+    draft.remove_open_slots();
+    MatchRequest::from_draft(&draft)
+}
+
+/// Read recording of a rules computation as the files of a [`DataReport`].
+fn data_inputs(entries: Vec<ReadEntry>) -> Vec<DataInput> {
+    entries
+        .into_iter()
+        .map(|e| DataInput {
+            path: e.path,
+            hash: e.hash,
+        })
+        .collect()
+}
+
+/// Message of the game data check for the verdict `state` of a row (re/multiplayer-menus L.18; deviation from E-354,
+/// E-322 in a new form), filled for the edition of `texts`; `None` for `Pending` and `Equal`. `row_name` `None`: the
+/// own row of a client (99 110, 99 105); otherwise the host's message about the row of that player (99 111, 99 112).
+/// The file list has up to [`SHOWN_FILES`] paths with `, `, then 99 114 with the number of the others, or 99 115
+/// without a known file. Paths come from a foreign read recording: every character outside printable ASCII becomes `?`
+/// (MSGBOX, O-61, E-296); the name keeps the characters up to U+00FF ([`latin1_text`]).
+pub fn data_message(state: &DataState, row_name: Option<&str>, texts: &Texts) -> Option<String> {
+    let name = row_name.map(latin1_text);
+    let text = match (state, &name) {
+        (DataState::Pending | DataState::Equal, _) => return None,
+        (DataState::Missing, None) => texts.display(MAP_MISSING),
+        (DataState::Missing, Some(name)) => fill(&texts.display(ROW_MAP_MISSING), &[name]),
+        (DataState::Differs { files, more }, None) => fill(
+            &texts.display(DATA_DIFFERS),
+            &[&file_list(files, *more, texts)],
+        ),
+        (DataState::Differs { files, more }, Some(name)) => fill(
+            &texts.display(ROW_DIFFERS),
+            &[name, &file_list(files, *more, texts)],
+        ),
+    };
+    Some(text)
+}
+
+/// File list of a differing row: up to [`SHOWN_FILES`] paths ([`shown_path`]) with `, ` (none: 99 115), then 99 114
+/// with the number of the others (`more` and paths beyond [`SHOWN_FILES`] in the list itself).
+fn file_list(files: &[String], more: u16, texts: &Texts) -> String {
+    let shown: Vec<String> = files
+        .iter()
+        .take(SHOWN_FILES)
+        .map(|f| shown_path(f))
+        .collect();
+    let mut list = if shown.is_empty() {
+        texts.display(FILE_UNKNOWN)
+    } else {
+        shown.join(", ")
+    };
+    let others = usize::from(more) + files.len().saturating_sub(SHOWN_FILES);
+    if others > 0 {
+        list.push_str(&fill(&texts.display(FILES_MORE), &[&others.to_string()]));
+    }
+    list
+}
+
+/// Longest path in the `MSGBOX` in characters, `...` included (the paths of the game data have at most 76).
+const SHOWN_PATH_CHARS: usize = 80;
+
+/// A path for the `MSGBOX`: printable ASCII and spaces stay, every other character and the brackets of the text tags
+/// become `?` (no markup from the network, as for names and chat); longer than [`SHOWN_PATH_CHARS`] it is cut with
+/// `...`.
+fn shown_path(path: &str) -> String {
+    let shown = |c: char| {
+        if (c.is_ascii_graphic() || c == ' ') && c != '[' && c != ']' {
+            c
+        } else {
+            '?'
+        }
+    };
+    if path.chars().count() <= SHOWN_PATH_CHARS {
+        return path.chars().map(shown).collect();
+    }
+    let mut cut: String = path.chars().take(SHOWN_PATH_CHARS - 3).map(shown).collect();
+    cut.push_str("...");
+    cut
+}
+
+/// A message of the game data check waiting for its display: the verdict `data` of row `row` (machine `peer`, player
+/// `name` for the host's message, `None` for the own row of a client) for the session revision `session_revision`.
+#[derive(Debug, Clone, PartialEq)]
+struct DataNotice {
+    row: u8,
+    peer: Option<Peer>,
+    session_revision: u32,
+    name: Option<String>,
+    data: DataState,
+}
+
+/// Messages of the game data check of a lobby (re/multiplayer-menus L.18): the host about every row with the machine
+/// of a client, a client about its own row; each row (with its machine) and session revision once, for `Missing` and
+/// `Differs`. One after the other: the next only when no message is open; a waiting one whose row has another verdict
+/// or machine in the meantime, is gone or belongs to an older session revision is dropped.
+#[derive(Debug, Default)]
+struct DataNotices {
+    /// Rows already noted for the current session revision: (row, machine, session revision).
+    told: BTreeSet<(u8, Option<Peer>, u32)>,
+    waiting: VecDeque<DataNotice>,
+}
+
+impl DataNotices {
+    /// Takes the verdicts of the lobby state `lobby` (`own_row`: the client's row; `is_host`: this machine is host).
+    fn update(&mut self, lobby: &LobbyState, own_row: Option<u8>, is_host: bool) {
+        let revision = lobby.session_revision;
+        self.told.retain(|&(_, _, r)| r == revision);
+        self.waiting.retain(|n| {
+            n.session_revision == revision
+                && lobby
+                    .rows
+                    .get(usize::from(n.row))
+                    .is_some_and(|r| r.peer == n.peer && r.data == n.data)
+        });
+        for (row, r) in (0u8..).zip(&lobby.rows) {
+            let concerned = if is_host {
+                r.peer.is_some_and(|p| p != HOST_PEER)
+            } else {
+                own_row == Some(row)
+            };
+            if !concerned || !matches!(r.data, DataState::Missing | DataState::Differs { .. }) {
+                continue;
+            }
+            if self.told.insert((row, r.peer, revision)) {
+                self.waiting.push_back(DataNotice {
+                    row,
+                    peer: r.peer,
+                    session_revision: revision,
+                    name: is_host.then(|| r.name.clone()),
+                    data: r.data.clone(),
+                });
+            }
+        }
+    }
+
+    /// The next message to show, if no message is `open`.
+    fn next(&mut self, open: bool) -> Option<DataNotice> {
+        if open { None } else { self.waiting.pop_front() }
+    }
+}
+
 /// The host listens and announces.
 struct HostParts {
     listener: Box<dyn Listener>,
@@ -549,13 +718,39 @@ pub struct NetSession {
     /// Heads of the network savegames per name (the search queries every second; read again as soon as length or
     /// modification time of the file change).
     saved_heads: BTreeMap<String, SavedHead>,
-    /// Client: last checked map of the session (at the join that of the announcement); if it changes in a lobby state,
-    /// [`map_available`] checks again.
-    checked_map: Option<MapId>,
     /// Last given to the UI (otherwise the local copy of the handlers would never persist).
     shown: Option<NetMenuView>,
     shown_revision: Option<u32>,
     fixed_clock: Option<LocalTime>,
+    /// Rules computation of the game data check ([`ThreadWorker`] unless set otherwise).
+    rules_worker: Box<dyn RulesWorker>,
+    /// Session revision whose data check has begun in this session (job submitted or, on a client, `Missing` sent).
+    data_checked: Option<u32>,
+    /// Session revision of the submitted job whose result is outstanding.
+    data_job: Option<u32>,
+    /// Host: rules of the session revision from the data check, for the start ([`Self::start_host_match`]).
+    kept_rules: Option<(u32, opennml_sim::rules::Rules)>,
+    /// Client: own result of the data check, waiting for the host's checksum of the same session revision.
+    held_report: Option<HeldReport>,
+    /// Messages of the data check, shown and waiting ([`Self::tell_data`]).
+    notices: DataNotices,
+    /// Client in a loaded lobby: rules of the own savegame's map, computed in the worker ([`Self::start_save_check`]).
+    save_check: Option<SaveCheck>,
+}
+
+/// Outstanding rules computation of a client for the map of its own network savegame.
+struct SaveCheck {
+    /// Session revision of the job (it identifies the result).
+    revision: u32,
+    /// `rules_checksum` of the start package in the own savegame file.
+    expected: u64,
+}
+
+/// Own result of the game data check of a client, until the host's checksum for its session revision is there.
+struct HeldReport {
+    session_revision: u32,
+    checksum: Option<u64>,
+    inputs: Vec<ReadEntry>,
 }
 
 impl fmt::Debug for NetSession {
@@ -590,11 +785,22 @@ impl NetSession {
             told: false,
             map_sums: BTreeMap::new(),
             saved_heads: BTreeMap::new(),
-            checked_map: None,
             shown: None,
             shown_revision: None,
             fixed_clock: None,
+            rules_worker: Box::new(ThreadWorker::default()),
+            data_checked: None,
+            data_job: None,
+            kept_rules: None,
+            held_report: None,
+            notices: DataNotices::default(),
+            save_check: None,
         }
+    }
+
+    /// Rules computation of the game data check (tests and `UI_GOLDEN`: [`InlineWorker`]).
+    pub fn set_rules_worker(&mut self, worker: Box<dyn RulesWorker>) {
+        self.rules_worker = worker;
     }
 
     /// Fixed local time for the drivers of this session (tests, check runs; [`NetDriver::set_fixed_clock`]).
@@ -797,6 +1003,11 @@ impl NetSession {
         else {
             return self.fail_silently(app, "the chosen game is no longer there");
         };
+        self.join_game(&game, app);
+    }
+
+    /// Connect to the game `game` of the list (`{7}` after the choice in `LAN1`).
+    fn join_game(&mut self, game: &FoundGame, app: &mut MenuApp) {
         let seat = match &game.announcement.session.map {
             MapId::Saved { name, .. } => match self.saved_head(name) {
                 Some((checksum, slot)) => Some(SeatClaim { slot, checksum }),
@@ -817,8 +1028,7 @@ impl NetSession {
         self.chat.clear();
         self.lobby = None;
         self.own_row = None;
-        // The game list has already checked this map (map filter, re/multiplayer-menus L.1.3).
-        self.checked_map = Some(game.announcement.session.map.clone());
+        self.forget_data_check();
         log::info!("Network: joining \"{}\" at {}", game.name, game.addr);
         self.stage = Stage::Connecting {
             connecting: self.transport.connect(game.addr, JOIN_TIMEOUT_MS),
@@ -856,7 +1066,10 @@ impl NetSession {
         // is missing, the row is open), so that `LobbyBook::new` never fails on "X players, but Y rows".
         let session = session_from_draft(&draft, name, vfs, raster)?;
         let rows = rows_from_draft(&draft, session.players);
-        let book = LobbyBook::new(session, rows, player.clone())?;
+        let mut book = LobbyBook::new(session, rows, player.clone())?;
+        // Menu path: the game data check applies (re/multiplayer-menus L.18; the command line checks only when
+        // loading).
+        book.enable_data_check();
         self.start_hosting(book, player)
     }
 
@@ -913,6 +1126,7 @@ impl NetSession {
         self.is_host = true;
         self.told = false;
         self.own_row = own_row;
+        self.forget_data_check();
         self.lobby = driver.host_core().map(|c| c.lobby().clone());
         self.stage = Stage::Lobby {
             driver: Box::new(driver),
@@ -1032,6 +1246,7 @@ impl NetSession {
                     color: p.color,
                     ready: false,
                     peer: None,
+                    data: DataState::Equal,
                 }
             })
             .collect();
@@ -1065,7 +1280,19 @@ impl NetSession {
         self.lobby = None;
         self.own_row = None;
         self.told = false;
-        self.checked_map = None;
+        self.forget_data_check();
+        self.notices = DataNotices::default();
+    }
+
+    /// Data check of a new session from the start: nothing checked, no outstanding job, no kept rules, no held report.
+    /// A result of an older job is never taken: the next job replaces it in the worker, and without a job of this
+    /// session the session does not poll.
+    fn forget_data_check(&mut self) {
+        self.data_checked = None;
+        self.data_job = None;
+        self.kept_rules = None;
+        self.held_report = None;
+        self.save_check = None;
     }
 
     /// Lobby wishes of the UI (`UiEffect::Lobby`): for the host wishes for row 0 and changes of other rows (the core
@@ -1193,6 +1420,21 @@ impl NetSession {
                 color,
             }),
             LobbyAction::Ready { row, ready } if Some(row) == own => {
+                // The core discards `Ready(true)` of a row without `Equal` (re/multiplayer-menus L.18) without a new
+                // state. If the own state has no `Equal` yet (the host's may be newer, so the wish goes out anyway),
+                // the next state to the UI is sent even without a change: it clears a checkmark the handler set
+                // locally, and the host's next state sets it again if it took the wish.
+                let unequal = self.lobby.as_ref().is_some_and(|l| {
+                    l.rows
+                        .get(usize::from(row))
+                        .is_some_and(|r| r.data != DataState::Equal)
+                });
+                if ready && unequal {
+                    log::info!(
+                        "Network: READY before the verdict Equal, shown again from the state"
+                    );
+                    self.shown = None;
+                }
                 core.lobby_wish(LobbyWish::Ready(ready));
             }
             LobbyAction::Chat(text) => core.lobby_wish(LobbyWish::Chat(text)),
@@ -1201,12 +1443,38 @@ impl NetSession {
     }
 
     /// One frame of the session (in every frame): search, connect, accept, announce, driver, lobby events into
-    /// application commands, finally the state to the UI (`MenuData::net`, draft of the lobby).
-    pub fn pump(&mut self, now_ms: u64, app: &mut MenuApp, vfs: &Vfs) {
+    /// application commands, game data check ([`Self::check_data`], map catalog of the menu), finally the state to the
+    /// UI (`MenuData::net`, draft of the lobby).
+    pub fn pump(&mut self, now_ms: u64, app: &mut MenuApp, vfs: &Vfs, texts: &Texts) {
         self.now_ms = now_ms;
         self.pump_search(vfs);
         self.pump_stage(app, vfs);
+        self.tell_data(app, texts);
         self.publish(app);
+    }
+
+    /// Messages of the game data check in a new lobby ([`DataNotices`], [`data_message`]): the next one as `MSGBOX`
+    /// with "OK" without a follow-up command, the lobby below it, as soon as no message is open
+    /// ([`MenuApp::message_open`]). Outside the lobby the waiting ones are dropped.
+    fn tell_data(&mut self, app: &mut MenuApp, texts: &Texts) {
+        let in_lobby = matches!(self.stage, Stage::Lobby { .. });
+        let Some(lobby) = self.lobby.as_ref().filter(|l| in_lobby && !l.is_loaded()) else {
+            self.notices.waiting.clear();
+            return;
+        };
+        self.notices.update(lobby, self.own_row, self.is_host);
+        let Some(notice) = self.notices.next(app.message_open()) else {
+            return;
+        };
+        if let Some(text) = data_message(&notice.data, notice.name.as_deref(), texts) {
+            log::info!(
+                "Network (data check): message for row {} of session {}: {:?}",
+                notice.row,
+                notice.session_revision,
+                notice.data
+            );
+            app.tell_text(text, None);
+        }
     }
 
     fn pump_search(&mut self, vfs: &Vfs) {
@@ -1290,16 +1558,7 @@ impl NetSession {
                     return;
                 }
                 let welcomed = driver.client_core().is_some_and(|c| c.lobby().is_some());
-                // The first state can already carry a different map than the announcement.
-                let map_ok = !welcomed
-                    || driver
-                        .client_core()
-                        .and_then(ClientCore::lobby)
-                        .is_none_or(|l| self.map_still_here(&l.session.map, vfs));
-                if !map_ok {
-                    self.leave_for_missing_map(&mut driver, app, false);
-                    Stage::Gone
-                } else if welcomed {
+                if welcomed {
                     self.chat.clear();
                     // The first state of a loaded lobby opens `LAN4` instead of the lobby.
                     let loaded = driver
@@ -1309,6 +1568,7 @@ impl NetSession {
                     if loaded {
                         log::info!("Network: in the waiting room of the loaded match (LAN4)");
                         app.push_command(open_lan4());
+                        self.start_save_check(&driver, vfs);
                     } else {
                         log::info!("Network: in the lobby");
                         for c in open_lobby() {
@@ -1332,24 +1592,23 @@ impl NetSession {
                 driver.pump(now);
                 self.answer_queries(&driver);
                 let events = driver.take_lobby_events();
-                let gone = self.lobby_events(events, app);
-                let mut map_missing = false;
+                let mut gone = self.lobby_events(events, app);
+                if !gone {
+                    self.check_data(&mut driver, &app.data().maps, vfs);
+                    if self.save_rules_differ() {
+                        self.leave_for_other_rules(&mut driver, app);
+                        gone = true;
+                    }
+                }
                 if self.is_host {
                     self.lobby = driver.host_core().map(|c| c.lobby().clone());
                 } else if let Some(core) = driver.client_core() {
                     if let Some(l) = core.lobby() {
-                        if gone || self.map_still_here(&l.session.map, vfs) {
-                            self.lobby = Some(l.clone());
-                        } else {
-                            map_missing = true;
-                        }
+                        self.lobby = Some(l.clone());
                     }
                     self.own_row = core.own_row().or(self.own_row);
                 }
                 if gone {
-                    Stage::Gone
-                } else if map_missing {
-                    self.leave_for_missing_map(&mut driver, app, true);
                     Stage::Gone
                 } else if !self.is_host && driver.failure().is_some() {
                     // Connection to the host lost without `Bye` (crash, line): like "host gone".
@@ -1426,23 +1685,257 @@ impl NetSession {
         }
     }
 
-    /// Client: is the map `map` of a lobby state still here? Equal to the last checked one (at the first state that of
-    /// the announcement) -> yes, without reading; otherwise [`map_available`] (network savegame: [`Self::saved_here`]),
-    /// and on success it is the new checked map.
-    fn map_still_here(&mut self, map: &MapId, vfs: &Vfs) -> bool {
-        if self.checked_map.as_ref() == Some(map) {
-            return true;
+    /// Game data check of a new lobby (re/multiplayer-menus L.18; deviating from E-354, E-322 in a new form), every
+    /// frame in the lobby: for every new session revision one rules computation in the worker, the map of the session
+    /// from the request of the lobby state ([`request_from_lobby`] with the own catalog `maps`, [`net_source`]). Not in
+    /// a loaded lobby (its rows match through the savegame).
+    fn check_data(&mut self, driver: &mut NetDriver, maps: &MapCatalog, vfs: &Vfs) {
+        if self.is_host {
+            if let Some(core) = driver.host_core_mut() {
+                self.check_host_data(core, maps, vfs);
+            }
+        } else if let Some(core) = driver.client_core_mut() {
+            self.check_client_data(core, maps, vfs);
         }
-        let here = match map {
-            MapId::Saved { name, checksum } => self.saved_here(name, *checksum),
-            MapId::Fixed { .. } | MapId::Random { .. } => map_available(vfs, map),
+    }
+
+    /// Host: computation after `CREATE` and after every accepted map change (every new session revision of the core);
+    /// the result for the current revision goes to [`HostCore::set_rules`] (checksum, `None` if the computation
+    /// failed, and the read recording), the rules stay for the start. A result for an older revision is discarded.
+    fn check_host_data(&mut self, core: &mut HostCore, maps: &MapCatalog, vfs: &Vfs) {
+        let lobby = core.lobby();
+        if lobby.is_loaded() {
+            return;
+        }
+        let revision = lobby.session_revision;
+        if self.data_checked != Some(revision) {
+            let source = net_source(&request_from_lobby(lobby, maps));
+            log::info!(
+                "Network (data check): computing the rules of \"{}\" for session {revision}",
+                source.label()
+            );
+            self.submit_rules(revision, vfs, source);
+            self.kept_rules = None;
+        }
+        while let Some(done) = self.poll_rules() {
+            if done.session_revision != revision {
+                log::info!(
+                    "Network (data check): rules of session {} discarded (session {revision})",
+                    done.session_revision
+                );
+                continue;
+            }
+            let checksum = match &done.rules {
+                Ok(rules) => Some(rules.checksum),
+                Err(e) => {
+                    log::warn!("Network (data check): rules of the session not computable: {e}");
+                    None
+                }
+            };
+            core.set_rules(revision, checksum, data_inputs(done.inputs));
+            self.kept_rules = done.rules.ok().map(|rules| (revision, rules));
+        }
+    }
+
+    /// Client: after the first lobby state and every new session revision: fixed map missing or with another map
+    /// checksum ([`map_available`]) -> report `Missing` at once; otherwise compute. The own result goes out only once
+    /// the host's checksum for the same revision is in the state (the core discards an earlier one); the read
+    /// recording only if the checksums differ and it fits the limits of the wire ([`inputs_fit`]), otherwise empty.
+    fn check_client_data(&mut self, core: &mut ClientCore, maps: &MapCatalog, vfs: &Vfs) {
+        let Some(lobby) = core.lobby() else {
+            return;
         };
-        if here {
-            self.checked_map = Some(map.clone());
-            true
-        } else {
-            false
+        if lobby.is_loaded() {
+            return;
         }
+        let revision = lobby.session_revision;
+        let host_checksum = lobby.rules_checksum;
+        if self.data_checked != Some(revision) {
+            self.held_report = None;
+            let map = &lobby.session.map;
+            // `None`: report `Missing`. A network savegame comes only with a loaded lobby (returned above); from a
+            // foreign host its computation simply fails.
+            let source = match map {
+                MapId::Fixed { path, .. } if !map_available(vfs, map) => {
+                    log::info!(
+                        "Network (data check): map \"{path}\" of session {revision} missing or different here"
+                    );
+                    None
+                }
+                MapId::Fixed { .. } | MapId::Random { .. } | MapId::Saved { .. } => {
+                    Some(net_source(&request_from_lobby(lobby, maps)))
+                }
+            };
+            match source {
+                Some(source) => self.submit_rules(revision, vfs, source),
+                None => {
+                    self.data_checked = Some(revision);
+                    self.data_job = None;
+                    core.lobby_wish(LobbyWish::Data {
+                        session_revision: revision,
+                        report: DataReport::Missing,
+                    });
+                }
+            }
+        }
+        while let Some(done) = self.poll_rules() {
+            if done.session_revision != revision {
+                continue;
+            }
+            let checksum = match &done.rules {
+                Ok(rules) => Some(rules.checksum),
+                Err(e) => {
+                    log::warn!(
+                        "Network (data check): own rules of the session not computable: {e}"
+                    );
+                    None
+                }
+            };
+            self.held_report = Some(HeldReport {
+                session_revision: revision,
+                checksum,
+                inputs: done.inputs,
+            });
+        }
+        let Some(host) = host_checksum else {
+            return;
+        };
+        let Some(held) = self.held_report.take_if(|h| h.session_revision == revision) else {
+            return;
+        };
+        let inputs = if held.checksum == Some(host) {
+            Vec::new()
+        } else {
+            let inputs = data_inputs(held.inputs);
+            if inputs_fit(&inputs) {
+                inputs
+            } else {
+                log::warn!(
+                    "Network (data check): recording beyond the wire limits ({} entries), sent without files",
+                    inputs.len()
+                );
+                Vec::new()
+            }
+        };
+        log::info!(
+            "Network (data check): session {revision}, own checksum {}, host {host:#018X}",
+            held.checksum
+                .map_or_else(|| "none".to_string(), |c| format!("{c:#018X}"))
+        );
+        core.lobby_wish(LobbyWish::Data {
+            session_revision: revision,
+            report: DataReport::Rules {
+                checksum: held.checksum,
+                inputs,
+            },
+        });
+    }
+
+    /// Client in a loaded lobby: compute the rules of the map of the own savegame file in the worker, to compare them
+    /// with the `rules_checksum` stored in that file (the host has done the same synchronously when hosting,
+    /// [`read_net_save`]). Without a readable file nothing is checked here; the load check at the start remains.
+    fn start_save_check(&mut self, driver: &NetDriver, vfs: &Vfs) {
+        let Some(lobby) = driver.client_core().and_then(ClientCore::lobby) else {
+            return;
+        };
+        let MapId::Saved { name, .. } = &lobby.session.map else {
+            return;
+        };
+        if !valid_save_name(name) {
+            return;
+        }
+        let path = self.paths.net_save(name);
+        let file = std::fs::read(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|bytes| GameSaveFile::from_bytes(&bytes).map_err(|e| format!("{e:#}")));
+        let start = match file {
+            Ok(file) => file.sim.start,
+            Err(e) => {
+                log::warn!("Network: savegame \"{name}\" not readable for the rules check: {e}");
+                return;
+            }
+        };
+        let revision = lobby.session_revision;
+        log::info!("Network: computing the rules of the own savegame \"{name}\"");
+        self.save_check = Some(SaveCheck {
+            revision,
+            expected: start.rules_checksum,
+        });
+        self.rules_worker.submit(RulesJob {
+            session_revision: revision,
+            vfs: vfs.clone(),
+            source: MapSource::of_start(&start),
+        });
+    }
+
+    /// Result of the savegame rules computation: `true` if it is there and the rules are not those of the file (or not
+    /// computable). A result of another job is dropped; without an outstanding check nothing is polled.
+    fn save_rules_differ(&mut self) -> bool {
+        let Some(check) = &self.save_check else {
+            return false;
+        };
+        let Some(done) = self.rules_worker.poll() else {
+            return false;
+        };
+        if done.session_revision != check.revision {
+            return false;
+        }
+        let expected = check.expected;
+        self.save_check = None;
+        match done.rules {
+            Ok(rules) if rules.checksum == expected => {
+                log::info!("Network: the rules of the own savegame match this installation");
+                false
+            }
+            Ok(rules) => {
+                log::info!(
+                    "Network: rules checksum {:#018X} here, {expected:#018X} in the savegame",
+                    rules.checksum
+                );
+                true
+            }
+            Err(e) => {
+                log::info!("Network: rules of the own savegame not computable: {e}");
+                true
+            }
+        }
+    }
+
+    /// Client of a loaded lobby whose rules differ from its savegame: leave (one `Bye`), close `LAN4`, `LAN1`, message
+    /// 99 106.
+    fn leave_for_other_rules(&mut self, driver: &mut NetDriver, app: &mut MenuApp) {
+        log::info!("Network: the rules differ from the own savegame, leaving the loaded lobby");
+        driver.leave(SAVE_RULES_REASON);
+        self.told = true;
+        app.push_command(close_lan4());
+        app.push_command(AppCmd::CloseNet);
+        app.push_command(AppCmd::Open {
+            name: "lan1".to_string(),
+            wait: true,
+        });
+        app.tell(SAVE_NOT_LOADED, None);
+    }
+
+    /// Submit the rules computation of the session revision `revision` (a clone of `vfs`).
+    fn submit_rules(&mut self, revision: u32, vfs: &Vfs, source: MapSource) {
+        self.data_checked = Some(revision);
+        self.data_job = Some(revision);
+        self.rules_worker.submit(RulesJob {
+            session_revision: revision,
+            vfs: vfs.clone(),
+            source,
+        });
+    }
+
+    /// Next result of the worker while a job of this session is outstanding; the result of the outstanding job ends
+    /// the wait, an older one does not.
+    fn poll_rules(&mut self) -> Option<RulesDone> {
+        self.data_job?;
+        let done = self.rules_worker.poll()?;
+        if Some(done.session_revision) == self.data_job {
+            self.data_job = None;
+        }
+        Some(done)
     }
 
     /// Is the network savegame `name` with the checksum `checksum` of the simulation part here (map filter)?
@@ -1482,32 +1975,6 @@ impl NetSession {
             },
         );
         head
-    }
-
-    /// Client without the map of the session (deviating from E-322): `Bye` with [`MAP_MISSING_REASON`] (before `{9}`,
-    /// which would otherwise send [`LEAVE_REASON`]), lobby closed (if open), `{9}`, `{5,"lan1"}`, above it message
-    /// [`MAP_MISSING`] without a follow-up command. For the host the row becomes open (departure as before); `{9}`
-    /// forgets the session.
-    fn leave_for_missing_map(
-        &mut self,
-        driver: &mut NetDriver,
-        app: &mut MenuApp,
-        lobby_open: bool,
-    ) {
-        log::info!("Network: the map of the match is missing or differs, leaving the lobby");
-        driver.leave(MAP_MISSING_REASON);
-        self.told = true;
-        if lobby_open {
-            for c in close_lobby() {
-                app.push_command(c);
-            }
-        }
-        app.push_command(AppCmd::CloseNet);
-        app.push_command(AppCmd::Open {
-            name: "lan1".to_string(),
-            wait: true,
-        });
-        app.tell(MAP_MISSING, None);
     }
 
     /// Host: new connections to the driver (numbers 1, 2, ... in order of acceptance).
@@ -1598,10 +2065,18 @@ impl NetSession {
         let l = self.lobby.as_ref()?;
         let mut ready = [false; 8];
         let mut peers = [false; 8];
+        let mut data_locked = [false; 8];
         for (i, r) in l.rows.iter().enumerate().take(8) {
             ready[i] = r.ready;
             peers[i] = r.peer.is_some();
+            data_locked[i] = r.data != DataState::Equal;
         }
+        let start_locked = match &self.stage {
+            Stage::Lobby { driver } if self.is_host => {
+                driver.host_core().is_some_and(HostCore::data_holds_start)
+            }
+            _ => false,
+        };
         Some(LobbyView {
             is_host: self.is_host,
             own_row: self.own_row.unwrap_or(0),
@@ -1610,6 +2085,8 @@ impl NetSession {
             chat: self.chat.clone(),
             stage: stage_of(l.session.spacing, l.session.lead),
             max_rtt_ms: if self.is_host { l.max_rtt_ms } else { None },
+            data_locked,
+            start_locked,
         })
     }
 
@@ -1626,9 +2103,10 @@ impl NetSession {
     /// draft - never from `Info` or what `LAN31` last showed (deviating from E-281). Then rules of the map
     /// ([`net_rules`]: `.lvl` or random map), setup [`to_net_setup`] with the seed of the identity, slots of the rows
     /// from the same calculation ([`row_slots`]), start package, start information per row (game speed `GameSpeed` of
-    /// the host, session name), then [`HostCore::start_from_lobby`] (checks the lobby once more). Success: the driver
-    /// with its own start for `GameFlow::start_net_match`, listener and announcement closed. Error (reason as text):
-    /// the lobby stays.
+    /// the host, session name), then [`HostCore::start_from_lobby`] (checks the lobby once more). The rules are those
+    /// of the game data check if they belong to the current session revision ([`Self::check_data`]). Success: the
+    /// driver with its own start for `GameFlow::start_net_match`, listener and announcement closed. Error (reason as
+    /// text): the lobby stays.
     pub fn start_host_match(
         &mut self,
         maps: &MapCatalog,
@@ -1644,11 +2122,23 @@ impl NetSession {
         }
         let request = self.session_request(maps)?;
         let req = &request;
-        let rules = net_rules(vfs, req)?;
+        // The rules of the data check if they belong to the current session revision, otherwise computed now.
+        let revision = self
+            .driver()
+            .and_then(NetDriver::host_core)
+            .map(|c| c.lobby().session_revision);
+        let computed;
+        let rules = match &self.kept_rules {
+            Some((kept, rules)) if Some(*kept) == revision => rules,
+            _ => {
+                computed = net_rules(vfs, req)?;
+                &computed
+            }
+        };
         let seed = (self.identity.seed)();
-        let setup = to_net_setup(req, &rules, texts, seed)?;
-        let slots = row_slots(req, &rules, texts)?;
-        let active = active_slots(&rules);
+        let setup = to_net_setup(req, rules, texts, seed)?;
+        let slots = row_slots(req, rules, texts)?;
+        let active = active_slots(rules);
         let now = self.now_ms;
         let Stage::Lobby { driver } = &mut self.stage else {
             return Err("no lobby as host".into());
@@ -1661,7 +2151,7 @@ impl NetSession {
             &slots,
             &active,
             &setup,
-            &rules,
+            rules,
             config_speed(cfg),
         )?;
         Self::distribute_start(core, &infos)?;
@@ -1758,9 +2248,7 @@ impl NetSession {
         self.take_started(now)
     }
 
-    /// Start request from the lobby state of the core: slots, map description and settings like the draft of the
-    /// lobby ([`lobby_draft`]), open rows removed ([`MatchDraft::remove_open_slots`]), then
-    /// [`MatchRequest::from_draft`] - the same request as before via `{0x0D}` from the draft of the host.
+    /// Start request from the lobby state of the core ([`request_from_lobby`]).
     fn session_request(&self, maps: &MapCatalog) -> Result<MatchRequest, String> {
         let Stage::Lobby { driver } = &self.stage else {
             return Err("no lobby as host".into());
@@ -1768,15 +2256,7 @@ impl NetSession {
         let core = driver
             .host_core()
             .ok_or_else(|| "no host core".to_string())?;
-        let (slots, info, settings) = lobby_draft(core.lobby(), maps);
-        let mut draft = MatchDraft {
-            map: None,
-            info,
-            slots,
-            settings,
-        };
-        draft.remove_open_slots();
-        Ok(MatchRequest::from_draft(&draft))
+        Ok(request_from_lobby(core.lobby(), maps))
     }
 
     /// The start from the lobby failed before loading ([`Self::start_host_match`]): the lobby stays. `{0x0D}` removed
@@ -1817,11 +2297,45 @@ impl NetSession {
 /// (deviating from E-314). The command-line path (`opennml-game`, `net_start`) stays with `.lvl`. Errors as a reason
 /// text.
 pub fn net_rules(vfs: &Vfs, req: &MatchRequest) -> Result<opennml_sim::rules::Rules, String> {
+    source_rules(vfs, &net_source(req))
+}
+
+/// Map of a start request: the random map from its description ([`random_map_spec`]), otherwise the `.lvl`.
+pub fn net_source(req: &MatchRequest) -> MapSource {
     match random_map_spec(req) {
-        Some(spec) => load_random_rules(vfs, &spec),
-        None => load_rules(vfs, &req.level),
+        Some(spec) => MapSource::Random(spec),
+        None => MapSource::Level(req.level.clone()),
+    }
+}
+
+/// Rules of the map `source` as [`net_rules`] computes them: fixed map via [`load_rules`], random map via
+/// [`load_random_rules`]. Errors as a reason text.
+pub fn source_rules(vfs: &Vfs, source: &MapSource) -> Result<opennml_sim::rules::Rules, String> {
+    match source {
+        MapSource::Random(spec) => load_random_rules(vfs, spec),
+        MapSource::Level(level) => load_rules(vfs, level),
     }
     .map_err(|e| format!("{e:#}"))
+}
+
+/// [`source_rules`] on a recording copy of `vfs`, like [`net_rules_recorded`].
+pub fn source_rules_recorded(
+    vfs: &Vfs,
+    source: &MapSource,
+) -> (Result<opennml_sim::rules::Rules, String>, Vec<ReadEntry>) {
+    let (recording, log) = vfs.recording();
+    let rules = source_rules(&recording, source);
+    (rules, log.take())
+}
+
+/// [`net_rules`] on a recording copy of `vfs`: besides the rules (or the reason text) the game files the rules were
+/// read from, ascending by normalized path with the hash of their bytes (`None`: reading failed). The files are the
+/// input of the game data check; `vfs` itself notes nothing.
+pub fn net_rules_recorded(
+    vfs: &Vfs,
+    req: &MatchRequest,
+) -> (Result<opennml_sim::rules::Rules, String>, Vec<ReadEntry>) {
+    source_rules_recorded(vfs, &net_source(req))
 }
 
 /// Start information per human row: slot from [`row_slots`], occupation of all slots (humans with their machine and

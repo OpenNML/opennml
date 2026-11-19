@@ -28,8 +28,8 @@ use super::{
 };
 use crate::link::LinkEvent;
 use crate::lobby::{
-    EditOutcome, HostEdit, KIND_HUMAN, LobbyBook, LobbyRules, LobbyState, LobbyWish, MapId,
-    SessionInfo,
+    DataInput, EditOutcome, HostEdit, KIND_HUMAN, LobbyBook, LobbyRules, LobbyState, LobbyWish,
+    MapId, SessionInfo,
 };
 use crate::msg::{
     HANDED_OVER, HOST_LEFT, Hello, KICKED, MAX_GAME_SPEED, NetControl, NetMessage, SeatClaim,
@@ -290,6 +290,11 @@ impl HostCore {
         self.phase == Phase::Gathering && self.check_start().is_ok()
     }
 
+    /// The game data check holds `START` back ([`LobbyBook::data_holds_start`]).
+    pub fn data_holds_start(&self) -> bool {
+        self.book.data_holds_start()
+    }
+
     /// Lobby state of the host.
     pub fn lobby(&self) -> &LobbyState {
         self.book.state()
@@ -350,6 +355,40 @@ impl HostCore {
         Ok(())
     }
 
+    /// Switches the game data check of the lobby on ([`LobbyBook::enable_data_check`]; menu path only), then
+    /// broadcast.
+    pub fn enable_data_check(&mut self) {
+        self.book.enable_data_check();
+        self.sync_lobby();
+    }
+
+    /// The host's rules checksum and read recording for the session with `session_revision`
+    /// ([`LobbyBook::set_rules`]), only in `Gathering`; the checksum goes to every client with the next state. `false`
+    /// for another session revision, without the data check or outside `Gathering`.
+    pub fn set_rules(
+        &mut self,
+        session_revision: u32,
+        checksum: Option<u64>,
+        inputs: Vec<DataInput>,
+    ) -> bool {
+        if self.phase != Phase::Gathering {
+            log::warn!(
+                "Network (host): rules checksum in phase {:?} discarded",
+                self.phase
+            );
+            return false;
+        }
+        let applied = self.book.set_rules(session_revision, checksum, inputs);
+        if !applied {
+            log::info!(
+                "Network (host): rules checksum for session {session_revision} discarded (session {})",
+                self.book.state().session_revision
+            );
+        }
+        self.sync_lobby();
+        applied
+    }
+
     /// Kick: `Bye { KICKED }`, the machine drops out (without `Lost`; the book has already opened the row). Until the
     /// driver closes the connection, the core discards everything from it (no second `Hello`).
     fn kick(&mut self, peer: Peer) {
@@ -384,14 +423,20 @@ impl HostCore {
     /// loaded lobby there are neither wishes nor chat: log, nothing else.
     fn apply_wish(&mut self, from: Peer, w: LobbyWish) {
         if self.book.state().is_loaded() {
-            log::info!("Network (host): wish {w:?} from peer {from} rejected in the loaded lobby");
+            log::info!(
+                "Network (host): wish {} from peer {from} rejected in the loaded lobby",
+                w.summary()
+            );
             return;
         }
         match w {
             LobbyWish::Chat(text) => self.chat(from, &text),
             w => {
                 if let Err(reason) = self.book.wish(from, &w, self.rules.as_ref()) {
-                    log::info!("Network (host): wish {w:?} from peer {from} rejected: {reason}");
+                    log::info!(
+                        "Network (host): wish {} from peer {from} rejected: {reason}",
+                        w.summary()
+                    );
                 }
             }
         }
@@ -500,9 +545,9 @@ impl HostCore {
         self.results = defeated;
     }
 
-    /// Aborts the session for everyone (E-293; e.g. the host could not load the match): `Bye { reason: text }` to every
-    /// active client, then `CoreEvent::Failed(text)` and `Phase::Ended`. The driver closes the connections after
-    /// sending. In `Phase::Ended` it has no effect (log).
+    /// Aborts the session for everyone (E-293; e.g. the host could not set up the match; its own loading error goes
+    /// through [`Self::load_failed`]): `Bye { reason: text }` to every active client, then `CoreEvent::Failed(text)`
+    /// and `Phase::Ended`. The driver closes the connections after sending. In `Phase::Ended` it has no effect (log).
     pub fn abort(&mut self, text: String) {
         if self.phase == Phase::Ended {
             log::warn!("Network (host): abort after the end discarded: {text}");
@@ -875,7 +920,7 @@ impl HostCore {
         }
     }
 
-    /// `NetSession_OnClientLoaded` `0x004E8470`: a loading error aborts the start for everyone.
+    /// `NetSession_OnClientLoaded` `0x004E8470`: a loading error aborts the start for everyone ([`Self::cancel_load`]).
     fn on_loaded(&mut self, from: Peer, error: Option<String>) {
         if self.phase != Phase::Loading {
             log::warn!(
@@ -893,14 +938,40 @@ impl HostCore {
                 self.check_go();
             }
             Some(err) => {
-                let text = format!("\"{}\" could not load the match: {err}", r.name);
-                log::warn!("Network (host): {text}");
-                self.send_all(NetMessage::Bye {
-                    reason: text.clone(),
-                });
-                self.fail(text);
+                let name = r.name.clone();
+                self.cancel_load(name, &err);
             }
         }
+    }
+
+    /// The host itself could not load the match (only in `Loading`): like a client's loading error, with the host's
+    /// name - `LoadFailed` and `Bye` to every client, `CoreEvent::LoadFailed`, `Phase::Ended`. Otherwise has no effect
+    /// (log).
+    pub fn load_failed(&mut self, error: String) {
+        if self.phase != Phase::Loading {
+            log::warn!(
+                "Network (host): own loading error in phase {:?} discarded: {error}",
+                self.phase
+            );
+            return;
+        }
+        let name = self
+            .book
+            .row_of(HOST_PEER)
+            .map(|row| self.book.state().rows[usize::from(row)].name.clone())
+            .unwrap_or_else(|| clean_name(&self.own.name));
+        self.cancel_load(name, &error);
+    }
+
+    /// Loading error of the player `name`: `LoadFailed { name }` and then `Bye` with the reason to every client (the
+    /// failing one too), `CoreEvent::LoadFailed`, `Phase::Ended`.
+    fn cancel_load(&mut self, name: String, error: &str) {
+        let text = format!("\"{name}\" could not load the match: {error}");
+        log::warn!("Network (host): {text}");
+        self.send_all(NetMessage::LoadFailed { name: name.clone() });
+        self.send_all(NetMessage::Bye { reason: text });
+        self.phase = Phase::Ended;
+        self.events.push(CoreEvent::LoadFailed { name });
     }
 
     /// `NetSession_SendClientListWhenAllLoaded` `0x004E83B0`: `Go` only when all clients and the host have loaded.
