@@ -92,6 +92,9 @@ pub const KICKED_TEXT: i32 = 15212;
 const MAX_CHAT_LINES: usize = 64;
 /// Reason in the `Bye` when the join is aborted without an answer.
 const NO_ANSWER: &str = "No answer to the sign-on";
+/// Reason in the `Bye` of a client whose rules differ from those stored in its own network savegame.
+pub const SAVE_RULES_REASON: &str =
+    "The rules of this installation differ from those of the savegame.";
 /// Dialog "Change game" (`lan31.dlg`).
 const CHANGE_DIALOG: &str = "lan31";
 
@@ -227,8 +230,9 @@ fn fnv(mut hash: u64, bytes: &[u8]) -> u64 {
 const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
 
 /// Map checksum: FNV-1a 64 over the bytes of the `.lvl` and then of the `.wld`; if one is missing, `None`. The
-/// original compares only the line checksum of the `.lvl` (re/multiplayer-menus L.1.3); the
-/// reimplementation also covers the `.wld`.
+/// original (`FUN_004BDDA0`, `FUN_004BD3D0`) sums the lines of the `.lvl` and, with the `".wld"` at `0x00619408`,
+/// also covers the `.wld` (re/multiplayer-menus L.18); the reimplementation hashes the bytes instead of the lines.
+/// The `.hlm` is not part of it: the rules checksum of the data check covers it.
 pub fn map_checksum(vfs: &Vfs, lvl: &str) -> Option<u64> {
     let level = vfs.read(lvl).ok()?;
     let world = vfs.read(&world_path(lvl)).ok()?;
@@ -722,6 +726,16 @@ pub struct NetSession {
     held_report: Option<HeldReport>,
     /// Messages of the data check, shown and waiting ([`Self::tell_data`]).
     notices: DataNotices,
+    /// Client in a loaded lobby: rules of the own savegame's map, computed in the worker ([`Self::start_save_check`]).
+    save_check: Option<SaveCheck>,
+}
+
+/// Outstanding rules computation of a client for the map of its own network savegame.
+struct SaveCheck {
+    /// Session revision of the job (it identifies the result).
+    revision: u32,
+    /// `rules_checksum` of the start package in the own savegame file.
+    expected: u64,
 }
 
 /// Own result of the game data check of a client, until the host's checksum for its session revision is there.
@@ -772,6 +786,7 @@ impl NetSession {
             kept_rules: None,
             held_report: None,
             notices: DataNotices::default(),
+            save_check: None,
         }
     }
 
@@ -1268,6 +1283,7 @@ impl NetSession {
         self.data_job = None;
         self.kept_rules = None;
         self.held_report = None;
+        self.save_check = None;
     }
 
     /// Lobby wishes of the UI (`UiEffect::Lobby`): for the host wishes for row 0 and changes of other rows (the core
@@ -1528,6 +1544,7 @@ impl NetSession {
                     if loaded {
                         log::info!("Network: in the waiting room of the loaded match (LAN4)");
                         app.push_command(open_lan4());
+                        self.start_save_check(&driver, vfs);
                     } else {
                         log::info!("Network: in the lobby");
                         for c in open_lobby() {
@@ -1551,9 +1568,13 @@ impl NetSession {
                 driver.pump(now);
                 self.answer_queries(&driver);
                 let events = driver.take_lobby_events();
-                let gone = self.lobby_events(events, app);
+                let mut gone = self.lobby_events(events, app);
                 if !gone {
                     self.check_data(&mut driver, &app.data().maps, vfs);
+                    if self.save_rules_differ() {
+                        self.leave_for_other_rules(&mut driver, app);
+                        gone = true;
+                    }
                 }
                 if self.is_host {
                     self.lobby = driver.host_core().map(|c| c.lobby().clone());
@@ -1783,6 +1804,91 @@ impl NetSession {
                 inputs,
             },
         });
+    }
+
+    /// Client in a loaded lobby: compute the rules of the map of the own savegame file in the worker, to compare them
+    /// with the `rules_checksum` stored in that file (the host has done the same synchronously when hosting,
+    /// [`read_net_save`]). Without a readable file nothing is checked here; the load check at the start remains.
+    fn start_save_check(&mut self, driver: &NetDriver, vfs: &Vfs) {
+        let Some(lobby) = driver.client_core().and_then(ClientCore::lobby) else {
+            return;
+        };
+        let MapId::Saved { name, .. } = &lobby.session.map else {
+            return;
+        };
+        if !valid_save_name(name) {
+            return;
+        }
+        let path = self.paths.net_save(name);
+        let file = std::fs::read(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|bytes| GameSaveFile::from_bytes(&bytes).map_err(|e| format!("{e:#}")));
+        let start = match file {
+            Ok(file) => file.sim.start,
+            Err(e) => {
+                log::warn!("Network: savegame \"{name}\" not readable for the rules check: {e}");
+                return;
+            }
+        };
+        let revision = lobby.session_revision;
+        log::info!("Network: computing the rules of the own savegame \"{name}\"");
+        self.save_check = Some(SaveCheck {
+            revision,
+            expected: start.rules_checksum,
+        });
+        self.rules_worker.submit(RulesJob {
+            session_revision: revision,
+            vfs: vfs.clone(),
+            source: MapSource::of_start(&start),
+        });
+    }
+
+    /// Result of the savegame rules computation: `true` if it is there and the rules are not those of the file (or not
+    /// computable). A result of another job is dropped; without an outstanding check nothing is polled.
+    fn save_rules_differ(&mut self) -> bool {
+        let Some(check) = &self.save_check else {
+            return false;
+        };
+        let Some(done) = self.rules_worker.poll() else {
+            return false;
+        };
+        if done.session_revision != check.revision {
+            return false;
+        }
+        let expected = check.expected;
+        self.save_check = None;
+        match done.rules {
+            Ok(rules) if rules.checksum == expected => {
+                log::info!("Network: the rules of the own savegame match this installation");
+                false
+            }
+            Ok(rules) => {
+                log::info!(
+                    "Network: rules checksum {:#018X} here, {expected:#018X} in the savegame",
+                    rules.checksum
+                );
+                true
+            }
+            Err(e) => {
+                log::info!("Network: rules of the own savegame not computable: {e}");
+                true
+            }
+        }
+    }
+
+    /// Client of a loaded lobby whose rules differ from its savegame: leave (one `Bye`), close `LAN4`, `LAN1`, message
+    /// 99 106.
+    fn leave_for_other_rules(&mut self, driver: &mut NetDriver, app: &mut MenuApp) {
+        log::info!("Network: the rules differ from the own savegame, leaving the loaded lobby");
+        driver.leave(SAVE_RULES_REASON);
+        self.told = true;
+        app.push_command(close_lan4());
+        app.push_command(AppCmd::CloseNet);
+        app.push_command(AppCmd::Open {
+            name: "lan1".to_string(),
+            wait: true,
+        });
+        app.tell(SAVE_NOT_LOADED, None);
     }
 
     /// Submit the rules computation of the session revision `revision` (a clone of `vfs`).

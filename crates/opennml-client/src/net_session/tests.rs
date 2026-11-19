@@ -81,6 +81,77 @@ fn test_hello() -> Hello {
     }
 }
 
+/// The map checksum covers the bytes of `.lvl` and `.wld`, in order: swapped lines change it. The `.hlm` is not part of
+/// it (the rules checksum of the data check covers it).
+// QUIRK E-353: deviation
+#[test]
+fn map_checksum_covers_lvl_and_wld_bytes() {
+    let lvl = "data/levels/multiplayer/[2players]-test.lvl";
+    let wld = "data/levels/multiplayer/[2players]-test.wld";
+    let sum = |level: &[u8], world: &[u8]| {
+        let (_dir, vfs) = install(&[(lvl, level.to_vec()), (wld, world.to_vec())]);
+        map_checksum(&vfs, lvl).expect("checksum")
+    };
+    let base = sum(
+        b"line one
+line two
+",
+        b"world one
+world two
+",
+    );
+    assert_ne!(
+        base,
+        sum(
+            b"line two
+line one
+",
+            b"world one
+world two
+"
+        )
+    );
+    assert_ne!(
+        base,
+        sum(
+            b"line one
+line two
+",
+            b"world two
+world one
+"
+        )
+    );
+
+    // A changed `.hlm` leaves the map checksum, but the rules checksum differs.
+    let Some(vfs) = corpus_vfs() else {
+        return;
+    };
+    let req = request(FIXED_MAP, LevelInfoData::default());
+    let (rules, entries) = net_rules_recorded(&vfs, &req);
+    let rules = rules.unwrap();
+    let hlm = entries
+        .iter()
+        .find(|e| e.path.ends_with(".hlm") && e.hash.is_some())
+        .expect("a .hlm of the map")
+        .path
+        .clone();
+    let mut bytes = vfs.read(&hlm).unwrap();
+    *bytes.last_mut().expect("bytes") ^= 1;
+    let dir = tempfile::tempdir().unwrap();
+    let disk = dir.path().join("changed.hlm");
+    std::fs::write(&disk, &bytes).unwrap();
+    let other = opennml_rda::testutil::with_loose_file(&vfs, &hlm, &disk);
+    assert_eq!(
+        map_checksum(&other, FIXED_MAP),
+        map_checksum(&vfs, FIXED_MAP)
+    );
+    assert_ne!(
+        net_rules(&other, &req).map(|r| r.checksum),
+        Ok(rules.checksum)
+    );
+}
+
 #[test]
 fn map_checksum_hides_a_changed_map() {
     // FNV-1a 64 over `.lvl` and `.wld`; the list shows a game only with the same checksum of the local map. A

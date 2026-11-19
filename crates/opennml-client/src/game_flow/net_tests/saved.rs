@@ -1585,3 +1585,82 @@ fn loaded_net_game_records_from_the_start() {
         );
     }
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// Rules of the own installation against the rules stored in the savegame (game data check of loaded sessions): the
+// host refuses a savegame whose rules differ ([`read_net_save`] -> 99 106 via `LAN3`), a client in `LAN4` leaves.
+
+/// A host whose `bonus.ini` differs from the one the match was played with does not host the savegame: 99 106, `LAN3`
+/// stays open, no session.
+#[test]
+fn saved_game_with_other_rules_is_not_hosted() {
+    let Some(saves) = played_net_saves() else {
+        return;
+    };
+    let Some(mut n) = loading_host(Some(&saves[0])) else {
+        return;
+    };
+    n.change_file(0, BONUS_INI, |b| bump_last_digit(b));
+    n.host_saved(0);
+    n.assert_refused(0, SAVE_NOT_LOADED);
+}
+
+/// A client whose `bonus.ini` differs from the one the match was played with joins, finds out that its rules differ
+/// from those of its savegame, and leaves the loaded lobby: exactly one `Bye`, `LAN4` closed, `LAN1` open with
+/// message 99 106; the host's row is without a machine again.
+#[test]
+fn client_with_other_rules_leaves_the_loaded_lobby() {
+    let Some(saves) = played_net_saves() else {
+        return;
+    };
+    let Some(mut n) = saved_lan(&["Anna", "Bert"], &[Some(&saves[0]), Some(&saves[1])]) else {
+        return;
+    };
+    let byes = n.count_byes(1, "Bert");
+    n.change_file(1, BONUS_INI, |b| bump_last_digit(b));
+    n.click_join(1);
+    n.frames_until("Bert shows 99 106", |l| {
+        message_id(&l.runs[1]) == Some(SAVE_NOT_LOADED)
+    });
+    n.frames_until("the host's row is free again", |l| {
+        let row = row_of_slot(&l.lobby(0), local_slot(&saves[1]));
+        l.lobby(0).rows[row].peer.is_none()
+    });
+    let d = n.dialogs(1);
+    assert!(d.iter().any(|x| x == "lan1"), "{d:?}");
+    assert!(!d.iter().any(|x| x == "lan4" || x == "lan2"), "{d:?}");
+    assert!(session_closed(&n, 1));
+    assert_eq!(byes.lock().unwrap().len(), 1, "exactly one Bye");
+    let host = n.lobby(0);
+    let row = row_of_slot(&host, local_slot(&saves[1]));
+    assert_eq!(
+        (host.rows[row].kind, host.rows[row].name.as_str()),
+        (0, ""),
+        "row without a machine"
+    );
+    assert_eq!(n.phase(0), NetPhase::Lobby);
+    assert!(n.dialogs(0).iter().any(|x| x == "lan4"));
+}
+
+/// A client with the same rules as in its savegame stays in `LAN4`: no message, no `Bye`, its row stays occupied.
+#[test]
+fn saved_game_with_equal_rules_loads_as_before() {
+    let Some(saves) = played_net_saves() else {
+        return;
+    };
+    let Some(mut n) = saved_lan(&["Anna", "Bert"], &[Some(&saves[0]), Some(&saves[1])]) else {
+        return;
+    };
+    let byes = n.count_byes(1, "Bert");
+    n.join_saved(1);
+    n.frames(30);
+    let d = n.dialogs(1);
+    assert!(d.iter().any(|x| x == "lan4"), "{d:?}");
+    assert!(!d.iter().any(|x| x == "msgbox" || x == "lan1"), "{d:?}");
+    assert_eq!(n.phase(1), NetPhase::Lobby);
+    assert!(byes.lock().unwrap().is_empty(), "no Bye");
+    let host = n.lobby(0);
+    let row = row_of_slot(&host, local_slot(&saves[1]));
+    assert_eq!(host.rows[row].name, "Bert");
+    assert!(host.rows[row].peer.is_some());
+}
