@@ -73,10 +73,10 @@ use crate::keys::check_key;
 /// 50 = host migration: `net_status.successors` (successor list: `peer`, `slot`,
 /// `addr`) and `net_status.migration` (`phase` `dialing`/`rejoining`/`gathering`, `peer`, `expected`, `arrived`);
 /// `net_debug` with `mute` and `unmute`.
-/// Next version (number set on release) = game data check: `net_status.lobby.session_revision` (lobby revision of
+/// 51 = game data check: `net_status.lobby.session_revision` (lobby revision of
 /// the last session change), `net_status.lobby.rules_checksum` (the host's rules checksum as hex text or `null`) and
 /// `net_status.lobby.rows[].data` (`pending`, `equal`, `missing` or `differs` with `files` and `more`).
-pub const PROTOCOL_VERSION: u32 = 50;
+pub const PROTOCOL_VERSION: u32 = 51;
 
 /// Error message of the control channel when the viewer no longer accepts commands (event loop
 /// ended); after that it closes the connection.
@@ -2271,7 +2271,7 @@ mod tests {
                 .contains("0, 1, 3 or 7")
         );
         assert_eq!(view(None, Some(0)).validate(), Ok(()), "0 = overlay off");
-        assert_eq!(PROTOCOL_VERSION, 50);
+        assert_eq!(PROTOCOL_VERSION, 51);
     }
 
     #[test]
@@ -2931,8 +2931,8 @@ mod tests {
         // `opennml-game`, `net_*`; 43 = `mouse_button` with `middle` (quirk
         // O-331); 44 = lobby, search and run time in the network match; 45 = menu level;
         // 46 = network savegames; 47 = replays; 48 = 3D pointer;
-        // 49 = sound driver; 50 = host migration.
-        assert_eq!(PROTOCOL_VERSION, 50);
+        // 49 = sound driver; 50 = host migration; 51 = game data check.
+        assert_eq!(PROTOCOL_VERSION, 51);
     }
 
     fn ki_command(action: KiAction) -> Command {

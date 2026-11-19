@@ -13,8 +13,9 @@ pub const MAGIC: [u8; 4] = *b"NMLN";
 /// Version of the wire; any other value is rejected. History: 1 first version; 2 lobby, discovery and latency
 /// messages, `Hello.build`, `StartInfo` with `spacing`/`lead`; 3 `Hello::seat`, `StartInfo::saved`,
 /// `LobbyState::seats`, `MapId::Saved`; 4 `Hello::listen_port`, `Go::successors`, `Rejoin`, `Migrated`,
-/// `NetControl::Handover`.
-pub const NET_VERSION: u16 = 4;
+/// `NetControl::Handover`; 5 game data check: `LobbyState::session_revision`, `LobbyState::rules_checksum`,
+/// `LobbyRow::data`, `LobbyWish::Data`, `NetMessage::LoadFailed`.
+pub const NET_VERSION: u16 = 5;
 /// Largest allowed body in bytes.
 pub const MAX_FRAME: usize = 1 << 20;
 /// Payload per piece.

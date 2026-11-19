@@ -51,7 +51,7 @@ the main thread. Request lines are at most 1 MiB long.
 
 | Command | Parameters | Result |
 |---|---|---|
-| `hello` | - | `{"protocol": 50, "pid", "backend", "adapter"}` (backend/adapter `null` as long as the GPU is not ready) |
+| `hello` | - | `{"protocol": 51, "pid", "backend", "adapter"}` (backend/adapter `null` as long as the GPU is not ready) |
 | `key` | `code` (winit spelling, e.g. `ArrowUp`, `KeyB`, `F11`), `action`: `down`/`up`/`tap`, optional `repeat` (only with `down`: that many further press events as automatic repeat; otherwise the error `repeat only with down`) | `null` |
 | `mouse_move` | `x`, `y` (window pixels) | `null` |
 | `mouse_leave` | - | `null` |
@@ -2431,7 +2431,7 @@ Example at the host in `LAN4` (Anna plays slot 3, Bert has joined):
 ### Network play (game data check)
 
 Before a network match from the menu every machine checks in the background whether it has the same game data for the
-map of the session as the host (rules checksum of the match). Next protocol version (the number is set on release); old
+map of the session as the host (rules checksum of the match). Protocol 51; old
 responses stay readable (`session_revision` then counts as 0, `rules_checksum` as `null`, `data` as `equal`).
 
 - **`net_status.lobby.session_revision`:** lobby revision of the last session change (creation, `CHANGEGAME`); the
