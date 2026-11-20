@@ -1,20 +1,21 @@
-//! Savegame container of a match: the savegame of the simulation
-//! ([`SaveGame`], unchanged in its own bytes) and the host part ([`HostPart`]: camera like
-//! `m_NextFrom/At/FOV`, map description for the loading screen, game mode, name of the local player,
-//! game speed, remembered speed of the cinemascope, camera of the scripts, control groups,
-//! `selectnextguid` indices, idle worker index, chat and tribute masks, fixed teams, the fog switch and
-//! in network savegames the network part [`NetSaveInfo`]). No influence on checksums.
+//! Savegame container of a match: the savegame of the simulation ([`SaveGame`]) and the host part ([`HostPart`]:
+//! camera like `m_NextFrom/At/FOV`, map description for the loading screen, game mode, name of the local player,
+//! game speed, remembered speed of the cinemascope, camera of the scripts, control groups, `selectnextguid` indices,
+//! idle worker index, chat and tribute masks, fixed teams, the fog switch and in network savegames the network part
+//! [`NetSaveInfo`]). No influence on checksums.
 //!
-//! File: identifier `NMLGAME\0`, [`FORMAT`] as u32 LE, FNV-1a 64 of the body as u64 LE, body = `postcard` of
-//! `{ sim: SaveGame::to_bytes(), host }`. The simulation part stays in its own bytes so that a change
-//! of `opennml_sim::setup::FORMAT_VERSION` is noticed on loading as a "format version" (messages of
-//! [`SaveGame::from_bytes`]) and not as a random error while reading.
+//! File: identifier `NMLGAME\0`, [`SAVE_FORMAT`] as u32 LE, FNV-1a 64 of the body as u64 LE, body =
+//! [`encode_named`] (MessagePack with field names, zstd) of the flat `{ sim_version, sim, host }`: `sim_version` is
+//! the [`FORMAT_VERSION`] of the simulation that wrote the file, `sim` the savegame of the simulation itself (not its
+//! own file bytes).
 //!
 //! The original also saves the game speed (re/game-ui 3).
 
 use anyhow::{Context, bail};
 use opennml_sim::rules::Rules;
-use opennml_sim::save::{RecordedCommand, SaveGame, read_container, write_container};
+use opennml_sim::save::codec::{decode_named, encode_named};
+use opennml_sim::save::{RecordedCommand, SaveGame, check_state, read_container, write_container};
+use opennml_sim::setup::FORMAT_VERSION;
 use opennml_world::camera::GameCamera;
 
 use crate::game::control_groups::{GroupsSave, NextGuidIndex};
@@ -24,14 +25,17 @@ use serde::{Deserialize, Serialize};
 
 /// Identifier of the file.
 pub const GAME_MAGIC: &[u8; 8] = b"NMLGAME\0";
-/// Format version of the container. History: 1 initial; 2 `HostPart::cinemascope_speed`, `HostPart::script_camera`;
-/// 3 moves of the player in the script camera (`MoveLeg::player`, `ScriptCamera::player_leg`),
-/// `HostPart::control_groups`, `HostPart::next_guid_index`; 4 `HostPart::idle_worker_index`, `HostPart::masks`,
-/// `HostPart::lock_teams`, `HostPart::fog_show_mode`; 5 menu values of the random map in `HostPart::level_info`
+/// Savegame number of the container. History: 100 MessagePack with field names, zstd, flat body; 1-8 `postcard`, no
+/// longer loadable: 1 initial; 2 `HostPart::cinemascope_speed`, `HostPart::script_camera`; 3 moves of the player in
+/// the script camera (`MoveLeg::player`, `ScriptCamera::player_leg`), `HostPart::control_groups`,
+/// `HostPart::next_guid_index`; 4 `HostPart::idle_worker_index`, `HostPart::masks`, `HostPart::lock_teams`,
+/// `HostPart::fog_show_mode`; 5 menu values of the random map in `HostPart::level_info`
 /// (`LevelInfoData::random_terrain`, `random_landscape`, `random_daytime`); 6 network part `HostPart::net`
 /// ([`NetSaveInfo`]); 7 `NetSaveInfo` with turn spacing and lead (`spacing`, `lead`) instead of `turn_steps`;
 /// 8 command log and `SAVEREPLAY` in the host part (`HostPart::log`, `HostPart::save_replay`).
-pub const FORMAT: u32 = 8;
+pub const SAVE_FORMAT: u32 = 100;
+/// First savegame number in MessagePack with field names.
+pub const FIRST_SAVE_FORMAT: u32 = 100;
 
 /// Network part of the host in a network savegame: what loading in the network needs and the simulation does not
 /// know. Each machine writes its own file with the same simulation part.
@@ -162,15 +166,17 @@ pub struct HostPart {
 /// Body of the file.
 #[derive(Serialize, Deserialize)]
 struct Body {
-    /// [`SaveGame::to_bytes`] with identifier, version and checksum of the simulation.
-    sim: Vec<u8>,
+    /// [`FORMAT_VERSION`] of the simulation that wrote the file.
+    sim_version: u32,
+    sim: SaveGame,
     host: HostPart,
 }
 
-/// Body for writing (without a copy of the host part).
+/// Body for writing (without a copy of the savegame and the host part).
 #[derive(Serialize)]
 struct BodyRef<'a> {
-    sim: &'a [u8],
+    sim_version: u32,
+    sim: &'a SaveGame,
     host: &'a HostPart,
 }
 
@@ -182,33 +188,32 @@ pub struct GameSaveFile {
 }
 
 impl GameSaveFile {
-    /// File: header, then the body with the savegame of the simulation in its own bytes.
+    /// File: header, then the flat body.
     pub fn to_bytes(&self) -> Vec<u8> {
-        let body = postcard::to_stdvec(&BodyRef {
-            sim: &self.sim.to_bytes(),
+        let body = encode_named(&BodyRef {
+            sim_version: FORMAT_VERSION,
+            sim: &self.sim,
             host: &self.host,
-        })
-        .expect("serializable");
-        write_container(GAME_MAGIC, FORMAT, &body)
+        });
+        write_container(GAME_MAGIC, SAVE_FORMAT, &body)
     }
 
-    /// Reads a file: identifier, format version and checksum of the container ([`read_container`]), then the
-    /// savegame of the simulation via [`SaveGame::from_bytes`] (its messages, also "format version" of the
-    /// simulation). It matches the rules only after [`GameSaveFile::check`].
+    /// Reads a file: identifier, savegame number and checksum of the container ([`read_container`]), the body
+    /// ([`decode_named`]) and the structure check of the state ([`check_state`]). The network names are cleaned; the
+    /// command log is dropped if the file comes from another simulation version (it replays the match from tick 0
+    /// and would compute differently). It matches the rules only after [`GameSaveFile::check`].
     pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        let body = read_container(GAME_MAGIC, FORMAT, bytes, "savegame")?;
-        let (Body { sim, host }, rest) =
-            postcard::take_from_bytes(body).context("savegame corrupted")?;
-        // A body longer than its content does not match the format (e.g. eleven instead of ten group lists).
-        if !rest.is_empty() {
-            bail!(
-                "savegame corrupted ({} extra bytes at the end of the body)",
-                rest.len()
-            );
-        }
-        let sim = SaveGame::from_bytes(&sim).context("savegame of the simulation")?;
-        let mut host = host;
+        let body = read_container(GAME_MAGIC, SAVE_FORMAT, bytes, "savegame")?;
+        let Body {
+            sim_version,
+            sim,
+            mut host,
+        } = decode_named(body).context("savegame corrupted")?;
+        check_state(&sim.state)?;
         host.net = host.net.map(NetSaveInfo::cleaned);
+        if sim_version != FORMAT_VERSION {
+            host.log = None;
+        }
         Ok(Self { sim, host })
     }
 
@@ -282,7 +287,7 @@ mod tests {
 
     /// Rewrites the header: body `body` with a valid checksum (for errors behind the header).
     fn with_body(body: &[u8]) -> Vec<u8> {
-        write_container(GAME_MAGIC, FORMAT, body)
+        write_container(GAME_MAGIC, SAVE_FORMAT, body)
     }
 
     #[test]
@@ -290,13 +295,49 @@ mod tests {
         let (file, rules) = save_file();
         let bytes = file.to_bytes();
         assert_eq!(&bytes[..8], GAME_MAGIC);
-        assert_eq!(u32::from_le_bytes(bytes[8..12].try_into().unwrap()), FORMAT);
+        assert_eq!(
+            u32::from_le_bytes(bytes[8..12].try_into().unwrap()),
+            SAVE_FORMAT
+        );
         let back = GameSaveFile::from_bytes(&bytes).unwrap();
         assert_eq!(back, file);
         back.check(&rules).unwrap();
-        // The simulation part is in the body in its own bytes.
-        let body: Body = postcard::from_bytes(&bytes[HEADER_LEN..]).unwrap();
-        assert_eq!(body.sim, file.sim.to_bytes());
+        // Flat body: version of the simulation, its savegame and the host part.
+        let body: Body = decode_named(&bytes[HEADER_LEN..]).unwrap();
+        assert_eq!(body.sim_version, FORMAT_VERSION);
+        assert_eq!((body.sim, body.host), (file.sim, file.host));
+    }
+
+    #[test]
+    fn header_carries_save_format() {
+        let (file, _) = save_file();
+        let bytes = file.to_bytes();
+        assert_eq!(&bytes[8..12], &100u32.to_le_bytes());
+    }
+
+    /// The command log replays the match from tick 0 and only fits the simulation version that recorded it: with
+    /// another `sim_version` loading drops it and keeps everything else; with the same one it stays.
+    #[test]
+    fn log_is_dropped_for_other_sim_version() {
+        let (mut file, rules) = save_file();
+        file.host.log = Some(vec![recorded(0), recorded(2)]);
+        file.host.save_replay = true;
+        let bytes = |sim_version: u32| {
+            let body = Body {
+                sim_version,
+                sim: file.sim.clone(),
+                host: file.host.clone(),
+            };
+            with_body(&encode_named(&body))
+        };
+        let back = GameSaveFile::from_bytes(&bytes(FORMAT_VERSION - 1)).unwrap();
+        back.check(&rules).unwrap();
+        assert_eq!(back.host.log, None);
+        let mut expected = file.clone();
+        expected.host.log = None;
+        assert_eq!(back, expected);
+        let same = GameSaveFile::from_bytes(&bytes(FORMAT_VERSION)).unwrap();
+        assert_eq!(same, file);
     }
 
     /// O-153: The keys clamp to 0 to 19, loading and resuming accept any speed 0 ... 255.
@@ -348,9 +389,9 @@ mod tests {
         assert!(error(&bytes[..5]).contains("not a savegame file"));
         // Format version of the container.
         let mut wrong = bytes.clone();
-        wrong[8..12].copy_from_slice(&(FORMAT + 1).to_le_bytes());
+        wrong[8..12].copy_from_slice(&(SAVE_FORMAT + 1).to_le_bytes());
         assert!(
-            error(&wrong).contains(&format!("format version {}", FORMAT + 1)),
+            error(&wrong).contains(&format!("format version {}", SAVE_FORMAT + 1)),
             "{}",
             error(&wrong)
         );
@@ -364,16 +405,6 @@ mod tests {
             error(&wrong)
         );
         assert!(error(&bytes[..15]).contains("corrupted"));
-        // Format version of the simulation (another `FORMAT_VERSION`): message from `opennml-sim`.
-        let mut sim = file.sim.to_bytes();
-        sim[8..12].copy_from_slice(&999u32.to_le_bytes());
-        let body = postcard::to_stdvec(&Body {
-            sim,
-            host: file.host.clone(),
-        })
-        .unwrap();
-        let message = error(&with_body(&body));
-        assert!(message.contains("format version 999"), "{message}");
         // Check against the rules (rules checksum).
         let mut bad = file;
         bad.sim.start.rules_checksum ^= 1;
@@ -381,13 +412,13 @@ mod tests {
     }
 
     /// Saving in the middle of a move with binding and rotation; after loading, the camera moves for N frames exactly
-    /// as without loading. Container `FORMAT` 1 (without script camera) is rejected with an error message.
+    /// as without loading. Container `SAVE_FORMAT` 1 (without script camera) is rejected with an error message.
     // QUIRK E-239: deviation
     #[test]
     fn host_part_restores_the_script_camera() {
         use crate::game::input::testkit;
         use opennml_sim::script::present::Presentation;
-        assert_eq!(FORMAT, 8);
+        assert_eq!(SAVE_FORMAT, 100);
         let (mut camera, terrain) = testkit::setup();
         let (file, rules) = save_file();
         let host = plain_testkit::host();
@@ -460,7 +491,7 @@ mod tests {
         old[8..12].copy_from_slice(&1u32.to_le_bytes());
         let message = format!("{:#}", GameSaveFile::from_bytes(&old).unwrap_err());
         assert!(
-            message.contains(&format!("format version 1, expected {FORMAT}")),
+            message.contains(&format!("format version 1, expected {SAVE_FORMAT}")),
             "{message}"
         );
     }
@@ -483,7 +514,7 @@ mod tests {
         old[8..12].copy_from_slice(&3u32.to_le_bytes());
         let message = format!("{:#}", GameSaveFile::from_bytes(&old).unwrap_err());
         assert!(
-            message.contains(&format!("format version 3, expected {FORMAT}")),
+            message.contains(&format!("format version 3, expected {SAVE_FORMAT}")),
             "{message}"
         );
     }
@@ -702,7 +733,7 @@ mod tests {
             ),
             (
                 "other version",
-                edit(&|b| b[8..12].copy_from_slice(&(FORMAT - 1).to_le_bytes())),
+                edit(&|b| b[8..12].copy_from_slice(&(SAVE_FORMAT - 1).to_le_bytes())),
             ),
             ("wrong checksum", edit(&|b| *b.last_mut().unwrap() ^= 0x55)),
             (

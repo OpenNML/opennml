@@ -8,6 +8,7 @@ pub struct OccupancyGrid {
     pub width: i32,
     pub height: i32,
     /// 0/1 per tile, row by row.
+    #[serde(with = "serde_bytes")]
     pub cells: Vec<u8>,
 }
 

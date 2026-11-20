@@ -1,6 +1,8 @@
-//! Checksum, savegame and replay: fixed serialization with `postcard`; checksum = FNV-1a 64 bit over
-//! these bytes (always 0 in the original). Savegame = start package + state + commands from that state on;
-//! replay = start package + all commands with their tick.
+//! Checksum, savegame and replay. Checksum = FNV-1a 64 bit over the fixed serialization with `postcard` (always 0
+//! in the original); the files carry MessagePack with field names, packed with zstd ([`codec`]). Savegame = start
+//! package + state + commands from that state on; replay = start package + all commands with their tick.
+
+pub mod codec;
 
 use anyhow::{Context, bail};
 use postcard::ser_flavors::Flavor;
@@ -260,11 +262,10 @@ pub fn read_container<'a>(
 }
 
 fn encode<T: Serialize>(magic: &[u8; 8], value: &T) -> Vec<u8> {
-    let body = postcard::to_stdvec(value).expect("serializable");
-    write_container(magic, FORMAT_VERSION, &body)
+    write_container(magic, FORMAT_VERSION, &codec::encode_named(value))
 }
 
-fn decode<T: for<'de> Deserialize<'de>>(
+fn decode<T: serde::de::DeserializeOwned>(
     magic: &[u8; 8],
     bytes: &[u8],
     what: &str,
@@ -280,7 +281,7 @@ fn decode<T: for<'de> Deserialize<'de>>(
             e
         }
     })?;
-    postcard::from_bytes(body).with_context(|| format!("{what} corrupted"))
+    codec::decode_named(body).with_context(|| format!("{what} corrupted"))
 }
 
 /// Structure check of a loaded state: only what would otherwise crash, hang or take unbounded
@@ -288,7 +289,7 @@ fn decode<T: for<'de> Deserialize<'de>>(
 /// in the combined test `save/tests/crash.rs`. Fixed lengths (object tables, players, upgrade lists, module slots,
 /// attribute lists, building mask, layers, planners, type tables, MFC buckets) are fixed by the type
 /// [`crate::fixed_vec::FixedVec`].
-pub(crate) fn check_state(state: &SimState) -> anyhow::Result<()> {
+pub fn check_state(state: &SimState) -> anyhow::Result<()> {
     for (slot, table) in state.tables.iter().enumerate() {
         if let Err(why) = table.check(SLOT_CAPACITY[slot]) {
             bail!("savegame corrupted (object table {slot}: {why})");

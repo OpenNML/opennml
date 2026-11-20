@@ -104,17 +104,34 @@ impl BuildingTileMap {
     }
 }
 
+/// Saved form: sides and the occupied tiles `(index, height, ID)`; in `postcard` the same bytes as the triple
+/// `(width, height, tiles)`.
+#[derive(Serialize, Deserialize)]
+struct Thin {
+    width: i32,
+    height: i32,
+    tiles: Vec<(u32, i32, i32)>,
+}
+
 impl Serialize for BuildingTileMap {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        let cells: Vec<(u32, i32, i32)> = self.occupied().collect();
-        (self.width, self.height, cells).serialize(s)
+        Thin {
+            width: self.width,
+            height: self.height,
+            tiles: self.occupied().collect(),
+        }
+        .serialize(s)
     }
 }
 
 impl<'de> Deserialize<'de> for BuildingTileMap {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use serde::de::Error;
-        let (width, height, cells): (i32, i32, Vec<(u32, i32, i32)>) = Deserialize::deserialize(d)?;
+        let Thin {
+            width,
+            height,
+            tiles: cells,
+        } = Deserialize::deserialize(d)?;
         if !(0..=MAX_SIDE).contains(&width) || !(0..=MAX_SIDE).contains(&height) {
             return Err(D::Error::custom(format!(
                 "building map {width} x {height} outside 0..{MAX_SIDE}"
@@ -369,6 +386,23 @@ mod tests {
             back.occupied().collect::<Vec<_>>(),
             vec![(2 * 16 + 3, 3200, 0x1_0801), (7 * 16 + 15, 0, 0x2_0802)]
         );
+    }
+
+    /// The named fields of the savegame leave the `postcard` bytes (checksum) as the plain triple
+    /// `(width, height, occupied tiles)`.
+    #[test]
+    fn building_tile_map_postcard_bytes_unchanged() {
+        let mut m = BuildingTileMap::new(16, 8);
+        m.set_cell(3, 2, 3200, 0x1_0801, true);
+        m.set_cell(15, 7, 0, 0x2_0802, true);
+        let occupied: Vec<(u32, i32, i32)> = m.occupied().collect();
+        assert_eq!(
+            postcard::to_stdvec(&m).unwrap(),
+            postcard::to_stdvec(&(m.width, m.height, occupied)).unwrap()
+        );
+        let packed = crate::save::codec::encode_named(&m);
+        let back: BuildingTileMap = crate::save::codec::decode_named(&packed).unwrap();
+        assert_eq!(back, m);
     }
 
     #[test]

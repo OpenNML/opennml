@@ -100,7 +100,7 @@ pub(crate) mod cell_bytes {
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u16>, D::Error> {
-        d.deserialize_bytes(CellVisitor)
+        d.deserialize_byte_buf(CellVisitor)
     }
 }
 

@@ -12,6 +12,7 @@ pub const MASK_SIDE: i32 = 61;
 pub struct ByteGrid {
     pub width: i32,
     pub height: i32,
+    #[serde(with = "serde_bytes")]
     pub cells: Vec<u8>,
 }
 

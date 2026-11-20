@@ -43,7 +43,7 @@ fn part_checksums_cover_every_field() {
     assert_eq!(diff, ["network"]);
 }
 
-fn scene() -> (Rules, SimState) {
+pub(super) fn scene() -> (Rules, SimState) {
     let rules = Rules::synthetic(TYPES, 16);
     let mut state = new_match(
         &rules,
