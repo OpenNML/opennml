@@ -2008,8 +2008,8 @@ impl GameFlow {
     /// loading ([`saved_ldg`]) and the speed of the host (`info.game_speed` instead of the own host part). Then turn
     /// mode on the own slot ([`SimHost::enter_rounds`]), origin tick = tick of the state ([`NetDriver::set_origin`]:
     /// turn 0 begins there), `Loaded`, driver into the match and the match data from the own host part. The names in
-    /// the simulation stay those of the state. Every error becomes `Loaded { error }` (the host aborts the start for everyone) with the
-    /// main menu as in [`Self::start_net_match`].
+    /// the simulation stay those of the state. Every error becomes `Loaded { error }` (the host aborts the start for
+    /// everyone) with the main menu as in [`Self::start_net_match`].
     fn start_saved_net_match(
         &mut self,
         mut net: NetDriver,

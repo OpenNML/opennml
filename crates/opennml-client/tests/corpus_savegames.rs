@@ -1,6 +1,6 @@
 //! Savegames on original maps from a private corpus: every `*.nmlgame` below `NML_SAVE_CORPUS` (recursively) loads with
-//! the rules of its map from the original installation (`NML_GAME_DIR`) and continues for 100 steps; at the end the
-//! test reports size and load time per file. Skipped without one of the two variables.
+//! the rules of its map from the original installation (`NML_GAME_DIR`), continues for 100 steps and loads again
+//! after saving; at the end the test reports size and load time per file. Skipped without one of the two variables.
 //!
 //! `write_corpus_saves` (ignored) writes the savegames of this version to `$NML_SAVE_CORPUS/save-<SAVE_FORMAT>/`: a
 //! campaign map and a large random map with eight AI slots, 12 000 steps each.
@@ -80,8 +80,8 @@ fn ms(since: Instant) -> f64 {
     since.elapsed().as_secs_f64() * 1000.0
 }
 
-/// Loads `path` like the game (file, rules of its map, `prepare`) and continues the match for [`CONTINUE_STEPS`]
-/// steps.
+/// Loads `path` like the game (file, rules of its map, `prepare`), continues the match for [`CONTINUE_STEPS`] steps,
+/// saves it and loads the new file again with the same rules.
 fn load_and_continue(vfs: &Vfs, path: &Path) -> Loaded {
     let name = path.display();
     let bytes = std::fs::read(path).unwrap_or_else(|e| panic!("{name}: {e}"));
@@ -96,16 +96,33 @@ fn load_and_continue(vfs: &Vfs, path: &Path) -> Loaded {
     file.prepare(&rules)
         .unwrap_or_else(|e| panic!("{name}: {e}"));
     let prepare_ms = ms(t);
-    let mut state = file.sim.state;
+    let GameSaveFile {
+        sim,
+        host,
+        random_map,
+        ..
+    } = file;
+    let mut state = sim.state;
     let tick = state.tick;
     for _ in 0..CONTINUE_STEPS {
         opennml_sim::tick::step(&mut state, &rules, &[]);
     }
     assert_ne!(state.tick, tick, "{name}: the match continues");
+    let objects = state.objects().count();
+    // Saving the continued match on this installation gives a file that loads again here. `prepare` took over the
+    // rules checksums of this installation and the other edition has the same logic part, so the file loads there
+    // too.
+    let sim = SaveGame { state, ..sim };
+    let saved = GameSaveFile::new(sim, host, random_map).to_bytes();
+    let mut again =
+        GameSaveFile::from_bytes(&saved).unwrap_or_else(|e| panic!("{name} saved again: {e}"));
+    again
+        .prepare(&rules)
+        .unwrap_or_else(|e| panic!("{name} saved again: {e}"));
     Loaded {
         path: path.to_path_buf(),
         bytes: bytes.len(),
-        objects: state.objects().count(),
+        objects,
         read_ms,
         rules_ms,
         prepare_ms,
@@ -191,8 +208,8 @@ fn write(file: &GameSaveFile, path: &Path) {
 }
 
 /// Writes the corpus savegames of this version and loads them again: the campaign map [`CAMPAIGN_LEVEL`] (defaults of
-/// the level, AI and script on, difficulty 1) and a large random map (256 x 256) with eight AI slots (kind 3, nations in
-/// turn), each after [`STEPS`] steps with the default host part; the random map with its generated map.
+/// the level, AI and script on, difficulty 1) and a large random map (256 x 256) with eight AI slots (kind 3, nations
+/// in turn), each after [`STEPS`] steps with the default host part; the random map with its generated map.
 #[test]
 #[ignore = "writes savegames into NML_SAVE_CORPUS (12 000 steps per match, run in release)"]
 fn write_corpus_saves() {

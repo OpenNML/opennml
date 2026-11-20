@@ -10,6 +10,8 @@ use super::FIRST_SAVE_FORMAT;
 pub(crate) type Step = fn(&mut Value) -> anyhow::Result<()>;
 
 /// The structure steps: `STEPS[i]` brings savegame number `FIRST_SAVE_FORMAT + i` to `FIRST_SAVE_FORMAT + i + 1`.
+/// Every number has its step: a number raised only for a recompute step (`opennml_sim::save::upgrade::RECOMPUTE`)
+/// gets the identity `|_| Ok(())` here.
 pub(crate) const STEPS: &[Step] = &[];
 
 /// Applies the steps from number `from` on: `steps[from - FIRST_SAVE_FORMAT..]` in order.

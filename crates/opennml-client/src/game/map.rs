@@ -911,8 +911,8 @@ pub struct MapLoad {
     pub scene: LevelScene,
     /// Simulation of the map; `None` if its rules are not loadable (objects of the `.wld`).
     pub sim: Option<SimHost>,
-    /// Rules input of a random map ([`MapLoad::open`] with [`MapSource::Random`]); [`MapLoad::start_sim`] uses it
-    /// to load the rules without a `.lvl`.
+    /// Rules input of a random map ([`MapLoad::open`] with [`MapSource::Random`] or [`MapSource::SavedRandom`]);
+    /// [`MapLoad::start_sim`] uses it to load the rules without a `.lvl`.
     pub random: Option<RandomMapRules>,
     /// State of the random map for the control command `random_map`, passed on to `GameSession::random_map_state`.
     pub random_state: Option<RandomMapState>,
@@ -933,8 +933,8 @@ pub fn load_rules(vfs: &Vfs, level: &str) -> Result<Rules> {
 /// Rules of the map `source` without a match: a fixed map via [`load_rules`], a random map built like
 /// [`MapLoad::open`] (from its description with the generator or from the generated map of a savegame) with its rules
 /// ([`Rules::load_random`]) - the same calculation as when loading ([`start_sim_with`]), for the start package of the
-/// host and the check of a network savegame. The generator thus runs twice on the host (rules, loading); that costs
-/// only time, no state.
+/// host and the check of a network savegame. For a map from its description the generator thus runs twice on the
+/// host (rules, loading); that costs only time, no state. The generated map of a savegame needs no generator.
 pub fn map_rules(vfs: &Vfs, source: &MapSource) -> Result<Rules> {
     if let MapSource::Level(level) = source {
         return load_rules(vfs, level);

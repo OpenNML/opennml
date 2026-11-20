@@ -14,8 +14,8 @@ pub const MAGIC: [u8; 4] = *b"NMLN";
 /// messages, `Hello.build`, `StartInfo` with `spacing`/`lead`; 3 `Hello::seat`, `StartInfo::saved`,
 /// `LobbyState::seats`, `MapId::Saved`; 4 `Hello::listen_port`, `Go::successors`, `Rejoin`, `Migrated`,
 /// `NetControl::Handover`; 5 game data check: `LobbyState::session_revision`, `LobbyState::rules_checksum`,
-/// `LobbyRow::data`, `LobbyWish::Data`, `NetMessage::LoadFailed`; 6 start info: `StartPackage::rules` is the rules checksum split into logic, derived and
-/// speech.
+/// `LobbyRow::data`, `LobbyWish::Data`, `NetMessage::LoadFailed`; 6 start info: `StartPackage::rules` is the rules
+/// checksum split into logic, derived and speech.
 pub const NET_VERSION: u16 = 6;
 /// Largest allowed body in bytes.
 pub const MAX_FRAME: usize = 1 << 20;

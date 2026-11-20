@@ -41,8 +41,8 @@ archive; it follows `README.txt` in content.
 - Renaming or removing a field or enum variant, changing a field's type or meaning, or adding an element to a
   tuple: bump `SAVE_FORMAT` and add a step to `game_save/upgrade.rs` with a test on a savegame of the previous
   number.
-- A changed derivation from the rules that the state caches: bump `SAVE_FORMAT` and add a recompute step in
-  `opennml-sim/src/save/upgrade.rs`.
+- A changed derivation from the rules that the state caches: bump `SAVE_FORMAT`, add a recompute step in
+  `opennml-sim/src/save/upgrade.rs` and an identity structure step (`|_| Ok(())`) in `game_save/upgrade.rs`.
 - Behaviour change of the simulation: bump `FORMAT_VERSION` only.
 - Never drop an upgrade step within a major version; never change a file in `crates/opennml-client/testdata/savegames/`
   after its release.

@@ -2293,10 +2293,9 @@ impl NetSession {
 
 /// Rules of the map of a start request at the host, before loading for the start package: fixed map from its `.lvl`,
 /// random map (`Info.LevelType 1`, [`random_map_spec`]) from its description with the generator ([`map_rules`], as
-/// when loading). The start package then carries `random_map`, the
-/// client generates the map from it; differing generator data are rejected by the rules checksum when loading
-/// (deviating from E-314). The command-line path (`opennml-game`, `net_start`) stays with `.lvl`. Errors as a reason
-/// text.
+/// when loading). The start package then carries `random_map`, the client generates the map from it; differing
+/// generator data are rejected by the rules checksum when loading (deviating from E-314). The command-line path
+/// (`opennml-game`, `net_start`) stays with `.lvl`. Errors as a reason text.
 pub fn net_rules(vfs: &Vfs, req: &MatchRequest) -> Result<opennml_sim::rules::Rules, String> {
     source_rules(vfs, &net_source(req))
 }

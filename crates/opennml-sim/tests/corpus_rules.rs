@@ -352,14 +352,13 @@ fn water_tiles_count_fully_submerged_tiles() {
     }
 }
 
-/// `Rules::load` and `Rules::load_random` share the setup; the `.lvl` path of fixed maps hashes
-/// exactly as before. Values measured on the state before the refactoring (German edition with
-/// patch), one multiplayer and one campaign map (with level script).
+/// The rules checksum of fixed maps (`.lvl` path of `Rules::load`, setup shared with `Rules::load_random`)
+/// matches the measured values: German edition with patch, one multiplayer and one campaign map (with level script).
 /// Changed (intended): the rules checksum is the combination of `logic` (the files read, now including
 /// the `.tlm` and the model and animation files of the derived tables), `derived` and `speech`;
 /// before: `0xa615_c20f_4815_21f0` (Exile) and `0x6b27_db0d_7775_cd62` (campaign 1-1).
 #[test]
-fn fixed_map_rules_checksum_unchanged() {
+fn fixed_map_rules_checksum_matches_the_measurement() {
     use opennml_rda::testutil::{GameVersion, game_version};
     let Some(dir) = corpus_game_dir() else {
         eprintln!("Original installation not found - corpus test skipped");
