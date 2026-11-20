@@ -229,7 +229,7 @@ fn exec(object: ObjectId, button: i32, idx: i32) -> CommandKind {
     }
 }
 
-// QUIRK E-93: kept
+// QUIRK E-93, K-90: kept
 #[test]
 fn governor_pays_by_button_and_acts_by_index() {
     // E-93: button and index do not match; paid by the button, effect by the index (list 0 combat view, 1 taxes, 2

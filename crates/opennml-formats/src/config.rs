@@ -369,6 +369,7 @@ pub fn parse_level_setup(
             kind = atol(mid(&line, 12)) as i32;
         } else if line.contains("PLAYER_COLOR") {
             let color = atol(mid(&line, 13));
+            // QUIRK K-41: deviation (A7)
             if color < 0 {
                 return Err(FormatError::Invalid(format!(
                     "PLAYER_COLOR {color} invalid (the game crashes here)"
@@ -491,6 +492,7 @@ mod tests {
 
     const DROPDOWN: &str = "#Comment\r\nVALUEGUID 0 Nations\r\nDROPDOWN 0 WID\r\nDROPDOWN 2 SPA\r\n\r\nVALUEGUID 18 Sight\r\nDROPDOWN 16 Very low\r\nDROPDOWN 32 Medium\r\nDROPDOWN 33 MEDIUM\r\nVALUEGUID 40 lost\r\n";
 
+    // QUIRK C-178: kept
     #[test]
     fn dropdowns_lower_case_and_end_at_the_first_other_line() {
         let d = parse_dropdowns(DROPDOWN);

@@ -371,7 +371,7 @@ mod tests {
         }
     }
 
-    // QUIRK E-163: kept
+    // QUIRK E-163, D-179: kept
     #[test]
     fn foreign_area_view_stamps_last_taken_rect_with_its_own_clear_flag() {
         // re/vision 3.4: the rectangle variable is overwritten only for a matching player, but every entry is

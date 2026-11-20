@@ -3469,7 +3469,7 @@ fn lock_minus_1_is_permanent_until_0x43() {
     );
 }
 
-// QUIRK E-212: kept
+// QUIRK E-212, K-14: kept
 #[test]
 fn lock_0_takes_label_1_and_without_label_keeps_the_bit() {
     // E-212: `seconds == 0` takes time marker 1 of the animation; without a marker the status bit stays, the

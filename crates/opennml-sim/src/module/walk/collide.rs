@@ -97,6 +97,7 @@ pub(crate) fn process_collisions(sim: &mut Sim, id: ObjectId) {
             }
         });
         for key in keys {
+            // QUIRK K-179: kept
             if status_of(sim, id) & WAITING != 0 {
                 break;
             }

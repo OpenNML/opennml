@@ -165,7 +165,7 @@ mod tests {
         assert_eq!((m.arg(0), m.arg(1)), (0, 0));
     }
 
-    // QUIRK W-64, C-183: kept
+    // QUIRK W-64, C-183, K-73: kept
     #[test]
     fn a_dead_wolf_becomes_a_corpse_at_t_plus_18_and_rots_every_20_ticks() {
         // re/combat-death 2.4: 0x215 in T+18 (dying animation 1000 -> max(1000, 1500)); meat -1 in

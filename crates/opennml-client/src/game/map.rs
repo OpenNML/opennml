@@ -3707,6 +3707,7 @@ mod tests {
         assert_eq!(markers[2].selection, project.objects[&COLONIST].selection);
     }
 
+    // QUIRK D-48: kept
     #[test]
     fn the_mask_applies_to_its_animation_start_and_returns_after_a_rebuild() {
         // `set_objects` rebuilds the entries with an empty mask; the per-frame sync sets it
