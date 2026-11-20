@@ -807,6 +807,7 @@ mod tests {
     use super::*;
     use std::collections::BTreeMap;
 
+    // QUIRK K-73: kept
     #[test]
     fn inert_modules_load_their_flags_from_the_catalogue() {
         let desc = |id: u32, v: &str| ModuleDesc {

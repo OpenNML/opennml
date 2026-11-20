@@ -1127,6 +1127,7 @@ mod tests {
         assert!(free(&sim));
     }
 
+    // QUIRK K-75: kept
     #[test]
     fn foreign_units_siege_engines_and_construction_sites_are_refused_until_finished() {
         let rules = rules(false);

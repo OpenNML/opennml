@@ -383,7 +383,7 @@ fn headhunter_uses_the_first_finished_hq_in_table_order() {
     );
 }
 
-// QUIRK E-104: kept
+// QUIRK E-104, K-90: kept
 #[test]
 fn occupancy_border_builtin_sends_the_border() {
     let s = scene();
@@ -496,7 +496,7 @@ fn ai_object_modes_take_the_object_from_the_stack() {
     assert_eq!(checksum(&after), checksum(&s.base));
 }
 
-// QUIRK E-105: kept
+// QUIRK E-105, K-90: kept
 #[test]
 fn resource_builtin_minus_one_means_me() {
     let s = scene();

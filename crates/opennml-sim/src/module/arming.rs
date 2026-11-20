@@ -407,7 +407,7 @@ mod tests {
         assert_eq!(prop_bits(&sim, ship, walk::INDEX), 1 << 12);
     }
 
-    // QUIRK C-96: kept
+    // QUIRK C-96, O-276: kept
     // QUIRK C-224: deviation
     #[test]
     fn set_arrow_type_arms_the_transport_ship_without_upgrade() {

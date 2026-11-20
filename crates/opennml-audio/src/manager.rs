@@ -904,7 +904,7 @@ pub(crate) mod tests {
         ))
     }
 
-    // QUIRK O-69, O-119: kept
+    // QUIRK O-69, O-119, D-143: kept
     #[test]
     fn fixed_category_plays_at_full_volume_and_ignores_sliders() {
         let mut m = manager();

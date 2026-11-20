@@ -124,7 +124,7 @@ mod tests {
     use crate::module::riding::testkit::*;
     use crate::module::stand;
 
-    // QUIRK K-151: kept
+    // QUIRK K-151, K-73: kept
     #[test]
     fn swim_answers_its_animations() {
         let rules = rules();

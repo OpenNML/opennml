@@ -235,6 +235,7 @@ mod tests {
     use crate::tick::step;
 
     // QUIRK E-22: deviation
+    // QUIRK K-9: kept
     #[test]
     fn the_ki_ticks_inside_step() {
         // re/ki-lifecycle 5.1: per thread and step 3 passes x step size 3 = 9 attempts,

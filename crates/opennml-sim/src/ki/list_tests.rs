@@ -320,6 +320,7 @@ fn random_follows_the_original_formula() {
     }
 }
 
+// QUIRK K-299: kept
 #[test]
 fn misc_vm_builtins() {
     let mut r = rig();

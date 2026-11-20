@@ -352,7 +352,7 @@ mod tests {
         assert_eq!(find(&mut sim, 3, &tethered), None);
     }
 
-    // QUIRK C-40, C-45: kept
+    // QUIRK C-40, C-45, K-111: kept
     #[test]
     fn line_of_sight_rejects_cells_behind_a_house_and_poisons_the_best_distance() {
         use crate::command::testkit::{HOUSE, rules as kit_rules, spawn, state as kit_state};
@@ -389,7 +389,7 @@ mod tests {
         assert!(crate::tile_map::has_line_of_sight_points(&sim, from, to));
     }
 
-    // QUIRK W-196: kept
+    // QUIRK W-196, K-111: kept
     #[test]
     fn boarding_cells_take_the_last_candidate_of_the_first_ring_with_hits() {
         // re/ships 9.2: unit (5, 10) layer 0, ship (14, 10) layer 6, inner_max_r 2
