@@ -1206,7 +1206,7 @@ fn start_uses_the_kept_rules() {
         .expect("start");
     assert!(log.take().is_empty(), "no rules computed at the start");
     let info = driver.start_info().expect("own start");
-    assert_eq!(info.package.rules_checksum, checksum);
+    assert_eq!(info.package.rules.full(), checksum);
 }
 
 /// The client computes its rules at once, but sends its report only when the host's checksum for the same session

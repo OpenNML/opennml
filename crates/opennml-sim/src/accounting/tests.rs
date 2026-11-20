@@ -258,7 +258,9 @@ fn accounting_survives_saving_and_loading() {
     };
     let loaded = SaveGame::from_bytes(&save(state.clone()).to_bytes()).unwrap();
     assert_eq!(loaded.state.accounting, state.accounting);
-    loaded.check(&rules).unwrap();
+    loaded
+        .check(&rules, crate::save::RulesCompare::Full)
+        .unwrap();
     // Kinds outside 0 ... 11 stay allowed (W-41).
     let mut odd = state.clone();
     odd.accounting.records[0].entries.push(AccountEntry {

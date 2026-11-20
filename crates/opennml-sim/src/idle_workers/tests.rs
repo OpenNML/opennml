@@ -242,7 +242,9 @@ fn idle_workers_survive_save_load_and_replay() {
         commands: Vec::new(),
     };
     let mut loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-    loaded.check(&rules).unwrap();
+    loaded
+        .check(&rules, crate::save::RulesCompare::Full)
+        .unwrap();
     assert_eq!(loaded.state.idle_workers, live.idle_workers);
     assert_eq!(checksum(&loaded.state), checksum(&live));
     // Next tick: b (busy), c (dead, still in the table), d (soldier), the old ID

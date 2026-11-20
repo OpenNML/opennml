@@ -504,7 +504,7 @@ fn start_infos_follow_join_order() {
         assert_eq!(info.package, infos[0].1.package);
         assert_eq!(info.seats, *seats);
         assert!(info.package.setup.network);
-        assert_eq!(info.package.rules_checksum, plan.rules.checksum);
+        assert_eq!(info.package.rules, plan.rules.checksums);
         assert_eq!((info.spacing, info.lead), (8, 4));
         assert_eq!(
             (info.game_speed, info.session.as_str()),

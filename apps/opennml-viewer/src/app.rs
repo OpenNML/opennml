@@ -2866,7 +2866,7 @@ impl App {
                 let loaded = if bytes.starts_with(opennml_sim::save::SAVE_MAGIC) {
                     // `SimHost::load` does not check against the loaded rules itself (hence `check` first).
                     opennml_sim::save::SaveGame::from_bytes(&bytes).and_then(|s| {
-                        s.check(&sim.rules)?;
+                        s.check(&sim.rules, opennml_sim::save::RulesCompare::Full)?;
                         sim.load(s, None);
                         Ok(())
                     })

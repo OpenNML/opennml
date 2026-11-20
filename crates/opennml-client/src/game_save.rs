@@ -14,7 +14,9 @@
 use anyhow::{Context, bail};
 use opennml_sim::rules::Rules;
 use opennml_sim::save::codec::{decode_named, encode_named};
-use opennml_sim::save::{RecordedCommand, SaveGame, check_state, read_container, write_container};
+use opennml_sim::save::{
+    RecordedCommand, RulesCompare, SaveGame, check_state, read_container, write_container,
+};
 use opennml_sim::setup::FORMAT_VERSION;
 use opennml_world::camera::GameCamera;
 
@@ -217,12 +219,13 @@ impl GameSaveFile {
         Ok(Self { sim, host })
     }
 
-    /// Does the savegame match the loaded rules (start package, map, state: [`SaveGame::check`]), and do the
-    /// network part and the network flag belong together? Loading does not check the rest of the host part: camera,
+    /// Does the savegame match the loaded rules (start package, map, state: [`SaveGame::check`]; of the rules checksum
+    /// only the logic part, so that the savegame loads in every edition with the same game logic), and do the network
+    /// part and the network flag belong together? Loading does not check the rest of the host part: camera,
     /// speed, script camera, control groups, indices, masks, fog switch, game mode and command log are tolerated by
     /// the host with any value.
     pub fn check(&self, rules: &Rules) -> anyhow::Result<()> {
-        self.sim.check(rules)?;
+        self.sim.check(rules, RulesCompare::Logic)?;
         // The network part and the network flag belong together (`SaveGame::check` keeps the flag of the state equal
         // to that of the start package).
         match (&self.host.net, self.sim.start.setup.network) {
@@ -405,9 +408,13 @@ mod tests {
             error(&wrong)
         );
         assert!(error(&bytes[..15]).contains("corrupted"));
-        // Check against the rules (rules checksum).
+        // Check against the rules: only the logic part of the rules checksum counts (other speech files load).
+        let mut other_speech = file.clone();
+        other_speech.sim.start.rules.speech ^= 1;
+        other_speech.sim.start.rules.derived ^= 1;
+        other_speech.check(&rules).unwrap();
         let mut bad = file;
-        bad.sim.start.rules_checksum ^= 1;
+        bad.sim.start.rules.logic ^= 1;
         assert!(bad.check(&rules).is_err());
     }
 

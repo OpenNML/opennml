@@ -7758,7 +7758,7 @@ TEXT 17000
         assert_eq!(resumed.camera(), session.camera());
         assert_eq!(resumed.sim().unwrap().game_speed, 12);
         let mut broken = file;
-        broken.sim.start.rules_checksum ^= 1;
+        broken.sim.start.rules.logic ^= 1;
         let error = GameSession::resume_from(
             &gpu,
             &vfs,

@@ -1,7 +1,7 @@
 //! Immutable rules of a match: types and modules from `property.ini`,
 //! configuration values, player setup of the `.lvl`, start objects, variant rules, hit filters,
-//! the objects of the `.wld` and the terrain. Not part of the savegame; their checksum is in the
-//! start package.
+//! the objects of the `.wld` and the terrain. Not part of the savegame; their checksums
+//! ([`RuleChecksums`]) are in the start package.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -28,11 +28,12 @@ use opennml_formats::targets::{
 use opennml_formats::temp_upgrades::{TEMP_UPGRADES_PATH, TempUpgradeRecord, parse_temp_upgrades};
 use opennml_formats::text::decode_cp1252;
 use opennml_formats::wld::WorldObject;
-use opennml_rda::{Vfs, normalize_path};
+use opennml_rda::{ReadEntry, Vfs, normalize_path};
 use opennml_world::assets::ModelCache;
 use opennml_world::level::LevelScene;
 use opennml_world::shadows::mesh_box;
 use opennml_world::terrain::Terrain;
+use serde::{Deserialize, Serialize};
 
 use crate::fx::Fx;
 use crate::ki::catalog::KiCatalog;
@@ -57,6 +58,62 @@ impl Fnv64 {
             self.0 = self.0.wrapping_mul(0x0000_0100_0000_01B3);
         }
     }
+}
+
+/// Parts of the rules checksum. The full value ([`RuleChecksums::full`], [`Rules::checksum`]) is compared by the
+/// network start, network states and replays; a savegame compares only `logic`, so that it loads in every edition
+/// whose game logic is the same (the editions differ in the speech files).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RuleChecksums {
+    /// Path and bytes of every file that [`Rules::load`] and [`Rules::load_random`] read, except the speech files
+    /// (`data/sprache/`) and the text tables (`data/txt/`): ini files, `.lvl`, project file, `.wld`, `.hlm`, `.tlm`,
+    /// models and animations of the derived tables, `nml.db` and the AI modules, level and dialog scripts. The files
+    /// of the random map generator are read before and do not count.
+    pub logic: u64,
+    /// The tables computed from models, terrain and textures (block path types, building shapes, terrain classes, time
+    /// markers, hulls, hit zones, nodes, model centers, mesh names, tile heights) and, for a random map, the checksum
+    /// of the generator.
+    pub derived: u64,
+    /// Speech lengths per text ID (`id`, `ogg_ms`, `text_units`, [`ScriptRules::speech`]).
+    pub speech: u64,
+}
+
+impl RuleChecksums {
+    /// The full rules checksum: FNV-1a 64 over `logic`, `derived` and `speech` (little endian, in this order).
+    pub fn full(&self) -> u64 {
+        let mut hash = Fnv64::default();
+        for part in [self.logic, self.derived, self.speech] {
+            hash.write(&part.to_le_bytes());
+        }
+        hash.0
+    }
+}
+
+/// Path prefixes that do not count to [`RuleChecksums::logic`] (compared without regard to case).
+const NOT_LOGIC: [&str; 2] = ["data/sprache/", "data/txt/"];
+
+/// [`RuleChecksums::logic`] of the files read, ascending by path: per file the path, a zero byte and the flag 1 with
+/// the FNV-1a 64 of its bytes (a failed read writes only the flag 0).
+fn logic_checksum(reads: &[ReadEntry]) -> u64 {
+    let counts = |path: &str| {
+        !NOT_LOGIC.iter().any(|prefix| {
+            path.get(..prefix.len())
+                .is_some_and(|p| p.eq_ignore_ascii_case(prefix))
+        })
+    };
+    let mut hash = Fnv64::default();
+    for read in reads.iter().filter(|r| counts(&r.path)) {
+        hash.write(read.path.as_bytes());
+        hash.write(&[0]);
+        match read.hash {
+            Some(bytes) => {
+                hash.write(&[1]);
+                hash.write(&bytes.to_le_bytes());
+            }
+            None => hash.write(&[0]),
+        }
+    }
+    hash.0
 }
 
 /// Size of the map and cell sizes (`GameWorld+0x34/+0x38/+0x3C`, 128 in the shipped data).
@@ -398,7 +455,9 @@ pub struct Rules {
     pub tile_count: i32,
     /// Terrain class per tile (`opennml_sim::path::terrain::class`), z outer, x inner.
     pub tile_classes: Vec<u8>,
-    /// Checksum over all files read and derived tables.
+    /// Parts of the rules checksum.
+    pub checksums: RuleChecksums,
+    /// Full rules checksum, `checksums.full()`.
     pub checksum: u64,
     /// `[UPGRADE]` of the project file (re/upgrades 1.1): the GUIDs of the upgrade list of the catalog.
     pub upgrades: BTreeSet<u32>,
@@ -453,9 +512,9 @@ impl Rules {
     /// Rules of a random map without `.lvl` (`GameEngine_CreateRandomMapLevel`
     /// `0x004402F0`): per occupied slot (`random.slots`, ascending) a player without a name, nation 0,
     /// type (`kind`) 0, without resources; no level `[RESOURCES]` and no slot sets (values from
-    /// `default.dat`, time-of-day stage 0, D-364); no level script, no dialogs. The checksum runs
-    /// over the same shared files as for fixed maps, in place of `.lvl`, `.wld` and `.hlm`
-    /// `random.digest` stands at the end.
+    /// `default.dat`, time-of-day stage 0, D-364); no level script, no dialogs. `logic` runs
+    /// over the same shared files as for fixed maps without `.lvl`, `.wld`, `.hlm` and `.tlm`;
+    /// `random.digest` stands at the end of `derived`.
     pub fn load_random(
         vfs: &Vfs,
         scene: &LevelScene,
@@ -464,20 +523,20 @@ impl Rules {
         Self::build(vfs, scene, Some(random))
     }
 
-    /// Shared build of [`Rules::load`] and [`Rules::load_random`]: the hash sequence
-    /// of fixed maps stays bit-identical; a random map branches only at the place of the `.lvl`
-    /// (nothing hashed), at `.wld`/`.hlm` (skipped) and at the scripts (none), and appends
-    /// its checksum last.
+    /// Shared build of [`Rules::load`] and [`Rules::load_random`]. Every file read here goes into
+    /// [`RuleChecksums::logic`] (read recording of `vfs`); a random map branches only at the place of
+    /// the `.lvl` (not read), at `.wld`/`.hlm`/`.tlm` (none) and at the scripts (none), and appends
+    /// its checksum to `derived` last.
     fn build(
         vfs: &Vfs,
         scene: &LevelScene,
         random: Option<RandomMapRules>,
     ) -> anyhow::Result<Self> {
-        let mut hash = Fnv64::default();
-        let mut text = |path: &str| -> anyhow::Result<String> {
+        let (vfs, reads) = vfs.recording();
+        let vfs = &vfs;
+        let mut derived = Fnv64::default();
+        let text = |path: &str| -> anyhow::Result<String> {
             let bytes = vfs.read(path).with_context(|| format!("reading {path}"))?;
-            hash.write(path.as_bytes());
-            hash.write(&bytes);
             Ok(decode_cp1252(&bytes))
         };
         let dropdowns = parse_dropdowns(&text(DROPDOWN_PATH)?);
@@ -512,7 +571,7 @@ impl Rules {
         let victory = parse_gametype_rules(&text(GAMETYPE_VICTORY_PATH)?);
         let defeat = parse_gametype_rules(&text(GAMETYPE_DEFEAT_PATH)?);
         // Types, translations, project file, world and terrain come from the scene; their files
-        // nevertheless go into the checksum. Without `property.ini` or `translate.ini` there would be
+        // are nevertheless read here for `logic`. Without `property.ini` or `translate.ini` there would be
         // no types (`ObjectTypes::load` only warns): that is an error, so that the map is still
         // displayed without a simulation.
         text(PROPERTY_PATH)?;
@@ -527,7 +586,7 @@ impl Rules {
                 .into_iter()
                 .map(|r| (r.guid, r))
                 .collect();
-        // `[UPGRADE]` and `OBJ_UPGRADES` come from the project file of the scene (already hashed).
+        // `[UPGRADE]` and `OBJ_UPGRADES` come from the project file of the scene (read below).
         let upgrades: BTreeSet<u32> = scene.project.upgrades.keys().copied().collect();
         let mut upgrade_types: BTreeMap<u32, Vec<u32>> = BTreeMap::new();
         for object in scene.project.objects.values() {
@@ -540,16 +599,20 @@ impl Rules {
             }
         }
         let base = scene.lvl_path.trim_end_matches(".lvl").to_string();
+        // The files of the scene, read only for `logic`: objects, terrain, heights and textures of the
+        // tables below come from them.
         let level_files = match &random {
-            None => vec![format!("{base}.wld"), format!("{base}.hlm")],
+            None => vec![
+                format!("{base}.wld"),
+                format!("{base}.hlm"),
+                format!("{base}.tlm"),
+            ],
             // The random map has no files; its terrain is in `random.digest`.
             Some(_) => Vec::new(),
         };
         for path in std::iter::once(normalize_path(&scene.level.project_file)).chain(level_files) {
-            if let Ok(bytes) = vfs.read(&path) {
-                hash.write(path.as_bytes());
-                hash.write(&bytes);
-            }
+            // A failed read is noted in the recording as well.
+            let _ = vfs.read(&path);
         }
         let models: BTreeMap<u32, String> = scene
             .project
@@ -564,7 +627,7 @@ impl Rules {
             .filter(|o| o.block_path)
             .map(|o| o.guid)
             .collect();
-        hash.write(
+        derived.write(
             &block_path
                 .iter()
                 .flat_map(|g| g.to_le_bytes())
@@ -672,19 +735,19 @@ impl Rules {
             );
         }
         for (guid, s) in &building_shapes {
-            hash.write(&guid.to_le_bytes());
+            derived.write(&guid.to_le_bytes());
             for v in s
                 .center
                 .iter()
                 .chain(&s.half)
                 .chain(s.free_nodes.iter().flatten())
             {
-                hash.write(&v.to_le_bytes());
+                derived.write(&v.to_le_bytes());
             }
             for (name, p) in &s.helper_nodes {
-                hash.write(name.as_bytes());
+                derived.write(name.as_bytes());
                 for v in p {
-                    hash.write(&v.to_le_bytes());
+                    derived.write(&v.to_le_bytes());
                 }
             }
         }
@@ -806,80 +869,86 @@ impl Rules {
             guid.and_then(|g| scene.project.textures.get(&g))
                 .map_or(0, |t| t.bits)
         });
-        hash.write(&tile_classes);
+        derived.write(&tile_classes);
         for (guid, anims) in &anim_labels {
-            hash.write(&guid.to_le_bytes());
-            hash.write(&(anims.len() as u32).to_le_bytes());
+            derived.write(&guid.to_le_bytes());
+            derived.write(&(anims.len() as u32).to_le_bytes());
             for labels in anims {
-                hash.write(&(labels.len() as u32).to_le_bytes());
+                derived.write(&(labels.len() as u32).to_le_bytes());
                 for (id, ms) in labels {
-                    hash.write(&id.to_le_bytes());
-                    hash.write(&ms.to_le_bytes());
+                    derived.write(&id.to_le_bytes());
+                    derived.write(&ms.to_le_bytes());
                 }
             }
         }
         for (guid, b) in &model_boxes {
-            hash.write(&guid.to_le_bytes());
+            derived.write(&guid.to_le_bytes());
             for v in b.center.iter().chain(&b.half) {
-                hash.write(&v.to_le_bytes());
+                derived.write(&v.to_le_bytes());
             }
         }
         for (guid, zones) in &hit_zones {
-            hash.write(&guid.to_le_bytes());
+            derived.write(&guid.to_le_bytes());
             for v in zones.iter().flatten() {
-                hash.write(&v.to_le_bytes());
+                derived.write(&v.to_le_bytes());
             }
         }
         for (guid, p) in &mount_nodes {
-            hash.write(&guid.to_le_bytes());
+            derived.write(&guid.to_le_bytes());
             for v in p {
-                hash.write(&v.to_le_bytes());
+                derived.write(&v.to_le_bytes());
             }
         }
         for ((guid, anim, starboard), nodes) in &cannon_nodes {
-            hash.write(&guid.to_le_bytes());
-            hash.write(&anim.to_le_bytes());
-            hash.write(&[u8::from(*starboard)]);
+            derived.write(&guid.to_le_bytes());
+            derived.write(&anim.to_le_bytes());
+            derived.write(&[u8::from(*starboard)]);
             for v in nodes.iter().flatten() {
-                hash.write(&v.to_le_bytes());
+                derived.write(&v.to_le_bytes());
             }
         }
         for (guid, t) in &train_nodes {
-            hash.write(&guid.to_le_bytes());
+            derived.write(&guid.to_le_bytes());
             for node in [t.hitch, t.coupling] {
-                hash.write(&[u8::from(node.is_some())]);
+                derived.write(&[u8::from(node.is_some())]);
                 for v in node.iter().flatten() {
-                    hash.write(&v.to_le_bytes());
+                    derived.write(&v.to_le_bytes());
                 }
             }
         }
         for (guid, c) in &model_centers {
-            hash.write(&guid.to_le_bytes());
+            derived.write(&guid.to_le_bytes());
             for v in c {
-                hash.write(&v.to_le_bytes());
+                derived.write(&v.to_le_bytes());
             }
         }
         for (guid, names) in &mesh_names {
-            hash.write(&guid.to_le_bytes());
+            derived.write(&guid.to_le_bytes());
             for n in names {
-                hash.write(n.as_bytes());
-                hash.write(&[0]);
+                derived.write(n.as_bytes());
+                derived.write(&[0]);
             }
         }
         for h in &tile_terrain.heights {
-            hash.write(&h.to_le_bytes());
+            derived.write(&h.to_le_bytes());
         }
-        // Last: `nml.db` and the module files are appended to the end of the checksum, then the
-        // scripts and speech lengths; their load errors are in `scripts.errors`.
-        let ki = KiCatalog::load(vfs, &mut hash)?;
+        // Last: `nml.db` and the module files, then the scripts (both only in `logic`) and the speech
+        // lengths (`speech`); their load errors are in `scripts.errors`.
+        let ki = KiCatalog::load(vfs)?;
+        let mut speech = Fnv64::default();
         let scripts = match &random {
-            None => ScriptRules::load(vfs, scene, &mut hash),
+            None => ScriptRules::load(vfs, scene, &mut speech),
             // No level script; the seed text thus never forms a file path.
             Some(_) => ScriptRules::default(),
         };
         if let Some(random) = &random {
-            hash.write(&random.digest.to_le_bytes());
+            derived.write(&random.digest.to_le_bytes());
         }
+        let checksums = RuleChecksums {
+            logic: logic_checksum(&reads.take()),
+            derived: derived.0,
+            speech: speech.0,
+        };
         Ok(Self {
             level_path: scene.lvl_path.clone(),
             types: scene.types.types.clone(),
@@ -915,7 +984,8 @@ impl Rules {
             water_tiles,
             tile_count,
             tile_classes,
-            checksum: hash.0,
+            checksums,
+            checksum: checksums.full(),
             upgrades,
             upgrade_types,
             temp_upgrades,
@@ -1090,7 +1160,8 @@ impl Rules {
             water_tiles: 0,
             tile_count: dim as i32 * dim as i32,
             tile_classes,
-            checksum: 0,
+            checksums: RuleChecksums::default(),
+            checksum: RuleChecksums::default().full(),
             upgrades: BTreeSet::new(),
             upgrade_types: BTreeMap::new(),
             temp_upgrades: BTreeMap::new(),

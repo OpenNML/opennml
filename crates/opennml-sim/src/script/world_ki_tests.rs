@@ -299,7 +299,9 @@ fn save_load_during_a_permanent_lock_and_after_n37() {
             commands: Vec::new(),
         };
         let loaded = SaveGame::from_bytes(&save.to_bytes()).expect("savegame readable");
-        loaded.check(&rules).expect("savegame valid");
+        loaded
+            .check(&rules, crate::save::RulesCompare::Full)
+            .expect("savegame valid");
         assert_eq!(checksum(&loaded.state), checksum(state));
         loaded.state
     };

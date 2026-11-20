@@ -13,7 +13,7 @@
 
 use anyhow::{Context, bail};
 use opennml_sim::rules::Rules;
-use opennml_sim::save::{RecordedCommand, SaveGame, read_container, write_container};
+use opennml_sim::save::{RecordedCommand, RulesCompare, SaveGame, read_container, write_container};
 use serde::{Deserialize, Serialize};
 
 /// Identifier of the file.
@@ -72,10 +72,10 @@ impl NetState {
         Ok(Self { save, log })
     }
 
-    /// Does the network state match the rules ([`SaveGame::check`])? Loading does not check the log: `SimHost::adopt`
-    /// only adopts it and writes it to the recording and replay.
+    /// Does the network state match the rules ([`SaveGame::check`] with the full rules checksum)? Loading does not
+    /// check the log: `SimHost::adopt` only adopts it and writes it to the recording and replay.
     pub fn check(&self, rules: &Rules) -> anyhow::Result<()> {
-        self.save.check(rules)
+        self.save.check(rules, RulesCompare::Full)
     }
 }
 

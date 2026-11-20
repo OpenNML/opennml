@@ -742,7 +742,8 @@ pub struct NetSession {
 struct SaveCheck {
     /// Session revision of the job (it identifies the result).
     revision: u32,
-    /// `rules_checksum` of the start package in the own savegame file.
+    /// Logic part of the rules checksum of the start package in the own savegame file (the savegame compares only
+    /// that part, [`GameSaveFile::check`]).
     expected: u64,
 }
 
@@ -1831,8 +1832,8 @@ impl NetSession {
         });
     }
 
-    /// Client in a loaded lobby: compute the rules of the map of the own savegame file in the worker, to compare them
-    /// with the `rules_checksum` stored in that file (the host has done the same synchronously when hosting,
+    /// Client in a loaded lobby: compute the rules of the map of the own savegame file in the worker, to compare their
+    /// logic part with the one stored in that file (the host has done the same synchronously when hosting,
     /// [`read_net_save`]). Without a readable file nothing is checked here; the load check at the start remains.
     fn start_save_check(&mut self, driver: &NetDriver, vfs: &Vfs) {
         let Some(lobby) = driver.client_core().and_then(ClientCore::lobby) else {
@@ -1859,7 +1860,7 @@ impl NetSession {
         log::info!("Network: computing the rules of the own savegame \"{name}\"");
         self.save_check = Some(SaveCheck {
             revision,
-            expected: start.rules_checksum,
+            expected: start.rules.logic,
         });
         self.rules_worker.submit(RulesJob {
             session_revision: revision,
@@ -1883,14 +1884,14 @@ impl NetSession {
         let expected = check.expected;
         self.save_check = None;
         match done.rules {
-            Ok(rules) if rules.checksum == expected => {
+            Ok(rules) if rules.checksums.logic == expected => {
                 log::info!("Network: the rules of the own savegame match this installation");
                 false
             }
             Ok(rules) => {
                 log::info!(
-                    "Network: rules checksum {:#018X} here, {expected:#018X} in the savegame",
-                    rules.checksum
+                    "Network: rules checksum (logic) {:#018X} here, {expected:#018X} in the savegame",
+                    rules.checksums.logic
                 );
                 true
             }

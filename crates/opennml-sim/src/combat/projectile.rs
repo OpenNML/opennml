@@ -1743,7 +1743,7 @@ mod world_effect_tests {
             ]
         );
         let save = SaveGame::from_bytes(&crate::save::testkit::save_bytes(&state, &rules)).unwrap();
-        save.check(&rules).unwrap();
+        save.check(&rules, crate::save::RulesCompare::Full).unwrap();
         let mut loaded: SimState = save.state;
         assert_eq!(checksum(&loaded), checksum(&state));
         for i in 1..=120 {

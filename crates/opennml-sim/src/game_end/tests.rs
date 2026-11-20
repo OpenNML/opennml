@@ -395,7 +395,9 @@ fn save_game_carries_the_countdowns() {
     };
     let loaded = SaveGame::from_bytes(&save(state.clone()).to_bytes()).unwrap();
     assert_eq!(loaded.state, state);
-    loaded.check(&rules).unwrap();
+    loaded
+        .check(&rules, crate::save::RulesCompare::Full)
+        .unwrap();
 }
 
 #[test]

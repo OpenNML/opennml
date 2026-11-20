@@ -71,7 +71,10 @@ fn package() -> StartPackage {
     StartPackage {
         format: 29,
         level: "multiplayer/test.lvl".into(),
-        rules_checksum: 0x1234,
+        rules: opennml_sim::rules::RuleChecksums {
+            logic: 0x1234,
+            ..Default::default()
+        },
         setup: MatchSetup::default(),
         random_map: None,
     }

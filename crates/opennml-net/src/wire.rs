@@ -219,7 +219,11 @@ mod tests {
         StartPackage {
             format: 1,
             level: "multiplayer/test.lvl".into(),
-            rules_checksum: 0x1234_5678_9abc_def0,
+            rules: opennml_sim::rules::RuleChecksums {
+                logic: 0x1234_5678_9abc_def0,
+                derived: 1,
+                speech: 2,
+            },
             setup: MatchSetup::default(),
             random_map: None,
         }

@@ -898,15 +898,24 @@ fn two_player_rules(vfs: &Vfs) -> (Rules, Vec<u8>) {
     (rules, active)
 }
 
+/// Rules checksums of `rules` with other speech lengths: a network start compares the full value, so even another
+/// speech edition is foreign there.
+fn other_speech(rules: &Rules) -> opennml_sim::rules::RuleChecksums {
+    opennml_sim::rules::RuleChecksums {
+        speech: rules.checksums.speech ^ 1,
+        ..rules.checksums
+    }
+}
+
 fn net_start_info(
     rules: &Rules,
-    checksum: u64,
+    checksums: opennml_sim::rules::RuleChecksums,
     setup: MatchSetup,
     your_slot: u8,
 ) -> opennml_net::StartInfo {
     opennml_net::StartInfo {
         package: opennml_sim::setup::StartPackage {
-            rules_checksum: checksum,
+            rules: checksums,
             ..opennml_sim::setup::start_package(rules, &setup)
         },
         seats: std::array::from_fn(|slot| opennml_net::Seat {
@@ -954,7 +963,12 @@ fn start_net_match_rejects_foreign_rules() {
         seed: 5,
         ..MatchSetup::default_for(&rules)
     };
-    let mut start = NetStart::new(net_start_info(&rules, rules.checksum ^ 1, setup, active[1]));
+    let mut start = NetStart::new(net_start_info(
+        &rules,
+        other_speech(&rules),
+        setup,
+        active[1],
+    ));
     let driver = start.driver.take().unwrap();
     let failure = run_net_start(&mut run, driver).expect_err("foreign rules");
     assert!(
@@ -987,7 +1001,7 @@ fn start_net_match_rejects_a_slot_without_human() {
         ..MatchSetup::default_for(&rules)
     };
     setup.lobby[1].kind = opennml_sim::setup::SlotKind::Closed;
-    let mut start = NetStart::new(net_start_info(&rules, rules.checksum, setup, active[1]));
+    let mut start = NetStart::new(net_start_info(&rules, rules.checksums, setup, active[1]));
     let driver = start.driver.take().unwrap();
     let failure = run_net_start(&mut run, driver).expect_err("no human slot");
     assert!(failure.error.contains("human slot"), "{}", failure.error);
@@ -1017,7 +1031,7 @@ fn start_net_match_enters_rounds_on_the_own_slot() {
         ..MatchSetup::default_for(&rules)
     };
     let slot = active[1];
-    let mut start = NetStart::new(net_start_info(&rules, rules.checksum, setup.clone(), slot));
+    let mut start = NetStart::new(net_start_info(&rules, rules.checksums, setup.clone(), slot));
     let driver = start.driver.take().unwrap();
     run_net_start(&mut run, driver).expect("Start");
     assert!(run.flow.running());
@@ -1069,7 +1083,7 @@ fn net_start_plays_the_nation_music_of_the_own_slot() {
         ..MatchSetup::default_for(&rules)
     };
     let slot = active[1];
-    let mut start = NetStart::new(net_start_info(&rules, rules.checksum, setup, slot));
+    let mut start = NetStart::new(net_start_info(&rules, rules.checksums, setup, slot));
     let driver = start.driver.take().unwrap();
     let mut audio = AudioEngine::new(opennml_audio::db::SoundDb::load(&run.vfs), None);
     let mut session = None;
@@ -3255,7 +3269,7 @@ fn random_map_with_other_rules_is_rejected() {
         seed: 5,
         ..MatchSetup::default_for(&rules)
     };
-    let info = net_start_info(&rules, rules.checksum ^ 1, setup, active[1]);
+    let info = net_start_info(&rules, other_speech(&rules), setup, active[1]);
     assert!(
         info.package.random_map.is_some(),
         "start package with random_map"
@@ -4230,7 +4244,7 @@ fn command_line_net_match_does_not_record() {
         seed: 5,
         ..MatchSetup::default_for(&rules)
     };
-    let mut start = NetStart::new(net_start_info(&rules, rules.checksum, setup, active[1]));
+    let mut start = NetStart::new(net_start_info(&rules, rules.checksums, setup, active[1]));
     let driver = start.driver.take().unwrap();
     run_net_start(&mut run, driver).expect("Start");
     assert!(run.flow.running());

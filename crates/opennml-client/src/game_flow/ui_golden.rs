@@ -96,6 +96,12 @@ use opennml_net::MapId;
 /// and `START` locked, removed) and `net_map_missing` ([`net_map_missing`]: map change to a map the client lacks,
 /// messages, change back, start, 100 ticks). Measured German edition with patch, debug = release, the same twice;
 /// the eleven sections without a lobby are unchanged.
+/// Changed (intended): the rules checksum is the combination of logic, derived and speech, so the host's rules checksum
+/// in the lobby state has other values. The seven sections with a lobby (`net_lobby_start`, `net_data_differs`,
+/// `net_map_missing`, `net_change_random`, `net_match_end`, `net_load_saved`, `net_host_migration`) are measured again;
+/// their simulation part is unchanged (`hash_at` the same before and after: `B6EAAFD38AD53393`, `E7F6DD5EFBE9145C`,
+/// `0403B574E03ED720`, `93D8578F9F4A5453`, `367979C3011D9D1E`). Measured German edition with patch, debug = release,
+/// the same twice; the eleven sections without a lobby are unchanged.
 const UI_GOLDEN: [(&str, u64); 18] = [
     ("profile", 0xB4A04C43CD99F1AA),
     ("create_game", 0x1BD2E55D8426EFAC),
@@ -106,15 +112,15 @@ const UI_GOLDEN: [(&str, u64); 18] = [
     ("main_menu", 0xB9A5AAA395D36BA8),
     ("campaign_video", 0x6AD79EEAFA195FBB),
     ("campaign_level_won", 0xD71A1D9056258B44),
-    ("net_lobby_start", 0x04B1ACD10EB05ED1),
-    ("net_data_differs", 0xDD123E4EF22D4C4A),
-    ("net_map_missing", 0x5DE79500805B9CDD),
-    ("net_change_random", 0x3F4E0596F0604268),
-    ("net_match_end", 0x88DC293C462DCB49),
-    ("net_load_saved", 0x996C5737C7E2759D),
+    ("net_lobby_start", 0x149CB9700A21F353),
+    ("net_data_differs", 0xEED39F2CEF268EC5),
+    ("net_map_missing", 0x7C6920C2EE67642C),
+    ("net_change_random", 0x5CC0828894FF17E1),
+    ("net_match_end", 0xC9373CA2EAD7773A),
+    ("net_load_saved", 0x718047CEE523B966),
     ("menu_level", 0x29F789ECEC8CF1DA),
     ("replay", 0x4EF40E9395F25B65),
-    ("net_host_migration", 0x2B95664543F37ED6),
+    ("net_host_migration", 0xCE6C7B9E0E104EC2),
 ];
 
 /// Name of the profile in the circle.

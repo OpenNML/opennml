@@ -4692,7 +4692,8 @@ VALUEID 30001 1 1 0
             o.modules[spell::INDEX] = Some(s);
         }
         let save = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-        save.check(&live.rules).unwrap();
+        save.check(&live.rules, opennml_sim::save::RulesCompare::Full)
+            .unwrap();
         let mut host = host();
         host.load(save, None);
         let mut flights: Vec<Flight> = host

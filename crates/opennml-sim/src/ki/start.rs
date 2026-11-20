@@ -350,7 +350,9 @@ mod tests {
             commands: Vec::new(),
         };
         let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-        loaded.check(&rules).unwrap();
+        loaded
+            .check(&rules, crate::save::RulesCompare::Full)
+            .unwrap();
         assert_eq!(loaded.state.ki, state.ki);
         assert!(
             loaded
@@ -475,7 +477,9 @@ mod tests {
             commands: Vec::new(),
         };
         let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-        loaded.check(&rules).expect("loads with a deleted engine");
+        loaded
+            .check(&rules, crate::save::RulesCompare::Full)
+            .expect("loads with a deleted engine");
         assert_eq!(loaded.state.ki, state.ki);
         assert!(loaded.state.ki.engines[1].is_none());
     }

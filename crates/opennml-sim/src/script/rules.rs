@@ -106,10 +106,11 @@ fn digit_count(id: i32) -> u32 {
 }
 
 impl ScriptRules {
-    /// Loads level script, dialogs, areas and speech lengths. `hash` takes in the path and bytes of each script
-    /// in path order and then `id`, `ogg_ms`, `text_units` per speech length (last, after the AI catalog).
-    pub fn load(vfs: &Vfs, scene: &LevelScene, hash: &mut Fnv64) -> Self {
-        Self::load_files(vfs, &scene.lvl_path, collect_areas(scene), hash)
+    /// Loads level script, dialogs, areas and speech lengths. `speech` takes in `id`, `ogg_ms`, `text_units` per
+    /// speech length (`RuleChecksums::speech`); the script files go into the checksum of the rules through the read
+    /// recording of `vfs` (`RuleChecksums::logic`).
+    pub fn load(vfs: &Vfs, scene: &LevelScene, speech: &mut Fnv64) -> Self {
+        Self::load_files(vfs, &scene.lvl_path, collect_areas(scene), speech)
     }
 
     /// [`ScriptRules::load`] without a scene: level path `lvl_path` and the areas already collected.
@@ -117,7 +118,7 @@ impl ScriptRules {
         vfs: &Vfs,
         lvl_path: &str,
         areas: BTreeMap<String, [i32; 4]>,
-        hash: &mut Fnv64,
+        speech: &mut Fnv64,
     ) -> Self {
         let mut rules = Self {
             areas,
@@ -126,12 +127,8 @@ impl ScriptRules {
 
         let base = lvl_path.strip_suffix(".lvl").unwrap_or(lvl_path);
         let level_path = normalize_path(&format!("{base}.abl"));
-        // Path -> bytes of all scripts read, for the checksum in path order.
-        let mut read_files: BTreeMap<String, Vec<u8>> = BTreeMap::new();
-
         if let Ok(bytes) = vfs.read(&level_path) {
             rules.level = accept_script(&level_path, &bytes, false, &mut rules.errors);
-            read_files.insert(level_path.clone(), bytes);
         }
 
         // Dialogs: for every action 39 of the level script `<folder>/<p0>.abl`. The VFS ignores case,
@@ -140,21 +137,16 @@ impl ScriptRules {
         rules.load_dialogs(&level_path, |name| {
             let path = normalize_path(&format!("{dir}/{name}.abl"));
             let bytes = vfs.read(&path).ok()?;
-            read_files.insert(path.clone(), bytes.clone());
             Some((path, bytes))
         });
 
         rules.refresh_ui_flag();
         rules.load_speech(vfs);
 
-        for (path, bytes) in &read_files {
-            hash.write(path.as_bytes());
-            hash.write(bytes);
-        }
         for (id, len) in &rules.speech {
-            hash.write(&id.to_le_bytes());
-            hash.write(&len.ogg_ms.to_le_bytes());
-            hash.write(&len.text_units.to_le_bytes());
+            speech.write(&id.to_le_bytes());
+            speech.write(&len.ogg_ms.to_le_bytes());
+            speech.write(&len.text_units.to_le_bytes());
         }
         rules
     }

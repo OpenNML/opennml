@@ -392,7 +392,7 @@ static CASES: &[Case] = &[
     Case { id: "B71", base: Plain, damage: |s| s.start.level = "data/levels/other.lvl".into(), expect: Rejected },
     Case { id: "B72", base: Plain, damage: |s| s.start.random_map = Some(random_spec("ZKA", 0)), expect: Rejected },
     Case { id: "B73", base: Random, damage: |s| s.start.setup.mode = 0, expect: Rejected },
-    Case { id: "B74", base: Plain, damage: |s| s.start.rules_checksum ^= 1, expect: Rejected },
+    Case { id: "B74", base: Plain, damage: |s| s.start.rules.logic ^= 1, expect: Rejected },
     // Object tables.
     // Slot 0 is not full: the last entry is empty, the occupancy stays the same.
     Case { id: "A2", base: Plain, damage: |s| { s.state.tables[0].objects.pop(); }, expect: Rejected },
@@ -891,8 +891,10 @@ fn replay() -> (Rules, Replay) {
 fn run_case(case: &Case) -> Result<(), String> {
     let (rules, mut save) = base(case.base);
     (case.damage)(&mut save);
-    let loaded = SaveGame::from_bytes(&encode(SAVE_MAGIC, &save))
-        .and_then(|save| save.check(&rules).map(|()| save));
+    let loaded = SaveGame::from_bytes(&encode(SAVE_MAGIC, &save)).and_then(|save| {
+        save.check(&rules, crate::save::RulesCompare::Full)
+            .map(|()| save)
+    });
     match (case.expect, loaded) {
         (Rejected, Err(e)) => {
             println!("{}: rejected: {e:#}", case.id);

@@ -180,7 +180,7 @@ fn replay_setup(rules: &Rules, start: &StartPackage) -> anyhow::Result<MatchSetu
         bail!(
             "the recording does not fit the game data (start package differs, rules checksum {:016x} instead of {:016x})",
             rules.checksum,
-            start.rules_checksum
+            start.rules.full()
         );
     }
     Ok(start.setup.clone())

@@ -14,7 +14,7 @@ use crate::messaging::send;
 use crate::path::region::SECTOR;
 use crate::random_map::{RandomMapRules, RandomMapSpec};
 use crate::rng::CrtRand;
-use crate::rules::Rules;
+use crate::rules::{RuleChecksums, Rules};
 use crate::script::ScriptSetup;
 use crate::sim::Sim;
 use crate::state::{Control, SimState};
@@ -178,8 +178,8 @@ pub struct StartPackage {
     pub format: u32,
     /// Normalized path of the `.lvl`; for a random map `randommap:<seed text>` (no file).
     pub level: String,
-    /// Checksum of the rules.
-    pub rules_checksum: u64,
+    /// Checksums of the rules ([`Rules::checksums`]).
+    pub rules: RuleChecksums,
     pub setup: MatchSetup,
     /// Map description of a random map: loading regenerates the map from it,
     /// with the game mode of the savegame (deviating from D-348). `None` for fixed maps. `serde(default)` only as
@@ -791,7 +791,7 @@ pub fn start_package(rules: &Rules, setup: &MatchSetup) -> StartPackage {
     StartPackage {
         format: FORMAT_VERSION,
         level: rules.level_path.clone(),
-        rules_checksum: rules.checksum,
+        rules: rules.checksums,
         setup: setup.clone(),
         random_map: rules.random_map.as_ref().map(|r| r.spec.clone()),
     }

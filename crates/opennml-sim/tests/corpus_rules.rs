@@ -355,6 +355,9 @@ fn water_tiles_count_fully_submerged_tiles() {
 /// `Rules::load` and `Rules::load_random` share the setup; the `.lvl` path of fixed maps hashes
 /// exactly as before. Values measured on the state before the refactoring (German edition with
 /// patch), one multiplayer and one campaign map (with level script).
+/// Changed (intended): the rules checksum is the combination of `logic` (the files read, now including
+/// the `.tlm` and the model and animation files of the derived tables), `derived` and `speech`;
+/// before: `0xa615_c20f_4815_21f0` (Exile) and `0x6b27_db0d_7775_cd62` (campaign 1-1).
 #[test]
 fn fixed_map_rules_checksum_unchanged() {
     use opennml_rda::testutil::{GameVersion, game_version};
@@ -366,11 +369,11 @@ fn fixed_map_rules_checksum_unchanged() {
     let measured = [
         (
             "data/levels/multiplayer/[4players]-exile.lvl",
-            0xa615_c20f_4815_21f0_u64,
+            0x507f_fa95_f50c_8c26_u64,
         ),
         (
             "data/levels/kampagne1/kamp1-1/kamp1-1.lvl",
-            0x6b27_db0d_7775_cd62,
+            0xfa9c_6bae_1f3c_dd43,
         ),
     ];
     for (lvl, expected) in measured {

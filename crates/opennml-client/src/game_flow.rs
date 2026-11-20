@@ -289,15 +289,16 @@ impl std::fmt::Debug for NetStartFailure {
     }
 }
 
-/// Setup of the network match from the start package (E-262, E-263): first the rules checksum of the just-loaded map
-/// against that of the host (it covers map and game data; different game data would not compute the same), then
-/// the host's setup unchanged - with its seed and the network flag.
+/// Setup of the network match from the start package (E-262, E-263): first the full rules checksum of the just-loaded
+/// map against that of the host (it covers map and game data; different game data would not compute the same), then
+/// the host's setup unchanged - with its seed and the network flag. A start from a network savegame does not come here:
+/// it resumes the savegame, whose check compares only the logic part ([`GameSaveFile::check`]).
 fn net_setup(rules: &Rules, package: &StartPackage) -> anyhow::Result<MatchSetup> {
-    if rules.checksum != package.rules_checksum {
+    if rules.checksum != package.rules.full() {
         anyhow::bail!(
             "Different game data or map than on the host (rules checksum {:016x} instead of {:016x})",
             rules.checksum,
-            package.rules_checksum
+            package.rules.full()
         );
     }
     if !package.setup.network {

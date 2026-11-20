@@ -455,12 +455,12 @@ impl SaveGame {
     }
 
     /// Checks whether the savegame matches the loaded rules: start package (map, map description,
-    /// game mode, rules checksum), network flag as in the start package and map size (path and occupancy grid
-    /// against the map of the rules). The AI catalog and scripts are part of the rules checksum
-    /// (`KiCatalog::load`, `ScriptRules::load`); nobody checks threads and containers against it, the run time
-    /// tolerates every state.
-    pub fn check(&self, rules: &Rules) -> anyhow::Result<()> {
-        check_start(&self.start, rules)?;
+    /// game mode, rules checksum as `compare` says), network flag as in the start package and map size (path and
+    /// occupancy grid against the map of the rules). The AI catalog and scripts are part of the rules checksum
+    /// (`RuleChecksums::logic`); nobody checks threads and containers against it, the run time tolerates every
+    /// state.
+    pub fn check(&self, rules: &Rules, compare: RulesCompare) -> anyhow::Result<()> {
+        check_start(&self.start, rules, compare)?;
         // `new_match` sets the network flag from the start package, no step changes it.
         if self.state.network != self.start.setup.network {
             bail!(
@@ -529,7 +529,7 @@ impl Replay {
         if steps > MAX_REPLAY_STEPS {
             bail!("tick {steps} invalid: at most {MAX_REPLAY_STEPS} ticks allowed");
         }
-        check_start(&self.start, rules)?;
+        check_start(&self.start, rules, RulesCompare::Full)?;
         let mut state = new_match(rules, &self.start.setup).map_err(anyhow::Error::msg)?;
         let mut next = 0;
         while state.steps < steps {
@@ -548,9 +548,19 @@ impl Replay {
     }
 }
 
-/// Start package against the loaded data (map, map description, game mode, rules checksum). Nobody checks the setup
-/// itself: `new_match` tolerates every value.
-fn check_start(start: &StartPackage, rules: &Rules) -> anyhow::Result<()> {
+/// Which part of the rules checksum a check compares.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RulesCompare {
+    /// The full value ([`Rules::checksum`]): network states, replays and the viewer savegame.
+    Full,
+    /// Only [`crate::rules::RuleChecksums::logic`]: the savegame of the game, so that it loads in every edition
+    /// with the same game logic (speech files and derived tables may differ).
+    Logic,
+}
+
+/// Start package against the loaded data (map, map description, game mode, rules checksum as `compare` says). Nobody
+/// checks the setup itself: `new_match` tolerates every value.
+fn check_start(start: &StartPackage, rules: &Rules, compare: RulesCompare) -> anyhow::Result<()> {
     if start.level != rules.level_path {
         bail!(
             "belongs to map {}, loaded is {}",
@@ -561,8 +571,8 @@ fn check_start(start: &StartPackage, rules: &Rules) -> anyhow::Result<()> {
     // Random map: the same description as the loaded rules, the game mode of the match
     // is that of the description (deviating from D-348), and the newly generated map has the same checksum. On the real
     // load path the rules arise from the description of the savegame, so the comparison of the description is always
-    // satisfied there; the rules checksum protects there (it contains the checksum of the generator including the
-    // description).
+    // satisfied there; the full rules checksum protects there (its `derived` part contains the checksum of the
+    // generator including the description), `RulesCompare::Logic` does not compare it.
     let loaded = rules.random_map.as_ref().map(|r| &r.spec);
     if start.random_map.as_ref() != loaded {
         bail!(
@@ -580,18 +590,18 @@ fn check_start(start: &StartPackage, rules: &Rules) -> anyhow::Result<()> {
             spec.game_type
         );
     }
-    if start.rules_checksum != rules.checksum {
+    let (saved, loaded) = match compare {
+        RulesCompare::Full => (start.rules.full(), rules.checksum),
+        RulesCompare::Logic => (start.rules.logic, rules.checksums.logic),
+    };
+    if saved != loaded {
         if start.random_map.is_some() {
             bail!(
-                "savegame: map differs (other game data or mods): checksum {:016x} instead of {:016x}",
-                start.rules_checksum,
-                rules.checksum
+                "savegame: map differs (other game data or mods): checksum {saved:016x} instead of {loaded:016x}"
             );
         }
         bail!(
-            "rules differ (checksum {:016x} instead of {:016x}: other game data or mods)",
-            start.rules_checksum,
-            rules.checksum
+            "rules differ (checksum {saved:016x} instead of {loaded:016x}: other game data or mods)"
         );
     }
     Ok(())
@@ -644,7 +654,8 @@ pub(crate) mod testkit {
     /// again).
     pub(crate) fn save_and_load(state: &SimState, rules: &Rules) -> SimState {
         let save = SaveGame::from_bytes(&save_bytes(state, rules)).expect("loading");
-        save.check(rules).expect("matches the rules");
+        save.check(rules, RulesCompare::Full)
+            .expect("matches the rules");
         save.state
     }
 }

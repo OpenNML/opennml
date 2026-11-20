@@ -680,7 +680,7 @@ fn broken_save_shows_message_and_stays_in_menu() {
         sim: r.view.sim().unwrap().save(),
         host: r.flow.host_part(&r.host.app, &r.view).unwrap(),
     };
-    bad.sim.start.rules_checksum ^= 1;
+    bad.sim.start.rules.logic ^= 1;
     std::fs::write(r.files.path("rules", 0), bad.to_bytes()).unwrap();
     take_warnings();
     for name in ["missing", "broken", "", "rules"] {
