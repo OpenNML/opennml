@@ -101,7 +101,9 @@ use opennml_net::MapId;
 /// `net_map_missing`, `net_change_random`, `net_match_end`, `net_load_saved`, `net_host_migration`) are measured again;
 /// their simulation part is unchanged (`hash_at` the same before and after: `B6EAAFD38AD53393`, `E7F6DD5EFBE9145C`,
 /// `0403B574E03ED720`, `93D8578F9F4A5453`, `367979C3011D9D1E`). Measured German edition with patch, debug = release,
-/// the same twice; the eleven sections without a lobby are unchanged.
+/// the same twice; the eleven sections without a lobby are unchanged. `FORMAT_VERSION` 30 enters the start package and
+/// with it the savegame checksum (`sim_checksum`) of the `MapId::Saved` announcement, so `net_load_saved` is measured
+/// again (debug = release, `hash_at` unchanged: `93D8578F9F4A5453`).
 const UI_GOLDEN: [(&str, u64); 18] = [
     ("profile", 0xB4A04C43CD99F1AA),
     ("create_game", 0x1BD2E55D8426EFAC),
@@ -117,7 +119,7 @@ const UI_GOLDEN: [(&str, u64); 18] = [
     ("net_map_missing", 0x7C6920C2EE67642C),
     ("net_change_random", 0x5CC0828894FF17E1),
     ("net_match_end", 0xC9373CA2EAD7773A),
-    ("net_load_saved", 0x718047CEE523B966),
+    ("net_load_saved", 0xF3844BEDEF7CEF46),
     ("menu_level", 0x29F789ECEC8CF1DA),
     ("replay", 0x4EF40E9395F25B65),
     ("net_host_migration", 0xCE6C7B9E0E104EC2),
