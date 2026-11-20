@@ -67,8 +67,10 @@ pub const DIFFICULTY_RANGE: RangeInclusive<i32> = 0..=2;
 /// helper, skip flag; 25 = presentation state, selection mirror, button, profile variables, commands
 /// ScriptSelection/ScriptButton; 26 = idle workers (`SimState::idle_workers`); 27 = `SimState::flag_leader`,
 /// `time_limit`; 28 = map description in the start package (`StartPackage::random_map`); 29 = network flag
-/// `SimState::network`, `MatchSetup::network`.
-pub const FORMAT_VERSION: u32 = 29;
+/// `SimState::network`, `MatchSetup::network`; 30 = the start package carries the rules checksum split into
+/// logic, derived and speech (`StartPackage::rules`); NMLSAVE and NMLREPL bodies are MessagePack with field
+/// names, packed with zstd.
+pub const FORMAT_VERSION: u32 = 30;
 
 /// Default of `TimeLimit` in minutes (`Engine.ini`, `EngineConfig`; re/singleplayer-menus part 2, 1.2).
 pub const DEFAULT_TIME_LIMIT: i32 = 20;
