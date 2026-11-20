@@ -400,7 +400,7 @@ mod tests {
     use super::*;
     use crate::game::control_groups;
     use crate::game::fog_view::FOG_OFF;
-    use crate::game::sim_host::plain_testkit;
+    use crate::game::sim_host::{SimHost, plain_testkit};
     use opennml_sim::save::HEADER_LEN;
 
     fn host_part() -> HostPart {
@@ -1082,6 +1082,331 @@ mod tests {
                 Ok(Err(e)) => println!("{what}: {e:#}"),
                 other => panic!("{what}: {other:?}"),
             }
+        }
+    }
+
+    /// Savegames of the releases (`testdata/savegames/*.nmlgame`), sorted by name.
+    fn fixture_files() -> Vec<std::path::PathBuf> {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("testdata/savegames");
+        let mut files: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+            .map(|entry| entry.unwrap().path())
+            .filter(|p| p.extension().is_some_and(|e| e == "nmlgame"))
+            .collect();
+        files.sort();
+        files
+    }
+
+    /// Every savegame of a release loads with the rules of the fixture world, continues for 50 steps and writes the
+    /// same savegame again. The files stay small (synthetic world, no original data).
+    #[test]
+    fn save_fixtures_load_and_continue() {
+        let files = fixture_files();
+        assert!(!files.is_empty(), "no savegame in testdata/savegames");
+        let rules = fixture::rules();
+        for path in files {
+            let name = path.display();
+            let bytes = std::fs::read(&path).unwrap();
+            assert!(bytes.len() < 200 * 1024, "{name}: {} bytes", bytes.len());
+            let mut file =
+                GameSaveFile::from_bytes(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
+            file.prepare(&rules)
+                .unwrap_or_else(|e| panic!("{name}: {e}"));
+            let mut host = SimHost::new(
+                rules.clone(),
+                file.sim.start.setup.clone(),
+                crate::game::options::DEFAULT_GAME_SPEED,
+            )
+            .unwrap();
+            host.load(file.sim.clone(), file.host.log.clone());
+            for _ in 0..50 {
+                host.step_once();
+            }
+            assert_eq!(
+                host.state.steps,
+                file.sim.state.steps + 50,
+                "{name}: the match continues"
+            );
+            let again = GameSaveFile::from_bytes(&file.to_bytes()).unwrap();
+            assert_eq!(
+                (&again.sim, &again.host, &again.random_map),
+                (&file.sim, &file.host, &file.random_map),
+                "{name}: saved again"
+            );
+        }
+    }
+
+    /// Writes the savegame of the fixture world to `OPENNML_SAVE_FIXTURE_OUT` (a relative path from the workspace
+    /// root), for a new file in `testdata/savegames`.
+    #[test]
+    #[ignore = "writes a savegame file"]
+    fn write_save_fixture() {
+        let out = std::env::var_os("OPENNML_SAVE_FIXTURE_OUT").expect("OPENNML_SAVE_FIXTURE_OUT");
+        let out = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join(out);
+        let bytes = fixture::save_file().to_bytes();
+        std::fs::write(&out, &bytes).unwrap_or_else(|e| panic!("{}: {e}", out.display()));
+        println!("{}: {} bytes", out.display(), bytes.len());
+    }
+
+    /// The fixture world has every kind of state its writer promises.
+    #[test]
+    fn fixture_world_has_every_state_kind() {
+        let file = fixture::save_file();
+        let state = &file.sim.state;
+        assert_eq!(state.steps, fixture::STEPS);
+        assert!(state.objects().any(|o| o.guid == 1000), "building");
+        assert!(!state.groups.map.is_empty(), "group");
+        let mut next = state.clone();
+        opennml_sim::tick::step(&mut next, &fixture::rules(), &[]);
+        opennml_sim::tick::step(&mut next, &fixture::rules(), &[]);
+        let position = |s: &opennml_sim::state::SimState| -> Vec<[f32; 3]> {
+            s.objects()
+                .filter(|o| o.id.slot() == 0 && o.guid == 1100)
+                .map(|o| o.world_pos)
+                .collect()
+        };
+        assert_ne!(position(&next), position(state), "walking units");
+        assert!(!state.projectiles.list.is_empty(), "projectile");
+        let engine = state.ki.engines[1].as_ref().expect("AI engine of slot 1");
+        assert!(!engine.threads.is_empty(), "AI thread");
+        assert!(state.script.level.is_some(), "script container");
+        assert!(
+            file.host.log.as_ref().is_some_and(|log| !log.is_empty()),
+            "command log"
+        );
+        assert!(file.host.control_groups[0][1].len() > 1, "control group");
+        assert_eq!(
+            file.sim.start.level, "synthetisch",
+            "level path of the synthetic rules"
+        );
+    }
+
+    /// Synthetic world of the savegame files in `testdata/savegames`: the world of `plain_testkit` (colonist 1100 with
+    /// walk and stand, headquarters 1000 as a building, 16 x 16 tiles) as a match of two slots (slot 0 human, slot 1
+    /// AI) with a small AI catalog and a level script. No original data.
+    ///
+    /// The files are frozen after their release and must keep loading with [`rules`]: do not change the rules of this
+    /// world (types, slots, AI catalog, script), only what the writer does.
+    mod fixture {
+        use super::*;
+        use crate::game::options::DEFAULT_GAME_SPEED;
+        use opennml_sim::command::{Command, CommandKind, NO_SPREAD};
+        use opennml_sim::id::ObjectId;
+        use opennml_sim::ki::catalog::{KiCatalog, KiPrototype};
+        use opennml_sim::ki::start::{SET_LEVEL, START_PLAYER};
+        use opennml_sim::ki::vars::VarTable;
+        use opennml_sim::ki::vm::op;
+        use opennml_sim::setup::{LobbyEntry, MatchSetup, SlotKind, ki_kind_handicap};
+        use opennml_sim::sim::Sim;
+        use opennml_sim::world::{ObjectDesc, create_object, desc_flags};
+
+        /// The types of `plain_testkit` (copied: the rules of the frozen files must stay).
+        const TYPES: &str = concat!(
+            "GUID 1100\nNAME Kolonist\nVALUEID 100 6 1 0\nPROPID 0\nPROPID 2\nVALUEID 30001 1 1 0\n",
+            "GUID 1000\nNAME HQ\nVALUEID 100 6 1 0\nPROPID 3\n",
+        );
+        const COLONIST: u32 = 1100;
+        const HQ: u32 = 1000;
+
+        /// Level script: the first block sets a switch, a timer and a variable and then waits (suspended container);
+        /// the second block counts the variable up in every tick once the switch is set.
+        const SCRIPT: &str = concat!(
+            "{\r\n\t[BESCHREIBUNG=start]\r\n",
+            "\t[AKTION=n12;started:Text]\r\n",
+            "\t[AKTION=n25;clock;600000:Text]\r\n",
+            "\t[AKTION=n360;counter;5:Text]\r\n",
+            "\t[AKTION=w40;600000:Text]\r\n",
+            "}\r\n",
+            "{\r\n\t[BESCHREIBUNG=count]\r\n",
+            "\t[BEDINGUNG=&5;started:Text]\r\n",
+            "\t[AKTION=n10:Text]\r\n",
+            "\t[AKTION=n361;counter;1:Text]\r\n",
+            "}\r\n",
+        );
+
+        /// Steps of the match up to the savegame.
+        pub const STEPS: u64 = 200;
+
+        /// Rules of the world.
+        pub fn rules() -> Rules {
+            let word = |op: u32, operand: u32| (op << 28) | operand;
+            let proto = |id, name: &str, code: Vec<u32>| KiPrototype {
+                id,
+                name: name.into(),
+                params: 0,
+                code,
+                vars: VarTable::from_module(&[(0, 8)], &[]),
+                checksum: u64::from(id),
+            };
+            let mut r = Rules::synthetic(TYPES, 16);
+            for slot in 0..2u8 {
+                r.level.players.push(opennml_formats::config::LevelPlayer {
+                    slot,
+                    name: format!("P{slot}"),
+                    nation: i32::from(slot) + 1,
+                    kind: i32::from(slot),
+                    resources: Vec::new(),
+                });
+            }
+            // `setschwierigkeitsgrad` sets value 302; `multi_startplayer` sets value 500 and then pauses 500 ms in a
+            // loop (thread with a pause counter).
+            r.ki = KiCatalog::from_prototypes([
+                proto(
+                    SET_LEVEL,
+                    "setschwierigkeitsgrad",
+                    vec![
+                        word(op::PUSHA, 302),
+                        word(op::PUSHA, 1000),
+                        word(op::CALLB, 0x1E),
+                    ],
+                ),
+                proto(
+                    START_PLAYER,
+                    "multi_startplayer",
+                    vec![
+                        word(op::PUSHA, 500),
+                        word(op::PUSHA, 1),
+                        word(op::CALLB, 0x1E),
+                        word(op::PUSHA, 500),
+                        word(op::CALLB, 0x8E),
+                        word(op::JMP, 3),
+                    ],
+                ),
+            ]);
+            r.scripts = opennml_sim::script::testing::rules_with(SCRIPT, &[], &[]);
+            assert!(r.scripts.errors.is_empty(), "{:?}", r.scripts.errors);
+            r
+        }
+
+        fn setup() -> MatchSetup {
+            let entry = |slot: i32, kind, handicap| LobbyEntry {
+                kind,
+                name: format!("P{slot}"),
+                nation: slot + 1,
+                team: slot,
+                color: slot,
+                handicap,
+            };
+            let mut setup = MatchSetup {
+                mode: 0,
+                seed: 7,
+                lobby: vec![
+                    entry(0, SlotKind::Human, 0),
+                    entry(1, SlotKind::Ai, ki_kind_handicap(3).unwrap()),
+                ],
+                ..MatchSetup::default()
+            };
+            setup.ki.enabled = true;
+            setup.script.enabled = true;
+            setup
+        }
+
+        fn spawn(host: &mut SimHost, guid: u32, slot: i32, at: [f32; 2]) -> ObjectId {
+            let rules = host.rules.clone();
+            let mut sim = Sim::new(&mut host.state, &rules);
+            let mut desc = ObjectDesc::new(guid, slot, [at[0], 0.0, at[1]]);
+            desc.flags |= desc_flags::PLACED;
+            create_object(&mut sim, &mut desc).unwrap()
+        }
+
+        /// The match after [`STEPS`] steps with the host part: buildings of both slots, four colonists of slot 0 that
+        /// walk as a group across the map, an arrow in flight and a dynamite charge (placed directly, not by a command,
+        /// so the command log leads to the state only without them), the AI thread of slot 1, the level container of the
+        /// script; camera, a control group, `selectnextguid` index, idle worker index, masks, the complete command
+        /// log.
+        pub fn save_file() -> GameSaveFile {
+            let mut host = SimHost::new(rules(), setup(), DEFAULT_GAME_SPEED).unwrap();
+            host.active_player = 0;
+            let hq = spawn(&mut host, HQ, 0, [640.0, 64.0]);
+            let colonists: Vec<ObjectId> = (0..4)
+                .map(|i| spawn(&mut host, COLONIST, 0, [64.0 + 128.0 * i as f32, 192.0]))
+                .collect();
+            spawn(&mut host, HQ, 1, [1600.0, 1600.0]);
+            let shooter = spawn(&mut host, COLONIST, 1, [1600.0, 1200.0]);
+            for step in 0..STEPS {
+                match step {
+                    5 => host.submit(Command {
+                        player: 0,
+                        kind: CommandKind::Move {
+                            units: colonists.clone(),
+                            x: 14 * 4096,
+                            z: 14 * 4096,
+                            target: -1,
+                            formation: 0,
+                            direction: opennml_sim::motion::NO_DIRECTION,
+                            spread: NO_SPREAD,
+                            flags: 0,
+                        },
+                    }),
+                    150 => {
+                        let rules = host.rules.clone();
+                        let mut sim = Sim::new(&mut host.state, &rules);
+                        let pos = [640.0, 0.0, 64.0];
+                        opennml_sim::combat::projectile::add_dynamite(
+                            &mut sim, shooter, hq, pos, 3,
+                        );
+                    }
+                    190 => {
+                        let rules = host.rules.clone();
+                        let mut sim = Sim::new(&mut host.state, &rules);
+                        let launch = opennml_sim::combat::projectile::ArrowLaunch {
+                            shooter,
+                            target: hq,
+                            damage: opennml_sim::combat::damage::explicit_damage_message(
+                                -12, shooter, COLONIST,
+                            ),
+                            start: [1600.0, 0.0, 1200.0],
+                            target_pos: [640.0, 40.0, 64.0],
+                            zone: 0,
+                            fire: false,
+                            model: String::new(),
+                            node: String::new(),
+                        };
+                        opennml_sim::combat::projectile::launch_arrow(&mut sim, launch);
+                    }
+                    _ => {}
+                }
+                host.step_once();
+            }
+            let mut groups = crate::game::control_groups::empty_save();
+            groups[0][1] = colonists.iter().map(|id| id.0).collect();
+            groups[0][2] = vec![hq.0];
+            let mut next_guid_index = crate::game::control_groups::empty_next_guid_index();
+            next_guid_index[0].insert(COLONIST as i32, 2);
+            let mut masks = Masks::initial();
+            masks.chat[0] |= 0b10;
+            let host_part = HostPart {
+                camera: CameraSave {
+                    from: [1024.0, 1800.0, -400.0],
+                    at: [1024.0, 0.0, 1024.0],
+                    fov: 0.8,
+                },
+                level_info: opennml_ui::draft::LevelInfoData {
+                    name: "Synthetic".into(),
+                    path: host.rules.level_path.clone(),
+                    size_class: 0,
+                    players: 2,
+                    level_type: 2,
+                    ..opennml_ui::draft::LevelInfoData::default()
+                },
+                game_type: 0,
+                local_name: "P0".into(),
+                game_speed: host.game_speed,
+                cinemascope_speed: None,
+                script_camera: ScriptCamera::default(),
+                control_groups: groups,
+                next_guid_index,
+                idle_worker_index: [1, 0, 0, 0, 0, 0, 0, 0],
+                masks,
+                lock_teams: false,
+                fog_show_mode: 0,
+                net: None,
+                log: host.save_log(),
+                save_replay: true,
+            };
+            GameSaveFile::new(host.save(), host_part, None)
         }
     }
 }
