@@ -332,8 +332,8 @@ impl GameSaveFile {
     /// container ([`read_container`]), the body (an older number through the structure steps), the structure check of
     /// the state ([`check_state`]) and of the random map ([`RandomMap::check`]). The network names are cleaned; the
     /// command log is dropped if the file comes from another simulation version (it replays the match from tick 0
-    /// and would compute differently). It matches the rules only after [`GameSaveFile::check`]; a loaded match
-    /// continues only after [`GameSaveFile::prepare`].
+    /// and would compute differently; [`GameSaveFile::prepare`] drops it for other rules). It matches the rules only
+    /// after [`GameSaveFile::check`]; a loaded match continues only after [`GameSaveFile::prepare`].
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, SaveError> {
         let corrupted = || SaveError::of(SaveErrorKind::Corrupted);
         let from = read_number(bytes)?;
@@ -374,8 +374,8 @@ impl GameSaveFile {
         // The network part and the network flag belong together (`SaveGame::check` keeps the flag of the state equal
         // to that of the start package).
         let why = match (&self.host.net, self.sim.start.setup.network) {
-            (Some(_), false) => "savegame corrupted (network savegame without network flag)",
-            (None, true) => "savegame corrupted (single-player savegame with network flag)",
+            (Some(_), false) => "savegame: network savegame without network flag",
+            (None, true) => "savegame: single-player savegame with network flag",
             _ => return Ok(()),
         };
         Err(SaveError::new(SaveErrorKind::Mismatch, anyhow!(why)))
@@ -383,13 +383,18 @@ impl GameSaveFile {
 
     /// Makes a read savegame ready to continue on the loaded rules: [`GameSaveFile::check`], then the recompute steps
     /// for the number it was read from ([`opennml_sim::save::upgrade::recompute`]), then the start package takes over
-    /// the rules checksums of this installation. Comparisons between machines (network savegame) use the values before
-    /// this step; it computes the same on every machine.
+    /// the rules checksums of this installation; if they differ, the command log is dropped. Comparisons between
+    /// machines (network savegame) use the values before this step; it computes the same on every machine.
     pub fn prepare(&mut self, rules: &Rules) -> Result<(), SaveError> {
         self.check(rules)?;
         opennml_sim::save::upgrade::recompute(&mut self.sim, rules, self.loaded_format)
             .context("savegame not convertible")
             .map_err(SaveError::of(SaveErrorKind::Corrupted))?;
+        // The command log replays the match from tick 0 on these rules: with other rules (another edition, other
+        // speech lengths) it would compute differently.
+        if self.sim.start.rules != rules.checksums {
+            self.host.log = None;
+        }
         self.sim.start.rules = rules.checksums;
         Ok(())
     }
@@ -586,14 +591,19 @@ mod tests {
     }
 
     /// `prepare` checks the savegame and takes over the rules checksums of this installation (the speech part may
-    /// differ, the logic part is equal).
+    /// differ, the logic part is equal). With other rules the command log is dropped, with the same it stays.
     #[test]
     fn prepare_adopts_rules_checksums() {
         let (mut file, rules) = save_file();
+        file.host.log = Some(Vec::new());
+        let mut same = file.clone();
+        same.prepare(&rules).unwrap();
+        assert_eq!(same.host.log, Some(Vec::new()));
         file.sim.start.rules.speech ^= 1;
         assert_ne!(file.sim.start.rules, rules.checksums);
         file.prepare(&rules).unwrap();
         assert_eq!(file.sim.start.rules, rules.checksums);
+        assert_eq!(file.host.log, None);
     }
 
     /// [`MapSource::of_save`]: a file with the generated map loads the map from the file (`SavedRandom`); neither the
@@ -951,10 +961,7 @@ mod tests {
         bad.host.net = net_file().0.host.net;
         bad.host.net.as_mut().unwrap().local_slot = 0;
         let message = format!("{:#}", bad.check(&rules).unwrap_err());
-        assert_eq!(
-            message,
-            "savegame corrupted (network savegame without network flag)"
-        );
+        assert_eq!(message, "savegame: network savegame without network flag");
     }
 
     /// A single-player savegame carries no network flag.
@@ -966,7 +973,7 @@ mod tests {
         let message = format!("{:#}", file.check(&rules).unwrap_err());
         assert_eq!(
             message,
-            "savegame corrupted (single-player savegame with network flag)"
+            "savegame: single-player savegame with network flag"
         );
     }
 
@@ -1318,10 +1325,10 @@ mod tests {
         }
 
         /// The match after [`STEPS`] steps with the host part: buildings of both slots, four colonists of slot 0 that
-        /// walk as a group across the map, an arrow in flight and a dynamite charge (placed directly, not by a command,
-        /// so the command log leads to the state only without them), the AI thread of slot 1, the level container of the
-        /// script; camera, a control group, `selectnextguid` index, idle worker index, masks, the complete command
-        /// log.
+        /// walk as a group across the map, an arrow in flight and a dynamite charge (placed directly, not by a
+        /// command, so the command log leads to the state only without them), the AI thread of slot 1, the level
+        /// container of the script; camera, a control group, `selectnextguid` index, idle worker index, masks, the
+        /// complete command log.
         pub fn save_file() -> GameSaveFile {
             let mut host = SimHost::new(rules(), setup(), DEFAULT_GAME_SPEED).unwrap();
             host.active_player = 0;
