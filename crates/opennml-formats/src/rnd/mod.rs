@@ -10,10 +10,12 @@ pub mod scan;
 pub use blocks::parse_random_map_script;
 pub use reader::{ScriptReader, include_path};
 
+use serde::{Deserialize, Serialize};
+
 use crate::wld::{ObjectLight, ShadowParams, TerrainParams};
 
 /// `#Texture NAME { ... }` (`0x28` bytes, `FUN_005422B0`).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextureDef {
     /// Texture number: counter `gen+0x10C`, 1, 2, ... in definition order.
     pub number: i32,
@@ -24,7 +26,7 @@ pub struct TextureDef {
 }
 
 /// `#Object NAME { ... }` (`0x20` bytes, `FUN_00541610`).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ObjectDef {
     pub name: String,
     pub guids: Vec<u32>,
@@ -33,7 +35,7 @@ pub struct ObjectDef {
 /// Area block `create_PlayerAreas`/`create_LandArea`/`create_TerrainArea` (`0x374` bytes,
 /// `FUN_005406D0`, parser `FUN_00543CA0`), **raw**: borders in percent, amounts unscaled. The generator
 /// computes borders and amounts (`FUN_0053FBF0`, `FUN_00540810`).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AreaDef {
     pub id: i32,
     pub replace: String,
@@ -86,7 +88,7 @@ impl Default for AreaDef {
 }
 
 /// `connect_Players { ... }` (`0x204` bytes, `FUN_0053FA40`).
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct ConnectDef {
     pub texture: String,
     pub put_onto: String,
@@ -95,7 +97,7 @@ pub struct ConnectDef {
 
 /// `place_Object NAME { ... }` (`0x328` bytes, `FUN_0053F9A0`), raw: `number`/`numGroups` unscaled.
 /// The reader only reads; the generator places the objects.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceObjectDef {
     pub name: String,
     /// Default 1.
@@ -148,7 +150,7 @@ impl Default for PlaceObjectDef {
 
 /// Result of the dispatcher: everything the map script including includes defines (the fields of the
 /// generator, `0x274` bytes, `gen+0x04 ... +0x26C`, and of the terrain as far as the script writes them).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RandomMapScript {
     /// All defines at the end: those given by the caller and the `#define` lines of the script.
     pub defines: Vec<String>,

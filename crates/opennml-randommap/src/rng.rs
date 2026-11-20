@@ -23,7 +23,7 @@ pub enum Phase {
 }
 
 /// Number of `rand()` calls per phase.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct RandCounts {
     pub preprocessor: u32,
     pub land_areas: u32,

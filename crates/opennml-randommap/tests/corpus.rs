@@ -1561,57 +1561,94 @@ fn random_setup(
     }
 }
 
-/// Load path like `opennml-client` (`MapSource::of_start` -> `MapLoad::open` -> `start_sim_with`): read the savegame,
-/// regenerate the map from the map description of the start package (with the object step, D-341 deviation),
-/// rules without `.lvl`, check against the rules; the state (objects, CRT) comes from the savegame.
+/// Body of a random map savegame as the client writes it (`opennml-client`, `game_save`): the savegame of the
+/// simulation next to the generated map.
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SavedBody {
+    sim: opennml_sim::save::SaveGame,
+    random_map: RandomMap,
+}
+
+/// Saves the match `state` on the map `level` like the client: start package, state and the generated map through
+/// the savegame encoding.
+fn save_random(
+    level: &opennml_randommap::RandomLevel,
+    rules: &opennml_sim::rules::Rules,
+    state: &opennml_sim::state::SimState,
+) -> Vec<u8> {
+    use opennml_sim::save::SaveGame;
+    use opennml_sim::setup::start_package;
+    let spec = &level.map.spec;
+    let body = SavedBody {
+        sim: SaveGame {
+            start: start_package(rules, &random_setup(spec, human_and_ai())),
+            state: state.clone(),
+            commands: Vec::new(),
+        },
+        random_map: level.map.clone(),
+    };
+    opennml_sim::save::codec::encode_named(&body)
+}
+
+/// Load path like `opennml-client` (`MapSource::of_save` -> `MapLoad::open` -> `start_sim_with`): read the body,
+/// scene and rules input from the saved map ([`opennml_randommap::level_from_map`]), rules without `.lvl`, check
+/// against the rules; the state (objects, CRT) comes from the savegame. Also returns the files that scene and rules
+/// read.
 fn load_random_save(
     vfs: &Vfs,
-    bytes: &[u8],
+    packed: &[u8],
 ) -> (
     opennml_randommap::RandomLevel,
     opennml_sim::rules::Rules,
     opennml_sim::save::SaveGame,
+    Vec<String>,
 ) {
-    use opennml_sim::save::SaveGame;
-    let save = SaveGame::from_bytes(bytes).unwrap();
+    let SavedBody {
+        sim: save,
+        random_map,
+    } = opennml_sim::save::codec::decode_named(packed).unwrap();
     let spec = save
         .start
         .random_map
         .clone()
         .expect("map description in the start package");
     assert_eq!(save.start.level, random_map_label(&spec));
-    let level = opennml_randommap::build_level(vfs, &spec).unwrap();
+    let (reader, log) = vfs.recording();
+    let level = opennml_randommap::level_from_map(&reader, random_map).unwrap();
     let rules =
-        opennml_sim::rules::Rules::load_random(vfs, &level.scene, level.rules.clone()).unwrap();
-    save.check(&rules, opennml_sim::save::RulesCompare::Full)
+        opennml_sim::rules::Rules::load_random(&reader, &level.scene, level.rules.clone()).unwrap();
+    let read = log.take().into_iter().map(|e| e.path).collect();
+    save.check(&rules, opennml_sim::save::RulesCompare::Logic)
         .unwrap();
-    (level, rules, save)
+    (level, rules, save, read)
 }
 
-/// D-341 (deviation), D-342: play a match for 200 steps, save, load -> tiles as at the start (all seven
-/// generator checksums and the rules checksum equal), objects from the savegame (state equal), and the checksum
-/// of every following step equal to the unsaved match. The original generates without the object step when loading
-/// (different ground) and saves the rotation Y lossily; the reimplementation reproduces neither.
+/// D-341 (deviation), D-342: play a match for 200 steps, save it with the generated map, load -> neither the map types
+/// nor a map script is read, tiles as at the start (all seven generator checksums and the rules checksum equal),
+/// objects from the savegame (state equal), and the checksum of every following step equal to the unsaved match. The
+/// original generates without the object step when loading (different ground) and saves the rotation Y lossily; the
+/// reimplementation reproduces neither.
 // QUIRK D-341: deviation
 #[test]
-fn save_and_load_continue_bitwise() {
-    use opennml_sim::save::{SaveGame, checksum};
-    use opennml_sim::setup::start_package;
+fn random_map_save_loads_without_the_generator() {
+    use opennml_randommap::RANDOM_MAP_TYPES_PATH;
+    use opennml_sim::save::checksum;
     use opennml_sim::tick::step;
     let Some((vfs, types)) = open() else { return };
+    let is_generator_file = |path: &str| path == RANDOM_MAP_TYPES_PATH || path.ends_with(".rnd");
     for name in ["continental", "islands"] {
         let spec = base_spec(&types, terrain(&types, name));
         let (level, rules, mut state) = random_match(&vfs, &spec, human_and_ai(), 0);
         for _ in 0..200 {
             let _ = step(&mut state, &rules, &[]);
         }
-        let bytes = SaveGame {
-            start: start_package(&rules, &random_setup(&spec, human_and_ai())),
-            state: state.clone(),
-            commands: Vec::new(),
-        }
-        .to_bytes();
-        let (again, loaded_rules, save) = load_random_save(&vfs, &bytes);
+        let packed = save_random(&level, &rules, &state);
+        let (again, loaded_rules, save, read) = load_random_save(&vfs, &packed);
+        assert!(!read.is_empty(), "{name}");
+        assert!(
+            !read.iter().any(|p| is_generator_file(p)),
+            "{name}: {read:?}"
+        );
         assert_eq!(save.start.random_map.as_ref(), Some(&spec), "{name}");
         assert_eq!(again.map.digests(), level.map.digests(), "{name}");
         assert_eq!(again.map.rand_state, level.map.rand_state, "{name}");
@@ -1632,8 +1669,7 @@ fn save_and_load_continue_bitwise() {
 // QUIRK D-348: deviation
 #[test]
 fn koth_save_loads_the_koth_map() {
-    use opennml_sim::save::{SaveGame, checksum};
-    use opennml_sim::setup::start_package;
+    use opennml_sim::save::checksum;
     use opennml_sim::tick::step;
     let Some((vfs, types)) = open() else { return };
     let spec = RandomMapSpec {
@@ -1644,13 +1680,8 @@ fn koth_save_loads_the_koth_map() {
     for _ in 0..20 {
         let _ = step(&mut state, &rules, &[]);
     }
-    let bytes = SaveGame {
-        start: start_package(&rules, &random_setup(&spec, human_and_ai())),
-        state: state.clone(),
-        commands: Vec::new(),
-    }
-    .to_bytes();
-    let (again, loaded_rules, save) = load_random_save(&vfs, &bytes);
+    let packed = save_random(&level, &rules, &state);
+    let (again, loaded_rules, save, _) = load_random_save(&vfs, &packed);
     assert_eq!(save.start.setup.mode, 3);
     assert_eq!(
         loaded_rules.random_map.as_ref().unwrap().spec.game_type,

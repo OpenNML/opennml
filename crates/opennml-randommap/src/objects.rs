@@ -30,7 +30,7 @@ pub(crate) const NEUTRAL: i32 = 8;
 /// A placed object (`RandomMapObject`, `FUN_005474B0`): position with y = 0 (only the world sets the
 /// height), rotation about the vertical axis at placement time (`+0x54`, the project rotation
 /// **before** the random rotation, D-336), owner 0...7 or 8.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct MapObject {
     pub guid: u32,
     pub position: [f32; 3],

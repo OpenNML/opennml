@@ -5,20 +5,31 @@
 //! [`NetSaveInfo`]). No influence on checksums.
 //!
 //! File: identifier `NMLGAME\0`, [`SAVE_FORMAT`] as u32 LE, FNV-1a 64 of the body as u64 LE, body =
-//! [`encode_named`] (MessagePack with field names, zstd) of the flat `{ sim_version, sim, host }`: `sim_version` is
-//! the [`FORMAT_VERSION`] of the simulation that wrote the file, `sim` the savegame of the simulation itself (not its
-//! own file bytes).
+//! [`encode_named`] (MessagePack with field names, zstd) of the flat `{ sim_version, sim, host, random_map }`:
+//! `sim_version` is the [`FORMAT_VERSION`] of the simulation that wrote the file, `sim` the savegame of the simulation
+//! itself (not its own file bytes), `random_map` the generated map of a random map match (loading builds scene and
+//! rules input from it without the generator).
+//!
+//! Every version of the same major number loads the savegames of the earlier ones: the body of an older savegame
+//! number goes through the structure steps (`upgrade`) before it is typed; after the check against the rules the
+//! recompute steps run ([`GameSaveFile::prepare`]). Saving always writes the current number.
 //!
 //! The original also saves the game speed (re/game-ui 3).
 
-use anyhow::{Context, bail};
+mod upgrade;
+
+use std::fmt;
+
+use anyhow::{Context, anyhow};
+use opennml_randommap::RandomMap;
 use opennml_sim::rules::Rules;
-use opennml_sim::save::codec::{decode_named, encode_named};
+use opennml_sim::save::codec::{decode_named, decode_value, encode_named, from_value};
 use opennml_sim::save::{
     RecordedCommand, RulesCompare, SaveGame, check_state, read_container, write_container,
 };
 use opennml_sim::setup::FORMAT_VERSION;
 use opennml_world::camera::GameCamera;
+use upgrade::Step;
 
 use crate::game::control_groups::{GroupsSave, NextGuidIndex};
 use crate::game::diplomacy::Masks;
@@ -165,6 +176,48 @@ pub struct HostPart {
     pub save_replay: bool,
 }
 
+/// Kind of a savegame that does not load.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SaveErrorKind {
+    /// Another identifier or a number before [`FIRST_SAVE_FORMAT`]: too old or a different format.
+    Format,
+    /// A number after [`SAVE_FORMAT`]: from a newer version.
+    Newer,
+    /// Header incomplete, checksum, unpacking, decoding, bytes left over, structure check of the state or of the
+    /// random map, or a failed structure or recompute step.
+    Corrupted,
+    /// Does not fit the loaded data: rules (logic part), map, map description, network part against the network
+    /// flag.
+    Mismatch,
+}
+
+/// A savegame that does not load: its kind and the reason. Displays the whole chain of the reason; as a
+/// [`std::error::Error`] it goes on with `?` in functions with `anyhow`.
+#[derive(Debug)]
+pub struct SaveError {
+    pub kind: SaveErrorKind,
+    source: anyhow::Error,
+}
+
+impl SaveError {
+    fn new(kind: SaveErrorKind, source: anyhow::Error) -> Self {
+        Self { kind, source }
+    }
+
+    /// Error mapper for a reason of kind `kind`.
+    fn of(kind: SaveErrorKind) -> impl FnOnce(anyhow::Error) -> Self {
+        move |source| Self::new(kind, source)
+    }
+}
+
+impl fmt::Display for SaveError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:#}", self.source)
+    }
+}
+
+impl std::error::Error for SaveError {}
+
 /// Body of the file.
 #[derive(Serialize, Deserialize)]
 struct Body {
@@ -172,14 +225,18 @@ struct Body {
     sim_version: u32,
     sim: SaveGame,
     host: HostPart,
+    /// Generated map of a random map match; `None` for fixed maps.
+    #[serde(default)]
+    random_map: Option<Box<RandomMap>>,
 }
 
-/// Body for writing (without a copy of the savegame and the host part).
+/// Body for writing (without a copy of the savegame, the host part and the map).
 #[derive(Serialize)]
 struct BodyRef<'a> {
     sim_version: u32,
     sim: &'a SaveGame,
     host: &'a HostPart,
+    random_map: &'a Option<Box<RandomMap>>,
 }
 
 /// Savegame of a match.
@@ -187,36 +244,122 @@ struct BodyRef<'a> {
 pub struct GameSaveFile {
     pub sim: SaveGame,
     pub host: HostPart,
+    /// Generated map of a random map match (scene and rules input when loading, [`MapSource::of_save`]); `None` for
+    /// fixed maps.
+    ///
+    /// [`MapSource::of_save`]: crate::game::map::MapSource::of_save
+    pub random_map: Option<Box<RandomMap>>,
+    /// Savegame number the file was read from; [`SAVE_FORMAT`] for a new savegame. The recompute steps of
+    /// [`GameSaveFile::prepare`] depend on it.
+    pub loaded_format: u32,
+}
+
+/// Savegame number in the header of `bytes`: identifier and number range, before the checksum.
+fn read_number(bytes: &[u8]) -> Result<u32, SaveError> {
+    if bytes.get(..8) != Some(GAME_MAGIC.as_slice()) {
+        return Err(SaveError::new(
+            SaveErrorKind::Format,
+            anyhow!("not a savegame file (identifier missing)"),
+        ));
+    }
+    let Some(number) = bytes.get(8..12) else {
+        return Err(SaveError::new(
+            SaveErrorKind::Corrupted,
+            anyhow!("savegame corrupted (header incomplete)"),
+        ));
+    };
+    let number = u32::from_le_bytes(number.try_into().expect("4 bytes"));
+    if number < FIRST_SAVE_FORMAT {
+        return Err(SaveError::new(
+            SaveErrorKind::Format,
+            anyhow!(
+                "savegame has format version {number}: too old or a different format (readable from {FIRST_SAVE_FORMAT})"
+            ),
+        ));
+    }
+    if number > SAVE_FORMAT {
+        return Err(SaveError::new(
+            SaveErrorKind::Newer,
+            anyhow!(
+                "savegame has format version {number} from a newer version (readable up to {SAVE_FORMAT})"
+            ),
+        ));
+    }
+    Ok(number)
+}
+
+/// Body of number `from` for the current number `current`: directly typed if they are equal, otherwise as a value
+/// through the structure steps `steps` from `from` on ([`upgrade::upgrade`]) and typed afterwards.
+fn decode_body(packed: &[u8], from: u32, current: u32, steps: &[Step]) -> Result<Body, SaveError> {
+    let corrupted = SaveError::of(SaveErrorKind::Corrupted);
+    if from == current {
+        return decode_named(packed)
+            .context("savegame corrupted")
+            .map_err(corrupted);
+    }
+    let lift = || -> anyhow::Result<Body> {
+        let mut value = decode_value(packed).context("savegame corrupted")?;
+        upgrade::upgrade(&mut value, from, steps)
+            .with_context(|| format!("savegame of format version {from} not convertible"))?;
+        from_value(value).context("savegame corrupted")
+    };
+    lift().map_err(corrupted)
 }
 
 impl GameSaveFile {
-    /// File: header, then the flat body.
+    /// New savegame of the current number.
+    pub fn new(sim: SaveGame, host: HostPart, random_map: Option<Box<RandomMap>>) -> Self {
+        Self {
+            sim,
+            host,
+            random_map,
+            loaded_format: SAVE_FORMAT,
+        }
+    }
+
+    /// File: header, then the flat body (always the current number [`SAVE_FORMAT`]).
     pub fn to_bytes(&self) -> Vec<u8> {
         let body = encode_named(&BodyRef {
             sim_version: FORMAT_VERSION,
             sim: &self.sim,
             host: &self.host,
+            random_map: &self.random_map,
         });
         write_container(GAME_MAGIC, SAVE_FORMAT, &body)
     }
 
-    /// Reads a file: identifier, savegame number and checksum of the container ([`read_container`]), the body
-    /// ([`decode_named`]) and the structure check of the state ([`check_state`]). The network names are cleaned; the
+    /// Reads a file: identifier and savegame number (from [`FIRST_SAVE_FORMAT`] to [`SAVE_FORMAT`]), checksum of the
+    /// container ([`read_container`]), the body (an older number through the structure steps), the structure check of
+    /// the state ([`check_state`]) and of the random map ([`RandomMap::check`]). The network names are cleaned; the
     /// command log is dropped if the file comes from another simulation version (it replays the match from tick 0
-    /// and would compute differently). It matches the rules only after [`GameSaveFile::check`].
-    pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        let body = read_container(GAME_MAGIC, SAVE_FORMAT, bytes, "savegame")?;
+    /// and would compute differently). It matches the rules only after [`GameSaveFile::check`]; a loaded match
+    /// continues only after [`GameSaveFile::prepare`].
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, SaveError> {
+        let corrupted = || SaveError::of(SaveErrorKind::Corrupted);
+        let from = read_number(bytes)?;
+        let packed = read_container(GAME_MAGIC, from, bytes, "savegame").map_err(corrupted())?;
         let Body {
             sim_version,
             sim,
             mut host,
-        } = decode_named(body).context("savegame corrupted")?;
-        check_state(&sim.state)?;
+            random_map,
+        } = decode_body(packed, from, SAVE_FORMAT, upgrade::STEPS)?;
+        check_state(&sim.state).map_err(corrupted())?;
+        if let Some(map) = &random_map {
+            map.check()
+                .context("savegame corrupted")
+                .map_err(corrupted())?;
+        }
         host.net = host.net.map(NetSaveInfo::cleaned);
         if sim_version != FORMAT_VERSION {
             host.log = None;
         }
-        Ok(Self { sim, host })
+        Ok(Self {
+            sim,
+            host,
+            random_map,
+            loaded_format: from,
+        })
     }
 
     /// Does the savegame match the loaded rules (start package, map, state: [`SaveGame::check`]; of the rules checksum
@@ -224,15 +367,31 @@ impl GameSaveFile {
     /// part and the network flag belong together? Loading does not check the rest of the host part: camera,
     /// speed, script camera, control groups, indices, masks, fog switch, game mode and command log are tolerated by
     /// the host with any value.
-    pub fn check(&self, rules: &Rules) -> anyhow::Result<()> {
-        self.sim.check(rules, RulesCompare::Logic)?;
+    pub fn check(&self, rules: &Rules) -> Result<(), SaveError> {
+        self.sim
+            .check(rules, RulesCompare::Logic)
+            .map_err(SaveError::of(SaveErrorKind::Mismatch))?;
         // The network part and the network flag belong together (`SaveGame::check` keeps the flag of the state equal
         // to that of the start package).
-        match (&self.host.net, self.sim.start.setup.network) {
-            (Some(_), false) => bail!("savegame corrupted (network savegame without network flag)"),
-            (None, true) => bail!("savegame corrupted (single-player savegame with network flag)"),
-            _ => Ok(()),
-        }
+        let why = match (&self.host.net, self.sim.start.setup.network) {
+            (Some(_), false) => "savegame corrupted (network savegame without network flag)",
+            (None, true) => "savegame corrupted (single-player savegame with network flag)",
+            _ => return Ok(()),
+        };
+        Err(SaveError::new(SaveErrorKind::Mismatch, anyhow!(why)))
+    }
+
+    /// Makes a read savegame ready to continue on the loaded rules: [`GameSaveFile::check`], then the recompute steps
+    /// for the number it was read from ([`opennml_sim::save::upgrade::recompute`]), then the start package takes over
+    /// the rules checksums of this installation. Comparisons between machines (network savegame) use the values before
+    /// this step; it computes the same on every machine.
+    pub fn prepare(&mut self, rules: &Rules) -> Result<(), SaveError> {
+        self.check(rules)?;
+        opennml_sim::save::upgrade::recompute(&mut self.sim, rules, self.loaded_format)
+            .context("savegame not convertible")
+            .map_err(SaveError::of(SaveErrorKind::Corrupted))?;
+        self.sim.start.rules = rules.checksums;
+        Ok(())
     }
 }
 
@@ -281,16 +440,213 @@ mod tests {
         for _ in 0..3 {
             host.step_once();
         }
-        let file = GameSaveFile {
-            sim: host.save(),
-            host: host_part(),
-        };
+        let file = GameSaveFile::new(host.save(), host_part(), None);
         (file, host.rules)
     }
 
     /// Rewrites the header: body `body` with a valid checksum (for errors behind the header).
     fn with_body(body: &[u8]) -> Vec<u8> {
         write_container(GAME_MAGIC, SAVE_FORMAT, body)
+    }
+
+    /// The file `bytes` with one MessagePack byte behind the value of the body, packed again.
+    fn with_trailing_byte(bytes: &[u8]) -> Vec<u8> {
+        let value = decode_value(&bytes[HEADER_LEN..]).unwrap();
+        let mut plain = Vec::new();
+        rmpv::encode::write_value(&mut plain, &value).unwrap();
+        plain.push(0xC0);
+        with_body(&zstd::bulk::compress(&plain, 3).unwrap())
+    }
+
+    /// Flat random map of 64 tiles without objects that passes [`RandomMap::check`].
+    fn small_random_map() -> RandomMap {
+        let spec = opennml_sim::random_map::RandomMapSpec {
+            seed_text: "ZKA".into(),
+            size: 0,
+            players: 2,
+            terrain: 0,
+            landscape: 0,
+            daytime: 0,
+            game_type: 0,
+        };
+        let terrain = opennml_formats::wld::TerrainParams {
+            dim_x: 64,
+            dim_z: 64,
+            ..opennml_formats::wld::TerrainParams::default()
+        };
+        RandomMap {
+            spec,
+            hash: 1,
+            script_path: "data/randommapscripts/test.rnd".into(),
+            defines: Vec::new(),
+            script: opennml_formats::rnd::RandomMapScript::default(),
+            dim: 64,
+            terrain,
+            heights: vec![0.0; 65 * 65],
+            tile_numbers: vec![-1; 64 * 64],
+            tiles: vec![0; 64 * 64],
+            steep: vec![0; 64 * 64],
+            id_grid: vec![0; 64 * 64],
+            player_areas: Vec::new(),
+            rand_counts: opennml_randommap::RandCounts::default(),
+            rand_state: 0,
+            objects: Vec::new(),
+            object_block: Vec::new(),
+            slots_used: [false; 8],
+        }
+    }
+
+    /// Every way a file or its check can fail has its kind: identifier and too old numbers are `Format`, a higher
+    /// number `Newer`, damage of the header, the packed body or the state `Corrupted`, a file of other rules
+    /// `Mismatch`.
+    #[test]
+    fn error_kinds() {
+        use SaveErrorKind::*;
+        let (file, rules) = save_file();
+        let bytes = file.to_bytes();
+        let edit = |f: &dyn Fn(&mut Vec<u8>)| {
+            let mut b = bytes.clone();
+            f(&mut b);
+            b
+        };
+        let mut broken_map = file.clone();
+        let mut map = small_random_map();
+        map.heights.pop();
+        broken_map.random_map = Some(Box::new(map));
+        let cases = [
+            (
+                "other identifier",
+                edit(&|b| b[..8].copy_from_slice(b"NMLSAVE\0")),
+                Format,
+            ),
+            (
+                "old_postcard_save_is_format_error",
+                write_container(GAME_MAGIC, 8, b"old postcard body"),
+                Format,
+            ),
+            (
+                "newer number",
+                edit(&|b| b[8..12].copy_from_slice(&(SAVE_FORMAT + 1).to_le_bytes())),
+                Newer,
+            ),
+            ("truncated", bytes[..15].to_vec(), Corrupted),
+            (
+                "wrong checksum",
+                edit(&|b| *b.last_mut().unwrap() ^= 0x55),
+                Corrupted,
+            ),
+            ("bytes left over", with_trailing_byte(&bytes), Corrupted),
+            ("inconsistent random map", broken_map.to_bytes(), Corrupted),
+        ];
+        for (what, bytes, kind) in cases {
+            let error = GameSaveFile::from_bytes(&bytes).unwrap_err();
+            assert_eq!(error.kind, kind, "{what}: {error}");
+        }
+        let failing: [Step; 1] = [|_| anyhow::bail!("step failed")];
+        let error = decode_body(
+            &bytes[HEADER_LEN..],
+            FIRST_SAVE_FORMAT,
+            FIRST_SAVE_FORMAT + 1,
+            &failing,
+        )
+        .err()
+        .unwrap();
+        assert_eq!(error.kind, Corrupted, "failing upgrade step: {error}");
+        let mut other_rules = file;
+        other_rules.sim.start.rules.logic ^= 1;
+        let error = other_rules.check(&rules).unwrap_err();
+        assert_eq!(error.kind, Mismatch, "other logic: {error}");
+    }
+
+    /// A body of an older savegame number goes through the structure steps from its number on and comes out as the
+    /// current body; saving it again writes the current number.
+    #[test]
+    fn older_save_is_lifted_and_saves_current() {
+        let (file, _) = save_file();
+        let mut value = decode_value(&file.to_bytes()[HEADER_LEN..]).unwrap();
+        let speed = upgrade::take(&mut value, &["host", "game_speed"]).unwrap();
+        upgrade::put(&mut value, &["host", "old_speed"], speed).unwrap();
+        let older = encode_named(&value);
+        let current = FIRST_SAVE_FORMAT + 1;
+        assert!(decode_body(&older, current, current, &[]).is_err());
+        let rename: [Step; 1] = [|v| {
+            let speed = upgrade::take(v, &["host", "old_speed"])?;
+            upgrade::put(v, &["host", "game_speed"], speed)
+        }];
+        let body = decode_body(&older, FIRST_SAVE_FORMAT, current, &rename).unwrap();
+        assert_eq!(body.sim_version, FORMAT_VERSION);
+        assert_eq!(
+            (&body.sim, &body.host, &body.random_map),
+            (&file.sim, &file.host, &file.random_map)
+        );
+        let lifted = GameSaveFile::new(body.sim, body.host, body.random_map);
+        let bytes = lifted.to_bytes();
+        assert_eq!(&bytes[8..12], &SAVE_FORMAT.to_le_bytes());
+        assert_eq!(GameSaveFile::from_bytes(&bytes).unwrap(), file);
+    }
+
+    /// `prepare` checks the savegame and takes over the rules checksums of this installation (the speech part may
+    /// differ, the logic part is equal).
+    #[test]
+    fn prepare_adopts_rules_checksums() {
+        let (mut file, rules) = save_file();
+        file.sim.start.rules.speech ^= 1;
+        assert_ne!(file.sim.start.rules, rules.checksums);
+        file.prepare(&rules).unwrap();
+        assert_eq!(file.sim.start.rules, rules.checksums);
+    }
+
+    /// [`MapSource::of_save`]: a file with the generated map loads the map from the file (`SavedRandom`); neither the
+    /// map types nor a map script is read, map, rules input and state of the random map are those of the start. A
+    /// file without it loads from the start package.
+    // QUIRK D-341: deviation
+    #[test]
+    fn of_save_takes_the_random_map_of_the_file() {
+        use crate::game::map::{MapLoad, MapSource};
+        let (file, _) = save_file();
+        assert_eq!(
+            MapSource::of_save(&file),
+            MapSource::of_start(&file.sim.start)
+        );
+        let Some(dir) = opennml_rda::testutil::corpus_game_dir() else {
+            eprintln!("Original installation not found - corpus test skipped");
+            return;
+        };
+        let vfs = opennml_rda::Vfs::open_game_dir(&dir).unwrap();
+        let types = opennml_randommap::load_types(&vfs).unwrap();
+        let spec = opennml_sim::random_map::RandomMapSpec {
+            seed_text: "ZKB".into(),
+            size: 0,
+            players: 2,
+            terrain: types
+                .map_scripts
+                .iter()
+                .position(|s| s.to_lowercase().ends_with("/continental.rnd"))
+                .unwrap(),
+            landscape: types
+                .landscape_types
+                .iter()
+                .position(|l| l == "MEADOW")
+                .unwrap(),
+            daytime: types.daytime_types.iter().position(|d| d == "DAY").unwrap(),
+            game_type: 0,
+        };
+        let start = MapLoad::open(&vfs, &MapSource::Random(spec)).unwrap();
+        let map = start.random_map.clone().expect("generated map");
+        let saved = GameSaveFile::new(file.sim, file.host, Some(map.clone()));
+        let source = MapSource::of_save(&saved);
+        assert_eq!(source, MapSource::SavedRandom(map));
+        assert_eq!(source.label(), start.scene.lvl_path);
+        let (reader, log) = vfs.recording();
+        let load = MapLoad::open(&reader, &source).unwrap();
+        let read: Vec<String> = log.take().into_iter().map(|e| e.path).collect();
+        assert!(!read.is_empty());
+        let generator =
+            |p: &String| p == opennml_randommap::RANDOM_MAP_TYPES_PATH || p.ends_with(".rnd");
+        assert!(!read.iter().any(generator), "{read:?}");
+        assert_eq!(load.random_map, start.random_map);
+        assert_eq!(load.random, start.random);
+        assert_eq!(load.random_state, start.random_state);
     }
 
     #[test]
@@ -330,6 +686,7 @@ mod tests {
                 sim_version,
                 sim: file.sim.clone(),
                 host: file.host.clone(),
+                random_map: None,
             };
             with_body(&encode_named(&body))
         };
@@ -419,13 +776,12 @@ mod tests {
     }
 
     /// Saving in the middle of a move with binding and rotation; after loading, the camera moves for N frames exactly
-    /// as without loading. Container `SAVE_FORMAT` 1 (without script camera) is rejected with an error message.
+    /// as without loading.
     // QUIRK E-239: deviation
     #[test]
     fn host_part_restores_the_script_camera() {
         use crate::game::input::testkit;
         use opennml_sim::script::present::Presentation;
-        assert_eq!(SAVE_FORMAT, 100);
         let (mut camera, terrain) = testkit::setup();
         let (file, rules) = save_file();
         let host = plain_testkit::host();
@@ -481,8 +837,8 @@ mod tests {
         }
         assert_eq!(restored, script);
         assert!(script.moves.is_empty() && script.rotation.is_none());
-        // Container format 3: a running and a waiting move of the player (Home) stay player moves after loading and
-        // do not lock the player camera.
+        // A running and a waiting move of the player (Home) stay player moves after loading and do not lock the player
+        // camera.
         let mut home = ScriptCamera::default();
         home.push_home(&camera);
         home.update(100.0, &mut camera, &terrain, &host);
@@ -493,18 +849,9 @@ mod tests {
         let back = GameSaveFile::from_bytes(&save_home.to_bytes()).unwrap();
         assert_eq!(back.host.script_camera, home);
         assert!(!back.host.script_camera.running() && back.host.script_camera.moving());
-        // A savegame with container format 1 (before the script camera).
-        let mut old = save.to_bytes();
-        old[8..12].copy_from_slice(&1u32.to_le_bytes());
-        let message = format!("{:#}", GameSaveFile::from_bytes(&old).unwrap_err());
-        assert!(
-            message.contains(&format!("format version 1, expected {SAVE_FORMAT}")),
-            "{message}"
-        );
     }
 
-    /// Idle worker index and masks survive saving and loading. A savegame with container format 3 (before the new
-    /// fields) is rejected with an error message.
+    /// Idle worker index and masks survive saving and loading.
     // QUIRK O-293: kept
     #[test]
     fn idle_index_and_masks_round_trip() {
@@ -516,14 +863,7 @@ mod tests {
         back.check(&rules).unwrap();
         assert_eq!(back.host.idle_worker_index, [0, 2, 0, 0, 0, 0, 0, 7]);
         assert_eq!(back.host.masks, file.host.masks);
-        assert!(back.host.lock_teams, "fixed teams (in the same format 4)");
-        let mut old = file.to_bytes();
-        old[8..12].copy_from_slice(&3u32.to_le_bytes());
-        let message = format!("{:#}", GameSaveFile::from_bytes(&old).unwrap_err());
-        assert!(
-            message.contains(&format!("format version 3, expected {SAVE_FORMAT}")),
-            "{message}"
-        );
+        assert!(back.host.lock_teams, "fixed teams");
     }
 
     /// The network part of the host (session, own slot, turn spacing, slot assignment) survives saving and
@@ -534,10 +874,7 @@ mod tests {
         use opennml_sim::state::Control;
         // Network match with humans on 0 ... 2.
         let sim = crate::game::testworld::net_host(1, false);
-        let mut file = GameSaveFile {
-            sim: sim.save(),
-            host: host_part(),
-        };
+        let mut file = GameSaveFile::new(sim.save(), host_part(), None);
         let rules = sim.rules;
         let players = &file.sim.state.players;
         let human = players
@@ -579,13 +916,7 @@ mod tests {
             lead: 4,
             seats,
         });
-        (
-            GameSaveFile {
-                sim: sim.save(),
-                host,
-            },
-            sim.rules,
-        )
+        (GameSaveFile::new(sim.save(), host, None), sim.rules)
     }
 
     /// Session name and slot names are cleaned on reading like names from the network (`clean_session_name`,
@@ -743,10 +1074,7 @@ mod tests {
                 edit(&|b| b[8..12].copy_from_slice(&(SAVE_FORMAT - 1).to_le_bytes())),
             ),
             ("wrong checksum", edit(&|b| *b.last_mut().unwrap() ^= 0x55)),
-            (
-                "one byte left over",
-                with_body(&[&bytes[HEADER_LEN..], &[0]].concat()),
-            ),
+            ("one byte left over", with_trailing_byte(&bytes)),
             ("damaged simulation part", damaged.to_bytes()),
         ];
         for (what, bytes) in cases {

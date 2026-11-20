@@ -73,7 +73,7 @@ use opennml_ui::screens::{
     CHANGE_GAME_REFUSED, TeamColor, close_change_game, close_lobby, open_lobby, team_color_check,
 };
 
-use crate::game::map::{MapSource, load_random_rules, load_rules};
+use crate::game::map::{MapSource, map_rules};
 use crate::game::net_driver::{LEAVE_REASON, NetDriver, NetPaths, latin1_text};
 use crate::game_flow::config_speed;
 use crate::game_save::{GameSaveFile, sim_checksum};
@@ -1849,8 +1849,8 @@ impl NetSession {
         let file = std::fs::read(&path)
             .map_err(|e| e.to_string())
             .and_then(|bytes| GameSaveFile::from_bytes(&bytes).map_err(|e| format!("{e:#}")));
-        let start = match file {
-            Ok(file) => file.sim.start,
+        let file = match file {
+            Ok(file) => file,
             Err(e) => {
                 log::warn!("Network: savegame \"{name}\" not readable for the rules check: {e}");
                 return;
@@ -1860,12 +1860,12 @@ impl NetSession {
         log::info!("Network: computing the rules of the own savegame \"{name}\"");
         self.save_check = Some(SaveCheck {
             revision,
-            expected: start.rules.logic,
+            expected: file.sim.start.rules.logic,
         });
         self.rules_worker.submit(RulesJob {
             session_revision: revision,
             vfs: vfs.clone(),
-            source: MapSource::of_start(&start),
+            source: MapSource::of_save(&file),
         });
     }
 
@@ -2291,9 +2291,9 @@ impl NetSession {
     }
 }
 
-/// Rules of the map of a start request at the host, before loading for the start package: fixed map from its `.lvl`
-/// ([`load_rules`]), random map (`Info.LevelType 1`, [`random_map_spec`]) from its description
-/// ([`load_random_rules`], the same generator as when loading). The start package then carries `random_map`, the
+/// Rules of the map of a start request at the host, before loading for the start package: fixed map from its `.lvl`,
+/// random map (`Info.LevelType 1`, [`random_map_spec`]) from its description with the generator ([`map_rules`], as
+/// when loading). The start package then carries `random_map`, the
 /// client generates the map from it; differing generator data are rejected by the rules checksum when loading
 /// (deviating from E-314). The command-line path (`opennml-game`, `net_start`) stays with `.lvl`. Errors as a reason
 /// text.
@@ -2309,14 +2309,10 @@ pub fn net_source(req: &MatchRequest) -> MapSource {
     }
 }
 
-/// Rules of the map `source` as [`net_rules`] computes them: fixed map via [`load_rules`], random map via
-/// [`load_random_rules`]. Errors as a reason text.
+/// Rules of the map `source` as [`net_rules`] computes them ([`map_rules`]: fixed map from its `.lvl`, random map from
+/// its description or from the generated map of a savegame). Errors as a reason text.
 pub fn source_rules(vfs: &Vfs, source: &MapSource) -> Result<opennml_sim::rules::Rules, String> {
-    match source {
-        MapSource::Random(spec) => load_random_rules(vfs, spec),
-        MapSource::Level(level) => load_rules(vfs, level),
-    }
-    .map_err(|e| format!("{e:#}"))
+    map_rules(vfs, source).map_err(|e| format!("{e:#}"))
 }
 
 /// [`source_rules`] on a recording copy of `vfs`, like [`net_rules_recorded`].
@@ -2472,18 +2468,14 @@ impl NetSaveCheck {
 }
 
 /// Read and check the network savegame `path` (for host and start): file ([`GameSaveFile::from_bytes`]), rules of
-/// the map as when resuming (`GameSession::resume_from`: fixed map via [`load_rules`], random map from the
-/// description in the start package via [`load_random_rules`]), [`GameSaveFile::check`] and the network part. Errors
-/// as a reason text.
+/// the map as when resuming (`GameSession::resume_from`: [`MapSource::of_save`], a random map from the generated map
+/// in the file), [`GameSaveFile::check`] and the network part. The file stays as read (without
+/// [`GameSaveFile::prepare`]): its start package and checksum go to the clients, which compare them with their own
+/// file. Errors as a reason text.
 pub fn read_net_save(path: &Path, vfs: &Vfs) -> Result<NetSaveCheck, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("{} not readable: {e}", path.display()))?;
     let file = GameSaveFile::from_bytes(&bytes).map_err(|e| format!("{e:#}"))?;
-    let start = &file.sim.start;
-    let rules = match &start.random_map {
-        Some(spec) => load_random_rules(vfs, spec),
-        None => load_rules(vfs, &start.level),
-    }
-    .map_err(|e| format!("{e:#}"))?;
+    let rules = source_rules(vfs, &MapSource::of_save(&file))?;
     file.check(&rules).map_err(|e| format!("{e:#}"))?;
     if file.host.net.is_none() {
         return Err("not a network savegame (network part missing)".to_string());
@@ -2504,7 +2496,8 @@ pub fn read_net_save(path: &Path, vfs: &Vfs) -> Result<NetSaveCheck, String> {
 /// Head of a network savegame for map filter and join: read the file ([`GameSaveFile::from_bytes`]), network part
 /// present, network flag set in start package and state; the result is the checksum of the simulation part
 /// ([`sim_checksum`]) and the own slot (`local_slot`). Without rules of the map (the search tick queries every
-/// second); the full check is done by [`read_net_save`] when hosting and at the start. Errors as a reason text.
+/// second); the check against the rules (logic part) is done by [`read_net_save`] when hosting and by resuming at the
+/// start ([`GameSaveFile::prepare`]). Errors as a reason text.
 pub fn read_net_head(path: &Path) -> Result<(u64, u8), String> {
     let bytes = std::fs::read(path).map_err(|e| format!("{} not readable: {e}", path.display()))?;
     let file = GameSaveFile::from_bytes(&bytes).map_err(|e| format!("{e:#}"))?;

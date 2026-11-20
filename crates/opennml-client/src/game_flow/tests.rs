@@ -676,10 +676,11 @@ fn broken_save_shows_message_and_stays_in_menu() {
     r.until_step();
     r.idle();
     let before = (r.view.steps(), r.view.checksum());
-    let mut bad = GameSaveFile {
-        sim: r.view.sim().unwrap().save(),
-        host: r.flow.host_part(&r.host.app, &r.view).unwrap(),
-    };
+    let mut bad = GameSaveFile::new(
+        r.view.sim().unwrap().save(),
+        r.flow.host_part(&r.host.app, &r.view).unwrap(),
+        None,
+    );
     bad.sim.start.rules.logic ^= 1;
     std::fs::write(r.files.path("rules", 0), bad.to_bytes()).unwrap();
     take_warnings();
@@ -3283,10 +3284,11 @@ fn loading_inside_the_campaign_cinemascope_hides_the_pointer() {
         );
         r.frame();
     }
-    let save = GameSaveFile {
-        sim: r.view.sim().unwrap().save(),
-        host: r.flow.host_part(&r.host.app, &r.view).unwrap(),
-    };
+    let save = GameSaveFile::new(
+        r.view.sim().unwrap().save(),
+        r.flow.host_part(&r.host.app, &r.view).unwrap(),
+        None,
+    );
     std::fs::create_dir_all(&r.files.dir).unwrap();
     std::fs::write(r.files.path("scene", 0), save.to_bytes()).unwrap();
     // ESC switches the pointer on (the game menu needs it), the savegame brings the scene back.
@@ -3502,18 +3504,18 @@ fn write_random_save(
         log: None,
         save_replay: false,
     };
-    let file = GameSaveFile {
-        sim: r.view.sim().unwrap().save(),
-        host,
-    };
+    // Like `0x0B`: with the generated map of the match.
+    let map = r.view.random_map().cloned().map(Box::new);
+    assert!(map.is_some(), "generated map of the match");
+    let file = GameSaveFile::new(r.view.sim().unwrap().save(), host, map);
     assert_eq!(file.sim.start.random_map.as_ref(), Some(spec));
     write_file(&r.files.path(name, 0), &file.to_bytes()).unwrap();
     r.view.end();
     (setup, at_start)
 }
 
-/// O-431: A savegame of a random map loads with `default.ldg`; the map is regenerated from the map description of the
-/// start package - `start.level` (`randommap:ZKB`) is not read as a file (the fake with a real simulation reads fixed
+/// O-431: A savegame of a random map loads with `default.ldg`; the map comes from the generated map in the savegame -
+/// `start.level` (`randommap:ZKB`) is not read as a file (the fake with a real simulation reads fixed
 /// maps via `load_level`, which would fail here).
 // QUIRK D-341, O-431: deviation
 #[test]

@@ -2239,11 +2239,13 @@ dependencies = [
  "opennml-ui",
  "opennml-world",
  "postcard",
+ "rmpv",
  "serde",
  "serde_json",
  "tempfile",
  "wgpu",
  "winit",
+ "zstd",
 ]
 
 [[package]]
@@ -2307,6 +2309,7 @@ dependencies = [
  "encoding_rs",
  "image",
  "opennml-rda",
+ "serde",
  "thiserror 2.0.21",
 ]
 
@@ -2367,6 +2370,8 @@ dependencies = [
  "opennml-rda",
  "opennml-sim",
  "opennml-world",
+ "serde",
+ "serde_bytes",
  "serde_json",
 ]
 

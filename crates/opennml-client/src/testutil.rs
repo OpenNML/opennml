@@ -475,6 +475,8 @@ pub(crate) struct FakeGame {
     /// Game camera like `GameSession` (for the host part): [`FAKE_CAMERA`] at the start and after centering on the own
     /// slot in the network, the camera of the savegame after resuming.
     pub(crate) camera: CameraSave,
+    /// Generated map of a random map like `GameSession::random_map` (only with real maps).
+    pub(crate) random_map: Option<Box<opennml_randommap::RandomMap>>,
 }
 
 impl FakeGame {
@@ -496,6 +498,7 @@ impl FakeGame {
             rebuilds: 0,
             camera_catch_up: Vec::new(),
             camera: FAKE_CAMERA,
+            random_map: None,
         }
     }
 
@@ -722,6 +725,7 @@ impl FakeSession {
     ) -> anyhow::Result<()> {
         let level = source.label();
         self.begin_with(&level, progress, call)?;
+        let mut random_map = None;
         let host = if self.real_levels {
             // Like `GameSession::start_source` without graphics: fixed map through `load_level`, random map from the
             // description (`MapLoad::open`).
@@ -733,6 +737,7 @@ impl FakeSession {
                 Ok(setup)
             })?;
             self.last_setup = last;
+            random_map = load.random_map.take();
             load.sim.context("rules of the map not loaded")?
         } else {
             let mut host = plain_testkit::host();
@@ -743,7 +748,9 @@ impl FakeSession {
         progress(LoadPhase::SimReady);
         progress(LoadPhase::RenderReady);
         self.masks = crate::game::diplomacy::Masks::initial();
-        self.game = Some(FakeGame::new(host, level, &self.view, &self.controls));
+        let mut game = FakeGame::new(host, level, &self.view, &self.controls);
+        game.random_map = random_map;
+        self.game = Some(game);
         Ok(())
     }
 
@@ -804,22 +811,24 @@ impl SessionView for FakeSession {
     fn resume(
         &mut self,
         vfs: &Vfs,
-        save: GameSaveFile,
+        mut save: GameSaveFile,
         progress: &mut dyn FnMut(LoadPhase),
     ) -> anyhow::Result<()> {
         let level = save.sim.start.level.clone();
         self.begin(&level, progress)?;
+        let mut random_map = None;
         let mut host = if self.real_levels {
-            // Like `GameSession::resume_from`: map from the start package (`MapSource::of_start`), a random map
-            // regenerated from its description, not `start.level` as a file.
-            let mut load = MapLoad::open(vfs, &MapSource::of_start(&save.sim.start))?;
+            // Like `GameSession::resume_from`: map of the savegame (`MapSource::of_save`), a random map from the
+            // generated map in the file, not `start.level` as a file.
+            let mut load = MapLoad::open(vfs, &MapSource::of_save(&save))?;
             let setup = save.sim.start.setup.clone();
             load.start_sim(vfs, save.host.game_speed, |_| Ok(setup))?;
+            random_map = load.random_map.take();
             load.sim.context("rules of the map not loaded")?
         } else {
             plain_testkit::host()
         };
-        save.check(&host.rules)?;
+        save.prepare(&host.rules)?;
         host.game_speed = save.host.game_speed;
         host.load(save.sim, save.host.log.clone());
         let mut presentation = ScriptPresentation::new(&self.view);
@@ -834,6 +843,7 @@ impl SessionView for FakeSession {
         let mut game = FakeGame::new(host, level, &self.view, &self.controls);
         game.presentation = presentation;
         game.camera = save.host.camera;
+        game.random_map = random_map;
         self.game = Some(game);
         Ok(())
     }
@@ -891,6 +901,10 @@ impl SessionView for FakeSession {
 
     fn level(&self) -> &str {
         self.game.as_ref().map_or("", |g| g.level.as_str())
+    }
+
+    fn random_map(&self) -> Option<&opennml_randommap::RandomMap> {
+        self.game.as_ref().and_then(|g| g.random_map.as_deref())
     }
 
     fn camera(&self) -> CameraSave {

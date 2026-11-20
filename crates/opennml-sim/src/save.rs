@@ -3,6 +3,7 @@
 //! package + state + commands from that state on; replay = start package + all commands with their tick.
 
 pub mod codec;
+pub mod upgrade;
 
 use anyhow::{Context, bail};
 use postcard::ser_flavors::Flavor;
@@ -569,10 +570,10 @@ fn check_start(start: &StartPackage, rules: &Rules, compare: RulesCompare) -> an
         );
     }
     // Random map: the same description as the loaded rules, the game mode of the match
-    // is that of the description (deviating from D-348), and the newly generated map has the same checksum. On the real
-    // load path the rules arise from the description of the savegame, so the comparison of the description is always
-    // satisfied there; the full rules checksum protects there (its `derived` part contains the checksum of the
-    // generator including the description), `RulesCompare::Logic` does not compare it.
+    // is that of the description (deviating from D-348). In the game the rules of a random map savegame arise from the
+    // generated map stored in it, so the description matches unless the file is inconsistent. The full rules checksum
+    // (its `derived` part contains the checksum of the generator including the description) protects replays and
+    // network states; `RulesCompare::Logic` does not compare it.
     let loaded = rules.random_map.as_ref().map(|r| &r.spec);
     if start.random_map.as_ref() != loaded {
         bail!(

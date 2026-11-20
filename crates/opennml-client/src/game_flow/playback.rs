@@ -71,7 +71,7 @@ impl GameFlow {
         // Random map like the start of a new single-player match: `randommap.ldg`, otherwise the loading screen of the
         // map.
         let ldg = match &source {
-            MapSource::Random(_) => RANDOM_MAP_LDG.to_string(),
+            MapSource::Random(_) | MapSource::SavedRandom(_) => RANDOM_MAP_LDG.to_string(),
             MapSource::Level(path) => {
                 ldg_path_for(path, head.meta.game_type, false, |p| env.vfs.exists(p))
             }

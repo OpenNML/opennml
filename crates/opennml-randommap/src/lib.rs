@@ -34,11 +34,12 @@ use opennml_formats::text::decode_cp1252;
 use opennml_formats::wld::TerrainParams;
 use opennml_rda::Vfs;
 use opennml_sim::fx::Fx;
+use serde::{Deserialize, Serialize};
 
 use crate::area::{Area, finish_area};
 use crate::checks::ObjectCtx;
 use crate::grid::Grid;
-pub use crate::level::{RandomLevel, build_level, is_island_script, rules_input};
+pub use crate::level::{RandomLevel, build_level, is_island_script, level_from_map, rules_input};
 pub use crate::objects::MapObject;
 use crate::rng::GenRand;
 pub use crate::rng::{Phase, RandCounts};
@@ -58,7 +59,7 @@ const CHUNK_SIZE: u32 = 16;
 const TEXTURE_TILING: u32 = 4;
 
 /// Start position of a player area (`create_PlayerAreas`, Z.6.4).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PlayerArea {
     pub id: i32,
     pub cx: i32,
@@ -66,8 +67,9 @@ pub struct PlayerArea {
     pub min_size: i32,
 }
 
-/// Result of the generator.
-#[derive(Debug, Clone, PartialEq)]
+/// Result of the generator. A savegame of a random map carries it whole, so that loading builds scene and rules input
+/// without the generator ([`level_from_map`]).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RandomMap {
     pub spec: RandomMapSpec,
     /// Seed = [`seed_hash`] of the seed text.
@@ -89,6 +91,7 @@ pub struct RandomMap {
     /// texture number stands there (D-335, -1 -> `0xFFFFFFFF`).
     pub tiles: Vec<u32>,
     /// Steepness flags per tile (Z.6.10).
+    #[serde(with = "serde_bytes")]
     pub steep: Vec<u8>,
     /// Area ID per tile (`G+0x110`).
     pub id_grid: Vec<i32>,
@@ -101,6 +104,7 @@ pub struct RandomMap {
     /// Blocking map at the end of the object step: steepness plus footprints of the placed objects
     /// (D-337, D-349). Only for checksum and reference comparison; scene and rules do not read it.
     /// Empty in the load path.
+    #[serde(with = "serde_bytes")]
     pub object_block: Vec<u8>,
     /// Slots 0...7 with a placed object of this owner (`RM+0x50`, `FUN_005473B0`).
     pub slots_used: [bool; 8],
@@ -144,6 +148,48 @@ fn fnv1a(bytes: impl IntoIterator<Item = u8>) -> u64 {
 }
 
 impl RandomMap {
+    /// Internal consistency of a map that does not come from the generator (savegame): edge length of the map
+    /// size, the terrain layout the generator sets at the end and the lengths of the grids. Only what
+    /// would otherwise make [`to_scene`] or the terrain panic or allocate without bound; no plausibility.
+    pub fn check(&self) -> anyhow::Result<()> {
+        let dim = map_dim(self.spec.size);
+        if self.dim != dim {
+            bail!(
+                "random map: edge length {}, map size {} has {dim}",
+                self.dim,
+                self.spec.size
+            );
+        }
+        let defaults = TerrainParams::default();
+        let t = &self.terrain;
+        let layout = (
+            (t.dim_x, t.dim_z, t.size_x, t.size_z),
+            (t.chunk_size, t.texture_tiling),
+            (t.texture_base_size, t.texture_alpha_size),
+        );
+        let expected = (
+            (dim as u32, dim as u32, TILE_SIZE, TILE_SIZE),
+            (CHUNK_SIZE, TEXTURE_TILING),
+            (defaults.texture_base_size, defaults.texture_alpha_size),
+        );
+        if layout != expected {
+            bail!("random map: terrain layout {layout:?}, expected {expected:?}");
+        }
+        let tiles = dim * dim;
+        for (name, len, want) in [
+            ("heights", self.heights.len(), (dim + 1) * (dim + 1)),
+            ("texture numbers", self.tile_numbers.len(), tiles),
+            ("tile GUIDs", self.tiles.len(), tiles),
+            ("steepness", self.steep.len(), tiles),
+            ("ID grid", self.id_grid.len(), tiles),
+        ] {
+            if len != want {
+                bail!("random map: {len} {name}, expected {want}");
+            }
+        }
+        Ok(())
+    }
+
     pub fn digests(&self) -> Digests {
         Digests {
             heights: fnv1a(self.heights.iter().flat_map(|h| h.to_bits().to_le_bytes())),

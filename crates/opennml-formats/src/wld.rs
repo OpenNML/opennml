@@ -4,6 +4,8 @@
 
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::FormatError;
 use crate::config::scan_int;
 use crate::prj::{optional, required, text_value};
@@ -11,7 +13,7 @@ use crate::text::{Node, parse_blocks};
 
 /// `[TERRAIN]`. Missing keys (never in the shipped data) receive the values of
 /// [`TerrainParams::default`].
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TerrainParams {
     /// Tiles in x/z.
     pub dim_x: u32,
@@ -101,7 +103,7 @@ pub struct NamedCamera {
 }
 
 /// `[LIGHT]`: light of the objects.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ObjectLight {
     /// Direction **to** the light.
     pub position: [f32; 3],
@@ -110,7 +112,7 @@ pub struct ObjectLight {
 }
 
 /// `[SHADOW]`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ShadowParams {
     pub light_position: [f32; 3],
     pub intensity: i32,
