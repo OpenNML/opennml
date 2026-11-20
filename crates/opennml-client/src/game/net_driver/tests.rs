@@ -1936,13 +1936,9 @@ fn finish_messages_name_the_save() {
     );
 }
 
-/// Texts without an installation: only the own texts, German (no edition detected).
+/// Texts without an installation: only the own texts, German.
 fn own_texts() -> Texts {
-    let (_dir, vfs) = crate::testutil::install(&[]);
-    Texts::load(
-        &vfs,
-        &opennml_formats::localisation::Localisation::default(),
-    )
+    Texts::own_only(opennml_rda::GameVersion::German)
 }
 
 /// The network messages appear in the `MSGBOX` through the text path of the original, which takes only the lower byte

@@ -24,7 +24,8 @@ fn texts() -> Texts {
         text_files: vec!["data/txt/t.txt".into()],
         ..Localisation::default()
     };
-    Texts::load(&vfs, &loc)
+    // German own texts, whatever the language of the machine.
+    Texts::load_with_language(&vfs, &loc, opennml_rda::GameVersion::German)
 }
 
 // QUIRK E-300: deviation

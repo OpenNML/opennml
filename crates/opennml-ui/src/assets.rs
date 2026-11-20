@@ -8,8 +8,7 @@ use image::RgbaImage;
 use opennml_formats::bmp::decode_bmp_game;
 use opennml_formats::localisation::{Localisation, merge_text_tables};
 use opennml_formats::tga::decode_tga_game;
-use opennml_rda::testutil::{GameVersion, game_version};
-use opennml_rda::{Vfs, normalize_path};
+use opennml_rda::{GameVersion, Vfs, normalize_path};
 
 use crate::draw::TextureId;
 use crate::own_texts;
@@ -139,9 +138,15 @@ impl Texts {
     /// BOM-less file is skipped with a warning (the original then aborts reading that file).
     ///
     /// Afterwards come the own texts of the reimplementation ([`crate::own_texts`]) of the detected edition
-    /// (`opennml_rda::testutil::game_version`, German if no edition is detected), only under numbers that the tables do
+    /// ([`own_texts::language`]: the language of Windows if no edition is detected), only under numbers that the tables do
     /// not occupy themselves ([`Self::add_own_texts`]).
     pub fn load(vfs: &Vfs, loc: &Localisation) -> Texts {
+        Texts::load_with_language(vfs, loc, own_texts::language(vfs))
+    }
+
+    /// Like [`Self::load`], with the own texts of the edition `version` instead of the detected language (tests that
+    /// must not depend on the language of the machine).
+    pub fn load_with_language(vfs: &Vfs, loc: &Localisation, version: GameVersion) -> Texts {
         let (table, warnings) = merge_text_tables(loc, &|path| vfs.read(path).ok());
         for warning in warnings {
             log::warn!("{warning}");
@@ -150,7 +155,16 @@ impl Texts {
             table,
             last_missing: Cell::new(None),
         };
-        let version = game_version(vfs).unwrap_or(GameVersion::German);
+        texts.add_own_texts(version);
+        texts
+    }
+
+    /// Only the own texts of the edition `version`, without an installation (tests of other crates).
+    pub fn own_only(version: GameVersion) -> Texts {
+        let mut texts = Texts {
+            table: BTreeMap::new(),
+            last_missing: Cell::new(None),
+        };
         texts.add_own_texts(version);
         texts
     }

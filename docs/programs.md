@@ -72,6 +72,10 @@ settings file (like the destructor of the original).
   scripts, AI, cutscenes and mission objectives; results are booked in `profiles.ini`.
 - **Multiplayer on a LAN:** see [Network play](#network-play).
 
+The texts that the game writes into the game screen itself (own messages and rows, from `crates/opennml-ui/texts/`)
+follow the language of the installation; without a detected edition they follow the language of Windows. The windows
+of Windows (game directory, errors) are English.
+
 ### Switches
 
 - `--game-dir <folder>`: only this location as the installation; without it the search under "Game directory".

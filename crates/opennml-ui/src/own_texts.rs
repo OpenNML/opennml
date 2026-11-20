@@ -2,12 +2,16 @@
 //! network rows in `LEVELINFO` (the selection field `TURNRASTER` in `LAN3` was dropped), the messages when hosting
 //! from a network savegame, and the messages of the game data check in the lobby and of a failed network start
 //! (re/multiplayer-menus L.18). Placeholders `%s` and `%d` are filled in order when a text is shown ([`fill`]). One
-//! text per edition (German, English); [`crate::assets::Texts::load`] inserts the texts of the detected edition into
+//! text per edition (German, English) in `texts/de.txt` and `texts/en.txt`; [`crate::assets::Texts::load`] inserts the texts of the detected edition into
 //! the table (only numbers that the installation does not occupy itself), afterwards
 //! [`crate::assets::Texts::resolve`] resolves them like texts from `localisation.*`. Without a detected edition the
-//! German ones apply.
+//! language of Windows applies ([`language`]).
 
-use opennml_rda::testutil::GameVersion;
+use std::sync::LazyLock;
+
+use opennml_rda::{GameVersion, Vfs, detect_version};
+
+use crate::system_language::system_language;
 
 /// "Turn raster": row in `LEVELINFO`.
 pub const TURN_RASTER: i32 = 99_100;
@@ -44,82 +48,64 @@ pub const FILES_MORE: i32 = 99_114;
 /// File list of a differing row without a known file.
 pub const FILE_UNKNOWN: i32 = 99_115;
 
-/// All own texts: ID, German, English.
-const TABLE: [(i32, &str, &str); 16] = [
-    (TURN_RASTER, "Rundenraster", "Turn raster"),
-    (RASTER_STAGE, "Original", "Original"),
-    (RASTER_STAGE + 1, "LAN", "LAN"),
-    (RASTER_STAGE + 2, "LAN schnell", "LAN fast"),
-    (ROUND_TRIP, "Laufzeit: %d ms", "Round trip: %d ms"),
-    (
-        MAP_MISSING,
-        "[CENTER]Die Karte der Partie fehlt auf diesem Rechner. Sie können erst mitspielen, wenn der Host eine \
-         andere Karte wählt.",
-        "[CENTER]The game's map is missing on this computer. You can only take part once the host chooses another \
-         map.",
-    ),
-    (
-        SAVE_NOT_LOADED,
-        "[CENTER]Der Netz-Spielstand lässt sich nicht laden.",
-        "[CENTER]The network saved game cannot be loaded.",
-    ),
-    (
-        SAVE_ONE_PLAYER,
-        "[CENTER]In diesem Spielstand ist nur noch ein Spieler im Spiel.",
-        "[CENTER]Only one player is still in this saved game.",
-    ),
-    (
-        SAVE_SLOT_OUT,
-        "[CENTER]Ihr Platz in diesem Spielstand ist schon ausgeschieden.",
-        "[CENTER]Your place in this saved game is already out.",
-    ),
-    (
-        REPLAY_NOT_PLAYABLE,
-        "[CENTER]Die Aufnahme lässt sich nicht abspielen.",
-        "[CENTER]The recording cannot be played back.",
-    ),
-    (
-        DATA_DIFFERS,
-        "[CENTER]Ihre Spieldaten für diese Karte weichen vom Host ab: %s. Sie können erst mitspielen, wenn die \
-         Dateien übereinstimmen.",
-        "[CENTER]Your game data for this map differs from the host's: %s. You can only take part once the files \
-         match.",
-    ),
-    (
-        ROW_DIFFERS,
-        "[CENTER]Die Spieldaten von %s weichen ab: %s. Die Partie kann so nicht beginnen.",
-        "[CENTER]%s's game data differs: %s. The game cannot start like this.",
-    ),
-    (
-        ROW_MAP_MISSING,
-        "[CENTER]%s fehlt die Karte der Partie. Die Partie kann so nicht beginnen.",
-        "[CENTER]%s does not have the game's map. The game cannot start like this.",
-    ),
-    (
-        LOAD_FAILED,
-        "[CENTER]%s konnte die Partie nicht laden. Der Start wurde abgebrochen.",
-        "[CENTER]%s could not load the game. The start was cancelled.",
-    ),
-    (FILES_MORE, " und %d weitere", " and %d more"),
-    (FILE_UNKNOWN, "Datei unbekannt", "file unknown"),
-];
+/// German texts, one line per text (`<ID>=<text>`).
+const DE: &str = include_str!("../texts/de.txt");
+/// English texts, same format and IDs as [`DE`].
+const EN: &str = include_str!("../texts/en.txt");
+
+/// Parses a text file: `<ID>=<text>` per line, the text runs to the end of the line and is not trimmed. Empty lines
+/// and lines starting with `#` are skipped. `None` for a line of another form.
+fn parse(file: &str) -> Option<Vec<(i32, &str)>> {
+    file.lines()
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(|line| {
+            let (id, text) = line.split_once('=')?;
+            let well_formed = !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit());
+            well_formed.then_some(())?;
+            Some((id.parse().ok()?, text))
+        })
+        .collect()
+}
+
+/// Parsed lines of one file: (ID, text).
+type Entries = Vec<(i32, &'static str)>;
+
+/// The parsed files (German, English), read once.
+fn tables() -> &'static (Entries, Entries) {
+    static TABLES: LazyLock<(Entries, Entries)> = LazyLock::new(|| {
+        (
+            parse(DE).expect("texts/de.txt has the form <ID>=<text>"),
+            parse(EN).expect("texts/en.txt has the form <ID>=<text>"),
+        )
+    });
+    &TABLES
+}
+
+/// The entries of the edition `version`.
+fn entries(version: GameVersion) -> &'static [(i32, &'static str)] {
+    match version {
+        GameVersion::German => &tables().0,
+        GameVersion::English => &tables().1,
+    }
+}
+
+/// The edition whose own texts apply for the installation `vfs`: the detected edition, otherwise the language of
+/// Windows ([`system_language`]).
+pub fn language(vfs: &Vfs) -> GameVersion {
+    detect_version(vfs).unwrap_or_else(|_| system_language())
+}
 
 /// The own text `id` of the edition `version`, otherwise `None` (no own ID).
 pub fn text(id: i32, version: GameVersion) -> Option<&'static str> {
-    TABLE
+    entries(version)
         .iter()
-        .find(|(known, _, _)| *known == id)
-        .map(|&(_, de, en)| match version {
-            GameVersion::German => de,
-            GameVersion::English => en,
-        })
+        .find(|(known, _)| *known == id)
+        .map(|&(_, text)| text)
 }
 
-/// All own texts of the edition `version` as (ID, text), ascending.
+/// All own texts of the edition `version` as (ID, text), in file order (ascending).
 pub fn all(version: GameVersion) -> impl Iterator<Item = (i32, &'static str)> {
-    TABLE
-        .iter()
-        .filter_map(move |&(id, _, _)| text(id, version).map(|t| (id, t)))
+    entries(version).iter().copied()
 }
 
 /// Fills the placeholders `%s` and `%d` of `text` in order with `args` (numbers formatted by the caller).
@@ -162,13 +148,19 @@ mod tests {
         found.into_iter().map(|(_, p)| p).collect()
     }
 
-    /// Both editions fill the same arguments in the same order.
+    /// Both files have the same IDs in the same order (ascending, no duplicates, from 99 100 on) and the same
+    /// placeholders per text.
     #[test]
     fn both_columns_have_the_same_placeholders() {
-        assert_eq!(TABLE.len(), 16);
-        for (id, de, en) in TABLE {
+        let (de, en) = tables();
+        assert_eq!(de.len(), 16);
+        assert_eq!(en.len(), de.len());
+        for (&(id, de), &(en_id, en)) in de.iter().zip(en) {
+            assert_eq!(id, en_id, "same order");
+            assert!(id >= 99_100, "text {id}");
             assert_eq!(placeholders(de), placeholders(en), "text {id}");
         }
+        assert!(de.windows(2).all(|w| w[0].0 < w[1].0), "ascending, unique");
         let row = text(ROW_DIFFERS, GameVersion::German).unwrap();
         assert_eq!(placeholders(row), ["%s", "%s"]);
         let more = text(FILES_MORE, GameVersion::English).unwrap();
@@ -179,12 +171,58 @@ mod tests {
     /// within U+00FF.
     #[test]
     fn own_texts_fit_the_msgbox() {
-        for (id, de, en) in TABLE {
-            for t in [de, en] {
+        for version in [GameVersion::German, GameVersion::English] {
+            for (id, t) in all(version) {
                 let wide: Vec<char> = t.chars().filter(|&c| u32::from(c) > 0xFF).collect();
                 assert!(wide.is_empty(), "text {id}: {wide:?} in {t:?}");
             }
         }
+    }
+
+    /// Every line of both files is a comment, empty or `<ID>=...`; the text is not trimmed.
+    #[test]
+    fn files_parse() {
+        for file in [DE, EN] {
+            for line in file.lines() {
+                if line.is_empty() || line.starts_with('#') {
+                    continue;
+                }
+                let (id, _) = line.split_once('=').expect(line);
+                assert!(
+                    !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()),
+                    "{line}"
+                );
+            }
+            assert!(parse(file).is_some());
+        }
+        assert_eq!(text(99_114, GameVersion::German), Some(" und %d weitere"));
+        assert!(parse("abc").is_none());
+        assert!(parse("1 =x").is_none());
+        assert_eq!(
+            parse(
+                "# c
+
+5= x 
+"
+            ),
+            Some(vec![(5, " x ")])
+        );
+    }
+
+    /// The edition decides the language; without an edition Windows does.
+    #[test]
+    fn language_follows_the_edition() {
+        let dir = tempfile::tempdir().unwrap();
+        for (german, expected) in [(true, GameVersion::German), (false, GameVersion::English)] {
+            let sub = dir.path().join(if german { "de" } else { "en" });
+            opennml_rda::testutil::write_fake_install(&sub, 11, german);
+            let vfs = Vfs::open_game_dir(&sub).unwrap();
+            assert_eq!(language(&vfs), expected);
+        }
+        let sub = dir.path().join("none");
+        opennml_rda::testutil::write_fake_install(&sub, 3, true);
+        let vfs = Vfs::open_game_dir(&sub).unwrap();
+        assert_eq!(language(&vfs), system_language());
     }
 
     #[test]

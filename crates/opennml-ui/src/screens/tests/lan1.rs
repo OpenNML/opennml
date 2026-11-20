@@ -3,7 +3,7 @@
 //! `MenuApp`. The logic alone runs through [`Logic`], live through `MenuApp` with the corpus dialogs (these need
 //! `NML_GAME_DIR`).
 
-use opennml_rda::testutil::GameVersion;
+use opennml_rda::GameVersion;
 
 use super::create_game::live_game;
 use super::*;

@@ -1,0 +1,18 @@
+# Own player texts, English column. One line per text: <ID>=<text> (the text runs to the end of the line, untrimmed).
+# Lines starting with '#' and empty lines are ignored. de.txt follows this file line by line; only characters up to U+00FF.
+99100=Turn raster
+99101=Original
+99102=LAN
+99103=LAN fast
+99104=Round trip: %d ms
+99105=[CENTER]The game's map is missing on this computer. You can only take part once the host chooses another map.
+99106=[CENTER]The network saved game cannot be loaded.
+99107=[CENTER]Only one player is still in this saved game.
+99108=[CENTER]Your place in this saved game is already out.
+99109=[CENTER]The recording cannot be played back.
+99110=[CENTER]Your game data for this map differs from the host's: %s. You can only take part once the files match.
+99111=[CENTER]%s's game data differs: %s. The game cannot start like this.
+99112=[CENTER]%s does not have the game's map. The game cannot start like this.
+99113=[CENTER]%s could not load the game. The start was cancelled.
+99114= and %d more
+99115=file unknown

@@ -31,6 +31,7 @@ pub mod paint;
 pub mod profiles;
 pub mod saves;
 pub mod screens;
+pub mod system_language;
 pub mod text;
 pub mod tree;
 pub mod version_line;
