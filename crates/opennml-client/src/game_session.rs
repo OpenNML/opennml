@@ -897,6 +897,9 @@ pub struct GameSession {
     /// State of the match's random map for the control command `random_map` (from [`MapLoad::random_state`]); `None`
     /// for fixed maps and for the viewer's random map ([`MapLoad::from_scene`]).
     random_map: Option<RandomMapState>,
+    /// Generated map of the match's random map for the savegame (from [`MapLoad::random_map`]; a restart builds it
+    /// anew); `None` for fixed maps and for the viewer's random map.
+    generated_map: Option<Box<opennml_randommap::RandomMap>>,
     /// Turn driver of the network match (set by `GameFlow` at network start); `None` in single player and in the
     /// viewer. In the network it computes the ticks ([`GameSession::advance_by`]), and pause, speed and loss of focus
     /// go through it ([`GameSession::toggle_pause`], [`GameSession::change_game_speed`], [`GameSession::focus_lost`]).
@@ -969,27 +972,29 @@ impl GameSession {
         progress: &mut dyn FnMut(LoadPhase),
     ) -> anyhow::Result<Self> {
         let random_map = load.random_state.take();
+        let generated_map = load.random_map.take();
         let map = MapView::build(gpu.device, gpu.queue, gpu.format, vfs, load, view)?;
         progress(LoadPhase::RenderReady);
         let mut session = Self::new(vfs, map, view, size);
         session.random_map = random_map;
+        session.generated_map = generated_map;
         Ok(session)
     }
 
-    /// Resumes a saved match: map from the start package ([`MapSource::of_start`]: a random map is regenerated from its
-    /// description), speed from the host part, then the state ([`GameSaveFile::check`] against the loaded rules,
-    /// otherwise an error) and the camera (eye, target, view angle; free camera off); `size` as for
+    /// Resumes a saved match: map of the savegame ([`MapSource::of_save`]: a random map from the generated map in the
+    /// file, without the generator), speed from the host part, then the state ([`GameSaveFile::prepare`] against the
+    /// loaded rules, otherwise an error) and the camera (eye, target, view angle; free camera off); `size` as for
     /// [`GameSession::start`].
     pub fn resume_from(
         gpu: &SessionGpu,
         vfs: &Vfs,
-        save: GameSaveFile,
+        mut save: GameSaveFile,
         view: &ViewOptions,
         size: (u32, u32),
         progress: &mut dyn FnMut(LoadPhase),
     ) -> anyhow::Result<Self> {
         progress(LoadPhase::Start);
-        let mut load = MapLoad::open(vfs, &MapSource::of_start(&save.sim.start))?;
+        let mut load = MapLoad::open(vfs, &MapSource::of_save(&save))?;
         progress(LoadPhase::LevelRead);
         let setup = save.sim.start.setup.clone();
         load.start_sim(vfs, save.host.game_speed, |_| Ok(setup))?;
@@ -997,15 +1002,19 @@ impl GameSession {
             .sim
             .as_mut()
             .context("savegame: the map has no loadable rules")?;
-        save.check(&sim.rules)?;
-        let GameSaveFile { sim: state, host } = save;
+        save.prepare(&sim.rules)?;
+        let GameSaveFile {
+            sim: state, host, ..
+        } = save;
         sim.load(state, host.log.clone());
         load.place_objects(vfs);
         progress(LoadPhase::SimReady);
         let random_map = load.random_state.take();
+        let generated_map = load.random_map.take();
         let map = MapView::build(gpu.device, gpu.queue, gpu.format, vfs, load, view)?;
         let mut session = Self::new(vfs, map, view, size);
         session.random_map = random_map;
+        session.generated_map = generated_map;
         // The game type before rebuilding the presentation: the cinemascope bars exist only in the campaign
         // (`GameFlow::started` sets it once more afterwards).
         session.set_game_type(host.game_type);
@@ -1104,6 +1113,7 @@ impl GameSession {
             ui_requests: Vec::new(),
             player_names: None,
             random_map: None,
+            generated_map: None,
             net: None,
             net_frame: NetFrame::default(),
         }
@@ -1575,13 +1585,14 @@ impl GameSession {
     }
 
     /// Savegame with the host part `host` (camera from [`GameSession::camera`]; map description, game mode, name and
-    /// speed are set by the host).
+    /// speed are set by the host) and the generated map of a random map.
     pub fn save(&self, host: HostPart) -> anyhow::Result<GameSaveFile> {
         let sim = self.sim().context("saving: the map has no simulation")?;
-        Ok(GameSaveFile {
-            sim: sim.save(),
+        Ok(GameSaveFile::new(
+            sim.save(),
             host,
-        })
+            self.generated_map.clone(),
+        ))
     }
 
     /// Pose of the game camera for the savegame.
@@ -1605,6 +1616,11 @@ impl GameSession {
     /// State of the match's random map (control command `random_map`); `None` for fixed maps.
     pub fn random_map_state(&self) -> Option<&RandomMapState> {
         self.random_map.as_ref()
+    }
+
+    /// Generated map of the match's random map (into the savegame); `None` for fixed maps.
+    pub fn random_map(&self) -> Option<&opennml_randommap::RandomMap> {
+        self.generated_map.as_deref()
     }
 
     /// Engine ticks of the simulation (0 without a simulation).
@@ -7758,7 +7774,7 @@ TEXT 17000
         assert_eq!(resumed.camera(), session.camera());
         assert_eq!(resumed.sim().unwrap().game_speed, 12);
         let mut broken = file;
-        broken.sim.start.rules_checksum ^= 1;
+        broken.sim.start.rules.logic ^= 1;
         let error = GameSession::resume_from(
             &gpu,
             &vfs,

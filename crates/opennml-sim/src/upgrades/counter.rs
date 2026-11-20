@@ -356,7 +356,7 @@ mod tests {
         let bytes = crate::save::testkit::save_bytes(&state, &rules);
         crate::save::SaveGame::from_bytes(&bytes)
             .unwrap()
-            .check(&rules)
+            .check(&rules, crate::save::RulesCompare::Full)
             .unwrap();
         let events = phase_0_pass(&mut state, &rules);
         assert_eq!(ended(&events), [CHASTITY]);

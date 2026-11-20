@@ -16,6 +16,7 @@ use opennml_effects::world::{EffectCounts, EffectWorld, ObjectFrame, ObjectView}
 use opennml_formats::hef::DummyEffect;
 use opennml_formats::lightdata::{LightPreset, find_preset};
 use opennml_formats::rdo::MeshKind;
+use opennml_randommap::RandomMap;
 use opennml_rda::Vfs;
 use opennml_render::pick::{PickDistances, PickFlags, PickPart, PickRay, pick_object};
 use opennml_render::{
@@ -847,23 +848,34 @@ fn sim_keys(objects: &[opennml_world::level::PlacedObject]) -> Vec<(Option<u32>,
     objects.iter().map(|o| (o.sim_id, o.player)).collect()
 }
 
-/// What a match builds its map from: a fixed map from its `.lvl` or a
-/// random map from its map description (`opennml_randommap::build_level`; its path `randommap:<Seed>` is not a
-/// file).
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// What a match builds its map from: a fixed map from its `.lvl`, a random map from its map description
+/// (`opennml_randommap::build_level`) or the generated map of a savegame (`opennml_randommap::level_from_map`); the
+/// path of a random map `randommap:<Seed>` is not a file.
+#[derive(Debug, Clone, PartialEq)]
 pub enum MapSource {
     /// Path of the `.lvl`.
     Level(String),
-    /// Menu values of the random map.
+    /// Menu values of the random map: the generator builds it (new start, restart, network start).
     Random(RandomMapSpec),
+    /// Generated map from a savegame: scene and rules input without the generator.
+    SavedRandom(Box<RandomMap>),
 }
 
 impl MapSource {
-    /// Map of a savegame or a replay: the map description, otherwise the `.lvl` path.
+    /// Map of a replay or of a savegame without its generated map: the map description, otherwise the `.lvl` path.
     pub fn of_start(start: &StartPackage) -> Self {
         match &start.random_map {
             Some(spec) => Self::Random(spec.clone()),
             None => Self::Level(start.level.clone()),
+        }
+    }
+
+    /// Map of a savegame: its generated map ([`GameSaveFile::random_map`](crate::game_save::GameSaveFile::random_map)),
+    /// otherwise [`MapSource::of_start`].
+    pub fn of_save(file: &crate::game_save::GameSaveFile) -> Self {
+        match &file.random_map {
+            Some(map) => Self::SavedRandom(map.clone()),
+            None => Self::of_start(&file.sim.start),
         }
     }
 
@@ -881,12 +893,13 @@ impl MapSource {
         match self {
             Self::Level(level) => level.clone(),
             Self::Random(spec) => opennml_randommap::random_map_label(spec),
+            Self::SavedRandom(map) => opennml_randommap::random_map_label(&map.spec),
         }
     }
 
     /// Random map (no `.lvl` path)?
     pub fn is_random(&self) -> bool {
-        matches!(self, Self::Random(_))
+        matches!(self, Self::Random(_) | Self::SavedRandom(_))
     }
 }
 
@@ -898,11 +911,13 @@ pub struct MapLoad {
     pub scene: LevelScene,
     /// Simulation of the map; `None` if its rules are not loadable (objects of the `.wld`).
     pub sim: Option<SimHost>,
-    /// Rules input of a random map ([`MapLoad::open`] with [`MapSource::Random`]); [`MapLoad::start_sim`] uses it
-    /// to load the rules without a `.lvl`.
+    /// Rules input of a random map ([`MapLoad::open`] with [`MapSource::Random`] or [`MapSource::SavedRandom`]);
+    /// [`MapLoad::start_sim`] uses it to load the rules without a `.lvl`.
     pub random: Option<RandomMapRules>,
     /// State of the random map for the control command `random_map`, passed on to `GameSession::random_map_state`.
     pub random_state: Option<RandomMapState>,
+    /// Generated map of a random map, passed on to the session for the savegame (`GameSession::random_map`).
+    pub random_map: Option<Box<RandomMap>>,
     /// Path as requested and start of loading (log line of [`MapView::build`]).
     level: String,
     started: Instant,
@@ -915,13 +930,16 @@ pub fn load_rules(vfs: &Vfs, level: &str) -> Result<Rules> {
     Rules::load(vfs, &load.scene).with_context(|| format!("loading rules of map \"{level}\""))
 }
 
-/// Rules of a random map without a match: generate the map from its description
-/// ([`MapLoad::open`] with [`MapSource::Random`]) and load its rules ([`Rules::load_random`]) - the same calculation
-/// as when loading ([`start_sim_with`]), for the start package of the host. The generator thus runs twice on the host
-/// (rules, loading); that costs only time, no state.
-pub fn load_random_rules(vfs: &Vfs, spec: &RandomMapSpec) -> Result<Rules> {
-    let source = MapSource::Random(spec.clone());
-    let load = MapLoad::open(vfs, &source)?;
+/// Rules of the map `source` without a match: a fixed map via [`load_rules`], a random map built like
+/// [`MapLoad::open`] (from its description with the generator or from the generated map of a savegame) with its rules
+/// ([`Rules::load_random`]) - the same calculation as when loading ([`start_sim_with`]), for the start package of the
+/// host and the check of a network savegame. For a map from its description the generator thus runs twice on the
+/// host (rules, loading); that costs only time, no state. The generated map of a savegame needs no generator.
+pub fn map_rules(vfs: &Vfs, source: &MapSource) -> Result<Rules> {
+    if let MapSource::Level(level) = source {
+        return load_rules(vfs, level);
+    }
+    let load = MapLoad::open(vfs, source)?;
     let random = load.random.context("random map without rules input")?;
     Rules::load_random(vfs, &load.scene, random)
         .with_context(|| format!("{}: loading rules of the random map", source.label()))
@@ -937,27 +955,30 @@ impl MapLoad {
             sim: None,
             random: None,
             random_state: None,
+            random_map: None,
             level: level.to_string(),
             started,
         })
     }
 
-    /// Builds the map from `source`: a fixed map like [`MapLoad::read`], a random map via
-    /// `opennml_randommap::build_level` (generator with object step, scene, rules input; on restart the same as when
-    /// loading,
-    /// deviation D-341).
+    /// Builds the map from `source`: a fixed map like [`MapLoad::read`], a random map from its description via
+    /// `opennml_randommap::build_level` (generator with object step, scene, rules input), the generated map of a
+    /// savegame via `opennml_randommap::level_from_map` (scene and rules input without the generator; the ground as at
+    /// the start, deviation D-341).
     pub fn open(vfs: &Vfs, source: &MapSource) -> Result<Self> {
-        let spec = match source {
-            MapSource::Level(level) => return Self::read(vfs, level),
-            MapSource::Random(spec) => spec,
-        };
         let started = Instant::now();
         let label = source.label();
-        let level = opennml_randommap::build_level(vfs, spec)
-            .with_context(|| format!("generating random map {label}"))?;
+        let level = match source {
+            MapSource::Level(level) => return Self::read(vfs, level),
+            MapSource::Random(spec) => opennml_randommap::build_level(vfs, spec)
+                .with_context(|| format!("generating random map {label}"))?,
+            MapSource::SavedRandom(map) => opennml_randommap::level_from_map(vfs, (**map).clone())
+                .with_context(|| format!("building random map {label} from the savegame"))?,
+        };
         Ok(Self {
             random_state: Some(crate::random_map_state::random_map_state(&level.map)),
             random: Some(level.rules),
+            random_map: Some(Box::new(level.map)),
             scene: level.scene,
             sim: None,
             level: label,
@@ -974,6 +995,7 @@ impl MapLoad {
             sim: None,
             random: None,
             random_state: None,
+            random_map: None,
             started: Instant::now(),
         }
     }

@@ -1860,7 +1860,9 @@ fn save_and_load(rules: &Rules, setup: &MatchSetup, state: &SimState) -> SimStat
         commands: Vec::new(),
     };
     let loaded = crate::save::SaveGame::from_bytes(&save.to_bytes()).expect("savegame readable");
-    loaded.check(rules).expect("savegame valid");
+    loaded
+        .check(rules, crate::save::RulesCompare::Full)
+        .expect("savegame valid");
     assert_eq!(
         crate::save::checksum(&loaded.state),
         crate::save::checksum(state)

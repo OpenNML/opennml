@@ -1240,7 +1240,7 @@ fn broken_recording_keeps_the_menu_alive() {
     let mut campaign = file.head.clone();
     campaign.meta.game_type = -1;
     let mut rules = file.head.clone();
-    rules.start.rules_checksum ^= 1;
+    rules.start.rules.speech ^= 1;
     assert_eq!(
         ReplayFile::from_bytes(&with_head(&rules)).unwrap().commands,
         file.commands,

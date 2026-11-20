@@ -1330,7 +1330,7 @@ fn throws_survive_saving_and_loading() {
         s.hq_b
     };
     let save = SaveGame::from_bytes(&crate::save::testkit::save_bytes(&state, &rules)).unwrap();
-    save.check(&rules).unwrap();
+    save.check(&rules, crate::save::RulesCompare::Full).unwrap();
     let mut loaded: SimState = save.state;
     assert_eq!(checksum(&loaded), checksum(&state));
     for i in 1..=60 {
@@ -1511,7 +1511,8 @@ fn a_locked_hunter_corpse_survives_saving_and_loading() {
     };
     let save = SaveGame::from_bytes(&crate::save::testkit::save_bytes(&state, &rules))
         .expect("savegame readable");
-    save.check(&rules).expect("savegame valid");
+    save.check(&rules, crate::save::RulesCompare::Full)
+        .expect("savegame valid");
     let mut loaded = save.state;
     assert_eq!(checksum(&loaded), checksum(&state));
     for i in 1..=400 {

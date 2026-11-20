@@ -26,6 +26,7 @@ glam.workspace = true
 image.workspace = true
 log.workspace = true
 postcard.workspace = true
+rmpv.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 wgpu.workspace = true
@@ -37,3 +38,4 @@ testkit = []
 
 [dev-dependencies]
 tempfile.workspace = true
+zstd.workspace = true

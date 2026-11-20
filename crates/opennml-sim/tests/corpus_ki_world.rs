@@ -102,7 +102,9 @@ fn run(rules: &Rules, save_at: Option<usize>) -> (Vec<u64>, SimState, Log, Vec<u
                     commands: Vec::new(),
                 };
                 let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-                loaded.check(rules).unwrap();
+                loaded
+                    .check(rules, opennml_sim::save::RulesCompare::Full)
+                    .unwrap();
                 assert_eq!(checksum(&loaded.state), checksum(&state));
                 state = loaded.state;
             }
@@ -297,7 +299,9 @@ fn ai_slot_under_fire_scene_saves_and_loads() {
     };
     let bytes = save.to_bytes();
     let loaded = SaveGame::from_bytes(&bytes).unwrap();
-    loaded.check(&rules).unwrap();
+    loaded
+        .check(&rules, opennml_sim::save::RulesCompare::Full)
+        .unwrap();
     assert_eq!(checksum(&loaded.state), checksum(&state));
     assert_eq!(loaded.state.attack_reports, state.attack_reports);
     if let Some(dir) = std::env::var_os("NML_SHOTS_OUT") {

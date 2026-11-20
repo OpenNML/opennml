@@ -34,7 +34,20 @@ archive; it follows `README.txt` in content.
 - The viewer changes the simulation only through commands. Previews and queries leave the checksum unchanged.
 - The golden checksum sequences (`*_GOLDEN`) are measured values. If one changes, find the cause. Adapt it only for
   an intended change of state, with a reason.
-- New state belongs in the savegame.
+- New state belongs in the savegame. Savegames (`NMLGAME`) are MessagePack with field names (`game_save.rs`); every
+  release loads the savegames of all earlier releases of the same major version.
+- New state field: `#[serde(default)]` (or `default = "…"`) with the value an older savegame needs; `SAVE_FORMAT`
+  stays. `FORMAT_VERSION` still rises (checksum, replays).
+- Renaming or removing a field or enum variant, changing a field's type or meaning, or adding an element to a
+  tuple: bump `SAVE_FORMAT` and add a step to `game_save/upgrade.rs` with a test on a savegame of the previous
+  number.
+- A changed derivation from the rules that the state caches: bump `SAVE_FORMAT`, add a recompute step in
+  `opennml-sim/src/save/upgrade.rs` and an identity structure step (`|_| Ok(())`) in `game_save/upgrade.rs`.
+- Behaviour change of the simulation: bump `FORMAT_VERSION` only.
+- Never drop an upgrade step within a major version; never change a file in `crates/opennml-client/testdata/savegames/`
+  after its release.
+- Attributes on state types stay neutral for `postcard` (checksum, network, replays): no `skip_serializing_if`,
+  `flatten` or `untagged`.
 - Load rule: loading (including network sync, which is external input) rejects with a message only what would
   otherwise crash, hang or use unbounded memory (index, divisor, circles, lengths), and what does not fit the loaded
   match (format, checksum, rules, map). Fixed lengths and ranges use types with `try_from` (same bytes in the savegame). No plausibility checks

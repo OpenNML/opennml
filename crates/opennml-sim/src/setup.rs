@@ -14,7 +14,7 @@ use crate::messaging::send;
 use crate::path::region::SECTOR;
 use crate::random_map::{RandomMapRules, RandomMapSpec};
 use crate::rng::CrtRand;
-use crate::rules::Rules;
+use crate::rules::{RuleChecksums, Rules};
 use crate::script::ScriptSetup;
 use crate::sim::Sim;
 use crate::state::{Control, SimState};
@@ -67,8 +67,10 @@ pub const DIFFICULTY_RANGE: RangeInclusive<i32> = 0..=2;
 /// helper, skip flag; 25 = presentation state, selection mirror, button, profile variables, commands
 /// ScriptSelection/ScriptButton; 26 = idle workers (`SimState::idle_workers`); 27 = `SimState::flag_leader`,
 /// `time_limit`; 28 = map description in the start package (`StartPackage::random_map`); 29 = network flag
-/// `SimState::network`, `MatchSetup::network`.
-pub const FORMAT_VERSION: u32 = 29;
+/// `SimState::network`, `MatchSetup::network`; 30 = the start package carries the rules checksum split into
+/// logic, derived and speech (`StartPackage::rules`); NMLSAVE and NMLREPL bodies are MessagePack with field
+/// names, packed with zstd.
+pub const FORMAT_VERSION: u32 = 30;
 
 /// Default of `TimeLimit` in minutes (`Engine.ini`, `EngineConfig`; re/singleplayer-menus part 2, 1.2).
 pub const DEFAULT_TIME_LIMIT: i32 = 20;
@@ -178,8 +180,8 @@ pub struct StartPackage {
     pub format: u32,
     /// Normalized path of the `.lvl`; for a random map `randommap:<seed text>` (no file).
     pub level: String,
-    /// Checksum of the rules.
-    pub rules_checksum: u64,
+    /// Checksums of the rules ([`Rules::checksums`]).
+    pub rules: RuleChecksums,
     pub setup: MatchSetup,
     /// Map description of a random map: loading regenerates the map from it,
     /// with the game mode of the savegame (deviating from D-348). `None` for fixed maps. `serde(default)` only as
@@ -791,7 +793,7 @@ pub fn start_package(rules: &Rules, setup: &MatchSetup) -> StartPackage {
     StartPackage {
         format: FORMAT_VERSION,
         level: rules.level_path.clone(),
-        rules_checksum: rules.checksum,
+        rules: rules.checksums,
         setup: setup.clone(),
         random_map: rules.random_map.as_ref().map(|r| r.spec.clone()),
     }

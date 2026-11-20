@@ -13,7 +13,7 @@
 //! **Loading** (deviation from the original): The original ends the running match first (`FUN_004BAF40`) and then
 //! loads; if that fails, it stays without a game and without a menu (re/ingame-menus, section "Open points" 4).
 //! The reimplementation reads and checks the savegame ([`GameSaveFile::from_bytes`]), builds the new session
-//! completely (including [`GameSaveFile::check`] against the loaded rules) and replaces the old one only on
+//! completely (including [`GameSaveFile::prepare`] against the loaded rules) and replaces the old one only on
 //! success; otherwise an error message in the log and the previous screen opens again (`MenuApp::reopen_menu`).
 //! The same applies to a match start that the map or `to_match_setup` rejects.
 //!
@@ -34,6 +34,7 @@ use opennml_control::{
 };
 use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{NetControl, StartInfo};
+use opennml_randommap::RandomMap;
 use opennml_rda::Vfs;
 use opennml_sim::command::{Command, CommandKind};
 use opennml_sim::game_end::{DEFEAT, VICTORY};
@@ -120,7 +121,8 @@ pub trait SessionView {
             progress,
         )
     }
-    /// Resumes a savegame (`FUN_004C7C20` -> `Game_LoadLevelFromSavegame`), checked against the rules.
+    /// Resumes a savegame (`FUN_004C7C20` -> `Game_LoadLevelFromSavegame`) on the map of the savegame
+    /// ([`MapSource::of_save`]), prepared for the loaded rules ([`GameSaveFile::prepare`]).
     fn resume(
         &mut self,
         vfs: &Vfs,
@@ -153,6 +155,9 @@ pub trait SessionView {
     }
     /// Path of the `.lvl` of the match (empty without a match; random map `randommap:<Seed>`).
     fn level(&self) -> &str;
+    /// Generated map of the match's random map for the savegame (`GameSession::random_map`); `None` for fixed maps
+    /// and without a match.
+    fn random_map(&self) -> Option<&RandomMap>;
     /// Position of the game camera for the savegame.
     fn camera(&self) -> CameraSave;
     /// End the match.
@@ -289,15 +294,16 @@ impl std::fmt::Debug for NetStartFailure {
     }
 }
 
-/// Setup of the network match from the start package (E-262, E-263): first the rules checksum of the just-loaded map
-/// against that of the host (it covers map and game data; different game data would not compute the same), then
-/// the host's setup unchanged - with its seed and the network flag.
+/// Setup of the network match from the start package (E-262, E-263): first the full rules checksum of the just-loaded
+/// map against that of the host (it covers map and game data; different game data would not compute the same), then
+/// the host's setup unchanged - with its seed and the network flag. A start from a network savegame does not come here:
+/// it resumes the savegame, whose check compares only the logic part ([`GameSaveFile::prepare`]).
 fn net_setup(rules: &Rules, package: &StartPackage) -> anyhow::Result<MatchSetup> {
-    if rules.checksum != package.rules_checksum {
+    if rules.checksum != package.rules.full() {
         anyhow::bail!(
             "Different game data or map than on the host (rules checksum {:016x} instead of {:016x})",
             rules.checksum,
-            package.rules_checksum
+            package.rules.full()
         );
     }
     if !package.setup.network {
@@ -468,9 +474,9 @@ fn saved_ldg(save: &GameSaveFile, vfs: &Vfs) -> String {
 /// Own network savegame for the start of a loaded network match: name from `StartInfo::saved` checked
 /// ([`opennml_net::valid_save_name`]: it comes from the network), read the file `savegame/multiplayer/<Name>` of this
 /// machine ([`NetPaths::net_save`]), network part present, checksum of the simulation part ([`sim_checksum`]) and
-/// tick as in the start, start package as distributed, own slot `local_slot == your_slot`. The full check against
-/// the rules of the map is done afterwards by resuming ([`GameSaveFile::check`] in [`SessionView::resume`]). Errors
-/// as a reason.
+/// tick as in the start, start package as distributed, own slot `local_slot == your_slot`; these comparisons use the
+/// values as read, the same on every machine. The check against the rules of the map (logic part) and the
+/// preparation follow when resuming ([`GameSaveFile::prepare`] in [`SessionView::resume`]). Errors as a reason.
 fn own_net_save(paths: &NetPaths, info: &StartInfo) -> Result<GameSaveFile, String> {
     let saved = info
         .saved
@@ -1200,7 +1206,7 @@ impl GameFlow {
             host.net.as_ref().context("network match without start")?;
             host.game_speed = game_speed;
             host.log = log;
-            let file = GameSaveFile { sim, host };
+            let file = GameSaveFile::new(sim, host, view.random_map().cloned().map(Box::new));
             let path = net.paths().net_save(&name);
             write_file(&path, &file.to_bytes())?;
             Ok(path)
@@ -1931,7 +1937,7 @@ impl GameFlow {
         // With a network session always `multiplayer.ldg` (E-321; `Game_StartLevel` `0x004C8710` `NetSession_IsActive`
         // -> `0x004C8749`), never the `<Level>.ldg`; random map `randommap.ldg`.
         let ldg = match &source {
-            MapSource::Random(_) => RANDOM_MAP_LDG.to_string(),
+            MapSource::Random(_) | MapSource::SavedRandom(_) => RANDOM_MAP_LDG.to_string(),
             MapSource::Level(_) => MULTIPLAYER_LDG.to_string(),
         };
         view.apply_settings(app.config());
@@ -1997,13 +2003,13 @@ impl GameFlow {
     /// [`Self::start_net_match`], menu level, menus and background images close first. Then each machine reads
     /// **its own** network savegame `savegame/multiplayer/<Name>` ([`own_net_save`]: name valid, checksum of the
     /// simulation part, tick, start package and `local_slot == your_slot` as in the start of the host) and resumes it
-    /// like [`Self::load_game`] ([`SessionView::resume`] with the full check against the rules of the map; host part
-    /// own: camera, groups, masks, fog) with the loading image of savegame loading ([`saved_ldg`]) and the speed of
-    /// the host (`info.game_speed` instead of the own host part). Then turn mode on the own slot
-    /// ([`SimHost::enter_rounds`]), origin tick = tick of the state ([`NetDriver::set_origin`]: turn 0 begins there),
-    /// `Loaded`, driver into the match and the match data from the own host part. The names in the simulation stay
-    /// those of the state. Every error becomes `Loaded { error }` (the host aborts the start for everyone) with the
-    /// main menu as in [`Self::start_net_match`].
+    /// like [`Self::load_game`] ([`SessionView::resume`] with the logic comparison against the rules of the map and
+    /// [`GameSaveFile::prepare`]; host part own: camera, groups, masks, fog) with the loading image of savegame
+    /// loading ([`saved_ldg`]) and the speed of the host (`info.game_speed` instead of the own host part). Then turn
+    /// mode on the own slot ([`SimHost::enter_rounds`]), origin tick = tick of the state ([`NetDriver::set_origin`]:
+    /// turn 0 begins there), `Loaded`, driver into the match and the match data from the own host part. The names in
+    /// the simulation stay those of the state. Every error becomes `Loaded { error }` (the host aborts the start for
+    /// everyone) with the main menu as in [`Self::start_net_match`].
     fn start_saved_net_match(
         &mut self,
         mut net: NetDriver,
@@ -2169,7 +2175,7 @@ impl GameFlow {
             let path = env.files.path(name, active_guid(app));
             let bytes =
                 std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?;
-            GameSaveFile::from_bytes(&bytes)
+            Ok(GameSaveFile::from_bytes(&bytes)?)
         };
         let save = match read() {
             Ok(save) => save,
@@ -2213,10 +2219,8 @@ impl GameFlow {
             check_name(name).map_err(anyhow::Error::msg)?;
             let host = self.host_part(app, view).context("no running match")?;
             let sim = view.sim().context("no simulation")?;
-            let file = GameSaveFile {
-                sim: sim.save(),
-                host,
-            };
+            let file =
+                GameSaveFile::new(sim.save(), host, view.random_map().cloned().map(Box::new));
             let path = env.files.path(name, active_guid(app));
             write_file(&path, &file.to_bytes())?;
             Ok(path)
@@ -2570,6 +2574,10 @@ impl SessionView for LiveSession<'_> {
 
     fn level(&self) -> &str {
         self.session.as_ref().map_or("", GameSession::level)
+    }
+
+    fn random_map(&self) -> Option<&RandomMap> {
+        self.session.as_ref().and_then(GameSession::random_map)
     }
 
     fn camera(&self) -> CameraSave {

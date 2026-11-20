@@ -612,7 +612,8 @@ fn the_waiting_list_holds_only_own_quartering_units_once() {
     assert_eq!(waiting_of(&mut state, &rules, ship), [k1]);
     let load = |state: &SimState| {
         let save = SaveGame::from_bytes(&save_bytes(state, &rules)).expect("loads");
-        save.check(&rules).expect("matches the rules");
+        save.check(&rules, crate::save::RulesCompare::Full)
+            .expect("matches the rules");
     };
     load(&state);
     until(&mut state, &rules, 3000, |sim| {

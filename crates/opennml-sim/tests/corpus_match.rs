@@ -1122,7 +1122,9 @@ fn governors_and_missionaries_keep_their_data() {
         commands: Vec::new(),
     };
     let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-    loaded.check(&rules).expect("savegame valid");
+    loaded
+        .check(&rules, opennml_sim::save::RulesCompare::Full)
+        .expect("savegame valid");
     let mut loaded = loaded.state;
     check(&loaded, "after loading");
     for _ in 0..100 {
@@ -1162,7 +1164,9 @@ fn daytime_upgrades_survive_saving_on_a_multiplayer_map() {
         commands: Vec::new(),
     };
     let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-    loaded.check(&rules).expect("savegame valid");
+    loaded
+        .check(&rules, opennml_sim::save::RulesCompare::Full)
+        .expect("savegame valid");
     let mut loaded = loaded.state;
     assert_eq!(
         (
@@ -1234,7 +1238,9 @@ fn viciouscircle_chieftain_tents_carry_tent_state() {
         commands: Vec::new(),
     };
     let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-    loaded.check(&rules).expect("savegame valid");
+    loaded
+        .check(&rules, opennml_sim::save::RulesCompare::Full)
+        .expect("savegame valid");
     assert_eq!(tent_of(&loaded.state), expected);
 }
 
@@ -1337,7 +1343,9 @@ fn campaign_trade_carts_keep_their_data() {
             commands: Vec::new(),
         };
         let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-        loaded.check(&rules).expect("savegame valid");
+        loaded
+            .check(&rules, opennml_sim::save::RulesCompare::Full)
+            .expect("savegame valid");
         for &(id, guid) in &carts {
             *totals.entry(guid).or_default() += 1;
             let t = trading_of(&state, id);

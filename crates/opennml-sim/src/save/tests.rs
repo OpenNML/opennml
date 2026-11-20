@@ -43,7 +43,7 @@ fn part_checksums_cover_every_field() {
     assert_eq!(diff, ["network"]);
 }
 
-fn scene() -> (Rules, SimState) {
+pub(super) fn scene() -> (Rules, SimState) {
     let rules = Rules::synthetic(TYPES, 16);
     let mut state = new_match(
         &rules,
@@ -202,7 +202,10 @@ fn saves_must_match_the_map_of_the_loaded_rules() {
         commands: Vec::new(),
     };
     let loaded = SaveGame::from_bytes(&mismatch.to_bytes()).unwrap();
-    let err = loaded.check(&rules).unwrap_err().to_string();
+    let err = loaded
+        .check(&rules, crate::save::RulesCompare::Full)
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("32 x 32") && err.contains("16 x 16"), "{err}");
     let matching = SaveGame {
         start: start_package(&rules, &setup),
@@ -211,7 +214,7 @@ fn saves_must_match_the_map_of_the_loaded_rules() {
     };
     SaveGame::from_bytes(&matching.to_bytes())
         .unwrap()
-        .check(&rules)
+        .check(&rules, crate::save::RulesCompare::Full)
         .unwrap();
 }
 
@@ -781,7 +784,9 @@ fn save_games_restore_the_state_and_reject_other_versions_and_rules() {
     };
     let bytes = save.to_bytes();
     let loaded = SaveGame::from_bytes(&bytes).unwrap();
-    loaded.check(&rules).unwrap();
+    loaded
+        .check(&rules, crate::save::RulesCompare::Full)
+        .unwrap();
     assert_eq!(checksum(&loaded.state), checksum(&state));
     // Continuing yields the same sequence.
     let mut a = state;
@@ -803,11 +808,40 @@ fn save_games_restore_the_state_and_reject_other_versions_and_rules() {
     let mut other = rules.clone();
     other.checksum = 7;
     assert!(
-        save.check(&other)
+        save.check(&other, crate::save::RulesCompare::Full)
             .unwrap_err()
             .to_string()
             .contains("rules differ")
     );
+}
+
+/// Savegames compare only the logic part of the rules checksum: a different speech edition or a different derivation
+/// of the tables still loads. Network states and replays compare the full value.
+#[test]
+fn savegame_check_compares_only_logic() {
+    use crate::rules::RuleChecksums;
+    let (rules, state) = scene();
+    let save = SaveGame {
+        start: start_package(&rules, &MatchSetup::default()),
+        state,
+        commands: Vec::new(),
+    };
+    save.check(&rules, RulesCompare::Full).unwrap();
+    save.check(&rules, RulesCompare::Logic).unwrap();
+    let changes: [fn(&mut RuleChecksums); 2] = [|c| c.speech ^= 1, |c| c.derived ^= 1];
+    for change in changes {
+        let mut other = save.clone();
+        change(&mut other.start.rules);
+        other.check(&rules, RulesCompare::Logic).unwrap();
+        let err = format!("{:#}", other.check(&rules, RulesCompare::Full).unwrap_err());
+        assert!(err.contains("rules differ"), "{err}");
+    }
+    let mut other = save.clone();
+    other.start.rules.logic ^= 1;
+    for compare in [RulesCompare::Logic, RulesCompare::Full] {
+        let err = format!("{:#}", other.check(&rules, compare).unwrap_err());
+        assert!(err.contains("rules differ"), "{err}");
+    }
 }
 
 #[test]
@@ -826,9 +860,14 @@ fn network_flag_must_match_the_start_package() {
             commands: Vec::new(),
         };
         save.state.network = network;
-        save.check(&rules).expect("flag as in the start package");
+        save.check(&rules, crate::save::RulesCompare::Full)
+            .expect("flag as in the start package");
         save.state.network = !network;
-        let err = format!("{:#}", save.check(&rules).unwrap_err());
+        let err = format!(
+            "{:#}",
+            save.check(&rules, crate::save::RulesCompare::Full)
+                .unwrap_err()
+        );
         assert_eq!(
             err,
             format!(
@@ -1081,7 +1120,9 @@ fn ki_state_survives_saving_and_loading() {
     let (rules, state) = ki_scene();
     let bytes = testkit::save_bytes(&state, &rules);
     let loaded = SaveGame::from_bytes(&bytes).expect("load");
-    loaded.check(&rules).expect("matches the catalog");
+    loaded
+        .check(&rules, crate::save::RulesCompare::Full)
+        .expect("matches the catalog");
     assert_eq!(loaded.state.ki, state.ki);
     assert_eq!(loaded.state, state);
     assert_eq!(checksum(&loaded.state), checksum(&state));
@@ -1129,7 +1170,9 @@ fn ki_world_scene() -> (Rules, SimState) {
 fn ki_world_state_survives_saving_and_loading() {
     let (rules, state) = ki_world_scene();
     let loaded = SaveGame::from_bytes(&testkit::save_bytes(&state, &rules)).expect("load");
-    loaded.check(&rules).expect("rules check");
+    loaded
+        .check(&rules, crate::save::RulesCompare::Full)
+        .expect("rules check");
     assert_eq!(loaded.state, state);
     for p in 0..PLAYER_SLOTS {
         let keys = |s: &SimState| -> Vec<(i32, crate::state::ReportTile)> {
@@ -1214,7 +1257,8 @@ fn script_save(state: &SimState, rules: &Rules, enabled: bool) -> Vec<u8> {
 
 /// Loading and rules check of a savegame with the script on.
 fn script_load_and_check(state: &SimState, rules: &Rules) -> anyhow::Result<()> {
-    SaveGame::from_bytes(&script_save(state, rules, true))?.check(rules)
+    SaveGame::from_bytes(&script_save(state, rules, true))?
+        .check(rules, crate::save::RulesCompare::Full)
 }
 
 fn level_of(s: &mut SimState) -> &mut crate::script::Container {
@@ -1456,7 +1500,8 @@ fn random_scene(
     use crate::random_map::RandomMapRules;
     let mut rules = Rules::synthetic(TYPES, 16);
     rules.level_path = format!("randommap:{}", spec.seed_text);
-    rules.checksum ^= digest;
+    rules.checksums.derived ^= digest;
+    rules.checksum = rules.checksums.full();
     let setup = MatchSetup {
         mode: spec.game_type as i32,
         ..MatchSetup::default()
@@ -1505,7 +1550,7 @@ fn seed_text_round_trips_through_the_save() {
         let back = SaveGame::from_bytes(&save.to_bytes()).unwrap();
         assert_eq!(back.start.random_map.as_ref().unwrap().seed_text, seed);
         assert_eq!(back, save);
-        back.check(&rules).unwrap();
+        back.check(&rules, crate::save::RulesCompare::Full).unwrap();
     }
 }
 
@@ -1517,7 +1562,7 @@ fn changed_map_data_rejects_the_save() {
     let spec = random_spec("ZKA", 0);
     let (rules, setup, state) = random_scene(spec.clone(), 0x1234);
     let save = random_save(&rules, &setup, &state);
-    save.check(&rules).unwrap();
+    save.check(&rules, crate::save::RulesCompare::Full).unwrap();
     // Description changed in the savegame (same seed text, so the same map path).
     for edit in [
         &(|s: &mut crate::random_map::RandomMapSpec| s.size = 2)
@@ -1530,24 +1575,37 @@ fn changed_map_data_rejects_the_save() {
         let mut changed = save.clone();
         edit(changed.start.random_map.as_mut().unwrap());
         let back = SaveGame::from_bytes(&changed.to_bytes()).unwrap();
-        let err = format!("{:#}", back.check(&rules).unwrap_err());
+        let err = format!(
+            "{:#}",
+            back.check(&rules, crate::save::RulesCompare::Full)
+                .unwrap_err()
+        );
         assert!(err.contains("savegame: map description differs"), "{err}");
     }
     // A fixed map with the same path, but without a description: rejected likewise.
     let mut fixed = save.clone();
     fixed.start.random_map = None;
-    let err = format!("{:#}", fixed.check(&rules).unwrap_err());
+    let err = format!(
+        "{:#}",
+        fixed
+            .check(&rules, crate::save::RulesCompare::Full)
+            .unwrap_err()
+    );
     assert!(err.contains("savegame: map description differs"), "{err}");
     // Same description, other generator checksum (other game data): checksum differs.
     let (other, _, _) = random_scene(spec, 0x5678);
-    let err = format!("{:#}", save.check(&other).unwrap_err());
+    let err = format!(
+        "{:#}",
+        save.check(&other, crate::save::RulesCompare::Full)
+            .unwrap_err()
+    );
     assert!(
         err.contains("savegame: map differs (other game data or mods)"),
         "{err}"
     );
     // Other seed: other map path.
     let (zkb, _, _) = random_scene(random_spec("ZKB", 0), 0x1234);
-    assert!(save.check(&zkb).is_err());
+    assert!(save.check(&zkb, crate::save::RulesCompare::Full).is_err());
 }
 
 /// The game mode of the match must be the one of the description from which the map was generated (deviating from
@@ -1558,11 +1616,16 @@ fn game_type_mismatch_is_rejected() {
     let spec = random_spec("KOTH", 3);
     let (rules, setup, state) = random_scene(spec, 0x99);
     let save = random_save(&rules, &setup, &state);
-    save.check(&rules).unwrap();
+    save.check(&rules, crate::save::RulesCompare::Full).unwrap();
     for mode in [-1, 0, 1, 2, 4] {
         let mut changed = save.clone();
         changed.start.setup.mode = mode;
-        let err = format!("{:#}", changed.check(&rules).unwrap_err());
+        let err = format!(
+            "{:#}",
+            changed
+                .check(&rules, crate::save::RulesCompare::Full)
+                .unwrap_err()
+        );
         assert!(err.contains("game mode"), "mode {mode}: {err}");
     }
 }
@@ -1579,7 +1642,7 @@ fn fixed_map_save_round_trips_with_random_map_none() {
     assert_eq!(save.start.level, rules.level_path);
     let back = SaveGame::from_bytes(&save.to_bytes()).unwrap();
     assert_eq!(back, save);
-    back.check(&rules).unwrap();
+    back.check(&rules, crate::save::RulesCompare::Full).unwrap();
     let mut loaded = back.state;
     for _ in 0..5 {
         let _ = step(&mut state, &rules, &[]);

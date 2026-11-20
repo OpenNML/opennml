@@ -13,6 +13,8 @@ opennml-sim.workspace = true
 glam.workspace = true
 anyhow.workspace = true
 log.workspace = true
+serde.workspace = true
+serde_bytes.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

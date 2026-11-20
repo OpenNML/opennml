@@ -22,10 +22,19 @@ pub struct RandomLevel {
 }
 
 /// Generates the random map for the description like the restart of the original (with object step)
-/// and builds scene and rules input. Loading a savegame also goes through here.
+/// and builds scene and rules input ([`level_from_map`]). A new start and the restart go through here; loading a
+/// savegame takes the map from the savegame instead.
 pub fn build_level(vfs: &Vfs, spec: &RandomMapSpec) -> anyhow::Result<RandomLevel> {
     let types = load_types(vfs)?;
     let map = generate(vfs, &types, spec)?;
+    level_from_map(vfs, map)
+}
+
+/// Scene and rules input of a finished map: from the generator ([`build_level`]) or from a savegame, where loading
+/// reads neither the map types nor a map script (D-341). The map is checked first ([`RandomMap::check`]); `vfs`
+/// gives the project and the object types.
+pub fn level_from_map(vfs: &Vfs, map: RandomMap) -> anyhow::Result<RandomLevel> {
+    map.check()?;
     let scene = to_scene(vfs, &map)?;
     let rules = rules_input(&map);
     Ok(RandomLevel { map, scene, rules })
@@ -129,5 +138,16 @@ mod tests {
         let mut b = map.clone();
         b.spec.seed_text = "a".into();
         assert_ne!(rules_input(&a).digest, rules_input(&b).digest);
+    }
+
+    /// The whole generator result goes through the savegame encoding unchanged: equal map, equal digest.
+    #[test]
+    fn random_map_round_trips() {
+        use opennml_sim::save::codec::{decode_named, encode_named};
+        let map = crate::tests::relief_map();
+        let back: RandomMap = decode_named(&encode_named(&map)).unwrap();
+        assert_eq!(back, map);
+        assert_eq!(rules_input(&back).digest, rules_input(&map).digest);
+        back.check().unwrap();
     }
 }

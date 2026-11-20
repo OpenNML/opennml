@@ -404,7 +404,9 @@ fn flag_victory_comes_at_the_same_step_after_load() {
         commands: Vec::new(),
     };
     let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-    loaded.check(rules).unwrap();
+    loaded
+        .check(rules, opennml_sim::save::RulesCompare::Full)
+        .unwrap();
     let mut loaded = loaded.state;
     assert_eq!(checksum(&loaded), checksum(&original));
     let mut won: [Vec<(u64, u8, i32)>; 2] = [Vec::new(), Vec::new()];

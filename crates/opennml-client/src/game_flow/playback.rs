@@ -71,7 +71,7 @@ impl GameFlow {
         // Random map like the start of a new single-player match: `randommap.ldg`, otherwise the loading screen of the
         // map.
         let ldg = match &source {
-            MapSource::Random(_) => RANDOM_MAP_LDG.to_string(),
+            MapSource::Random(_) | MapSource::SavedRandom(_) => RANDOM_MAP_LDG.to_string(),
             MapSource::Level(path) => {
                 ldg_path_for(path, head.meta.game_type, false, |p| env.vfs.exists(p))
             }
@@ -180,7 +180,7 @@ fn replay_setup(rules: &Rules, start: &StartPackage) -> anyhow::Result<MatchSetu
         bail!(
             "the recording does not fit the game data (start package differs, rules checksum {:016x} instead of {:016x})",
             rules.checksum,
-            start.rules_checksum
+            start.rules.full()
         );
     }
     Ok(start.setup.clone())

@@ -181,7 +181,9 @@ fn play(
                 commands: Vec::new(),
             };
             let loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-            loaded.check(rules).unwrap();
+            loaded
+                .check(rules, opennml_sim::save::RulesCompare::Full)
+                .unwrap();
             assert_eq!(checksum(&loaded.state), checksum(&state));
             state = loaded.state;
         }

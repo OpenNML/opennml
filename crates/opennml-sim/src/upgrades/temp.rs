@@ -249,7 +249,7 @@ mod tests {
         let bytes = crate::save::testkit::save_bytes(state, rules);
         crate::save::SaveGame::from_bytes(&bytes)
             .expect("savegame readable")
-            .check(rules)
+            .check(rules, crate::save::RulesCompare::Full)
             .expect("savegame valid");
     }
 

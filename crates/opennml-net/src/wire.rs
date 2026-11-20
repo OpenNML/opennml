@@ -14,8 +14,9 @@ pub const MAGIC: [u8; 4] = *b"NMLN";
 /// messages, `Hello.build`, `StartInfo` with `spacing`/`lead`; 3 `Hello::seat`, `StartInfo::saved`,
 /// `LobbyState::seats`, `MapId::Saved`; 4 `Hello::listen_port`, `Go::successors`, `Rejoin`, `Migrated`,
 /// `NetControl::Handover`; 5 game data check: `LobbyState::session_revision`, `LobbyState::rules_checksum`,
-/// `LobbyRow::data`, `LobbyWish::Data`, `NetMessage::LoadFailed`.
-pub const NET_VERSION: u16 = 5;
+/// `LobbyRow::data`, `LobbyWish::Data`, `NetMessage::LoadFailed`; 6 start info: `StartPackage::rules` is the rules
+/// checksum split into logic, derived and speech.
+pub const NET_VERSION: u16 = 6;
 /// Largest allowed body in bytes.
 pub const MAX_FRAME: usize = 1 << 20;
 /// Payload per piece.
@@ -219,7 +220,11 @@ mod tests {
         StartPackage {
             format: 1,
             level: "multiplayer/test.lvl".into(),
-            rules_checksum: 0x1234_5678_9abc_def0,
+            rules: opennml_sim::rules::RuleChecksums {
+                logic: 0x1234_5678_9abc_def0,
+                derived: 1,
+                speech: 2,
+            },
             setup: MatchSetup::default(),
             random_map: None,
         }
@@ -631,11 +636,11 @@ mod tests {
     }
 
     #[test]
-    fn frame_of_version_4_is_rejected() {
-        assert_eq!(NET_VERSION, 5);
-        let mut r = std::io::Cursor::new(header(4, 0));
+    fn frame_of_version_5_is_rejected() {
+        assert_eq!(NET_VERSION, 6);
+        let mut r = std::io::Cursor::new(header(5, 0));
         match read_frame(&mut r) {
-            Err(WireError::Version { got }) => assert_eq!(got, 4),
+            Err(WireError::Version { got }) => assert_eq!(got, 5),
             other => panic!("expected Version, got {other:?}"),
         }
     }

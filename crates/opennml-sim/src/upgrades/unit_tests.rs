@@ -830,6 +830,6 @@ fn a_colonist_quartered_during_an_upgrade_cannot_leave_the_tower() {
     let bytes = crate::save::testkit::save_bytes(sim.state, &rules);
     crate::save::SaveGame::from_bytes(&bytes)
         .expect("savegame readable")
-        .check(&rules)
+        .check(&rules, crate::save::RulesCompare::Full)
         .expect("savegame valid");
 }

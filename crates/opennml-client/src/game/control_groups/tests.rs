@@ -413,10 +413,7 @@ fn host_part(groups: Vec<GroupsSave>) -> HostPart {
 fn save_and_load(w: &World, slots: &[ControlGroups]) -> (World, Vec<ControlGroups>) {
     let mut host = host_part(slots.iter().map(ControlGroups::to_save).collect());
     host.next_guid_index = slots.iter().map(|g| g.next_guid_index.clone()).collect();
-    let file = GameSaveFile {
-        sim: w.host.save(),
-        host,
-    };
+    let file = GameSaveFile::new(w.host.save(), host, None);
     let back = GameSaveFile::from_bytes(&file.to_bytes()).unwrap();
     back.check(&w.host.rules).unwrap();
     let mut loaded = World::new();

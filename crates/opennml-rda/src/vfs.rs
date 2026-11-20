@@ -32,8 +32,9 @@ pub struct Vfs {
     /// Loose files in the game directory (normalized path -> file), read once when opening;
     /// empty for [`Vfs::from_archives`].
     loose: BTreeMap<String, PathBuf>,
-    /// Set in clones made by [`Vfs::recording`]: every [`Vfs::read`] is noted here.
-    log: Option<ReadLog>,
+    /// Set in clones made by [`Vfs::recording`]: every [`Vfs::read`] is noted in each of them (a recording of a
+    /// recording notes in both logs).
+    logs: Vec<ReadLog>,
 }
 
 /// One file read through a recording [`Vfs`] (see [`Vfs::recording`]).
@@ -130,7 +131,7 @@ impl Vfs {
             archives,
             index,
             loose: BTreeMap::new(),
-            log: None,
+            logs: Vec::new(),
         }
     }
 
@@ -171,21 +172,25 @@ impl Vfs {
     /// Reads a file: first loose from disk, otherwise from the effective archive.
     pub fn read(&self, path: &str) -> Result<Vec<u8>, RdaError> {
         let result = self.read_unrecorded(path);
-        if let Some(log) = &self.log {
-            log.note(
+        if !self.logs.is_empty() {
+            let (path, hash) = (
                 normalize_path(path),
                 result.as_ref().ok().map(|bytes| fnv1a64(bytes)),
             );
+            for log in &self.logs {
+                log.note(path.clone(), hash);
+            }
         }
         result
     }
 
     /// A clone that notes every [`Vfs::read`] in the returned [`ReadLog`]; the original stays
-    /// unchanged and notes nothing. Clones of the clone share the log.
+    /// unchanged and notes nothing. Clones of the clone share the log. If `self` is itself recording, its
+    /// logs keep noting the reads of the clone as well.
     pub fn recording(&self) -> (Vfs, ReadLog) {
         let log = ReadLog::default();
         let mut vfs = self.clone();
-        vfs.log = Some(log.clone());
+        vfs.logs.push(log.clone());
         (vfs, log)
     }
 
@@ -560,6 +565,18 @@ mod tests {
         assert_eq!(log.take().len(), 1, "clones of the recorder share the log");
         let (_other, other_log) = vfs.recording();
         assert!(other_log.take().is_empty());
+    }
+
+    #[test]
+    fn recording_of_a_recording_notes_in_both_logs() {
+        let (_dir, vfs) = two_files();
+        let (outer, outer_log) = vfs.recording();
+        outer.read("data/a.txt").unwrap();
+        let (inner, inner_log) = outer.recording();
+        inner.read("data/b.txt").unwrap();
+        let paths = |log: &ReadLog| log.take().into_iter().map(|e| e.path).collect::<Vec<_>>();
+        assert_eq!(paths(&inner_log), ["data/b.txt"]);
+        assert_eq!(paths(&outer_log), ["data/a.txt", "data/b.txt"]);
     }
 
     #[test]

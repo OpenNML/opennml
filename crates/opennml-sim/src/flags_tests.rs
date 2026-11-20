@@ -309,7 +309,9 @@ fn flag_state_survives_save_load() {
         commands: Vec::new(),
     };
     let mut loaded = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-    loaded.check(&rules).unwrap();
+    loaded
+        .check(&rules, crate::save::RulesCompare::Full)
+        .unwrap();
     assert_eq!(loaded.state, state);
     assert_eq!(loaded.state.flag_counts[4], -1);
     for _ in 0..40 {

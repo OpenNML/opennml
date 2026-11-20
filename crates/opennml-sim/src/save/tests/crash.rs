@@ -6,9 +6,9 @@
 //! [`Expect::Runs`] then [`RUN_TICKS`] ticks. Which check rejects and with which message does not matter (the message
 //! appears only in the output); what is required is "rejected" or "loads and runs without a panic".
 //!
-//! Each row runs in its own thread under `catch_unwind` with the time limit [`ROW_TIMEOUT`]; panic, timeout and wrong
-//! outcome are collected and reported at the end with the row `id`. A stack overflow cannot be caught: it ends the
-//! whole test program and counts as a failure just the same.
+//! Each row runs in its own thread ([`ROW_STACK`]) under `catch_unwind` with the time limit [`ROW_TIMEOUT`]; panic,
+//! timeout and wrong outcome are collected and reported at the end with the row `id`. A stack overflow cannot be
+//! caught: it ends the whole test program and counts as a failure just the same.
 //!
 //! The `id` is the number of the check (A or B series), with a suffix where a check has several rows. If a check is
 //! dropped because the run time tolerates the value, its row switches to [`Expect::Runs`]; if it is dropped because a
@@ -31,6 +31,10 @@ use crate::object::status;
 
 /// Time limit per row (debug build, including the setup of the scene).
 const ROW_TIMEOUT: Duration = Duration::from_secs(60);
+/// Stack of a row thread: in the debug build `rmp_serde` takes about 5 KB per nesting level, the depth limit
+/// `codec::MAX_DEPTH` thus about 2.5 MB (release build: about 0.5 KB per level). The deep rows nest 100,000 levels and
+/// would overflow it many times over without their limits.
+const ROW_STACK: usize = 8 << 20;
 /// Ticks after loading with [`Expect::Runs`].
 const RUN_TICKS: usize = 4;
 
@@ -388,7 +392,7 @@ static CASES: &[Case] = &[
     Case { id: "B71", base: Plain, damage: |s| s.start.level = "data/levels/other.lvl".into(), expect: Rejected },
     Case { id: "B72", base: Plain, damage: |s| s.start.random_map = Some(random_spec("ZKA", 0)), expect: Rejected },
     Case { id: "B73", base: Random, damage: |s| s.start.setup.mode = 0, expect: Rejected },
-    Case { id: "B74", base: Plain, damage: |s| s.start.rules_checksum ^= 1, expect: Rejected },
+    Case { id: "B74", base: Plain, damage: |s| s.start.rules.logic ^= 1, expect: Rejected },
     // Object tables.
     // Slot 0 is not full: the last entry is empty, the occupancy stays the same.
     Case { id: "A2", base: Plain, damage: |s| { s.state.tables[0].objects.pop(); }, expect: Rejected },
@@ -785,38 +789,86 @@ static BYTE_CASES: &[ByteCase] = &[
     // not be built (serializing, cloning and freeing run recursively), the read limit of `deserialize_child` must
     // reject before the stack overflow.
     ("vm-depth", |b| *b = nested_ki_children(100_000)),
+    // A zstd frame that announces one byte more than `codec::MAX_UNPACKED`: rejected before unpacking.
+    ("unpacked size", |b| *b = signed(&announcing_frame(codec::MAX_UNPACKED as u64 + 1))),
+    // An unknown field whose value nests 100,000 arrays deep: skipping it recurses, the depth limit
+    // `codec::MAX_DEPTH` must reject before the stack overflow.
+    ("nesting depth", |b| *b = signed(&pack(&unknown_deep_field(100_000)))),
+    // An object table of 2,000,000 empty entries in about a hundred packed bytes: one byte each in MessagePack, an
+    // object each in memory (gigabytes); reading must reject at the entry behind the largest slot capacity.
+    ("object table length", |b| *b = signed(&pack(&empty_object_table(2_000_000)))),
 ];
+
+/// Savegame bytes with a valid header around the packed body `packed`.
+fn signed(packed: &[u8]) -> Vec<u8> {
+    write_container(SAVE_MAGIC, FORMAT_VERSION, packed)
+}
+
+/// Packs MessagePack like `codec::encode_named`.
+fn pack(plain: &[u8]) -> Vec<u8> {
+    zstd::bulk::compress(plain, 3).unwrap()
+}
+
+/// zstd frame header with the content size `size` (single segment, without checksum), then one raw last block with
+/// one byte.
+fn announcing_frame(size: u64) -> Vec<u8> {
+    let mut frame = vec![0x28, 0xB5, 0x2F, 0xFD, 0xE0];
+    frame.extend(size.to_le_bytes());
+    frame.extend([0x09, 0x00, 0x00, 0x2A]);
+    frame
+}
+
+/// MessagePack of the savegame of the base scene [`Base::Plain`] with an additional field `x`: `depth` nested arrays
+/// around `nil`.
+fn unknown_deep_field(depth: usize) -> Vec<u8> {
+    let (_, save) = base(Plain);
+    let mut plain = rmp_serde::to_vec_named(&save).unwrap();
+    assert_eq!(plain[0], 0x83, "map with the three fields of `SaveGame`");
+    plain[0] = 0x84;
+    plain.extend([0xA1, b'x']);
+    plain.extend(std::iter::repeat_n(0x91, depth));
+    plain.push(0xC0);
+    plain
+}
+
+/// MessagePack of a savegame body that is only an object table with `len` empty entries:
+/// `{state: {tables: [{objects: [nil; len]}]}}`.
+fn empty_object_table(len: u32) -> Vec<u8> {
+    let mut plain = vec![0x81, 0xA5];
+    plain.extend(b"state");
+    plain.extend([0x81, 0xA6]);
+    plain.extend(b"tables");
+    plain.extend([0x91, 0x81, 0xA7]);
+    plain.extend(b"objects");
+    plain.push(0xDD);
+    plain.extend(len.to_be_bytes());
+    plain.extend(std::iter::repeat_n(0xC0, len as usize));
+    plain
+}
 
 /// Savegame bytes of the AI scene in which thread 1 carries a chain of `depth` children (newly signed).
 fn nested_ki_children(depth: usize) -> Vec<u8> {
     let (rules, state) = ki_scene();
     let mut thread = ki_thread(&mut state.clone(), 1).clone();
     thread.child = None;
-    let mut one = postcard::to_stdvec(&thread).unwrap();
-    assert_eq!(one.pop(), Some(0), "`child: None` at the end");
-    let mut chain = Vec::with_capacity((one.len() + 1) * (depth + 1));
-    for _ in 0..depth {
-        chain.extend(&one);
-        chain.push(1);
-    }
-    chain.extend(&one);
-    chain.push(0);
-    let body = postcard::to_stdvec(&wrap(&rules, state)).unwrap();
+    // `child` is the last field: without its `nil` the bytes of a thread open the value of its child.
+    let mut one = rmp_serde::to_vec_named(&thread).unwrap();
+    assert_eq!(one.pop(), Some(0xC0), "`child: None` at the end");
+    let body = rmp_serde::to_vec_named(&wrap(&rules, state)).unwrap();
     let at = body
         .windows(one.len())
         .position(|w| w == one.as_slice())
         .expect("thread 1 in the body");
-    // `child: None` behind thread 1 becomes `Some` with the chain.
-    let mut damaged = body[..at + one.len()].to_vec();
-    assert_eq!(body[at + one.len()], 0, "`child: None` of thread 1");
-    damaged.push(1);
-    damaged.extend(chain);
-    damaged.extend(&body[at + one.len() + 1..]);
-    let mut bytes = SAVE_MAGIC.to_vec();
-    bytes.extend(FORMAT_VERSION.to_le_bytes());
-    bytes.extend(body_checksum(&damaged).to_le_bytes());
-    bytes.extend(damaged);
-    bytes
+    let end = at + one.len();
+    assert_eq!(body[end], 0xC0, "`child: None` of thread 1");
+    // `child: None` behind thread 1 becomes the chain.
+    let mut damaged = body[..end].to_vec();
+    for _ in 0..depth {
+        damaged.extend(&one);
+    }
+    damaged.push(0xC0);
+    damaged.extend(&body[end + 1..]);
+    signed(&pack(&damaged))
 }
 
 type ReplayCase = (&'static str, fn(&mut Replay), Option<u64>);
@@ -857,8 +909,10 @@ fn replay() -> (Rules, Replay) {
 fn run_case(case: &Case) -> Result<(), String> {
     let (rules, mut save) = base(case.base);
     (case.damage)(&mut save);
-    let loaded = SaveGame::from_bytes(&encode(SAVE_MAGIC, &save))
-        .and_then(|save| save.check(&rules).map(|()| save));
+    let loaded = SaveGame::from_bytes(&encode(SAVE_MAGIC, &save)).and_then(|save| {
+        save.check(&rules, crate::save::RulesCompare::Full)
+            .map(|()| save)
+    });
     match (case.expect, loaded) {
         (Rejected, Err(e)) => {
             println!("{}: rejected: {e:#}", case.id);
@@ -912,6 +966,7 @@ fn guarded(id: &str, row: impl FnOnce() -> Result<(), String> + Send + 'static) 
     let (tx, rx) = mpsc::channel();
     std::thread::Builder::new()
         .name(id.to_string())
+        .stack_size(ROW_STACK)
         .spawn(move || {
             let _ = tx.send(catch_unwind(AssertUnwindSafe(row)));
         })

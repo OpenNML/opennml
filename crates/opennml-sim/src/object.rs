@@ -156,6 +156,7 @@ pub struct GameObject {
     /// Modules at their fixed slot (`+0x64 + 4n`).
     pub modules: FixedVec<Option<Module>, MODULE_SLOTS>,
     /// Tick list of the modules in insertion order (`+0x758`).
+    #[serde(with = "serde_bytes")]
     pub tick_list: Vec<u8>,
     /// Queued (de)activations (`+0x770`): `n` = on, `!n` = off.
     pub pending_activation: Vec<i32>,

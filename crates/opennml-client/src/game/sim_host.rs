@@ -1774,8 +1774,8 @@ impl SimHost {
     }
 
     /// Loads a savegame of the same map and rules. The caller must check it beforehand against these rules
-    /// ([`SaveGame::check`], in the game via [`GameSaveFile::check`](crate::game_save::GameSaveFile::check); once per
-    /// load). With `log` (the command log from the start of the match; unchecked) the replay stays complete and
+    /// ([`SaveGame::check`], in the game via [`GameSaveFile::prepare`](crate::game_save::GameSaveFile::prepare); once
+    /// per load). With `log` (the command log from the start of the match; unchecked) the replay stays complete and
     /// continues the log; without it a replay is no longer possible afterwards (the commands before the
     /// savegame are missing).
     pub fn load(&mut self, save: SaveGame, log: Option<Vec<RecordedCommand>>) {
@@ -4692,7 +4692,8 @@ VALUEID 30001 1 1 0
             o.modules[spell::INDEX] = Some(s);
         }
         let save = SaveGame::from_bytes(&save.to_bytes()).unwrap();
-        save.check(&live.rules).unwrap();
+        save.check(&live.rules, opennml_sim::save::RulesCompare::Full)
+            .unwrap();
         let mut host = host();
         host.load(save, None);
         let mut flights: Vec<Flight> = host

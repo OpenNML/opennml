@@ -5,15 +5,15 @@
 //! network state carries it alongside.
 //!
 //! File: identifier `NMLNETST`, [`NET_STATE_FORMAT`] as u32 LE, FNV-1a 64 of the body as u64 LE, body = `postcard` of
-//! `{ sim: SaveGame::to_bytes(), log }` (layout like `GameSaveFile`: the simulation part stays in its own bytes, so
-//! that a change of `FORMAT_VERSION` is noticed as a "format version"). The host sends it to the deviating clients
+//! `{ sim: SaveGame::to_bytes(), log }` (the simulation part stays in its own bytes, so that a change of
+//! `FORMAT_VERSION` is noticed as a "format version"). The host sends it to the deviating clients
 //! during the sync; the desync report stores both network states as `host.nmllog` and `local.nmllog`.
 //!
 //! The original never syncs; the reimplementation does (deviation from the original, E-260, E-261).
 
 use anyhow::{Context, bail};
 use opennml_sim::rules::Rules;
-use opennml_sim::save::{RecordedCommand, SaveGame, read_container, write_container};
+use opennml_sim::save::{RecordedCommand, RulesCompare, SaveGame, read_container, write_container};
 use serde::{Deserialize, Serialize};
 
 /// Identifier of the file.
@@ -72,10 +72,10 @@ impl NetState {
         Ok(Self { save, log })
     }
 
-    /// Does the network state match the rules ([`SaveGame::check`])? Loading does not check the log: `SimHost::adopt`
-    /// only adopts it and writes it to the recording and replay.
+    /// Does the network state match the rules ([`SaveGame::check`] with the full rules checksum)? Loading does not
+    /// check the log: `SimHost::adopt` only adopts it and writes it to the recording and replay.
     pub fn check(&self, rules: &Rules) -> anyhow::Result<()> {
-        self.save.check(rules)
+        self.save.check(rules, RulesCompare::Full)
     }
 }
 

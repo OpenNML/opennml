@@ -47,21 +47,18 @@ pub fn prototype(id: u32, name: &str, params: u32, module: &KiModule, bytes: &[u
 
 impl KiCatalog {
     /// Reads `nml.db` and then, per entry in database order, the module file. `nml.db` and all
-    /// module files (path and bytes) go into the checksum of the rules; a missing or
-    /// corrupted file is an error with the path (re/ki-vm 12.3 P14).
-    pub fn load(vfs: &Vfs, hash: &mut Fnv64) -> anyhow::Result<Self> {
+    /// module files go into the checksum of the rules through the read recording of `vfs`
+    /// (`RuleChecksums::logic`); a missing or corrupted file is an error with the path
+    /// (re/ki-vm 12.3 P14).
+    pub fn load(vfs: &Vfs) -> anyhow::Result<Self> {
         let db_bytes = vfs
             .read(DB_PATH)
             .with_context(|| format!("reading {DB_PATH}"))?;
-        hash.write(DB_PATH.as_bytes());
-        hash.write(&db_bytes);
         let db = parse_db(&db_bytes).with_context(|| format!("parsing {DB_PATH}"))?;
         let mut modules = BTreeMap::new();
         for entry in &db.entries {
             let path = module_path(entry.id);
             let bytes = vfs.read(&path).with_context(|| format!("reading {path}"))?;
-            hash.write(path.as_bytes());
-            hash.write(&bytes);
             let module = parse(&bytes).with_context(|| format!("parsing {path}"))?;
             let proto = prototype(
                 entry.id,

@@ -138,7 +138,8 @@ fn measure(f: &Fixture) -> [(&'static str, u64); 5] {
     let spec = save.start.random_map.clone().expect("map description");
     assert_eq!(spec, f.spec1);
     let loaded_rules = rules_for(&f.vfs, &spec);
-    save.check(&loaded_rules).unwrap();
+    save.check(&loaded_rules, opennml_sim::save::RulesCompare::Full)
+        .unwrap();
     let mut loaded = save.state;
     let save_load = checksum(&loaded);
     assert_eq!(save_load, sums[199], "loaded state differs");
