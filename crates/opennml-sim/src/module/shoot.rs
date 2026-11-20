@@ -10,6 +10,7 @@ use std::collections::BTreeSet;
 use opennml_formats::property::ModuleDesc;
 use serde::{Deserialize, Serialize};
 
+use crate::fixed_vec::at_most;
 use crate::id::ObjectId;
 use crate::message::{Envelope, Message};
 use crate::messaging::{send, send_fault, send_success};
@@ -21,6 +22,8 @@ use super::ModuleKind;
 use super::events::update_events;
 
 pub const INDEX: usize = 0x0A;
+/// Most entries of [`Shoot::models`] that loading reads: far above the names of a `m_MainObject` text.
+pub const MAX_MODELS: usize = 256;
 pub(super) const GROUP: u8 = 0x80;
 pub(super) const GROUP_KEEP: u8 = 0x81;
 
@@ -74,7 +77,9 @@ pub struct Shoot {
     /// `m_ProjectileVelocity`/`m_ProjectileSlopeAngle` (110008/110009 `<< 12`, never used).
     pub velocity: i32,
     pub slope: i32,
-    /// Resolved meshes from `m_MainObject` (`+0xE4`): `None` = name without a mesh.
+    /// Resolved meshes from `m_MainObject` (`+0xE4`): `None` = name without a mesh. Loading reads at most
+    /// [`MAX_MODELS`] entries (an empty entry takes one byte in the savegame).
+    #[serde(deserialize_with = "at_most::<MAX_MODELS, _, _>")]
     pub models: Vec<Option<String>>,
 }
 

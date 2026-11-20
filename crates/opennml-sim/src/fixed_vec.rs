@@ -3,11 +3,15 @@
 //! [`FixedVec<T, N>`] always holds exactly `N` entries. In the savegame it looks like a `Vec<T>` (length prefix and
 //! entries, same bytes); loading reads a `Vec<T>` and rejects every other length. The type thus replaces the
 //! length checks when loading, and the accesses `v[i]` with `i < N` cannot be out of range.
+//!
+//! [`at_most`] reads a `Vec<T>` of bounded length (also behind `FixedVec`): a longer list is rejected while reading.
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
+use serde::de::{self, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// List with exactly `N` entries; serialized like `Vec<T>`.
@@ -107,8 +111,43 @@ impl<T: Serialize, const N: usize> Serialize for FixedVec<T, N> {
 
 impl<'de, T: Deserialize<'de>, const N: usize> Deserialize<'de> for FixedVec<T, N> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let v = Vec::<T>::deserialize(deserializer)?;
+        let v = at_most::<N, D, T>(deserializer)?;
         Self::try_from(v).map_err(serde::de::Error::custom)
+    }
+}
+
+/// Reads a `Vec<T>` with at most `MAX` entries, for `#[serde(deserialize_with = "at_most::<MAX, _, _>")]`: same bytes
+/// as `Vec<T>`, but a longer list is rejected by its announced length or at entry `MAX + 1`, before the entries take
+/// memory. For lists whose entries are large in memory and a byte or two in the savegame (`None`, for example), whose
+/// length the reading of `Vec<T>` would otherwise follow up to the unpacked size.
+pub fn at_most<'de, const MAX: usize, D: Deserializer<'de>, T: Deserialize<'de>>(
+    deserializer: D,
+) -> Result<Vec<T>, D::Error> {
+    deserializer.deserialize_seq(AtMost::<MAX, T>(PhantomData))
+}
+
+struct AtMost<const MAX: usize, T>(PhantomData<T>);
+
+impl<'de, const MAX: usize, T: Deserialize<'de>> Visitor<'de> for AtMost<MAX, T> {
+    type Value = Vec<T>;
+
+    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "a sequence of at most {MAX} entries")
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Vec<T>, A::Error> {
+        let announced = seq.size_hint().unwrap_or(0);
+        if announced > MAX {
+            return Err(de::Error::invalid_length(announced, &self));
+        }
+        let mut v = Vec::with_capacity(announced);
+        while let Some(entry) = seq.next_element()? {
+            if v.len() == MAX {
+                return Err(de::Error::invalid_length(MAX + 1, &self));
+            }
+            v.push(entry);
+        }
+        Ok(v)
     }
 }
 
@@ -128,5 +167,30 @@ mod tests {
         assert!(postcard::from_bytes::<FixedVec<u16, 3>>(&short).is_err());
         let long = postcard::to_stdvec(&vec![1u16, 2, 3, 4]).unwrap();
         assert!(postcard::from_bytes::<FixedVec<u16, 3>>(&long).is_err());
+    }
+
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    struct Bounded(#[serde(deserialize_with = "at_most::<3, _, _>")] Vec<Option<u16>>);
+
+    /// `at_most` reads the bytes of `Vec<T>` up to `MAX` entries; a longer list is rejected, by its announced length
+    /// and, if the announcement is not checked first, at the entry behind `MAX`.
+    #[test]
+    fn at_most_bounds_the_length() {
+        for v in [vec![], vec![None, Some(7), None]] {
+            let bytes = postcard::to_stdvec(&v).unwrap();
+            assert_eq!(postcard::to_stdvec(&Bounded(v.clone())).unwrap(), bytes);
+            assert_eq!(postcard::from_bytes::<Bounded>(&bytes).unwrap(), Bounded(v));
+        }
+        let long = postcard::to_stdvec(&vec![None::<u16>; 4]).unwrap();
+        assert!(postcard::from_bytes::<Bounded>(&long).is_err());
+        // A sequence without a length announcement (the filter hides it).
+        let unannounced = de::value::SeqDeserializer::<_, de::value::Error>::new(
+            std::iter::repeat_n(0u8, 4).filter(|_| true),
+        );
+        assert!(
+            unannounced
+                .deserialize_seq(AtMost::<3, u8>(PhantomData))
+                .is_err()
+        );
     }
 }

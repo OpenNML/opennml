@@ -10,9 +10,9 @@ use crate::collision::CollisionGrid;
 use crate::collision::records::CollisionRecords;
 use crate::command::Outcome;
 use crate::economy::Economy;
-use crate::fixed_vec::FixedVec;
+use crate::fixed_vec::{FixedVec, at_most};
 use crate::fog::Fog;
-use crate::id::{ObjectId, PLAYER_SLOTS, SLOT_CAPACITY, SLOT_COUNT};
+use crate::id::{MAX_SLOT_CAPACITY, ObjectId, PLAYER_SLOTS, SLOT_CAPACITY, SLOT_COUNT};
 use crate::mfc::MfcMap;
 use crate::object::GameObject;
 use crate::occupancy::OccupancyGrid;
@@ -25,8 +25,12 @@ use crate::upgrades::PERCENT_SLOTS;
 /// Object table of a player slot (`GameWorld+0x234/+0x260/+0x28C/+0x2E4`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SlotTable {
+    /// Loading reads at most [`MAX_SLOT_CAPACITY`] entries: an empty entry takes one byte in the savegame and the
+    /// size of an object in memory ([`Self::check`] then requires the capacity of the slot).
+    #[serde(deserialize_with = "at_most::<MAX_SLOT_CAPACITY, _, _>")]
     pub objects: Vec<Option<GameObject>>,
     /// Generation per index (16 bits; the ID carries only 11 bits).
+    #[serde(deserialize_with = "at_most::<MAX_SLOT_CAPACITY, _, _>")]
     pub generations: Vec<u16>,
     /// Ring pointer of the allocation.
     pub ring: usize,

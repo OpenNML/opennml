@@ -19,6 +19,18 @@ pub const SLOT_COUNT: usize = 11;
 pub const SLOT_CAPACITY: [usize; SLOT_COUNT] = [
     1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 300, 6000, 5000,
 ];
+/// Largest entry of [`SLOT_CAPACITY`]: loading reads no object table longer than this.
+pub const MAX_SLOT_CAPACITY: usize = {
+    let mut max = 0;
+    let mut slot = 0;
+    while slot < SLOT_COUNT {
+        if SLOT_CAPACITY[slot] > max {
+            max = SLOT_CAPACITY[slot];
+        }
+        slot += 1;
+    }
+    max
+};
 
 /// ID (HID) of an object; -1 (`0xFFFFFFFF`) = none.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -97,5 +109,6 @@ mod tests {
         assert!(ObjectId::NONE.is_none() && !id.is_none());
         assert_eq!(format!("{id:?}"), "ObjectId(9:999#1)");
         assert_eq!(SLOT_CAPACITY.iter().sum::<usize>(), 19_300);
+        assert_eq!(MAX_SLOT_CAPACITY, 6000);
     }
 }

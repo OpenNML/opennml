@@ -3,7 +3,10 @@
 //! `postcard` on the same types (`super::checksum_of`).
 //!
 //! Reading limits what a damaged or forged file can cost: the unpacked size ([`MAX_UNPACKED`]) and the nesting of
-//! arrays and maps ([`MAX_DEPTH`]); bytes left over behind the value are an error.
+//! arrays and maps ([`MAX_DEPTH`]); bytes left over behind the value are an error. Lists whose entries are large in
+//! memory and a byte or two in MessagePack (empty object table entries, for example) are bounded by their types
+//! while reading ([`crate::fixed_vec::FixedVec`], [`crate::fixed_vec::at_most`]); what remains is stated at
+//! [`MAX_UNPACKED`].
 
 use std::io::Read;
 
@@ -11,11 +14,20 @@ use anyhow::{Context, bail};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-/// Largest unpacked body in bytes (256 MiB; a 1024 x 1024 map with all grids takes a small part of it).
+/// Largest unpacked body in bytes (256 MiB). A savegame of a large random map (256 x 256) with 8 AI players after
+/// 12,000 ticks unpacks to about 15 MB; the command log of a network match adds about 110 bytes per command, about
+/// 13 MB for 8 players with one command per second each over four hours. The limit keeps more than 8 times that.
+///
+/// Memory of the reading, worst case: about 33 bytes per unpacked byte while typing (a list of empty strings or
+/// lists: 1 byte in MessagePack, 24 in memory, plus the growth of the list and the unpacked body), about 8 GiB at
+/// the limit; the untyped value of an older savegame number ([`decode_value`], 40 bytes per `rmpv::Value`) about
+/// 41 bytes per byte, about 10 GiB. Large entries are bounded by their types (module documentation) and stay below
+/// that factor.
 pub const MAX_UNPACKED: usize = 256 * 1024 * 1024;
 /// Deepest nesting of arrays and maps while reading: far above the types of the state, small enough that an
 /// arbitrarily deep value (for example under an unknown field, which is skipped recursively) does not blow the
-/// stack.
+/// stack. The release build needs less than 0.5 KB of stack per level (512 levels fit in 128 KiB); the debug build
+/// about 4.5 KB per level and can overflow the 1 MiB main thread from about 200 levels.
 pub const MAX_DEPTH: usize = 512;
 /// zstd level of the packing.
 const LEVEL: i32 = 3;
@@ -63,8 +75,9 @@ fn read_named<T: DeserializeOwned>(plain: &[u8]) -> anyhow::Result<T> {
     Ok(value)
 }
 
-/// Unpacks at most `limit` bytes. A frame that announces more is rejected before reading; one without or with a
-/// wrong announcement stops at the limit (the bulk API of zstd would reserve the whole limit up front).
+/// Unpacks at most `limit` bytes. A frame that announces more is rejected before reading, one that announces its
+/// size gets exactly that reserved; one without or with a wrong announcement stops at the limit (the bulk API of zstd
+/// would reserve the whole limit up front).
 fn unpack(packed: &[u8], limit: usize) -> anyhow::Result<Vec<u8>> {
     let announced = zstd::zstd_safe::get_frame_content_size(packed)
         .ok()
@@ -72,7 +85,8 @@ fn unpack(packed: &[u8], limit: usize) -> anyhow::Result<Vec<u8>> {
     if announced.is_some_and(|n| n > limit as u64) {
         bail!("body unpacks to more than {limit} bytes");
     }
-    let mut plain = Vec::new();
+    // At most `limit` (checked above).
+    let mut plain = Vec::with_capacity(announced.map_or(0, |n| n as usize));
     zstd::stream::read::Decoder::with_buffer(packed)
         .and_then(|d| d.take(limit as u64 + 1).read_to_end(&mut plain))
         .context("body not packed with zstd")?;

@@ -7,8 +7,8 @@
 //! appears only in the output); what is required is "rejected" or "loads and runs without a panic".
 //!
 //! Each row runs in its own thread ([`ROW_STACK`]) under `catch_unwind` with the time limit [`ROW_TIMEOUT`]; panic,
-//! timeout and wrong outcome are collected and reported at the end with the row `id`. A stack overflow cannot be caught: it ends the
-//! whole test program and counts as a failure just the same.
+//! timeout and wrong outcome are collected and reported at the end with the row `id`. A stack overflow cannot be
+//! caught: it ends the whole test program and counts as a failure just the same.
 //!
 //! The `id` is the number of the check (A or B series), with a suffix where a check has several rows. If a check is
 //! dropped because the run time tolerates the value, its row switches to [`Expect::Runs`]; if it is dropped because a
@@ -794,6 +794,9 @@ static BYTE_CASES: &[ByteCase] = &[
     // An unknown field whose value nests 100,000 arrays deep: skipping it recurses, the depth limit
     // `codec::MAX_DEPTH` must reject before the stack overflow.
     ("nesting depth", |b| *b = signed(&pack(&unknown_deep_field(100_000)))),
+    // An object table of 2,000,000 empty entries in about a hundred packed bytes: one byte each in MessagePack, an
+    // object each in memory (gigabytes); reading must reject at the entry behind the largest slot capacity.
+    ("object table length", |b| *b = signed(&pack(&empty_object_table(2_000_000)))),
 ];
 
 /// Savegame bytes with a valid header around the packed body `packed`.
@@ -825,6 +828,21 @@ fn unknown_deep_field(depth: usize) -> Vec<u8> {
     plain.extend([0xA1, b'x']);
     plain.extend(std::iter::repeat_n(0x91, depth));
     plain.push(0xC0);
+    plain
+}
+
+/// MessagePack of a savegame body that is only an object table with `len` empty entries:
+/// `{state: {tables: [{objects: [nil; len]}]}}`.
+fn empty_object_table(len: u32) -> Vec<u8> {
+    let mut plain = vec![0x81, 0xA5];
+    plain.extend(b"state");
+    plain.extend([0x81, 0xA6]);
+    plain.extend(b"tables");
+    plain.extend([0x91, 0x81, 0xA7]);
+    plain.extend(b"objects");
+    plain.push(0xDD);
+    plain.extend(len.to_be_bytes());
+    plain.extend(std::iter::repeat_n(0xC0, len as usize));
     plain
 }
 
