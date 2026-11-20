@@ -1110,6 +1110,9 @@ mod tests {
             assert!(bytes.len() < 200 * 1024, "{name}: {} bytes", bytes.len());
             let mut file =
                 GameSaveFile::from_bytes(&bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
+            // The test shows that the bytes of a release decode, upgrade and continue, not that the synthetic test
+            // rules stay byte-stable: take over their logic checksum (see `fixture`).
+            file.sim.start.rules.logic = rules.checksums.logic;
             file.prepare(&rules)
                 .unwrap_or_else(|e| panic!("{name}: {e}"));
             let mut host = SimHost::new(
@@ -1188,7 +1191,10 @@ mod tests {
     /// AI) with a small AI catalog and a level script. No original data.
     ///
     /// The files are frozen after their release and must keep loading with [`rules`]: do not change the rules of this
-    /// world (types, slots, AI catalog, script), only what the writer does.
+    /// world (types, slots, AI catalog, script), only what the writer does. The loading test takes over the logic
+    /// checksum of [`rules`] before `prepare`: the rules build on `Rules::synthetic` and `script::testing::rules_with`,
+    /// which other tests share, and a later change there (or in the checksum) must not make a frozen file
+    /// unloadable while its format is still compatible. Level path, map size and the rest of the check still apply.
     mod fixture {
         use super::*;
         use crate::game::options::DEFAULT_GAME_SPEED;
