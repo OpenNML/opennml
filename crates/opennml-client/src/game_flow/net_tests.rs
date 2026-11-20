@@ -642,7 +642,7 @@ fn host_end_shows_the_message_then_the_accounting() {
     end_for_all(&mut n.runs[0]);
     n.frames_until(|n| n.runs.iter().all(|r| message(r).is_some()));
     let name = NET_CLOCK.net_end_name();
-    let expected = format!("The host has ended the match. It was saved as \"{name}\".");
+    let expected = run_text(&n.runs[0], NET_HOST_ENDED_SAVED, &[&name]);
     let files: Vec<GameSaveFile> = (0..3).map(|i| read_save(&n.save_path(i, &name))).collect();
     for (i, file) in files.iter().enumerate() {
         let run = &n.runs[i];
@@ -697,8 +697,7 @@ fn host_crash_shows_the_abort_message_then_the_accounting() {
     n.runs[0].view.end();
     n.frames_until(|n| n.runs[1..].iter().all(|r| message(r).is_some()));
     let name = NET_CLOCK.net_end_name();
-    let expected =
-        format!("The connection to the host was aborted. The match was saved as \"{name}\".");
+    let expected = run_text(&n.runs[1], NET_HOST_LOST_SAVED, &[&name]);
     for i in 1..3 {
         assert_eq!(
             message(&n.runs[i]).as_deref(),
@@ -755,9 +754,7 @@ fn third_desync_shows_the_stop_message() {
     }
     n.frames_until(|n| n.runs.iter().all(|r| message(r).is_some()));
     let name = NET_CLOCK.checksum_error_name();
-    let expected = format!(
-        "The match is no longer in sync (checksum error). It was stopped and saved as \"{name}\"."
-    );
+    let expected = run_text(&n.runs[0], NET_STOPPED_SAVED, &[&name]);
     for i in 0..3 {
         assert_eq!(
             message(&n.runs[i]).as_deref(),
@@ -791,7 +788,7 @@ fn host_leaving_from_the_end_screen_ends_the_match_for_all() {
     n.runs[0].click("gameend_defeat", "end_defeat");
     n.frames_until(|n| n.runs.iter().all(|r| message(r).is_some()));
     let name = NET_CLOCK.net_end_name();
-    let expected = format!("The host has ended the match. It was saved as \"{name}\".");
+    let expected = run_text(&n.runs[0], NET_HOST_ENDED_SAVED, &[&name]);
     let files: Vec<GameSaveFile> = (0..3).map(|i| read_save(&n.save_path(i, &name))).collect();
     for (i, file) in files.iter().enumerate() {
         assert_eq!(
@@ -2615,11 +2612,19 @@ fn random_map_with_other_generator_data_differs() {
 
 // --- Messages of the game data check and of a failed load (re/multiplayer-menus L.18) --------------------------------
 
-use opennml_ui::own_texts::{DATA_DIFFERS, LOAD_FAILED, ROW_DIFFERS, fill};
+use opennml_ui::own_texts::{
+    DATA_DIFFERS, LOAD_FAILED, NET_HOST_ENDED_SAVED, NET_HOST_LOST_SAVED, NET_STOPPED_SAVED,
+    ROW_DIFFERS, fill,
+};
 
 /// Own text `id` of machine `i`, filled with `args`.
 pub(super) fn own_text(n: &Lan, i: usize, id: i32, args: &[&str]) -> String {
-    fill(&n.runs[i].host.layer.texts.display(id), args)
+    run_text(&n.runs[i], id, args)
+}
+
+/// Own text `id` of the machine `run`, filled with `args`.
+pub(super) fn run_text(run: &Run, id: i32, args: &[&str]) -> String {
+    fill(&run.host.layer.texts.display(id), args)
 }
 
 /// Host Anna and clients Bert and Carl on a map with three slots; the machines `changed` with a changed `bonus.ini`.

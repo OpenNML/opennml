@@ -564,14 +564,62 @@ fn own_texts_resolve_per_edition() {
             "Datei unbekannt",
             "file unknown",
         ),
+        (
+            own_texts::NET_STOPPED_SAVED,
+            99_116,
+            "Die Partie läuft nicht mehr synchron (Prüfsummenfehler). Sie wurde angehalten und als \"%s\" gespeichert.",
+            "The match is no longer in sync (checksum error). It was stopped and saved as \"%s\".",
+        ),
+        (
+            own_texts::NET_STOPPED_UNSAVED,
+            99_117,
+            "Die Partie läuft nicht mehr synchron (Prüfsummenfehler). Sie wurde angehalten und konnte nicht gespeichert werden.",
+            "The match is no longer in sync (checksum error). It was stopped and could not be saved.",
+        ),
+        (
+            own_texts::NET_HOST_ENDED_SAVED,
+            99_118,
+            "Der Host hat die Partie beendet. Sie wurde als \"%s\" gespeichert.",
+            "The host has ended the match. It was saved as \"%s\".",
+        ),
+        (
+            own_texts::NET_HOST_ENDED_UNSAVED,
+            99_119,
+            "Der Host hat die Partie beendet. Sie konnte nicht gespeichert werden.",
+            "The host has ended the match. It could not be saved.",
+        ),
+        (
+            own_texts::NET_HOST_LOST_SAVED,
+            99_120,
+            "Die Verbindung zum Host ist abgebrochen. Die Partie wurde als \"%s\" gespeichert.",
+            "The connection to the host was aborted. The match was saved as \"%s\".",
+        ),
+        (
+            own_texts::NET_HOST_LOST_UNSAVED,
+            99_121,
+            "Die Verbindung zum Host ist abgebrochen. Die Partie konnte nicht gespeichert werden.",
+            "The connection to the host was aborted. The match could not be saved.",
+        ),
+        (
+            own_texts::NET_HOST_LOST,
+            99_122,
+            "Die Verbindung zum Host ist abgebrochen.",
+            "The connection to the host was aborted.",
+        ),
+        (
+            own_texts::NET_FAILED,
+            99_123,
+            "Die Netzpartie wurde abgebrochen: %s",
+            "The network match was aborted: %s",
+        ),
     ];
     for (id, number, de, en) in data {
         assert_eq!(id, number);
         assert_eq!(own_texts::text(id, German), Some(de));
         assert_eq!(own_texts::text(id, English), Some(en));
     }
-    assert_eq!(own_texts::text(99_116, German), None);
-    assert_eq!(own_texts::all(English).count(), 16);
+    assert_eq!(own_texts::text(99_124, German), None);
+    assert_eq!(own_texts::all(English).count(), 24);
 
     let mut texts = Texts::from_entries(&[(99_101, "Own")]);
     texts.add_own_texts(English);

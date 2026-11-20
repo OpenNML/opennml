@@ -2,8 +2,8 @@
 //! network rows in `LEVELINFO` (the selection field `TURNRASTER` in `LAN3` was dropped), the messages when hosting
 //! from a network savegame, and the messages of the game data check in the lobby and of a failed network start
 //! (re/multiplayer-menus L.18). Placeholders `%s` and `%d` are filled in order when a text is shown ([`fill`]). One
-//! text per edition (German, English) in `texts/de.txt` and `texts/en.txt`; [`crate::assets::Texts::load`] inserts the texts of the detected edition into
-//! the table (only numbers that the installation does not occupy itself), afterwards
+//! text per edition (German, English) in `texts/de.txt` and `texts/en.txt`; [`crate::assets::Texts::load`] inserts
+//! the texts of the detected edition into the table (only numbers that the installation does not occupy itself), afterwards
 //! [`crate::assets::Texts::resolve`] resolves them like texts from `localisation.*`. Without a detected edition the
 //! language of Windows applies ([`language`]).
 
@@ -47,6 +47,22 @@ pub const LOAD_FAILED: i32 = 99_113;
 pub const FILES_MORE: i32 = 99_114;
 /// File list of a differing row without a known file.
 pub const FILE_UNKNOWN: i32 = 99_115;
+/// End message of a network match that stopped on a checksum error: `%s` the name of the savegame.
+pub const NET_STOPPED_SAVED: i32 = 99_116;
+/// Like [`NET_STOPPED_SAVED`], but the savegame could not be written.
+pub const NET_STOPPED_UNSAVED: i32 = 99_117;
+/// End message when the host ended the match: `%s` the name of the savegame.
+pub const NET_HOST_ENDED_SAVED: i32 = 99_118;
+/// Like [`NET_HOST_ENDED_SAVED`], but the savegame could not be written.
+pub const NET_HOST_ENDED_UNSAVED: i32 = 99_119;
+/// End message when the connection to the host was lost: `%s` the name of the savegame.
+pub const NET_HOST_LOST_SAVED: i32 = 99_120;
+/// Like [`NET_HOST_LOST_SAVED`], but the savegame could not be written.
+pub const NET_HOST_LOST_UNSAVED: i32 = 99_121;
+/// Abort with the cause `opennml_net::HOST_LOST` (for example after a failed host migration), without a savegame.
+pub const NET_HOST_LOST: i32 = 99_122;
+/// Any other abort of the network match: `%s` the cause (foreign text, converted for the `MSGBOX`).
+pub const NET_FAILED: i32 = 99_123;
 
 /// German texts, one line per text (`<ID>=<text>`).
 const DE: &str = include_str!("../texts/de.txt");
@@ -153,7 +169,7 @@ mod tests {
     #[test]
     fn both_columns_have_the_same_placeholders() {
         let (de, en) = tables();
-        assert_eq!(de.len(), 16);
+        assert_eq!(de.len(), 24);
         assert_eq!(en.len(), de.len());
         for (&(id, de), &(en_id, en)) in de.iter().zip(en) {
             assert_eq!(id, en_id, "same order");
@@ -222,6 +238,7 @@ mod tests {
         let sub = dir.path().join("none");
         opennml_rda::testutil::write_fake_install(&sub, 3, true);
         let vfs = Vfs::open_game_dir(&sub).unwrap();
+        // Without an edition the OS decides, so the test can only check that the result is `system_language()`.
         assert_eq!(language(&vfs), system_language());
     }
 

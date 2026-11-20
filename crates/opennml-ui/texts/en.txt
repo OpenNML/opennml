@@ -1,5 +1,6 @@
 # Own player texts, English column. One line per text: <ID>=<text> (the text runs to the end of the line, untrimmed).
-# Lines starting with '#' and empty lines are ignored. de.txt follows this file line by line; only characters up to U+00FF.
+# Lines starting with '#' and empty lines are ignored. de.txt follows this file line by line;
+# only characters up to U+00FF.
 99100=Turn raster
 99101=Original
 99102=LAN
@@ -16,3 +17,11 @@
 99113=[CENTER]%s could not load the game. The start was cancelled.
 99114= and %d more
 99115=file unknown
+99116=The match is no longer in sync (checksum error). It was stopped and saved as "%s".
+99117=The match is no longer in sync (checksum error). It was stopped and could not be saved.
+99118=The host has ended the match. It was saved as "%s".
+99119=The host has ended the match. It could not be saved.
+99120=The connection to the host was aborted. The match was saved as "%s".
+99121=The connection to the host was aborted. The match could not be saved.
+99122=The connection to the host was aborted.
+99123=The network match was aborted: %s

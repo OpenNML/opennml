@@ -1897,41 +1897,80 @@ fn client_leave_says_bye_and_loses_the_slot() {
 }
 
 /// The messages about the end of the network match with the name of the savegame, or without it if it could not be
-/// written.
+/// written, in the language of the edition.
 // QUIRK E-296: kept
 #[test]
-fn finish_messages_name_the_save() {
-    let texts = own_texts();
+fn finish_messages_follow_the_edition() {
+    let en = Texts::own_only(opennml_rda::GameVersion::English);
     let name = "netz_2026_11_06_1415".to_string();
     assert_eq!(
-        NetFinish::HostEnded { name: name.clone() }.message(true, &texts),
+        NetFinish::HostEnded { name: name.clone() }.message(true, &en),
         "The host has ended the match. It was saved as \"netz_2026_11_06_1415\"."
     );
     assert_eq!(
-        NetFinish::HostLost { name: name.clone() }.message(true, &texts),
+        NetFinish::HostEnded { name: name.clone() }.message(false, &en),
+        "The host has ended the match. It could not be saved."
+    );
+    assert_eq!(
+        NetFinish::HostLost { name: name.clone() }.message(true, &en),
         "The connection to the host was aborted. The match was saved as \"netz_2026_11_06_1415\"."
     );
     assert_eq!(
         NetFinish::Stopped {
             name: "checksumerror_2026_11_06_1415".into()
         }
-        .message(true, &texts),
-        "The match is no longer in sync (checksum error). It was stopped and saved as \
-         \"checksumerror_2026_11_06_1415\"."
+        .message(true, &en),
+        "The match is no longer in sync (checksum error). It was stopped and saved as \"checksumerror_2026_11_06_1415\"."
     );
     assert_eq!(
-        NetFinish::HostLost { name }.message(false, &texts),
+        NetFinish::Stopped {
+            name: "checksumerror_2026_11_06_1415".into()
+        }
+        .message(false, &en),
+        "The match is no longer in sync (checksum error). It was stopped and could not be saved."
+    );
+    assert_eq!(
+        NetFinish::HostLost { name }.message(false, &en),
         "The connection to the host was aborted. The match could not be saved."
     );
     assert_eq!(
-        NetFinish::Failed("The resync with the host failed.".into()).message(false, &texts),
-        "The resync with the host failed."
+        NetFinish::Failed("The resync with the host failed.".into()).message(false, &en),
+        "The network match was aborted: The resync with the host failed."
+    );
+    // After a failed host migration: the translated sentence without the frame "was aborted: ...".
+    assert_eq!(
+        NetFinish::Failed(HOST_LOST.into()).message(false, &en),
+        "The connection to the host was aborted."
     );
     assert_eq!(
         NetFinish::LoadFailed {
             name: "Bert".into()
         }
-        .message(false, &texts),
+        .message(false, &en),
+        "[CENTER]Bert could not load the game. The start was cancelled."
+    );
+
+    let de = own_texts();
+    assert_eq!(
+        NetFinish::HostEnded {
+            name: "netz_2026_11_06_1415".into()
+        }
+        .message(true, &de),
+        "Der Host hat die Partie beendet. Sie wurde als \"netz_2026_11_06_1415\" gespeichert."
+    );
+    assert_eq!(
+        NetFinish::Failed(HOST_LOST.into()).message(false, &de),
+        "Die Verbindung zum Host ist abgebrochen."
+    );
+    assert_eq!(
+        NetFinish::Failed("Resync fehlgeschlagen".into()).message(false, &de),
+        "Die Netzpartie wurde abgebrochen: Resync fehlgeschlagen"
+    );
+    assert_eq!(
+        NetFinish::LoadFailed {
+            name: "Bert".into()
+        }
+        .message(false, &de),
         "[CENTER]Bert konnte die Partie nicht laden. Der Start wurde abgebrochen."
     );
 }
@@ -1948,24 +1987,28 @@ fn own_texts() -> Texts {
 // QUIRK E-296: kept
 #[test]
 fn net_messages_stay_within_latin1() {
-    let own = own_texts();
     let name = "netz_2026_11_06_1415".to_string();
     let mut texts = Vec::new();
-    for saved in [true, false] {
-        for finish in [
-            NetFinish::Stopped {
-                name: "checksumerror_2026_11_06_1415".into(),
-            },
-            NetFinish::HostEnded { name: name.clone() },
-            NetFinish::HostLost { name: name.clone() },
-            NetFinish::Failed(HOST_LOST.into()),
-            NetFinish::Failed("Savegame „x“ – damaged (café) … ≠ ‚y‘".into()),
-            NetFinish::LoadFailed {
-                name: "Zo\u{eb} \u{674e}".into(),
-            },
-            NetFinish::HandedOver,
-        ] {
-            texts.push(finish.message(saved, &own));
+    for own in [
+        own_texts(),
+        Texts::own_only(opennml_rda::GameVersion::English),
+    ] {
+        for saved in [true, false] {
+            for finish in [
+                NetFinish::Stopped {
+                    name: "checksumerror_2026_11_06_1415".into(),
+                },
+                NetFinish::HostEnded { name: name.clone() },
+                NetFinish::HostLost { name: name.clone() },
+                NetFinish::Failed(HOST_LOST.into()),
+                NetFinish::Failed("Savegame „x“ – damaged (café) … ≠ ‚y‘".into()),
+                NetFinish::LoadFailed {
+                    name: "Zo\u{eb} \u{674e}".into(),
+                },
+                NetFinish::HandedOver,
+            ] {
+                texts.push(finish.message(saved, &own));
+            }
         }
     }
     texts.extend([HOST_LOST, LEAVE_REASON].map(String::from));
@@ -1977,8 +2020,9 @@ fn net_messages_stay_within_latin1() {
         );
     }
     assert_eq!(
-        NetFinish::Failed("Savegame „x“ – damaged (café) … ≠ ‚y‘".into()).message(false, &own),
-        "Savegame \"x\" - damaged (café) ... != 'y'"
+        NetFinish::Failed("Savegame „x“ – damaged (café) … ≠ ‚y‘".into())
+            .message(false, &own_texts()),
+        "Die Netzpartie wurde abgebrochen: Savegame \"x\" - damaged (café) ... != 'y'"
     );
 }
 

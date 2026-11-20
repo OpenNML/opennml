@@ -100,7 +100,10 @@ use opennml_sim::command::Command;
 use opennml_sim::save::{RecordedCommand, SaveGame};
 use opennml_sim::state::SimEvent;
 use opennml_ui::assets::Texts;
-use opennml_ui::own_texts::{LOAD_FAILED, fill};
+use opennml_ui::own_texts::{
+    LOAD_FAILED, NET_FAILED, NET_HOST_ENDED_SAVED, NET_HOST_ENDED_UNSAVED, NET_HOST_LOST,
+    NET_HOST_LOST_SAVED, NET_HOST_LOST_UNSAVED, NET_STOPPED_SAVED, NET_STOPPED_UNSAVED, fill,
+};
 
 use crate::game::pause::PauseState;
 use crate::game::sim_host::{RoundStep, Rounds, SimHost};
@@ -212,37 +215,25 @@ impl NetFinish {
         }
     }
 
-    /// Message for the player; `saved`: the network savegame is written. The text for the abort follows
-    /// [`HOST_LOST`], the one for a failed load is the own text 99 113 of the edition of `texts`
-    /// ([`load_failed_message`]).
+    /// Message for the player; `saved`: the network savegame is written. The texts are the own texts 99 116 to 99 123
+    /// of the edition of `texts` (`NET_*` in [`opennml_ui::own_texts`]); the abort with the cause [`HOST_LOST`] gets
+    /// the sentence without a frame (99 122), the one for a failed load is 99 113 ([`load_failed_message`]).
     ///
     /// Only characters up to U+00FF (E-296): The `MSGBOX` sets the text via the path of the original, which takes only
     /// the low byte of each UTF-16 unit as atlas code (O-61); typographic quotation marks would become boxes. The
     /// name is therefore enclosed in ASCII `"`, and foreign text in [`NetFinish::Failed`] (error chains of other
     /// parts) goes through [`latin1_text`].
     pub fn message(&self, saved: bool, texts: &Texts) -> String {
+        let own = |id: i32, args: &[&str]| fill(&texts.display(id), args);
         match (self, saved) {
-            (NetFinish::Stopped { name }, true) => format!(
-                "The match is no longer in sync (checksum error). It was stopped and saved as \"{name}\"."
-            ),
-            (NetFinish::Stopped { .. }, false) => {
-                "The match is no longer in sync (checksum error). It was stopped and could not \
-                 be saved."
-                    .into()
-            }
-            (NetFinish::HostEnded { name }, true) => {
-                format!("The host has ended the match. It was saved as \"{name}\".")
-            }
-            (NetFinish::HostEnded { .. }, false) => {
-                "The host has ended the match. It could not be saved.".into()
-            }
-            (NetFinish::HostLost { name }, true) => {
-                format!("{HOST_LOST} The match was saved as \"{name}\".")
-            }
-            (NetFinish::HostLost { .. }, false) => {
-                format!("{HOST_LOST} The match could not be saved.")
-            }
-            (NetFinish::Failed(text), _) => latin1_text(text),
+            (NetFinish::Stopped { name }, true) => own(NET_STOPPED_SAVED, &[name]),
+            (NetFinish::Stopped { .. }, false) => own(NET_STOPPED_UNSAVED, &[]),
+            (NetFinish::HostEnded { name }, true) => own(NET_HOST_ENDED_SAVED, &[name]),
+            (NetFinish::HostEnded { .. }, false) => own(NET_HOST_ENDED_UNSAVED, &[]),
+            (NetFinish::HostLost { name }, true) => own(NET_HOST_LOST_SAVED, &[name]),
+            (NetFinish::HostLost { .. }, false) => own(NET_HOST_LOST_UNSAVED, &[]),
+            (NetFinish::Failed(text), _) if text == HOST_LOST => own(NET_HOST_LOST, &[]),
+            (NetFinish::Failed(text), _) => own(NET_FAILED, &[&latin1_text(text)]),
             (NetFinish::LoadFailed { name }, _) => load_failed_message(name, texts),
             // Without a message; the text is only for the log and for a caller that shows one anyway.
             (NetFinish::HandedOver, _) => "The match was handed over to another player.".into(),

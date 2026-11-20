@@ -138,8 +138,8 @@ impl Texts {
     /// BOM-less file is skipped with a warning (the original then aborts reading that file).
     ///
     /// Afterwards come the own texts of the reimplementation ([`crate::own_texts`]) of the detected edition
-    /// ([`own_texts::language`]: the language of Windows if no edition is detected), only under numbers that the tables do
-    /// not occupy themselves ([`Self::add_own_texts`]).
+    /// ([`own_texts::language`]: the language of Windows if no edition is detected), only under numbers that the
+    /// tables do not occupy themselves ([`Self::add_own_texts`]).
     pub fn load(vfs: &Vfs, loc: &Localisation) -> Texts {
         Texts::load_with_language(vfs, loc, own_texts::language(vfs))
     }
