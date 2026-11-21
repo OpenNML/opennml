@@ -662,6 +662,11 @@ fn broken_save_shows_message_and_stays_in_menu() {
         "nothing loaded, the menu music continues"
     );
     r.idle();
+    // The identifier is right, the number is not (`brok`): from another version or format.
+    assert_eq!(msgbox_id(&r), Some(SAVE_OTHER_FORMAT));
+    assert_eq!(r.dialogs(), ["singleplayermenu", "msgbox"]);
+    r.click("msgbox", "ok");
+    r.idle();
     assert_eq!(r.dialogs(), ["singleplayermenu"]);
     // With a match in the game menu: missing file, broken file, empty name, savegame with a foreign rules checksum -
     // the match stays as it was, the game menu opens again.
