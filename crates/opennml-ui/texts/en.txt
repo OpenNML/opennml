@@ -28,3 +28,6 @@
 99124=Player
 99125=Player %d
 99126=net_
+99127=[CENTER]The saved game is from another version or in another format.
+99128=[CENTER]The saved game is damaged or cannot be read.
+99129=[CENTER]The saved game does not match the game data of this installation.

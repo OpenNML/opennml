@@ -615,14 +615,32 @@ fn own_texts_resolve_per_edition() {
         (own_texts::PLAYER, 99_124, "Spieler", "Player"),
         (own_texts::PLAYER_N, 99_125, "Spieler %d", "Player %d"),
         (own_texts::NET_SAVE_PREFIX, 99_126, "netz_", "net_"),
+        (
+            own_texts::SAVE_OTHER_FORMAT,
+            99_127,
+            "[CENTER]Der Spielstand stammt aus einer anderen Version oder hat ein anderes Format.",
+            "[CENTER]The saved game is from another version or in another format.",
+        ),
+        (
+            own_texts::SAVE_DAMAGED,
+            99_128,
+            "[CENTER]Der Spielstand ist beschädigt oder nicht lesbar.",
+            "[CENTER]The saved game is damaged or cannot be read.",
+        ),
+        (
+            own_texts::SAVE_MISMATCH,
+            99_129,
+            "[CENTER]Der Spielstand passt nicht zu den Spieldaten dieser Installation.",
+            "[CENTER]The saved game does not match the game data of this installation.",
+        ),
     ];
     for (id, number, de, en) in data {
         assert_eq!(id, number);
         assert_eq!(own_texts::text(id, German), Some(de));
         assert_eq!(own_texts::text(id, English), Some(en));
     }
-    assert_eq!(own_texts::text(99_127, German), None);
-    assert_eq!(own_texts::all(English).count(), 27);
+    assert_eq!(own_texts::text(99_130, German), None);
+    assert_eq!(own_texts::all(English).count(), 30);
 
     let mut texts = Texts::from_entries(&[(99_101, "Own")]);
     texts.add_own_texts(English);

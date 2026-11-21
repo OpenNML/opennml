@@ -28,3 +28,6 @@
 99124=Spieler
 99125=Spieler %d
 99126=netz_
+99127=[CENTER]Der Spielstand stammt aus einer anderen Version oder hat ein anderes Format.
+99128=[CENTER]Der Spielstand ist beschädigt oder nicht lesbar.
+99129=[CENTER]Der Spielstand passt nicht zu den Spieldaten dieser Installation.

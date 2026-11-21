@@ -14,7 +14,9 @@
 //! loads; if that fails, it stays without a game and without a menu (re/ingame-menus, section "Open points" 4).
 //! The reimplementation reads and checks the savegame ([`GameSaveFile::from_bytes`]), builds the new session
 //! completely (including [`GameSaveFile::prepare`] against the loaded rules) and replaces the old one only on
-//! success; otherwise an error message in the log and the previous screen opens again (`MenuApp::reopen_menu`).
+//! success; otherwise an error message in the log and the previous screen opens again (`MenuApp::reopen_menu`),
+//! with one of three own texts over it ([`save_failure_text`]: other version or format, damaged, does not match the
+//! game data).
 //! The same applies to a match start that the map or `to_match_setup` rejects.
 //!
 //! **Match end** (re/ingame-menus 6.2, re/accounting 6): The flow does not see the events of the simulation; after
@@ -48,7 +50,7 @@ use opennml_ui::draft::{LevelInfoData, MatchRequest};
 use opennml_ui::keys::{chord_codes, chord_matches};
 use opennml_ui::loading::{DEFAULT_LDG, MULTIPLAYER_LDG, RANDOM_MAP_LDG, ldg_path_for};
 use opennml_ui::msg::UiEffect;
-use opennml_ui::own_texts::PLAYER;
+use opennml_ui::own_texts::{PLAYER, SAVE_DAMAGED, SAVE_MISMATCH, SAVE_OTHER_FORMAT};
 use opennml_ui::profiles::name_text;
 use opennml_ui::saves::{LocalStamp, SaveDir, SaveFiles};
 use opennml_ui::screens::{
@@ -73,7 +75,9 @@ use crate::game::pointer::PointerChoice;
 use crate::game::presentation::HostRequest;
 use crate::game::script_camera::ScriptCamera;
 use crate::game::sim_host::SimHost;
-use crate::game_save::{CameraSave, GameSaveFile, HostPart, sim_checksum};
+use crate::game_save::{
+    CameraSave, GameSaveFile, HostPart, SaveError, SaveErrorKind, sim_checksum,
+};
 use crate::game_session::{GameSession, LoadPhase, SessionGpu, UiRequest};
 use crate::keys::{InputEvent, MouseButton};
 use crate::match_request::{campaign_setup, random_map_spec, to_match_setup};
@@ -292,6 +296,20 @@ impl std::fmt::Debug for NetStartFailure {
         f.debug_struct("NetStartFailure")
             .field("error", &self.error)
             .finish_non_exhaustive()
+    }
+}
+
+/// The own text for a savegame that does not load. `kind` is the kind of the [`SaveError`] in the chain of the error,
+/// if there is one. Without it the stage decides: `decoded == false` (name, reading the file) is damaged,
+/// `decoded == true` (map, rules, start in [`SessionView::resume`]) does not match the game data, for example a map
+/// that is missing here.
+fn save_failure_text(kind: Option<SaveErrorKind>, decoded: bool) -> i32 {
+    match kind {
+        Some(SaveErrorKind::Format | SaveErrorKind::Newer) => SAVE_OTHER_FORMAT,
+        Some(SaveErrorKind::Corrupted) => SAVE_DAMAGED,
+        Some(SaveErrorKind::Mismatch) => SAVE_MISMATCH,
+        None if decoded => SAVE_MISMATCH,
+        None => SAVE_DAMAGED,
     }
 }
 
@@ -2165,7 +2183,9 @@ impl GameFlow {
     }
 
     /// `0x0A` (re/ingame-menus 4, re/singleplayer-menus 6.4): read and check `savegame/<Name>.<GUID>`, load with
-    /// `default.ldg` or the `.ldg` of the level (O-139), then replace the old match; errors as in the module docs.
+    /// `default.ldg` or the `.ldg` of the level (O-139), then replace the old match; errors as in the module docs. If the
+    /// savegame does not load, the menu opens again with a message ([`save_failure_text`]), "OK" without a follow-up
+    /// command.
     fn load_game(
         &mut self,
         name: &str,
@@ -2186,6 +2206,8 @@ impl GameFlow {
             Err(e) => {
                 log::warn!("Savegame \"{name}\" not loaded: {e:#}");
                 app.reopen_menu();
+                let kind = e.downcast_ref::<SaveError>().map(|s| s.kind);
+                app.tell(save_failure_text(kind, false), None);
                 return;
             }
         };
@@ -2211,6 +2233,8 @@ impl GameFlow {
             Err(e) => {
                 log::warn!("Savegame \"{name}\" not loaded: {e:#}");
                 self.failed_load(app, view, env);
+                let kind = e.downcast_ref::<SaveError>().map(|s| s.kind);
+                app.tell(save_failure_text(kind, true), None);
             }
         }
     }

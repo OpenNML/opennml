@@ -5,8 +5,9 @@
 use opennml_control::Command;
 use opennml_ui::app::{LevelWorld, MenuOptions};
 use opennml_ui::loading::DEFAULT_LDG;
+use opennml_ui::own_texts::{SAVE_DAMAGED, SAVE_MISMATCH, SAVE_OTHER_FORMAT};
 
-use super::tests::{Run, S1024};
+use super::tests::{Run, S1024, msgbox_id};
 use super::*;
 use crate::ui_control::state_data;
 
@@ -812,19 +813,58 @@ fn failed_load_game_keeps_the_paused_menu_level() {
     let steps = r.view.steps();
     let shown = r.shown.len();
     std::fs::create_dir_all(&r.files.dir).unwrap();
-    std::fs::write(r.files.path("broken", 0), b"NMLGAME\0broken").unwrap();
-    for name in ["missing", "broken"] {
+    // A valid header (identifier, number) with a body that is cut off.
+    let mut broken = b"NMLGAME\0".to_vec();
+    broken.extend_from_slice(&crate::game_save::SAVE_FORMAT.to_le_bytes());
+    broken.extend_from_slice(b"broken");
+    std::fs::write(r.files.path("broken", 0), broken).unwrap();
+    // A valid header with a number after `SAVE_FORMAT`: from a newer version.
+    let mut newer = b"NMLGAME ".to_vec();
+    newer.extend_from_slice(&(crate::game_save::SAVE_FORMAT + 1).to_le_bytes());
+    std::fs::write(r.files.path("newer", 0), newer).unwrap();
+    for (name, text) in [
+        ("missing", SAVE_DAMAGED),
+        ("broken", SAVE_DAMAGED),
+        ("newer", SAVE_OTHER_FORMAT),
+    ] {
         r.apply(UiEffect::LoadGame { name: name.into() });
         assert_eq!(r.flow.menu_level(), Some((LEVEL, false)), "{name}");
         assert_eq!(r.view.ends, 0, "{name}: no view.end");
         assert!(r.view.sim().is_some(), "{name}: same session");
         assert_eq!(r.shown.len(), shown, "{name}: no loading screen");
         assert!(!r.flow.running());
+        r.idle();
+        assert_eq!(msgbox_id(&r), Some(text), "{name}");
+        r.click("msgbox", "ok");
+        r.idle();
     }
-    r.idle();
     assert!(!r.dialogs().is_empty(), "menu open again");
     assert_eq!(r.view.steps(), steps);
     assert_eq!(r.flow.menu_level(), Some((LEVEL, false)));
+}
+
+/// A savegame whose map is missing here (the synthetic test world of the release files) is read but does not load:
+/// "does not match the game data", not "damaged". The same text for a `Mismatch` of the check (rules, map).
+#[test]
+fn foreign_save_shows_mismatch() {
+    let Some(mut r) = started() else {
+        return;
+    };
+    frames(&mut r, 20);
+    hide_via_singleplayer(&mut r);
+    std::fs::create_dir_all(&r.files.dir).unwrap();
+    let source = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("testdata/savegames/save-100.nmlgame");
+    std::fs::copy(source, r.files.path("foreign", 0)).unwrap();
+    r.apply(UiEffect::LoadGame {
+        name: "foreign".into(),
+    });
+    r.idle();
+    assert_eq!(msgbox_id(&r), Some(SAVE_MISMATCH));
+    assert!(!r.flow.running());
+    r.click("msgbox", "ok");
+    r.idle();
+    assert!(!r.dialogs().is_empty(), "menu open again");
 }
 
 // ---- Input and locks (re/menu-level ML.6, ML.8, ML.15 no. 5; O-441 ... O-443) ---------------------------------------

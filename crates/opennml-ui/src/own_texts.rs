@@ -69,6 +69,14 @@ pub const PLAYER: i32 = 99_124;
 pub const PLAYER_N: i32 = 99_125;
 /// Start of the name of a network savegame (followed by `YYYY_MM_DD_hhmm`).
 pub const NET_SAVE_PREFIX: i32 = 99_126;
+/// Message when a single-player savegame is from another version or in another format (identifier, number too old
+/// or too new); "OK" without a follow-up command, the menu below it.
+pub const SAVE_OTHER_FORMAT: i32 = 99_127;
+/// Message when a single-player savegame is damaged or unreadable (missing file, header, checksum, decoding).
+pub const SAVE_DAMAGED: i32 = 99_128;
+/// Message when a single-player savegame does not fit the game data of this installation (rules, map or map
+/// description missing or different).
+pub const SAVE_MISMATCH: i32 = 99_129;
 
 /// German texts, one line per text (`<ID>=<text>`).
 const DE: &str = include_str!("../texts/de.txt");
@@ -175,7 +183,7 @@ mod tests {
     #[test]
     fn both_columns_have_the_same_placeholders() {
         let (de, en) = tables();
-        assert_eq!(de.len(), 27);
+        assert_eq!(de.len(), 30);
         assert_eq!(en.len(), de.len());
         for (&(id, de), &(en_id, en)) in de.iter().zip(en) {
             assert_eq!(id, en_id, "same order");

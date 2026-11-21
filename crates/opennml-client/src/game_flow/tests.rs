@@ -3702,3 +3702,29 @@ fn random_map_start_failure_reopens_the_menu() {
     r.idle();
     assert_eq!(r.dialogs(), ["singleplayermenu"]);
 }
+
+/// The message `MSGBOX` over the menu: its text ID, `None` without a message.
+pub(super) fn msgbox_id(r: &Run) -> Option<i32> {
+    if !r.dialogs().iter().any(|d| d == "msgbox") {
+        return None;
+    }
+    r.host.app.screen_state().info_text
+}
+
+/// `save_failure_text` picks the own text by the kind of the error; without a `SaveError` the stage decides: not yet
+/// read (file, name) is damaged, read but not loadable (map, rules, start) does not match the game data.
+#[test]
+fn save_failure_text_maps_every_kind() {
+    use crate::game_save::SaveErrorKind::*;
+    use opennml_ui::own_texts::{SAVE_DAMAGED, SAVE_MISMATCH, SAVE_OTHER_FORMAT};
+    for (kind, decoded, id) in [
+        (Some(Format), false, SAVE_OTHER_FORMAT),
+        (Some(Newer), false, SAVE_OTHER_FORMAT),
+        (Some(Corrupted), true, SAVE_DAMAGED),
+        (Some(Mismatch), true, SAVE_MISMATCH),
+        (None, false, SAVE_DAMAGED),
+        (None, true, SAVE_MISMATCH),
+    ] {
+        assert_eq!(save_failure_text(kind, decoded), id, "{kind:?} {decoded}");
+    }
+}
