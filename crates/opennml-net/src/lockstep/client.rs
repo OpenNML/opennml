@@ -31,8 +31,8 @@
 //! is the new host's. With [`ClientCore::abandon`] it gives up (`Failed` with [`HOST_LOST`], today's abort).
 
 use super::{
-    BundleControls, ClientParts, CoreEvent, HOST_LOST, HOST_PEER, HaltReason, Inputs, Lockstep,
-    Peer, Phase, RoleControl, Succession, SuccessionStep, TIMEOUT_MS, timeout_reason,
+    BundleControls, ClientParts, CoreEvent, HOST_LOST, HOST_PEER, HaltReason, Inputs, LocalWords,
+    Lockstep, Peer, Phase, RoleControl, Succession, SuccessionStep, TIMEOUT_MS, timeout_reason,
 };
 use crate::link::LinkEvent;
 use crate::lobby::{LobbyState, LobbyWish, MAX_ROWS};
@@ -48,6 +48,8 @@ use std::collections::BTreeMap;
 /// Turn core of a client.
 pub struct ClientCore {
     hello: Hello,
+    /// Words of the local installation ([`Self::set_words`]); the English default without a call.
+    words: LocalWords,
     /// Own connection number from `Welcome`.
     peer: Option<Peer>,
     phase: Phase,
@@ -102,11 +104,23 @@ struct Resync {
 }
 
 impl ClientCore {
+    /// Sets the words of the local installation: the name of a nameless player and the prefix of the network savegame
+    /// names. Without a call the English defaults apply ([`LocalWords::default`]).
+    pub fn set_words(&mut self, words: LocalWords) {
+        self.words = words;
+    }
+
+    /// The words of the local installation ([`Self::set_words`]).
+    pub fn words(&self) -> &LocalWords {
+        &self.words
+    }
+
     /// New client; `Hello` is already in the outbox.
     pub fn new(hello: Hello) -> Self {
         let outbox = vec![(HOST_PEER, NetMessage::Hello(hello.clone()))];
         Self {
             hello,
+            words: LocalWords::default(),
             peer: None,
             phase: Phase::Gathering,
             cfg: TurnConfig::default(),
@@ -204,7 +218,7 @@ impl ClientCore {
         }
         for row in &mut state.rows {
             if !row.name.is_empty() {
-                row.name = clean_name(&row.name);
+                row.name = clean_name(&row.name, &self.words.player);
             }
         }
         state.session = state.session.cleaned();
@@ -277,7 +291,7 @@ impl ClientCore {
             );
             return;
         }
-        let name = clean_name(name);
+        let name = clean_name(name, &self.words.player);
         log::warn!("Network (client): \"{name}\" could not load the match, start cancelled");
         self.end_with(CoreEvent::LoadFailed { name });
     }
@@ -706,6 +720,7 @@ impl ClientCore {
     /// [`HostCore::from_client`]: super::HostCore::from_client
     pub(super) fn into_parts(self) -> ClientParts {
         ClientParts {
+            words: self.words,
             hello: self.hello,
             peer: self.peer,
             slot: self.slot,

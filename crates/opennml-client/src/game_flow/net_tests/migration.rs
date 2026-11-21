@@ -214,7 +214,7 @@ fn host_closing_the_program_hands_over_within_the_close_time() {
 
 /// Message "The host has ended the match ..." for the network savegame of the fixed local time.
 fn host_ended_message(n: &Lan, i: usize) -> String {
-    let name = NET_CLOCK.net_end_name();
+    let name = lan_end_name(n);
     own_text(n, i, NET_HOST_ENDED_SAVED, &[&name])
 }
 
@@ -237,7 +237,7 @@ fn host_victory_with_a_defeated_client_ends_for_all() {
     n.frames_until("message on both", |l| {
         (0..2).all(|i| message(&l.runs[i]).is_some())
     });
-    let name = NET_CLOCK.net_end_name();
+    let name = lan_end_name(&n);
     for i in 0..2 {
         assert_eq!(
             message(&n.runs[i]),
@@ -300,7 +300,7 @@ fn handover_falls_back_to_end_when_the_candidate_crashes() {
         assert!(!driver(&n, 0).handing_over(), "program end {closing}");
         n.frames_until("message on Cara", |l| message(&l.runs[2]).is_some());
         assert_eq!(message(&n.runs[2]), Some(host_ended_message(&n, 2)));
-        let name = NET_CLOCK.net_end_name();
+        let name = lan_end_name(&n);
         for i in [0, 2] {
             assert!(
                 n.paths(i).net_save(&name).exists(),
@@ -463,7 +463,7 @@ fn host_alone_with_ai_still_ends_for_all() {
     n.surrender_to_the_end_screen(0);
     n.runs[0].click("gameend_defeat", "end_defeat");
     n.frames_until("message on Anna", |l| message(&l.runs[0]).is_some());
-    let name = NET_CLOCK.net_end_name();
+    let name = lan_end_name(&n);
     assert_eq!(message(&n.runs[0]), Some(host_ended_message(&n, 0)));
     assert!(n.paths(0).net_save(&name).exists());
     n.settle();

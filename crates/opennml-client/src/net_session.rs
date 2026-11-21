@@ -47,10 +47,10 @@ use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{
     Announcement, Beacon, ClientCore, Connecting, CoreEvent, DataInput, DataReport, DataState,
     FoundGame, HOST_PEER, Hello, HostCore, HostEdit, KIND_HUMAN, Listener, LobbyBook, LobbyRow,
-    LobbyRules, LobbyState, LobbyWish, LocalTime, Lockstep, MapId, NET_VERSION, Peer, Phase,
-    QUERY_INTERVAL_MS, RasterStage, RuleVerdict, SHOWN_FILES, Seat, SeatClaim, Seeker, SessionInfo,
-    SessionList, SessionSettings, StartInfo, Transport, TurnConfig, clean_name, clean_session_name,
-    inputs_fit, valid_save_name,
+    LobbyRules, LobbyState, LobbyWish, LocalTime, LocalWords, Lockstep, MapId, NET_VERSION, Peer,
+    Phase, QUERY_INTERVAL_MS, RasterStage, RuleVerdict, SHOWN_FILES, Seat, SeatClaim, Seeker,
+    SessionInfo, SessionList, SessionSettings, StartInfo, Transport, TurnConfig, clean_name,
+    clean_session_name, inputs_fit, valid_save_name,
 };
 use opennml_rda::testutil::{GameVersion, game_version};
 use opennml_rda::{ReadEntry, Vfs};
@@ -63,8 +63,8 @@ use opennml_ui::draft::{
 };
 use opennml_ui::msg::{AppCmd, LobbyAction};
 use opennml_ui::own_texts::{
-    DATA_DIFFERS, FILE_UNKNOWN, FILES_MORE, MAP_MISSING, ROW_DIFFERS, ROW_MAP_MISSING,
-    SAVE_NOT_LOADED, SAVE_ONE_PLAYER, SAVE_SLOT_OUT, fill,
+    DATA_DIFFERS, FILE_UNKNOWN, FILES_MORE, MAP_MISSING, NET_SAVE_PREFIX, PLAYER, ROW_DIFFERS,
+    ROW_MAP_MISSING, SAVE_NOT_LOADED, SAVE_ONE_PLAYER, SAVE_SLOT_OUT, fill, language, text,
 };
 use opennml_ui::profiles::{name_field, name_text, name_units};
 use opennml_ui::screens::chatframe::chat_line;
@@ -322,15 +322,16 @@ pub fn session_from_draft(
 
 /// Lobby rows 0 ... `players - 1` from the slots of the draft (key = row - 1; without a slot open with team and color
 /// = row), type 0 ... 4 (otherwise open), never ready, without a machine. Names of the computers (type 1 ... 4) are
-/// cleaned by [`clean_name`], so that host and client show them the same.
-pub fn rows_from_draft(draft: &MatchDraft, players: u8) -> Vec<LobbyRow> {
+/// cleaned by [`clean_name`] with `fallback` (the player word of the edition), so that host and client show them the
+/// same.
+pub fn rows_from_draft(draft: &MatchDraft, players: u8, fallback: &str) -> Vec<LobbyRow> {
     (0..i32::from(players))
         .map(|row| {
             let slot = draft.slots.iter().find(|s| s.key == row - 1);
             let kind = slot.map_or(0, |s| if (0..=4).contains(&s.kind) { s.kind } else { 0 });
             let name = slot.map_or_else(String::new, |s| {
                 if (1..=4).contains(&kind) {
-                    clean_name(&s.name)
+                    clean_name(&s.name, fallback)
                 } else {
                     s.name.clone()
                 }
@@ -396,6 +397,17 @@ pub fn edition(vfs: &Vfs) -> String {
             log::warn!("Network: {e}");
             "unbekannt".into()
         }
+    }
+}
+
+/// The words that the cores of the network need, in the language of the edition: the name of a player without a
+/// name and the start of the name of a network savegame (`Spieler` and `netz_`, or `Player` and `net_`).
+pub fn local_words(version: GameVersion) -> LocalWords {
+    let defaults = LocalWords::default();
+    let own = |id: i32, default: String| text(id, version).map_or(default, str::to_string);
+    LocalWords {
+        player: own(PLAYER, defaults.player),
+        net_save_prefix: own(NET_SAVE_PREFIX, defaults.net_save_prefix),
     }
 }
 
@@ -916,7 +928,7 @@ impl NetSession {
         texts: &Texts,
     ) -> bool {
         match cmd {
-            AppCmd::Join => self.join(app),
+            AppCmd::Join => self.join(app, texts),
             AppCmd::Host => self.host(app, vfs, texts),
             AppCmd::HostSavedGame => self.host_saved(app, vfs, texts),
             AppCmd::StartSavedGame => self.start_saved(app),
@@ -983,15 +995,15 @@ impl NetSession {
         });
     }
 
-    /// Player name from `NetName` (cleaned, `clean_name`).
-    fn player(app: &MenuApp) -> String {
-        clean_name(&name_text(&app.config().net_name))
+    /// Player name from `NetName` (cleaned, `clean_name`; empty it is the player word of the edition).
+    fn player(app: &MenuApp, texts: &Texts) -> String {
+        clean_name(&name_text(&app.config().net_name), &texts.display(PLAYER))
     }
 
     /// `{7}`: connect to the chosen session. For a loaded session (`MapId::Saved`, deviating from E-275) the client
     /// reads its file and reports its slot and checksum in the `Hello` (`SeatClaim`); if it is missing in the
     /// meantime, silently `LAN1`. The message applies only to this join.
-    fn join(&mut self, app: &mut MenuApp) {
+    fn join(&mut self, app: &mut MenuApp, texts: &Texts) {
         if !matches!(self.stage, Stage::Idle) {
             log::warn!("Network: join discarded during a session");
             return;
@@ -1004,11 +1016,11 @@ impl NetSession {
         else {
             return self.fail_silently(app, "the chosen game is no longer there");
         };
-        self.join_game(&game, app);
+        self.join_game(&game, app, texts);
     }
 
     /// Connect to the game `game` of the list (`{7}` after the choice in `LAN1`).
-    fn join_game(&mut self, game: &FoundGame, app: &mut MenuApp) {
+    fn join_game(&mut self, game: &FoundGame, app: &mut MenuApp, texts: &Texts) {
         let seat = match &game.announcement.session.map {
             MapId::Saved { name, .. } => match self.saved_head(name) {
                 Some((checksum, slot)) => Some(SeatClaim { slot, checksum }),
@@ -1023,7 +1035,7 @@ impl NetSession {
         };
         self.seeker = None;
         self.hello.seat = seat;
-        self.hello.name = Self::player(app);
+        self.hello.name = Self::player(app, texts);
         self.is_host = false;
         self.told = false;
         self.chat.clear();
@@ -1058,7 +1070,7 @@ impl NetSession {
     fn open_host(&mut self, app: &mut MenuApp, vfs: &Vfs, texts: &Texts) -> Result<(), String> {
         let draft = app.data().draft.clone();
         check_draft(&draft)?;
-        let player = Self::player(app);
+        let player = Self::player(app, texts);
         let mut cfg = app.config().clone();
         let name = session_name(&mut cfg, texts, &player);
         app.set_net_session(name_units(&cfg.net_session));
@@ -1066,17 +1078,22 @@ impl NetSession {
         // Player count of the session = `Info.players` (2 ... 8, `session_from_draft`); the rows follow it (if a slot
         // is missing, the row is open), so that `LobbyBook::new` never fails on "X players, but Y rows".
         let session = session_from_draft(&draft, name, vfs, raster)?;
-        let rows = rows_from_draft(&draft, session.players);
+        let rows = rows_from_draft(&draft, session.players, &texts.display(PLAYER));
         let mut book = LobbyBook::new(session, rows, player.clone())?;
         // Menu path: the game data check applies (re/multiplayer-menus L.18; the command line checks only when
         // loading).
         book.enable_data_check();
-        self.start_hosting(book, player)
+        self.start_hosting(book, player, local_words(language(vfs)))
     }
 
     /// Listen, announce and create the core with the book `book` (`{8}` and `{0x12}`); the own row is that of the host
     /// in the book (in the loaded lobby that of its slot).
-    fn start_hosting(&mut self, book: LobbyBook, player: String) -> Result<(), String> {
+    fn start_hosting(
+        &mut self,
+        book: LobbyBook,
+        player: String,
+        words: LocalWords,
+    ) -> Result<(), String> {
         let listener = self
             .transport
             .listen(self.identity.port)
@@ -1097,7 +1114,8 @@ impl NetSession {
         self.hello.seat = None;
         let own_row = book.row_of(HOST_PEER);
         let (spacing, lead) = (book.state().session.spacing, book.state().session.lead);
-        let core = HostCore::new(self.hello.clone(), book, Box::new(ClientLobbyRules));
+        let mut core = HostCore::new(self.hello.clone(), book, Box::new(ClientLobbyRules));
+        core.set_words(words);
         let mut driver = NetDriver::host(core, self.paths.clone());
         driver.set_fixed_clock(self.fixed_clock);
         // The probe of the listening ports of its clients runs over a transport of its own.
@@ -1181,7 +1199,7 @@ impl NetSession {
             let why = format!("own slot {} has dropped out", u32::from(local_slot) + 1);
             return refuse(app, Some(SAVE_SLOT_OUT), &why);
         }
-        match self.open_saved_host(&name, &check, app, texts) {
+        match self.open_saved_host(&name, &check, app, vfs, texts) {
             Ok(()) => {
                 self.chat.clear();
                 app.push_command(open_lan4());
@@ -1202,9 +1220,10 @@ impl NetSession {
         name: &str,
         check: &NetSaveCheck,
         app: &mut MenuApp,
+        vfs: &Vfs,
         texts: &Texts,
     ) -> Result<(), String> {
-        let player = Self::player(app);
+        let player = Self::player(app, texts);
         let mut cfg = app.config().clone();
         let session_name = session_name(&mut cfg, texts, &player);
         app.set_net_session(name_units(&cfg.net_session));
@@ -1258,7 +1277,7 @@ impl NetSession {
             check.local_slot(),
             &player,
         )?;
-        self.start_hosting(book, player)
+        self.start_hosting(book, player, local_words(language(vfs)))
     }
 
     /// `{9}`: session closed (`Bye` to the counterpart(s), host: `Bye { HOST_LEFT }` to all), search off, everything
@@ -1523,11 +1542,9 @@ impl NetSession {
                         &mut self.hello,
                         self.identity.listen,
                     );
-                    let mut driver = NetDriver::client(
-                        ClientCore::new(self.hello.clone()),
-                        link,
-                        self.paths.clone(),
-                    );
+                    let mut core = ClientCore::new(self.hello.clone());
+                    core.set_words(local_words(language(vfs)));
+                    let mut driver = NetDriver::client(core, link, self.paths.clone());
                     driver.set_fixed_clock(self.fixed_clock);
                     driver.set_transport(self.transport.fork());
                     if let Some(listener) = listener {

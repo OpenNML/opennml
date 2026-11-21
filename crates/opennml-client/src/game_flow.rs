@@ -48,6 +48,7 @@ use opennml_ui::draft::{LevelInfoData, MatchRequest};
 use opennml_ui::keys::{chord_codes, chord_matches};
 use opennml_ui::loading::{DEFAULT_LDG, MULTIPLAYER_LDG, RANDOM_MAP_LDG, ldg_path_for};
 use opennml_ui::msg::UiEffect;
+use opennml_ui::own_texts::PLAYER;
 use opennml_ui::profiles::name_text;
 use opennml_ui::saves::{LocalStamp, SaveDir, SaveFiles};
 use opennml_ui::screens::{
@@ -2089,7 +2090,10 @@ impl GameFlow {
         net.loaded(Some(error.clone()));
         view.restore_menu_music(env.vfs);
         app.open_main_menu();
-        let name = opennml_net::clean_name(&name_text(&app.config().net_name));
+        let name = opennml_net::clean_name(
+            &name_text(&app.config().net_name),
+            &env.texts.display(PLAYER),
+        );
         app.tell_text(load_failed_message(&name, env.texts), None);
         Box::new(NetStartFailure { error, net })
     }

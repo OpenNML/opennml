@@ -25,3 +25,6 @@
 99121=Die Verbindung zum Host ist abgebrochen. Die Partie konnte nicht gespeichert werden.
 99122=Die Verbindung zum Host ist abgebrochen.
 99123=Die Netzpartie wurde abgebrochen: %s
+99124=Spieler
+99125=Spieler %d
+99126=netz_

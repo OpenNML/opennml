@@ -68,8 +68,9 @@ pub struct NetSaveInfo {
 
 impl NetSaveInfo {
     /// Cleans the names on reading like names from the network: the session name with
-    /// [`opennml_net::clean_session_name`], each slot name with [`opennml_net::clean_name`]. An empty slot name (slot without
-    /// player, as `start_infos` writes it) stays empty instead of becoming "Spieler".
+    /// [`opennml_net::clean_session_name`], each slot name with [`opennml_net::clean_name`]. An empty slot name (slot
+    /// without player, as `start_infos` writes it) stays empty instead of becoming the fallback name. Saved names are
+    /// already cleaned and never empty, so the fallback here (without texts) never shows.
     pub fn cleaned(self) -> Self {
         Self {
             session: opennml_net::clean_session_name(&self.session),
@@ -80,7 +81,7 @@ impl NetSaveInfo {
                     let name = if name.is_empty() {
                         name
                     } else {
-                        opennml_net::clean_name(&name)
+                        opennml_net::clean_name(&name, &opennml_net::LocalWords::default().player)
                     };
                     (peer, name)
                 })
@@ -945,7 +946,7 @@ mod tests {
         let net = back.host.net.as_ref().unwrap();
         assert_eq!(net.session, "COLOR 255Lange Partie mit einem Namen,");
         assert_eq!(net.seats[0].1, "bAnna");
-        assert_eq!(net.seats[1].1, "Spieler");
+        assert_eq!(net.seats[1].1, "Player");
         assert_eq!(net.seats[2].1, "Spieler 2");
         assert_eq!(net.seats[6].1, "");
         // `cleaned` has no effect on cleaned names.

@@ -25,3 +25,6 @@
 99121=The connection to the host was aborted. The match could not be saved.
 99122=The connection to the host was aborted.
 99123=The network match was aborted: %s
+99124=Player
+99125=Player %d
+99126=net_

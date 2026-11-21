@@ -74,6 +74,7 @@ fn plan(places: u8, players: u8, ai: u8, raster: TurnConfig) -> HostPlan {
         game_speed: 4,
         raster,
         map_checksum: 0x1234,
+        words: opennml_net::LocalWords::default(),
     }
 }
 

@@ -612,14 +612,17 @@ fn own_texts_resolve_per_edition() {
             "Die Netzpartie wurde abgebrochen: %s",
             "The network match was aborted: %s",
         ),
+        (own_texts::PLAYER, 99_124, "Spieler", "Player"),
+        (own_texts::PLAYER_N, 99_125, "Spieler %d", "Player %d"),
+        (own_texts::NET_SAVE_PREFIX, 99_126, "netz_", "net_"),
     ];
     for (id, number, de, en) in data {
         assert_eq!(id, number);
         assert_eq!(own_texts::text(id, German), Some(de));
         assert_eq!(own_texts::text(id, English), Some(en));
     }
-    assert_eq!(own_texts::text(99_124, German), None);
-    assert_eq!(own_texts::all(English).count(), 24);
+    assert_eq!(own_texts::text(99_127, German), None);
+    assert_eq!(own_texts::all(English).count(), 27);
 
     let mut texts = Texts::from_entries(&[(99_101, "Own")]);
     texts.add_own_texts(English);

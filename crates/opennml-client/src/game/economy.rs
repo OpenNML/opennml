@@ -285,7 +285,7 @@ pub struct HireArtEntry {
 
 /// Headhunter menu of an own finished building (re/headhunter-robbing 2.5, three levels): level
 /// 1 the kinds ([`HireArtEntry`]), level 2 after the chosen kind the target players ([`hire_players`]:
-/// slot, name - empty "Spieler n" -, color), level 3 after the chosen target player the target GUIDs
+/// slot, name - empty "Player n" -, color), level 3 after the chosen target player the target GUIDs
 /// ([`hire_targets`]) with type names. The menu state is held by [`HireMenu`].
 #[derive(Debug, Clone, PartialEq)]
 pub struct HirePanel {
@@ -308,14 +308,14 @@ pub struct HireMenu {
     pub target_player: Option<u8>,
 }
 
-/// Display name of a slot: its name, empty "Spieler n" (0-based like the messages).
+/// Display name of a slot: its name, empty "Player n" (0-based like the messages).
 fn player_label(sim: &Sim, slot: i32) -> String {
     usize::try_from(slot)
         .ok()
         .and_then(|s| sim.state.players.get(s))
         .map(|p| p.name.clone())
         .filter(|n| !n.is_empty())
-        .unwrap_or_else(|| format!("Spieler {slot}"))
+        .unwrap_or_else(|| format!("Player {slot}"))
 }
 
 /// Target and customer of the headhunter of the kind `art` (tooltips `FUN_0042F7B0` = type name of the
@@ -3017,7 +3017,7 @@ mod tests {
         );
         assert_eq!((h.art, h.target_player), (None, None));
         assert!(h.players.is_empty() && h.targets.is_empty());
-        // Level 2: only the enemy slot 1 (plays, enemy), name "Spieler 1", color 1.
+        // Level 2: only the enemy slot 1 (plays, enemy), name "Player 1", color 1.
         ui.apply(&mut host, &sel, PanelAction::HireArt(2));
         assert_eq!(
             ui.hire,
@@ -3029,7 +3029,7 @@ mod tests {
         );
         let h = hire_menu(&mut host, &sel, &ui);
         assert_eq!(h.art, Some(2));
-        assert_eq!(h.players, [(1, "Spieler 1".to_string(), 1)]);
+        assert_eq!(h.players, [(1, "Player 1".to_string(), 1)]);
         assert!(h.targets.is_empty());
         // Level 3: the elites of the SID slot that it owns (not 2616), in table order.
         ui.apply(&mut host, &sel, PanelAction::HirePlayer(1));
@@ -3144,14 +3144,14 @@ mod tests {
             h.arts[2].target,
             Some(("SID_Leichenbestatter".to_string(), color1))
         );
-        assert_eq!(h.arts[2].customer, Some(("Spieler 0".to_string(), color0)));
+        assert_eq!(h.arts[2].customer, Some(("Player 0".to_string(), color0)));
         assert!(
             h.arts[0].target.is_none()
                 && h.arts[0].customer.is_none()
                 && h.arts[1].target.is_none()
                 && h.arts[1].customer.is_none()
         );
-        // With names instead of "Spieler n".
+        // With names instead of "Player n".
         host.state.players[0].name = "Ana".into();
         host.state.players[1].name = "Bo".into();
         let h = hire_menu(&mut host, &sel, &ui);

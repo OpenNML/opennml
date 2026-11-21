@@ -434,7 +434,7 @@ fn candidate_still_hearing_the_host_refuses_rejoin() {
     );
     lan.run_to(&[0, 1], cut + STEPS);
     let (m0, m1, m2) = (&lan.machines[0], &lan.machines[1], &lan.machines[2]);
-    let name = CLOCK.net_end_name();
+    let name = CLOCK.net_end_name("net_");
     assert_eq!(m2.finish, vec![NetFinish::HostLost { name }]);
     assert_eq!(m2.failed.as_deref(), Some(HOST_LOST));
     assert!(
@@ -499,7 +499,7 @@ fn held_rejoin_then_gathering_makes_no_second_host() {
     assert_eq!(
         m2.finish,
         vec![NetFinish::HostLost {
-            name: CLOCK.net_end_name()
+            name: CLOCK.net_end_name("net_")
         }]
     );
     assert_eq!(m2.failed.as_deref(), Some(HOST_LOST));
@@ -677,7 +677,7 @@ fn failed_migration_falls_back_to_the_abort_save() {
     assert_eq!(
         m2.finish,
         vec![NetFinish::HostLost {
-            name: CLOCK.net_end_name()
+            name: CLOCK.net_end_name("net_")
         }]
     );
     assert_eq!(m2.failed.as_deref(), Some(HOST_LOST));
@@ -716,7 +716,7 @@ fn handover_falls_back_to_end_when_the_last_candidate_crashes() {
     assert!(lan.machines[0].driver.handing_over);
     lan.crash(1);
     lan.frames_until(|l| !l.machines[0].finish.is_empty() && !l.machines[2].finish.is_empty());
-    let name = CLOCK.net_end_name();
+    let name = CLOCK.net_end_name("net_");
     let (m0, m2) = (&lan.machines[0], &lan.machines[2]);
     for (i, m) in [(0, m0), (2, m2)] {
         let what = format!("machine {i}");

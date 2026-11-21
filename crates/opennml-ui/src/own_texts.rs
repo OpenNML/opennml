@@ -3,9 +3,9 @@
 //! from a network savegame, and the messages of the game data check in the lobby and of a failed network start
 //! (re/multiplayer-menus L.18). Placeholders `%s` and `%d` are filled in order when a text is shown ([`fill`]). One
 //! text per edition (German, English) in `texts/de.txt` and `texts/en.txt`; [`crate::assets::Texts::load`] inserts
-//! the texts of the detected edition into the table (only numbers that the installation does not occupy itself), afterwards
-//! [`crate::assets::Texts::resolve`] resolves them like texts from `localisation.*`. Without a detected edition the
-//! language of Windows applies ([`language`]).
+//! the texts of the detected edition into the table (only numbers that the installation does not occupy itself),
+//! afterwards [`crate::assets::Texts::resolve`] resolves them like texts from `localisation.*`. Without a detected
+//! edition the language of Windows applies ([`language`]).
 
 use std::sync::LazyLock;
 
@@ -63,6 +63,12 @@ pub const NET_HOST_LOST_UNSAVED: i32 = 99_121;
 pub const NET_HOST_LOST: i32 = 99_122;
 /// Any other abort of the network match: `%s` the cause (foreign text, converted for the `MSGBOX`).
 pub const NET_FAILED: i32 = 99_123;
+/// Name of a player without a name (empty after cleaning), in the lobby and in game messages.
+pub const PLAYER: i32 = 99_124;
+/// Name of a player without a name in a game message: `%d` the slot (0-based like the messages).
+pub const PLAYER_N: i32 = 99_125;
+/// Start of the name of a network savegame (followed by `YYYY_MM_DD_hhmm`).
+pub const NET_SAVE_PREFIX: i32 = 99_126;
 
 /// German texts, one line per text (`<ID>=<text>`).
 const DE: &str = include_str!("../texts/de.txt");
@@ -169,7 +175,7 @@ mod tests {
     #[test]
     fn both_columns_have_the_same_placeholders() {
         let (de, en) = tables();
-        assert_eq!(de.len(), 24);
+        assert_eq!(de.len(), 27);
         assert_eq!(en.len(), de.len());
         for (&(id, de), &(en_id, en)) in de.iter().zip(en) {
             assert_eq!(id, en_id, "same order");

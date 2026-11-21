@@ -888,3 +888,18 @@ fn foreign_migration_inputs_never_panic() {
 
 mod handover;
 mod new_host;
+
+/// The words of the installation stay with the machine when a client becomes the new host.
+#[test]
+fn promoted_host_keeps_the_words_of_the_client() {
+    let mut clients = running_clients(2, candidates(2));
+    play_until(&mut clients, 2);
+    crash(&mut clients);
+    let words = LocalWords {
+        player: "Spieler".to_string(),
+        net_save_prefix: "netz_".to_string(),
+    };
+    clients[0].set_words(words.clone());
+    let host = promote(clients.remove(0), 2, [false; 8]);
+    assert_eq!(host.words(), &words);
+}

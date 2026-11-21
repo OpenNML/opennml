@@ -92,9 +92,9 @@ use std::path::PathBuf;
 
 use opennml_net::{
     ClientCore, Connecting, CoreEvent, HOST_LEFT, HOST_LOST, HOST_PEER, HaltReason, HostCore,
-    KICKED, Link, LinkEvent, Listener, LocalTime, Lockstep, MAX_GAME_SPEED, NetControl, NetMessage,
-    Peer, Phase, REJOIN_WINDOW_MS, Rejoin, SUCCESSOR_CONNECT_MS, Seat, StartInfo, Successor,
-    Transport, TurnBundle, Wish, seat_of, valid_save_name,
+    KICKED, Link, LinkEvent, Listener, LocalTime, LocalWords, Lockstep, MAX_GAME_SPEED, NetControl,
+    NetMessage, Peer, Phase, REJOIN_WINDOW_MS, Rejoin, SUCCESSOR_CONNECT_MS, Seat, StartInfo,
+    Successor, Transport, TurnBundle, Wish, seat_of, valid_save_name,
 };
 use opennml_sim::command::Command;
 use opennml_sim::save::{RecordedCommand, SaveGame};
@@ -619,6 +619,14 @@ impl NetDriver {
     /// [`Self::pump_accepted`].
     pub fn set_listener(&mut self, listener: Box<dyn Listener>) {
         self.listener = Some(listener);
+    }
+
+    /// The words of the local installation that the core carries (prefix of the network savegame names).
+    fn words(&self) -> &LocalWords {
+        match &self.core {
+            Core::Host(h) => h.words(),
+            Core::Client(c) => c.words(),
+        }
     }
 
     /// Local time of this machine ([`Self::set_fixed_clock`] or [`report::local_now`]).
@@ -1324,7 +1332,7 @@ impl NetDriver {
 
     /// Abort of the host at the client: the driver computes without game time with the bundles it has, until it
     /// stands before the execution tick of the first missing bundle (or after a halt or stop from an existing bundle),
-    /// captures the network savegame `netz_YYYY_MM_DD_hhmm` there by its own local time and reports
+    /// captures the network savegame `<prefix>YYYY_MM_DD_hhmm` there by its own local time and reports
     /// [`NetFinish::HostLost`]. A client has a bundle `k` only after its contribution to `k` (at `b(k)`), so it is at
     /// most `T + V` ticks. If the match already ends otherwise in this (stop in the bundle), it stays that way.
     /// Returns the events of the ticks.
@@ -1364,7 +1372,9 @@ impl NetDriver {
             log::error!("Network: {limit} ticks computed after the abort without a waiting point");
         }
         if !self.finished {
-            let name = self.local_time().net_end_name();
+            let name = self
+                .local_time()
+                .net_end_name(&self.words().net_save_prefix);
             log::warn!(
                 "Network: connection to the host aborted, state \"{name}\" at tick {} ({steps} ticks recomputed)",
                 sim.state.steps

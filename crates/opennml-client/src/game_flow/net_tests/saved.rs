@@ -1184,7 +1184,7 @@ fn host_loss_after_load_ends_with_a_net_save() {
     n.frames_until("message on both clients", |l| {
         l.runs[1..].iter().all(|r| message(r).is_some())
     });
-    let name = NET_CLOCK.net_end_name();
+    let name = lan_end_name(&n);
     let files: Vec<GameSaveFile> = (1..3)
         .map(|i| {
             GameSaveFile::from_bytes(&std::fs::read(n.paths(i).net_save(&name)).unwrap()).unwrap()

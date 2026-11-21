@@ -587,7 +587,7 @@ fn random_session_carries_the_seed_text() {
     d.info.players = 9;
     assert!(session_from_draft(&d, "R".into(), &vfs, raster).is_err());
     // The rows follow the number of players as with `LAN3 CREATE` (`random_slots`: open, team and color = row).
-    let rows = rows_from_draft(&random_draft("1"), s.players);
+    let rows = rows_from_draft(&random_draft("1"), s.players, "Player");
     assert_eq!(rows.len(), 3);
     assert!(
         rows.iter()
@@ -619,7 +619,7 @@ fn levelinfo_shows_the_random_seed_in_the_lobby() {
     let raster = TurnConfig::new(4, 2).unwrap();
     let session =
         session_from_draft(&random_draft("18467"), "Round".into(), &vfs, raster).expect("session");
-    let rows = rows_from_draft(&random_draft("18467"), session.players);
+    let rows = rows_from_draft(&random_draft("18467"), session.players, "Player");
     let book = LobbyBook::new(session, rows, "Anna".into()).expect("book");
     let (slots, info, settings) = lobby_draft(book.state(), &MapCatalog::default());
     assert_eq!((info.level_type, info.name.as_str()), (1, "18467"));
@@ -665,7 +665,7 @@ fn rows_from_draft_cleans_computer_names() {
         slot(1, 0, "[EMPTY]"),
         slot(2, 7, "Strange"),
     ];
-    let rows = rows_from_draft(&draft, 5);
+    let rows = rows_from_draft(&draft, 5, "Player");
     let view: Vec<(i32, &str, i32, i32)> = rows
         .iter()
         .map(|r| (r.kind, r.name.as_str(), r.team, r.color))
@@ -682,7 +682,23 @@ fn rows_from_draft_cleans_computer_names() {
     );
     assert!(rows.iter().all(|r| !r.ready && r.peer.is_none()));
     assert_eq!(rows[1].handicap, 5);
-    assert_eq!(rows_from_draft(&draft, 2).len(), 2);
+    assert_eq!(rows_from_draft(&draft, 2, "Player").len(), 2);
+    // A computer without a name gets the fallback of the edition.
+    draft.slots = vec![slot(0, 1, " ")];
+    let rows = rows_from_draft(&draft, 2, "Spieler");
+    assert_eq!(rows[1].name, "Spieler");
+}
+
+/// The words for the cores follow the edition: nameless player and start of the name of a network savegame.
+#[test]
+fn local_words_follow_the_edition() {
+    use opennml_rda::GameVersion::{English, German};
+    let words = |v| {
+        let w = local_words(v);
+        (w.player, w.net_save_prefix)
+    };
+    assert_eq!(words(German), ("Spieler".to_string(), "netz_".to_string()));
+    assert_eq!(words(English), ("Player".to_string(), "net_".to_string()));
 }
 
 // QUIRK E-307: deviation
@@ -1096,7 +1112,7 @@ impl Pair {
         });
         let m = &mut self.machines[1];
         let game = m.session.list.games()[0].clone();
-        m.session.join_game(&game, &mut m.app);
+        m.session.join_game(&game, &mut m.app, &self.texts);
         self.frames_until("client in the lobby", |p| {
             p.machines[1].session.phase() == NetPhase::Lobby
                 && p.host_lobby().rows[1].peer.is_some()

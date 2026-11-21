@@ -26,8 +26,8 @@ pub use lobby::{
     inputs_fit, rows_fit,
 };
 pub use lockstep::{
-    ClientCore, CoreEvent, HOST_LOST, HOST_PEER, HaltReason, HostCore, LocalTime, Lockstep,
-    PROBE_INTERVAL_MS, Peer, Phase, REJOIN_WINDOW_MS, SUCCESSOR_CONNECT_MS, Succession,
+    ClientCore, CoreEvent, HOST_LOST, HOST_PEER, HaltReason, HostCore, LocalTime, LocalWords,
+    Lockstep, PROBE_INTERVAL_MS, Peer, Phase, REJOIN_WINDOW_MS, SUCCESSOR_CONNECT_MS, Succession,
     SuccessionStep, TIMEOUT_MS,
 };
 pub use msg::{

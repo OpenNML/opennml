@@ -2206,7 +2206,7 @@ fn failures(rig: &Rig, i: usize) -> Vec<String> {
         .collect()
 }
 
-/// Orderly end (E-268): `HostCore::end` appends `End { name }` (`netz_JJJJ_MM_TT_hhmm`, local time of the host) to the
+/// Orderly end (E-268): `HostCore::end` appends `End { name }` (`net_JJJJ_MM_TT_hhmm`, local time of the host) to the
 /// next bundle; everyone halts after its execution tick at the same tick in `Phase::Ended`, then `Bye` to all (without
 /// `Failed` at the clients). A running pause is lifted by the end beforehand so that the bundle can be formed.
 // QUIRK E-268: deviation
@@ -2224,8 +2224,8 @@ fn host_end_halts_everyone_after_the_end_bundle() {
         assert!(rig.host.end(), "accepted");
         assert!(!rig.host.end(), "a second end has no effect");
         rig.run_for(3_000);
-        let name = END_CLOCK.net_end_name();
-        assert_eq!(name, "netz_2026_11_06_1807");
+        let name = END_CLOCK.net_end_name(&rig.host.words().net_save_prefix);
+        assert_eq!(name, "net_2026_11_06_1807");
         let turn = ended_turn(&rig.events[0]).expect("end in the bundle");
         let stand = rig.host.config().exec_step(turn) + 1;
         for i in 0..3 {
@@ -2458,17 +2458,24 @@ fn client_leave_is_a_loss_for_the_host() {
 
 /// Names from the network end up in `Seat.name`, in the desync report and in savegames. The host cleans the name of a
 /// `Hello` on acceptance: control characters become spaces, whitespace at the edges is dropped, at most
-/// [`MAX_PLAYER_NAME`] characters, an empty name becomes `FALLBACK_NAME`.
+/// [`MAX_PLAYER_NAME`] characters, an empty name becomes the fallback.
 #[test]
 fn hello_names_are_cleaned() {
     use crate::msg::{MAX_PLAYER_NAME, clean_name};
-    assert_eq!(clean_name("Anna"), "Anna");
-    assert_eq!(clean_name("  Ev\nil\tr\u{7}Na\u{1b}me  "), "Ev il r Na me");
-    assert_eq!(clean_name("\r\n\t "), "Spieler");
-    assert_eq!(clean_name(""), "Spieler");
+    assert_eq!(clean_name("Anna", "Player"), "Anna");
+    assert_eq!(
+        clean_name("  Ev\nil\tr\u{7}Na\u{1b}me  ", "Player"),
+        "Ev il r Na me"
+    );
+    assert_eq!(clean_name("\r\n\t ", "Player"), "Player");
+    assert_eq!(clean_name("", "Player"), "Player");
     let long: String = "ä".repeat(100);
-    assert_eq!(clean_name(&long).chars().count(), MAX_PLAYER_NAME);
-    assert_eq!(clean_name("a\u{202e}b"), "a b", "bidi control characters");
+    assert_eq!(clean_name(&long, "Player").chars().count(), MAX_PLAYER_NAME);
+    assert_eq!(
+        clean_name("a\u{202e}b", "Player"),
+        "a b",
+        "bidi control characters"
+    );
 
     let mut host = HostCore::new(
         hello("Host"),
@@ -2477,7 +2484,7 @@ fn hello_names_are_cleaned() {
     );
     let dirty = format!("Eve\n{}", "x".repeat(60));
     host.handle(0, 1, LinkEvent::Message(NetMessage::Hello(hello(&dirty))));
-    let clean = clean_name(&dirty);
+    let clean = clean_name(&dirty, "Player");
     assert!(clean.starts_with("Eve x"), "{clean}");
     assert_eq!(host.peers()[1], (1, clean.clone()));
     assert!(host.events().iter().any(|e| e
@@ -3018,8 +3025,11 @@ fn foreign_build_is_rejected() {
 #[test]
 fn names_lose_brackets() {
     use crate::msg::clean_name;
-    assert_eq!(clean_name("[COLOR FF0000]Eve]"), "COLOR FF0000Eve");
-    assert_eq!(clean_name("[]"), "Spieler");
+    assert_eq!(
+        clean_name("[COLOR FF0000]Eve]", "Player"),
+        "COLOR FF0000Eve"
+    );
+    assert_eq!(clean_name("[]", "Player"), "Player");
     let mut host = HostCore::new(
         hello("Host"),
         book(TurnConfig::default(), 4),
@@ -3806,3 +3816,92 @@ fn client_keeps_the_successor_list_from_go() {
 }
 
 mod migration;
+
+/// The name of the network savegame starts with the prefix of the edition.
+#[test]
+fn net_end_name_takes_the_prefix() {
+    let time = LocalTime {
+        year: 2026,
+        month: 11,
+        day: 20,
+        hour: 9,
+        minute: 5,
+        second: 0,
+    };
+    assert_eq!(time.net_end_name("net_"), "net_2026_11_20_0905");
+    assert_eq!(time.net_end_name("netz_"), "netz_2026_11_20_0905");
+}
+
+fn german_words() -> LocalWords {
+    LocalWords {
+        player: "Spieler".to_string(),
+        net_save_prefix: "netz_".to_string(),
+    }
+}
+
+/// Every cleanup of a core takes the words of the installation: the host for the name of a `Hello`, for the end name
+/// of the match and for the lobby book, the client for the names in the lobby state and for a failed load. Without
+/// `set_words` the English words apply.
+#[test]
+fn cores_clean_with_their_local_words() {
+    assert_eq!(LocalWords::default().player, "Player");
+    assert_eq!(LocalWords::default().net_save_prefix, "net_");
+
+    let mut host = HostCore::new(
+        hello("Host"),
+        book(TurnConfig::default(), 3),
+        Box::new(AcceptAll),
+    );
+    host.handle(0, 1, LinkEvent::Message(NetMessage::Hello(hello(" "))));
+    assert_eq!(host.lobby().rows[1].name, "Player");
+    host.set_words(german_words());
+    assert_eq!(host.words(), &german_words());
+    host.handle(0, 2, LinkEvent::Message(NetMessage::Hello(hello("\n"))));
+    assert_eq!(host.lobby().rows[2].name, "Spieler");
+
+    let mut client = ClientCore::new(hello("Bert"));
+    assert_eq!(client.words(), &LocalWords::default());
+    client.set_words(german_words());
+    assert_eq!(client.words().net_save_prefix, "netz_");
+    let mut state = host.lobby().clone();
+    state.rows[1].name = "\u{200B}".to_string();
+    client.handle(
+        0,
+        HOST_PEER,
+        LinkEvent::Message(NetMessage::Welcome { slot: 1 }),
+    );
+    client.handle(
+        0,
+        HOST_PEER,
+        LinkEvent::Message(NetMessage::Lobby(Box::new(state))),
+    );
+    assert_eq!(client.lobby().unwrap().rows[1].name, "Spieler");
+}
+
+/// The host names the end of the match with the prefix of its edition.
+#[test]
+fn host_end_uses_the_edition_prefix() {
+    for (words, expected) in [
+        (LocalWords::default(), "net_2026_11_06_1807"),
+        (german_words(), "netz_2026_11_06_1807"),
+    ] {
+        let mut rig = Rig::running(&[20, 70]);
+        rig.run_until(5);
+        rig.host.set_words(words);
+        rig.host.set_clock(END_CLOCK);
+        assert!(rig.host.end());
+        rig.run_for(3_000);
+        let ends: Vec<NetControl> = rig
+            .controls(0)
+            .into_iter()
+            .map(|(_, c)| c)
+            .filter(|c| matches!(c, NetControl::End { .. }))
+            .collect();
+        assert_eq!(
+            ends,
+            vec![NetControl::End {
+                name: expected.to_string()
+            }]
+        );
+    }
+}

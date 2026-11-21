@@ -1678,8 +1678,8 @@ fn host_end_saves_equal_states_everywhere() {
     assert!(t.machines[0].driver.end(), "the host ends it");
     assert!(!t.machines[1].driver.end(), "a client cannot end it");
     t.frames_until(|t| t.machines.iter().all(|m| !m.finish.is_empty()));
-    let name = CLOCK.net_end_name();
-    assert_eq!(name, "netz_2026_11_06_1415");
+    let name = CLOCK.net_end_name("net_");
+    assert_eq!(name, "net_2026_11_06_1415");
     let host = t.machines[0]
         .saves
         .last()
@@ -1738,7 +1738,7 @@ fn host_crash_lets_clients_save_and_leave() {
     let host = t.machines.remove(0);
     t.corrupter = usize::MAX;
     t.frames_until(|t| t.machines.iter().all(|m| !m.finish.is_empty()));
-    let name = CLOCK.net_end_name();
+    let name = CLOCK.net_end_name("net_");
     for (i, m) in t.machines.iter().enumerate() {
         let i = i + 1;
         assert_eq!(
@@ -1843,7 +1843,7 @@ fn no_adopt_after_the_end() {
     m.driver.adopt_due = Some(3);
     m.driver.resync_bytes = Some(vec![1, 2, 3]);
     m.driver.finish(NetFinish::HostLost {
-        name: CLOCK.net_end_name(),
+        name: CLOCK.net_end_name("net_"),
     });
     assert_eq!(m.driver.adopt_due, None);
     assert_eq!(m.driver.resync_bytes, None);
