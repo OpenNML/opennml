@@ -2539,10 +2539,11 @@ pub fn script_fallback(setup: &mut MatchSetup, rules: &Rules) -> Option<String> 
 pub fn start_sim(
     vfs: &opennml_rda::Vfs,
     scene: &LevelScene,
+    language_tag: &str,
     game_speed: u8,
     setup: impl FnOnce(&Rules) -> anyhow::Result<MatchSetup>,
 ) -> anyhow::Result<Option<SimHost>> {
-    start_sim_with(vfs, scene, None, game_speed, setup)
+    start_sim_with(vfs, scene, None, language_tag, game_speed, setup)
 }
 
 /// Like [`start_sim`]; with `random` (random map) the rules load without `.lvl`
@@ -2552,6 +2553,7 @@ pub fn start_sim_with(
     vfs: &opennml_rda::Vfs,
     scene: &LevelScene,
     random: Option<&RandomMapRules>,
+    language_tag: &str,
     game_speed: u8,
     setup: impl FnOnce(&Rules) -> anyhow::Result<MatchSetup>,
 ) -> anyhow::Result<Option<SimHost>> {
@@ -2559,7 +2561,7 @@ pub fn start_sim_with(
         Rules::load_random(vfs, scene, random.clone())
             .with_context(|| format!("{}: loading rules of the random map", scene.lvl_path))?
     } else {
-        match Rules::load(vfs, scene) {
+        match Rules::load(vfs, scene, language_tag) {
             Ok(rules) => rules,
             Err(error) => {
                 log::warn!(
@@ -4358,6 +4360,7 @@ VALUEID 30001 1 1 0
         let mut host = start_sim(
             &vfs,
             &scene,
+            "DEU",
             DEFAULT_GAME_SPEED,
             super::testkit::default_setup,
         )

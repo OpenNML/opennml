@@ -1014,7 +1014,7 @@ mod tests {
     #[test]
     fn floats_draw_left_aligned_in_info_messages_and_fade() {
         let (_dir, vfs) = info_messages_install();
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let ctx = layer.context(
             &vfs,
             opennml_ui::coords::Screen {

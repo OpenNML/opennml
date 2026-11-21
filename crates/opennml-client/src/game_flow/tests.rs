@@ -119,7 +119,7 @@ impl Run {
         let files = FsSaveFiles {
             dir: saves.unwrap_or_else(|| tmp.path().join("savegame")),
         };
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut config = EngineConfig {
             is_intro: false,
             ..test_config(&vfs)
@@ -885,7 +885,7 @@ fn save_then_load_restores_checksum() {
     let files = FsSaveFiles {
         dir: tmp.path().join("savegame"),
     };
-    let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+    let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
     let config = EngineConfig {
         is_intro: false,
         ..test_config(&vfs)
@@ -2566,7 +2566,7 @@ fn escape_with_an_open_build_cursor_opens_the_menu_and_keeps_the_cursor() {
     let files = FsSaveFiles {
         dir: tmp.path().join("savegame"),
     };
-    let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+    let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
     let config = EngineConfig {
         is_intro: false,
         ..test_config(&vfs)
@@ -3597,13 +3597,13 @@ fn map_load_opens_a_random_map_with_its_state() {
     let state = load.random_state.as_ref().unwrap();
     assert_eq!(state.seed_text, "ZKB");
     assert_eq!(state.dim, 64);
-    load.start_sim(&r.vfs, 10, |rules| {
+    load.start_sim(&r.vfs, "DEU", 10, |rules| {
         assert_eq!(rules.random_map.as_ref().map(|m| &m.spec), Some(&spec));
         Ok(MatchSetup::default())
     })
     .unwrap_err();
     // A setup with the game mode of the description starts.
-    load.start_sim(&r.vfs, 10, |_| {
+    load.start_sim(&r.vfs, "DEU", 10, |_| {
         Ok(MatchSetup {
             mode: 0,
             ..MatchSetup::default()

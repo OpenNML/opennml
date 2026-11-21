@@ -1057,6 +1057,7 @@ fn toolbar_locks_match_the_sim_for_every_corpus_button() {
     let mut sim = crate::game::sim_host::start_sim(
         &vfs,
         &scene,
+        "DEU",
         10,
         crate::game::sim_host::testkit::default_setup,
     )

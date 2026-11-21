@@ -954,7 +954,7 @@ impl GameSession {
         progress(LoadPhase::Start);
         let mut load = MapLoad::open(vfs, source)?;
         progress(LoadPhase::LevelRead);
-        load.start_sim(vfs, game_speed, |rules| setup(rules))?;
+        load.start_sim(vfs, &view.language_tag, game_speed, |rules| setup(rules))?;
         load.place_objects(vfs);
         progress(LoadPhase::SimReady);
         Self::from_load(gpu, vfs, load, view, size, progress)
@@ -997,7 +997,7 @@ impl GameSession {
         let mut load = MapLoad::open(vfs, &MapSource::of_save(&save))?;
         progress(LoadPhase::LevelRead);
         let setup = save.sim.start.setup.clone();
-        load.start_sim(vfs, save.host.game_speed, |_| Ok(setup))?;
+        load.start_sim(vfs, &view.language_tag, save.host.game_speed, |_| Ok(setup))?;
         let sim = load
             .sim
             .as_mut()
@@ -5782,7 +5782,7 @@ TEXT 17000
 
     /// Draws the UI once (like a frame of `opennml-game`): the minimap remembers the position that clicks calculate with.
     fn draw_hud_once(session: &GameSession, vfs: &Vfs) -> crate::game::minimap::MinimapLayout {
-        let mut layer = crate::ui_layer::UiLayer::new(vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(vfs, screen_of((1024, 768)));
         let texts = ctx.texts;
         session.hud_cmds(&mut ctx, texts);
@@ -7623,6 +7623,7 @@ TEXT 17000
         let mut direct = crate::game::sim_host::start_sim(
             &vfs,
             &scene,
+            "DEU",
             10,
             crate::game::sim_host::testkit::default_setup,
         )
@@ -8235,7 +8236,7 @@ TEXT 17000
         session.resize(1024, 768);
         session.advance(&gpu, &vfs, 0, true, None);
         session.advance(&gpu, &vfs, 50, true, None);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let paths = |session: &GameSession, layer: &mut crate::ui_layer::UiLayer| {
             let mut ctx = layer.context(&vfs, screen_of((1024, 768)));
             let texts = ctx.texts;
@@ -8354,7 +8355,7 @@ TEXT 17000
         })
         .unwrap();
         let before = opennml_sim::save::checksum(&session.sim().unwrap().state);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(&vfs, screen_of(size));
         let texts = ctx.texts;
         let all = session.over_world_cmds(&mut ctx, texts);
@@ -8852,7 +8853,7 @@ TEXT 17000
         let gpu = gpu_of(&device, &queue);
         let mut session = toolbar_session(&gpu, &vfs);
         let size = (1024, 768);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(&vfs, screen_of(size));
         let texts = ctx.texts;
         let plain = session.over_world_cmds(&mut ctx, texts);
@@ -8920,7 +8921,7 @@ TEXT 17000
         let mut session = toolbar_session(&gpu, &vfs);
         let checksum = session.sim().unwrap().checksum();
         let size = (1024, 768);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(&vfs, screen_of(size));
         let texts = ctx.texts;
         let mut modes = CountingModes::default();
@@ -9072,7 +9073,7 @@ TEXT 17000
         // Game menu open: no step, but the fade runs (real time `0x004BFF09`).
         session.advance(&gpu, &vfs, 2_000, false, None);
         assert_eq!(session.scene_fade.alpha(), 204, "1000 ms of 5000");
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(&vfs, screen_of(size));
         let texts = ctx.texts;
         let all = session.over_world_cmds(&mut ctx, texts);
@@ -9915,7 +9916,7 @@ TEXT 17000
         };
         let gpu = gpu_of(&device, &queue);
         let mut session = campaign_session(&gpu, &vfs);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         assert!(
             draw_frames(&session, &mut layer, &vfs).is_empty(),
             "session start"
@@ -9986,7 +9987,7 @@ TEXT 17000
         };
         let gpu = gpu_of(&device, &queue);
         let mut session = campaign_session(&gpu, &vfs);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         session
             .present_by_hand(
                 &gpu,
@@ -10127,7 +10128,7 @@ TEXT 17000
             &mut |_| {},
         )
         .unwrap();
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let frames = draw_frames(&loaded, &mut layer, &vfs);
         assert_eq!(ids(&frames), [30, 20, 10], "10, 20, 30 each at the head");
         assert_eq!((frames[0].1[0], frames[0].1[1]), (100, 200));
@@ -10177,7 +10178,7 @@ TEXT 17000
         session.menu_open = true;
         session.advance(&gpu, &vfs, 1_100, false, None);
         assert_eq!(session.scene_fade.alpha(), 255);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(&vfs, screen_of(session.size));
         let texts = ctx.texts;
         let all = session.over_world_cmds(&mut ctx, texts);
@@ -10223,7 +10224,7 @@ TEXT 17000
         };
         let gpu = gpu_of(&device, &queue);
         let mut session = toolbar_session(&gpu, &vfs);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut modes = CountingModes::default();
         session.advance_by(&gpu, &vfs, 16.0, true, None);
         let (button, msg) = clickable_button(&session);
@@ -10296,7 +10297,7 @@ TEXT 17000
         let gpu = gpu_of(&device, &queue);
         let mut session = campaign_session(&gpu, &vfs);
         session.advance_by(&gpu, &vfs, 16.0, true, None);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(&vfs, screen_of(session.size));
         let set = |session: &mut GameSession, container: i32, seconds: i32| {
             let mission = &mut session.sim_mut().unwrap().state.script.mission;
@@ -10343,7 +10344,7 @@ TEXT 17000
         let gpu = gpu_of(&device, &queue);
         let mut session = campaign_session(&gpu, &vfs);
         session.advance_by(&gpu, &vfs, 16.0, true, None);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(&vfs, screen_of(session.size));
         let y = game_y(screen_of(session.size), 0x28);
         assert_eq!(y, 30);
@@ -10420,7 +10421,7 @@ TEXT 17000
         };
         session.present_by_hand(&gpu, &vfs, None, &event).unwrap();
         let before = session.checksum();
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         for cinemascope in [false, true] {
             if cinemascope {
                 let event = Presentation::Cinemascope { on: true };
@@ -10486,7 +10487,7 @@ TEXT 17000
         let [x, y] = crate::game::notices::device_project(view_proj, center, session.size).unwrap();
         let (x, y) = (x as i32, y as i32);
         let before = session.checksum();
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let digit = |session: &GameSession, layer: &mut crate::ui_layer::UiLayer| {
             let mut ctx = layer.context(&vfs, screen_of(session.size));
             let world = session.combat_cmds(&mut ctx);
@@ -10655,7 +10656,7 @@ TEXT 17000
         let gpu = gpu_of(&device, &queue);
         let mut session = campaign_session(&gpu, &vfs);
         session.advance_by(&gpu, &vfs, 16.0, true, None);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         for (text, x) in [(5, 100), (6, 600)] {
             let event = Presentation::InfoFrame {
                 text,

@@ -89,10 +89,18 @@ impl EffectBrowser {
         format: wgpu::TextureFormat,
         vfs: &Vfs,
         clock_ms: f32,
+        language_tag: &str,
         screen_width: u32,
     ) -> anyhow::Result<Self> {
         let generator = opennml_client::ui_layer::atlas_generator(vfs);
-        let text = OverlayText::new(device, format, vfs, screen_width, generator.as_deref())?;
+        let text = OverlayText::new(
+            device,
+            format,
+            vfs,
+            language_tag,
+            screen_width,
+            generator.as_deref(),
+        )?;
         let light = opennml_formats::wld::ObjectLight {
             position: [800.0, 400.0, -1300.0],
             color: [255, 241, 193],

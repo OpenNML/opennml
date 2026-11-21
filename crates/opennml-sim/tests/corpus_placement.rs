@@ -41,7 +41,7 @@ fn cursor_snaps_are_idempotent_on_sample_maps() {
     let mut valid: BTreeMap<u32, u64> = BTreeMap::new();
     for lvl in levels {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let setup = MatchSetup::default_for(&rules);
         let mut state = new_match(&rules, &setup).unwrap_or_else(|e| panic!("{lvl}: {e}"));
         // Types per kind (the low byte does not count, as in the check).

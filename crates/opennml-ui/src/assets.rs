@@ -212,8 +212,8 @@ impl Texts {
 
 /// Reads the `localisation.*` of the chosen language; the work is done by
 /// [`opennml_formats::localisation::load_localisation`], here via the file system of the game.
-pub fn load_localisation(vfs: &Vfs) -> Result<Localisation, String> {
-    opennml_formats::localisation::load_localisation(&|path| vfs.read(path).ok())
+pub fn load_localisation(vfs: &Vfs, language_tag: &str) -> Result<Localisation, String> {
+    opennml_formats::localisation::load_localisation(&|path| vfs.read(path).ok(), language_tag)
 }
 
 #[cfg(test)]

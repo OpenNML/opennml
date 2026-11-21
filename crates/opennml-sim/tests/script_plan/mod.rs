@@ -16,7 +16,7 @@ use opennml_world::level::load_level;
 /// AI per `ki`). Shared start of the tutorial and selection tests.
 pub fn start_level(vfs: &Vfs, lvl: &str, ki: bool) -> (Rules, SimState) {
     let scene = load_level(vfs, lvl).unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
-    let rules = Rules::load(vfs, &scene).unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
+    let rules = Rules::load(vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
     assert!(
         rules.scripts.errors.is_empty(),
         "{lvl}: {:?}",

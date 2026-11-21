@@ -109,8 +109,14 @@ impl ScriptRules {
     /// Loads level script, dialogs, areas and speech lengths. `speech` takes in `id`, `ogg_ms`, `text_units` per
     /// speech length (`RuleChecksums::speech`); the script files go into the checksum of the rules through the read
     /// recording of `vfs` (`RuleChecksums::logic`).
-    pub fn load(vfs: &Vfs, scene: &LevelScene, speech: &mut Fnv64) -> Self {
-        Self::load_files(vfs, &scene.lvl_path, collect_areas(scene), speech)
+    pub fn load(vfs: &Vfs, scene: &LevelScene, language_tag: &str, speech: &mut Fnv64) -> Self {
+        Self::load_files(
+            vfs,
+            &scene.lvl_path,
+            collect_areas(scene),
+            language_tag,
+            speech,
+        )
     }
 
     /// [`ScriptRules::load`] without a scene: level path `lvl_path` and the areas already collected.
@@ -118,6 +124,7 @@ impl ScriptRules {
         vfs: &Vfs,
         lvl_path: &str,
         areas: BTreeMap<String, [i32; 4]>,
+        language_tag: &str,
         speech: &mut Fnv64,
     ) -> Self {
         let mut rules = Self {
@@ -141,7 +148,7 @@ impl ScriptRules {
         });
 
         rules.refresh_ui_flag();
-        rules.load_speech(vfs);
+        rules.load_speech(vfs, language_tag);
 
         for (id, len) in &rules.speech {
             speech.write(&id.to_le_bytes());
@@ -211,7 +218,7 @@ impl ScriptRules {
     }
 
     /// Speech lengths of the text IDs of all loaded scripts.
-    fn load_speech(&mut self, vfs: &Vfs) {
+    fn load_speech(&mut self, vfs: &Vfs, language_tag: &str) {
         let ids: Vec<i32> = self
             .scripts()
             .flat_map(|s| &s.file.blocks)
@@ -230,7 +237,7 @@ impl ScriptRules {
         // If the speech file or the text table is missing, the texts stay empty: the length is then the
         // digit count of the ID (E-171) as for a missing text; the original continues the same way.
         let read = |path: &str| vfs.read(path).ok();
-        let table = match load_localisation(&read) {
+        let table = match load_localisation(&read, language_tag) {
             Ok(loc) => {
                 let (table, warnings) = merge_text_tables(&loc, &read);
                 for warning in warnings {
@@ -338,6 +345,7 @@ mod tests {
             &vfs,
             "data/levels/test/t.lvl",
             BTreeMap::new(),
+            "DEU",
             &mut Fnv64::default(),
         )
     }

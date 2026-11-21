@@ -45,7 +45,7 @@ fn all_levels_load_their_scripts() {
     let mut dialog_paths = BTreeSet::new();
     for lvl in &maps {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
         let scripts = &rules.scripts;
         assert!(scripts.errors.is_empty(), "{lvl}: {:?}", scripts.errors);
         let level = scripts
@@ -115,7 +115,7 @@ fn area_and_dialog_names_resolve() {
     let mut unknown = BTreeSet::new();
     for lvl in script_maps(&vfs) {
         let scene = load_level(&vfs, &lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let scripts = &rules.scripts;
         for (path, name) in names_of(scripts, ParamKind::Area) {
             if scripts.area(&name).is_none() {
@@ -166,6 +166,7 @@ fn kamp1_1_speech_table() {
     let rules = Rules::load(
         &vfs,
         &load_level(&vfs, "data/levels/kampagne1/kamp1-1/kamp1-1.lvl").unwrap(),
+        "DEU",
     )
     .unwrap();
     let scripts = &rules.scripts;

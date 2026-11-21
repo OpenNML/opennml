@@ -356,7 +356,7 @@ mod tests {
 
     impl Ui {
         fn new(vfs: Vfs, dir: Option<tempfile::TempDir>, start_menu: bool) -> Ui {
-            let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+            let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
             let config = EngineConfig {
                 is_intro: false,
                 ..test_config(&vfs)
@@ -427,7 +427,7 @@ mod tests {
         fn corpus() -> Option<HostUi> {
             let dir = opennml_rda::testutil::corpus_game_dir()?;
             let vfs = Vfs::open_game_dir(&dir).unwrap();
-            let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+            let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
             let config = EngineConfig {
                 is_intro: false,
                 ..test_config(&vfs)
@@ -562,7 +562,7 @@ mod tests {
         // `videostart` (`FUN_004DA8A0` `0x004DAA14`...) `CloseAll`, `WaitDialogs`, `PlayVideo`, `WaitVideo`,
         // `AfterProbeVideo`, afterwards `test` opens again.
         let (_dir, vfs) = host_world();
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let config = EngineConfig {
             is_intro: false,
             ..test_config(&vfs)

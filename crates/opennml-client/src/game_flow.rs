@@ -426,6 +426,7 @@ pub fn view_options(cfg: &EngineConfig, width: u32) -> ViewOptions {
         shadow_quality: quality(cfg.shadow_quality, 3),
         particles_quality: quality(cfg.particles_quality, 2),
         text_width: width,
+        language_tag: cfg.language_tag.clone(),
         unit_response: cfg.unit_response != 0,
         hud: HudOptions::from_config(cfg),
         back_color: cfg.back_color as u32,

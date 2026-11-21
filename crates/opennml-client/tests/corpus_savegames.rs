@@ -90,7 +90,7 @@ fn load_and_continue(vfs: &Vfs, path: &Path) -> Loaded {
     let read_ms = ms(t);
     let t = Instant::now();
     let source = MapSource::of_save(&file);
-    let rules = map_rules(vfs, &source).unwrap_or_else(|e| panic!("{name}: {e:#}"));
+    let rules = map_rules(vfs, &source, "DEU").unwrap_or_else(|e| panic!("{name}: {e:#}"));
     let rules_ms = ms(t);
     let t = Instant::now();
     file.prepare(&rules)
@@ -220,7 +220,7 @@ fn write_corpus_saves() {
     std::fs::create_dir_all(&out).unwrap_or_else(|e| panic!("{}: {e}", out.display()));
 
     let level = MapLoad::read(&vfs, CAMPAIGN_LEVEL).unwrap();
-    let rules = load_rules(&vfs, CAMPAIGN_LEVEL).unwrap();
+    let rules = load_rules(&vfs, CAMPAIGN_LEVEL, "DEU").unwrap();
     let mut setup = MatchSetup::default_for(&rules);
     setup.ki.enabled = true;
     setup.ki.campaign_difficulty = 1;

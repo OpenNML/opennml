@@ -1298,7 +1298,7 @@ VALUEID 60002 6 1 1792
         let vfs = Vfs::open_game_dir(&dir).unwrap();
         let version = game_version(&vfs).unwrap();
         let scene = load_level(&vfs, "data/levels/multiplayer/[2players]-battlebeach.lvl").unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let cell = rules.map.cell;
         let tile_of = |x: f32, z: f32| ((x / cell[0] as f32) as i32, (z / cell[2] as f32) as i32);
         let starts: Vec<_> = rules

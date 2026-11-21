@@ -2480,6 +2480,7 @@ mod tests {
         let mut host = crate::game::sim_host::start_sim(
             &vfs,
             &scene,
+            "DEU",
             DEFAULT_GAME_SPEED,
             crate::game::sim_host::testkit::default_setup,
         )

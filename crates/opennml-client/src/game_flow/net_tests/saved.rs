@@ -194,7 +194,7 @@ fn host_loads_a_net_save_into_lan4() {
     assert_eq!(a.session, *session);
     assert_eq!((a.free, a.total), (2, 2));
     // The same savegame via `read_net_save`: slots and checksum as in the session.
-    let check = read_net_save(&n.paths(0).net_save(SAVED), &n.runs[0].vfs).unwrap();
+    let check = read_net_save(&n.paths(0).net_save(SAVED), &n.runs[0].vfs, "DEU").unwrap();
     assert_eq!(check.seats, seats);
     assert_eq!(check.checksum, sim_checksum(&file.sim));
 }

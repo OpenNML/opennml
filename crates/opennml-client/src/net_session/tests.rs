@@ -129,7 +129,7 @@ world one
         return;
     };
     let req = request(FIXED_MAP, LevelInfoData::default());
-    let (rules, entries) = net_rules_recorded(&vfs, &req);
+    let (rules, entries) = net_rules_recorded(&vfs, &req, "DEU");
     let rules = rules.unwrap();
     let hlm = entries
         .iter()
@@ -148,7 +148,7 @@ world one
         map_checksum(&vfs, FIXED_MAP)
     );
     assert_ne!(
-        net_rules(&other, &req).map(|r| r.checksum),
+        net_rules(&other, &req, "DEU").map(|r| r.checksum),
         Ok(rules.checksum)
     );
 }
@@ -365,7 +365,7 @@ fn start_infos_clamp_the_speed_to_the_net_limit() {
 #[test]
 fn rejected_in_the_lobby_counts_as_host_gone() {
     let (dir, vfs) = crate::testutil::world();
-    let layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+    let layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
     let opts = opennml_ui::app::MenuOptions {
         start_menu: false,
         ..opennml_ui::app::MenuOptions::default()
@@ -378,6 +378,7 @@ fn rejected_in_the_lobby_counts_as_host_gone() {
         port: 2302,
         seed: Box::new(|| 1),
         listen: true,
+        language_tag: "DEU".to_string(),
     };
     let mut session = NetSession::new(
         Box::new(opennml_net::MemTransport::new(&net, 0)),
@@ -786,9 +787,12 @@ fn recorded_inputs_cover_the_rules_files() {
         return;
     };
     let fixed = request(FIXED_MAP, LevelInfoData::default());
-    let (rules, entries) = net_rules_recorded(&vfs, &fixed);
+    let (rules, entries) = net_rules_recorded(&vfs, &fixed, "DEU");
     let rules = rules.expect("rules of the fixed map");
-    assert_eq!(rules.checksum, net_rules(&vfs, &fixed).unwrap().checksum);
+    assert_eq!(
+        rules.checksum,
+        net_rules(&vfs, &fixed, "DEU").unwrap().checksum
+    );
     for path in [
         "data/gifcon/bonus.ini",
         "data/levels/multiplayer/[2players]-tintebariver.lvl",
@@ -814,9 +818,12 @@ fn recorded_inputs_cover_the_rules_files() {
     );
 
     let random = random_request();
-    let (rules, entries) = net_rules_recorded(&vfs, &random);
+    let (rules, entries) = net_rules_recorded(&vfs, &random, "DEU");
     let rules = rules.expect("rules of the random map");
-    assert_eq!(rules.checksum, net_rules(&vfs, &random).unwrap().checksum);
+    assert_eq!(
+        rules.checksum,
+        net_rules(&vfs, &random, "DEU").unwrap().checksum
+    );
     assert!(has(&entries, "data/gifcon/randommaptypes.ini"));
     assert!(
         entries
@@ -831,7 +838,7 @@ fn changed_loose_file_changes_its_entry_and_the_checksum() {
         return;
     };
     let req = request(FIXED_MAP, LevelInfoData::default());
-    let (rules, before) = net_rules_recorded(&vfs, &req);
+    let (rules, before) = net_rules_recorded(&vfs, &req, "DEU");
     let rules = rules.unwrap();
     let mut bytes = vfs.read("data/gifcon/bonus.ini").unwrap();
     // A digit of a value, so that the file still parses.
@@ -845,7 +852,7 @@ fn changed_loose_file_changes_its_entry_and_the_checksum() {
     let disk = dir.path().join("bonus.ini");
     std::fs::write(&disk, &bytes).unwrap();
     let other = opennml_rda::testutil::with_loose_file(&vfs, "data/gifcon/bonus.ini", &disk);
-    let (changed, after) = net_rules_recorded(&other, &req);
+    let (changed, after) = net_rules_recorded(&other, &req, "DEU");
     assert_ne!(changed.unwrap().checksum, rules.checksum);
     let diff: Vec<_> = before
         .iter()
@@ -866,8 +873,8 @@ fn recorded_inputs_are_deterministic() {
         request(FIXED_MAP, LevelInfoData::default()),
         random_request(),
     ] {
-        let (_, first) = net_rules_recorded(&vfs, &req);
-        let (_, second) = net_rules_recorded(&vfs, &req);
+        let (_, first) = net_rules_recorded(&vfs, &req, "DEU");
+        let (_, second) = net_rules_recorded(&vfs, &req, "DEU");
         assert!(!first.is_empty());
         assert_eq!(first, second);
     }
@@ -949,7 +956,7 @@ impl Pair {
         client_worker: Box<dyn RulesWorker>,
     ) -> Option<Self> {
         let vfs = corpus_vfs()?;
-        let layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let dir = tempfile::tempdir().unwrap();
         let net = opennml_net::MemNet::new();
         let mut workers: Vec<Box<dyn RulesWorker>> = vec![host_worker, client_worker];
@@ -971,6 +978,7 @@ impl Pair {
                 port: 2302,
                 seed: Box::new(|| 1),
                 listen: true,
+                language_tag: "DEU".to_string(),
             };
             let transport = opennml_net::MemTransport::new(&net, 10 * i as u64);
             let mut session = NetSession::new(
@@ -1164,7 +1172,7 @@ fn host_publishes_its_checksum_after_create() {
     );
     p.frames(2);
     let lobby = p.host_lobby();
-    let rules = net_rules(&p.machines[0].vfs, &p.host_request()).unwrap();
+    let rules = net_rules(&p.machines[0].vfs, &p.host_request(), "DEU").unwrap();
     assert_eq!(lobby.rules_checksum, Some(rules.checksum));
     assert_eq!(lobby.session_revision, 0);
 }
@@ -1288,7 +1296,7 @@ fn second_change_discards_the_running_check() {
     let lobby = p.host_lobby();
     assert_eq!(lobby.session_revision, second);
     assert_ne!(lobby.rules_checksum, checksum, "checksum of the new map");
-    let rules = net_rules(&p.machines[0].vfs, &p.host_request()).unwrap();
+    let rules = net_rules(&p.machines[0].vfs, &p.host_request(), "DEU").unwrap();
     assert_eq!(lobby.rules_checksum, Some(rules.checksum));
     assert!(p.host_core().can_start(), "ready flags stay (E-302)");
 }

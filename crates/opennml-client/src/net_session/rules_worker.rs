@@ -22,6 +22,8 @@ pub struct RulesJob {
     pub session_revision: u32,
     pub vfs: Vfs,
     pub source: MapSource,
+    /// `LanguageTAG` of the settings (language file of the rules without `selectlanguage.ini`).
+    pub language_tag: String,
 }
 
 /// Result of a [`RulesJob`]: the rules (or the reason text) and the files the computation read.
@@ -34,7 +36,7 @@ pub struct RulesDone {
 impl RulesJob {
     /// Computes the rules on a recording copy of the [`Vfs`] ([`source_rules_recorded`]).
     pub fn run(self) -> RulesDone {
-        let (rules, inputs) = source_rules_recorded(&self.vfs, &self.source);
+        let (rules, inputs) = source_rules_recorded(&self.vfs, &self.source, &self.language_tag);
         RulesDone {
             session_revision: self.session_revision,
             rules,
@@ -179,6 +181,7 @@ mod tests {
             session_revision: 7,
             vfs: Vfs::from_archives(Vec::new()),
             source: MapSource::Level(String::new()),
+            language_tag: "DEU".to_string(),
         });
         let thread = worker.thread.take().expect("thread started");
         assert!(thread.join().is_err(), "the thread panicked");

@@ -519,6 +519,7 @@ impl BrowserView {
         start: Option<&str>,
         clock_ms: f32,
         shadow_quality: u8,
+        language_tag: &str,
         screen_width: u32,
     ) -> Result<Self> {
         let paths = model_paths(vfs);
@@ -527,7 +528,14 @@ impl BrowserView {
             None => 0,
         };
         let generator = opennml_client::ui_layer::atlas_generator(vfs);
-        let text = OverlayText::new(device, format, vfs, screen_width, generator.as_deref())?;
+        let text = OverlayText::new(
+            device,
+            format,
+            vfs,
+            language_tag,
+            screen_width,
+            generator.as_deref(),
+        )?;
         let light = browser_light();
         let project = match vfs.read(BROWSER_PROJECT) {
             Ok(bytes) => parse_project(&decode_cp1252(&bytes)).unwrap_or_else(|e| {

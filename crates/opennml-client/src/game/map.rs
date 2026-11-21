@@ -925,9 +925,10 @@ pub struct MapLoad {
 
 /// Rules of a fixed map without a match (as when loading: read `.lvl`, `Rules::load`): for the start package of the
 /// host before loading.
-pub fn load_rules(vfs: &Vfs, level: &str) -> Result<Rules> {
+pub fn load_rules(vfs: &Vfs, level: &str, language_tag: &str) -> Result<Rules> {
     let load = MapLoad::read(vfs, level)?;
-    Rules::load(vfs, &load.scene).with_context(|| format!("loading rules of map \"{level}\""))
+    Rules::load(vfs, &load.scene, language_tag)
+        .with_context(|| format!("loading rules of map \"{level}\""))
 }
 
 /// Rules of the map `source` without a match: a fixed map via [`load_rules`], a random map built like
@@ -935,9 +936,9 @@ pub fn load_rules(vfs: &Vfs, level: &str) -> Result<Rules> {
 /// ([`Rules::load_random`]) - the same calculation as when loading ([`start_sim_with`]), for the start package of the
 /// host and the check of a network savegame. For a map from its description the generator thus runs twice on the
 /// host (rules, loading); that costs only time, no state. The generated map of a savegame needs no generator.
-pub fn map_rules(vfs: &Vfs, source: &MapSource) -> Result<Rules> {
+pub fn map_rules(vfs: &Vfs, source: &MapSource, language_tag: &str) -> Result<Rules> {
     if let MapSource::Level(level) = source {
-        return load_rules(vfs, level);
+        return load_rules(vfs, level, language_tag);
     }
     let load = MapLoad::open(vfs, source)?;
     let random = load.random.context("random map without rules input")?;
@@ -1005,10 +1006,18 @@ impl MapLoad {
     pub fn start_sim(
         &mut self,
         vfs: &Vfs,
+        language_tag: &str,
         game_speed: u8,
         setup: impl FnOnce(&Rules) -> anyhow::Result<MatchSetup>,
     ) -> Result<()> {
-        self.sim = start_sim_with(vfs, &self.scene, self.random.as_ref(), game_speed, setup)?;
+        self.sim = start_sim_with(
+            vfs,
+            &self.scene,
+            self.random.as_ref(),
+            language_tag,
+            game_speed,
+            setup,
+        )?;
         Ok(())
     }
 
@@ -1052,7 +1061,7 @@ impl MapView {
         setup: impl FnOnce(&Rules) -> anyhow::Result<MatchSetup>,
     ) -> Result<Self> {
         let mut load = MapLoad::read(vfs, level)?;
-        load.start_sim(vfs, game_speed, setup)?;
+        load.start_sim(vfs, &view.language_tag, game_speed, setup)?;
         load.place_objects(vfs);
         Self::build(device, queue, format, vfs, load, view)
     }
@@ -1086,7 +1095,14 @@ impl MapView {
         renderer.set_water_detail(view.terrain_quality >= 2);
         renderer.set_level_shadows(device, queue, vfs, &mut models, &scene, view.shadow_quality);
         let generator = crate::ui_layer::atlas_generator(vfs);
-        let text = OverlayText::new(device, format, vfs, view.text_width, generator.as_deref())?;
+        let text = OverlayText::new(
+            device,
+            format,
+            vfs,
+            &view.language_tag,
+            view.text_width,
+            generator.as_deref(),
+        )?;
         let mut camera = GameCamera::new(CameraSetup::load(vfs), &scene.terrain);
         let focus = start_camera_focus(&scene, sim.as_ref(), random.is_some());
         camera.move_to(focus.x, focus.y, &scene.terrain);
@@ -3260,7 +3276,7 @@ mod tests {
         setup: impl FnOnce(&Rules) -> anyhow::Result<MatchSetup>,
     ) -> MapLoad {
         let mut load = MapLoad::open(vfs, source).unwrap();
-        load.start_sim(vfs, 10, setup).unwrap();
+        load.start_sim(vfs, "DEU", 10, setup).unwrap();
         load.place_objects(vfs);
         load
     }

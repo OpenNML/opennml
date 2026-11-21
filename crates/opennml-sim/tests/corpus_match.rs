@@ -24,7 +24,7 @@ fn matches_start_on_all_multiplayer_maps_and_run() {
     levels.push("data/levels/kampagne1/kamp1-1/kamp1-1.lvl".into());
     for lvl in &levels {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let setup = MatchSetup::default_for(&rules);
         let mut state = new_match(&rules, &setup).unwrap_or_else(|e| panic!("{lvl}: {e}"));
         // Time-of-day upgrades of the map (`level_resources[40]`, re/upgrades 3.8): per slot 0-7
@@ -77,7 +77,7 @@ fn saving_and_loading_mid_match_continues_bit_identically() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[6players]-legends.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let mut a = new_match(&rules, &setup).unwrap();
     let mut b = new_match(&rules, &setup).unwrap();
@@ -121,7 +121,7 @@ fn units_walk_on_a_real_map_and_saves_continue_bit_identically() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[6players]-legends.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let mut a = new_match(&rules, &setup).unwrap();
     // All units with a walk module of one slot walk as a group of type 0 to the map center (targets
@@ -211,7 +211,7 @@ fn units_play_their_idle_animation_again_after_stopping() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let mut state = new_match(&rules, &setup).unwrap();
     let unit = state
@@ -263,7 +263,7 @@ fn start_resources_follow_the_resource_setting() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[6players]-legends.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let mut setup = MatchSetup::default_for(&rules);
     let from_map = new_match(&rules, &setup).unwrap();
     let lvl: Vec<(usize, i32)> = rules.level.players[0].resources.clone();
@@ -326,7 +326,7 @@ fn colonists_build_gather_and_train_on_a_real_map_with_commands_only() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let mut a = new_match(&rules, &setup).unwrap();
     let find = |s: &SimState, guid: u32| {
@@ -570,7 +570,7 @@ fn a_fishing_boat_delivers_its_first_catch_at_the_harbor() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[2players]-tintebariver.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let mut a = new_match(&rules, &setup).unwrap();
     let hq_tile = a
@@ -679,7 +679,7 @@ fn mount_nodes_contain_only_the_pri_canoe() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let keys: Vec<u32> = rules.mount_nodes.keys().copied().collect();
     assert_eq!(keys, [1712]);
     let p = rules.mount_nodes[&1712];
@@ -703,7 +703,7 @@ fn ship_cannons_and_train_couplings_come_from_the_models() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     // Number of cannons per (type, animation, side); only non-empty lists occur.
     let count = |guid: u32, anim: i32, starboard: bool| {
         rules
@@ -764,7 +764,7 @@ fn crossrail_trains_couple_behind_their_locomotives() {
         .find(|p| p.contains("crossrail"))
         .expect("crossrail in the shipped data");
     let scene = load_level(&vfs, &lvl).unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let state = new_match(&rules, &setup).unwrap();
     let train = |id| match &state.object(id, false).unwrap().module(INDEX).unwrap().kind {
@@ -873,7 +873,7 @@ fn crossrail_trains_run_to_the_track_end() {
         .find(|p| p.contains("crossrail"))
         .expect("crossrail in the shipped data");
     let scene = load_level(&vfs, &lvl).unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let mut state = new_match(&rules, &setup).unwrap();
 
@@ -1056,7 +1056,7 @@ fn governors_and_missionaries_keep_their_data() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/kampagne1/kamp1-3/kamp1-3.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let mut state = new_match(&rules, &setup).unwrap();
     let missionaries: Vec<ObjectId> = state
@@ -1145,7 +1145,7 @@ fn daytime_upgrades_survive_saving_on_a_multiplayer_map() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[2players]-ironhorsehunt.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     assert_eq!(rules.level_daytime(), 2);
     let setup = MatchSetup::default_for(&rules);
     let mut a = new_match(&rules, &setup).unwrap();
@@ -1201,7 +1201,7 @@ fn viciouscircle_chieftain_tents_carry_tent_state() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[5players]-viciouscircle.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let setup = MatchSetup::default_for(&rules);
     let state = new_match(&rules, &setup).unwrap();
     let pri: Vec<usize> = (0..8).filter(|&i| state.players[i].nation == 1).collect();
@@ -1263,7 +1263,7 @@ fn kamp2_6_travois_have_no_tent() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/kampagne2/kamp2-6/kamp2-6.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let mut state = new_match(&rules, &MatchSetup::default_for(&rules)).unwrap();
     let travois: Vec<ObjectId> = state
         .objects()
@@ -1321,7 +1321,7 @@ fn campaign_trade_carts_keep_their_data() {
         "data/levels/tutorial0-1/kamp0-1.lvl",
     ] {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let setup = MatchSetup::default_for(&rules);
         let state = new_match(&rules, &setup).unwrap_or_else(|e| panic!("{lvl}: {e}"));
         let carts: Vec<_> = state
@@ -1488,7 +1488,7 @@ fn campaign_gates_start_open_and_keep_their_walls() {
     let mut total_gates = 0;
     for lvl in GATE_LEVELS {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let state = new_match(&rules, &MatchSetup::default_for(&rules))
             .unwrap_or_else(|e| panic!("{lvl}: {e}"));
         let pieces_in_level = scene
@@ -1549,7 +1549,7 @@ fn campaign_walls_have_no_watch() {
     assert_eq!(campaign_levels_with(&vfs, with_walls), WALL_LEVELS);
     for lvl in WALL_LEVELS {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let state = new_match(&rules, &MatchSetup::default_for(&rules))
             .unwrap_or_else(|e| panic!("{lvl}: {e}"));
         let parts: Vec<ObjectId> = state

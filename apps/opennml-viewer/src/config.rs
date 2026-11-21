@@ -72,6 +72,8 @@ pub struct Config {
     pub volume_music: u16,
     pub volume_sfx: u16,
     pub volume_speech: u16,
+    /// `Engine.ini LanguageTAG`: selects `data/txt/localisation.<tag>` when `selectlanguage.ini` is missing.
+    pub language_tag: String,
     /// No device output (F9 toggles); mixer and recording keep running.
     pub mute: bool,
     /// Game UI (`--hud`, command `hud`): message bar and status bar through the UI renderer as in
@@ -137,6 +139,7 @@ impl Default for Config {
             volume_music: 349,
             volume_sfx: 599,
             volume_speech: 499,
+            language_tag: opennml_formats::engine_ini::EngineConfig::default().language_tag,
             mute: false,
             hud: false,
             unit_response: true,
@@ -543,6 +546,7 @@ impl Config {
             shadow_quality: self.shadow_quality,
             particles_quality: self.particles_quality,
             text_width: self.width,
+            language_tag: self.language_tag.clone(),
             aspect: self.aspect,
             fog: self.fog,
             animate: self.animate,
@@ -829,6 +833,7 @@ ki_kind = 2
                 volume_music: 0,
                 volume_sfx: 1000,
                 volume_speech: 250,
+                language_tag: "DEU".to_string(),
                 mute: true,
                 hud: true,
                 unit_response: false,

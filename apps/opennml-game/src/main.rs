@@ -246,10 +246,10 @@ fn run(cli: &Cli, log: &LogHandle) -> Result<()> {
     let vfs = Vfs::open_game_dir(&game_dir)
         .with_context(|| format!("opening archives in {}", game_dir.display()))?;
     log_game_data(&vfs);
-    // Blood switch of the localisation (`BloodModeEnabled`, O-392): once per program, `bloodmode` toggles it.
-    opennml_client::game::blood::init_from_localisation(&vfs);
     log::info!("Settings file: {}", settings.display());
     let mut config = load_settings(&settings, &vfs);
+    // Blood switch of the localisation (`BloodModeEnabled`, O-392): once per program, `bloodmode` toggles it.
+    opennml_client::game::blood::init_from_localisation(&vfs, &config.language_tag);
     // `--host`, `--join` and the screenshot run without the menu level, only in memory; the settings file stays.
     let saved_menu_level = cli
         .skips_menu_level()

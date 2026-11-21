@@ -740,7 +740,7 @@ impl FakeSession {
             // description (`MapLoad::open`).
             let mut load = MapLoad::open(vfs, source)?;
             let mut last = None;
-            load.start_sim(vfs, game_speed, |rules| {
+            load.start_sim(vfs, "DEU", game_speed, |rules| {
                 let setup = setup(rules)?;
                 last = Some(setup.clone());
                 Ok(setup)
@@ -831,7 +831,7 @@ impl SessionView for FakeSession {
             // generated map in the file, not `start.level` as a file.
             let mut load = MapLoad::open(vfs, &MapSource::of_save(&save))?;
             let setup = save.sim.start.setup.clone();
-            load.start_sim(vfs, save.host.game_speed, |_| Ok(setup))?;
+            load.start_sim(vfs, "DEU", save.host.game_speed, |_| Ok(setup))?;
             random_map = load.random_map.take();
             load.sim.context("rules of the map not loaded")?
         } else {

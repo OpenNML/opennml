@@ -22,7 +22,7 @@ fn replaced(vfs: &Vfs, dir: &Path, game_path: &str, bytes: &[u8]) -> Vfs {
 }
 
 fn checksums(vfs: &Vfs, scene: &LevelScene) -> RuleChecksums {
-    let rules = Rules::load(vfs, scene).unwrap();
+    let rules = Rules::load(vfs, scene, "DEU").unwrap();
     assert_eq!(rules.checksum, rules.checksums.full());
     rules.checksums
 }
@@ -35,7 +35,7 @@ fn checksums_split_by_input() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, LEVEL).unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let base = rules.checksums;
     assert_eq!(checksums(&vfs, &scene), base, "equal on repetition");
     let tmp = tempfile::tempdir().unwrap();
@@ -102,7 +102,7 @@ fn german_and_steam_have_equal_logic() {
     for lvl in &levels {
         let of = |vfs: &Vfs| {
             let scene = load_level(vfs, lvl).unwrap();
-            Rules::load(vfs, &scene).unwrap_or_else(|e| panic!("{lvl}: {e:#}"))
+            Rules::load(vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{lvl}: {e:#}"))
         };
         let (ra, rb) = (of(&a), of(&b));
         let (ca, cb) = (ra.checksums, rb.checksums);

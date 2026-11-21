@@ -280,6 +280,7 @@ fn screenshot_model(
         Some(model),
         0.0,
         config.shadow_quality,
+        &config.language_tag,
         config.width,
     )?;
     // Effects up to `time_ms` in steps of 25 ms with the poses of the run time.
@@ -318,6 +319,7 @@ fn screenshot_dialogs(config: &Config, vfs: &Vfs, names: &[String], out: &Path) 
     let generator = opennml_client::ui_layer::atlas_generator(vfs);
     let mut dialogs = DialogBrowser::new(
         vfs,
+        &config.language_tag,
         &device,
         CAPTURE_FORMAT,
         names,
@@ -534,7 +536,7 @@ fn main() -> Result<()> {
     let vfs = Vfs::open_game_dir(&game_dir)
         .with_context(|| format!("opening archives in {}", game_dir.display()))?;
     // Blood switch of the localisation (`BloodModeEnabled`, O-392): once per program, `bloodmode` toggles it.
-    opennml_client::game::blood::init_from_localisation(&vfs);
+    opennml_client::game::blood::init_from_localisation(&vfs, &config.language_tag);
     // `--mission`: level from campaign.ini; unknown names are an error before window and GPU.
     let config = match &cli.mission {
         Some(name) => config
@@ -554,7 +556,7 @@ fn main() -> Result<()> {
     }
     // Likewise dialog names: unknown or without a file is an error before window and GPU.
     if !cli.dialog.is_empty() {
-        dialogs::check_names(&vfs, &cli.dialog)?;
+        dialogs::check_names(&vfs, &config.language_tag, &cli.dialog)?;
     }
     if let Some(out) = &cli.screenshot {
         return match (&cli.model, cli.dialog.is_empty()) {

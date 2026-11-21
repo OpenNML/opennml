@@ -917,7 +917,7 @@ impl NetStart {
 /// Rules of the corpus map [`super::tests::TWO_PLAYERS`] (as on the host before the start) and its active slots.
 fn two_player_rules(vfs: &Vfs) -> (Rules, Vec<u8>) {
     let load = crate::game::map::MapLoad::read(vfs, super::tests::TWO_PLAYERS).expect("map");
-    let rules = Rules::load(vfs, &load.scene).expect("rules");
+    let rules = Rules::load(vfs, &load.scene, "DEU").expect("rules");
     let mut active: Vec<u8> = rules.level.players.iter().map(|p| p.slot).collect();
     active.sort_unstable();
     active.dedup();
@@ -1229,6 +1229,7 @@ impl Lan {
                 port: LAN_PORT,
                 seed: Box::new(|| LAN_SEED),
                 listen: listens(i),
+                language_tag: "DEU".to_string(),
             };
             let transport = MemTransport::new(&net, 10 * i as u64);
             ips.push(transport.ip());
@@ -2136,6 +2137,7 @@ impl Lan {
             port: LAN_PORT,
             seed: Box::new(|| LAN_SEED),
             listen: true,
+            language_tag: "DEU".to_string(),
         };
         let transport = ByeTransport {
             inner: MemTransport::new(&self.net, 10 * i as u64),
@@ -3302,7 +3304,7 @@ fn random_map_with_other_rules_is_rejected() {
             ..LevelInfoData::default()
         },
     };
-    let rules = net_rules(&run.vfs, &req).expect("rules of the random map");
+    let rules = net_rules(&run.vfs, &req, "DEU").expect("rules of the random map");
     assert!(rules.random_map.is_some());
     let active = crate::match_request::active_slots(&rules);
     let setup = MatchSetup {
@@ -3906,6 +3908,7 @@ fn accounting_main_menu_returns_to_start_after_the_net() {
         port: LAN_PORT,
         seed: Box::new(|| LAN_SEED),
         listen: true,
+        language_tag: "DEU".to_string(),
     };
     let transport = MemTransport::new(&n.net, 0);
     let session = NetSession::new(Box::new(transport), identity, net_paths(n.dir.path(), 1));

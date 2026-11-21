@@ -100,7 +100,8 @@ const CHANGE_DIALOG: &str = "lan31";
 
 /// Who this machine is on the network (from the program): own sign-on (versions, game edition, build ID; the session
 /// sets the name when hosting and joining from `NetName`), game port of the host and the source of the seed of a
-/// network match (the program takes the clock, tests and `UI_GOLDEN` a fixed value).
+/// network match (the program takes the clock, tests and `UI_GOLDEN` a fixed value) and the `LanguageTAG` of the
+/// settings, which selects the language file for the rules of the session map.
 pub struct NetIdentity {
     pub hello: Hello,
     pub port: u16,
@@ -108,6 +109,8 @@ pub struct NetIdentity {
     /// Does the client listen on a free port from the join on? Default of the program `true`; `false` only for check
     /// runs (`--net-no-listen`): the client reports no port and stands without an address in the successor list.
     pub listen: bool,
+    /// `LanguageTAG` of the settings (language file of the rules without `selectlanguage.ini`).
+    pub language_tag: String,
 }
 
 /// Client: listen on a free port and enter it in `hello.listen_port` before the `Hello` goes out. If listening fails
@@ -1182,7 +1185,11 @@ impl NetSession {
             return refuse(app, None, "no name in the name buffer");
         }
         let check = if valid_save_name(&name) {
-            read_net_save(&self.paths.net_save(&name), vfs)
+            read_net_save(
+                &self.paths.net_save(&name),
+                vfs,
+                &self.identity.language_tag,
+            )
         } else {
             Err("not a valid savegame name".to_string())
         };
@@ -1883,6 +1890,7 @@ impl NetSession {
             session_revision: revision,
             vfs: vfs.clone(),
             source: MapSource::of_save(&file),
+            language_tag: self.identity.language_tag.clone(),
         });
     }
 
@@ -1942,6 +1950,7 @@ impl NetSession {
             session_revision: revision,
             vfs: vfs.clone(),
             source,
+            language_tag: self.identity.language_tag.clone(),
         });
     }
 
@@ -2149,7 +2158,7 @@ impl NetSession {
         let rules = match &self.kept_rules {
             Some((kept, rules)) if Some(*kept) == revision => rules,
             _ => {
-                computed = net_rules(vfs, req)?;
+                computed = net_rules(vfs, req, &self.identity.language_tag)?;
                 &computed
             }
         };
@@ -2238,7 +2247,7 @@ impl NetSession {
         if !valid_save_name(name) {
             return Err(format!("\"{name}\" is not a valid savegame name"));
         }
-        let check = read_net_save(&self.paths.net_save(name), vfs)
+        let check = read_net_save(&self.paths.net_save(name), vfs, &self.identity.language_tag)
             .map_err(|e| format!("network savegame \"{name}\": {e}"))?;
         // The checksum of the session comes from hosting; start package and tick come from the newly read file. Both
         // must fit together, otherwise all machines fail with misleading messages.
@@ -2313,8 +2322,12 @@ impl NetSession {
 /// when loading). The start package then carries `random_map`, the client generates the map from it; differing
 /// generator data are rejected by the rules checksum when loading (deviating from E-314). The command-line path
 /// (`opennml-game`, `net_start`) stays with `.lvl`. Errors as a reason text.
-pub fn net_rules(vfs: &Vfs, req: &MatchRequest) -> Result<opennml_sim::rules::Rules, String> {
-    source_rules(vfs, &net_source(req))
+pub fn net_rules(
+    vfs: &Vfs,
+    req: &MatchRequest,
+    language_tag: &str,
+) -> Result<opennml_sim::rules::Rules, String> {
+    source_rules(vfs, &net_source(req), language_tag)
 }
 
 /// Map of a start request: the random map from its description ([`random_map_spec`]), otherwise the `.lvl`.
@@ -2327,17 +2340,22 @@ pub fn net_source(req: &MatchRequest) -> MapSource {
 
 /// Rules of the map `source` as [`net_rules`] computes them ([`map_rules`]: fixed map from its `.lvl`, random map from
 /// its description or from the generated map of a savegame). Errors as a reason text.
-pub fn source_rules(vfs: &Vfs, source: &MapSource) -> Result<opennml_sim::rules::Rules, String> {
-    map_rules(vfs, source).map_err(|e| format!("{e:#}"))
+pub fn source_rules(
+    vfs: &Vfs,
+    source: &MapSource,
+    language_tag: &str,
+) -> Result<opennml_sim::rules::Rules, String> {
+    map_rules(vfs, source, language_tag).map_err(|e| format!("{e:#}"))
 }
 
 /// [`source_rules`] on a recording copy of `vfs`, like [`net_rules_recorded`].
 pub fn source_rules_recorded(
     vfs: &Vfs,
     source: &MapSource,
+    language_tag: &str,
 ) -> (Result<opennml_sim::rules::Rules, String>, Vec<ReadEntry>) {
     let (recording, log) = vfs.recording();
-    let rules = source_rules(&recording, source);
+    let rules = source_rules(&recording, source, language_tag);
     (rules, log.take())
 }
 
@@ -2347,8 +2365,9 @@ pub fn source_rules_recorded(
 pub fn net_rules_recorded(
     vfs: &Vfs,
     req: &MatchRequest,
+    language_tag: &str,
 ) -> (Result<opennml_sim::rules::Rules, String>, Vec<ReadEntry>) {
-    source_rules_recorded(vfs, &net_source(req))
+    source_rules_recorded(vfs, &net_source(req), language_tag)
 }
 
 /// Start information per human row: slot from [`row_slots`], occupation of all slots (humans with their machine and
@@ -2488,10 +2507,10 @@ impl NetSaveCheck {
 /// in the file), [`GameSaveFile::check`] and the network part. The file stays as read (without
 /// [`GameSaveFile::prepare`]): its start package and checksum go to the clients, which compare them with their own
 /// file. Errors as a reason text.
-pub fn read_net_save(path: &Path, vfs: &Vfs) -> Result<NetSaveCheck, String> {
+pub fn read_net_save(path: &Path, vfs: &Vfs, language_tag: &str) -> Result<NetSaveCheck, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("{} not readable: {e}", path.display()))?;
     let file = GameSaveFile::from_bytes(&bytes).map_err(|e| format!("{e:#}"))?;
-    let rules = source_rules(vfs, &MapSource::of_save(&file))?;
+    let rules = source_rules(vfs, &MapSource::of_save(&file), language_tag)?;
     file.check(&rules).map_err(|e| format!("{e:#}"))?;
     if file.host.net.is_none() {
         return Err("not a network savegame (network part missing)".to_string());

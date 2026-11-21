@@ -411,7 +411,8 @@ pub fn screenshot(vfs: &Vfs, config: EngineConfig, time_ms: f32, out: &Path) -> 
     let mut audio = AudioEngine::open(vfs, false);
     apply_volumes(&mut audio, &config);
     let generator = atlas_generator(vfs);
-    let layer = UiLayer::new(vfs, size.0, generator.as_deref()).context("loading the menu")?;
+    let layer = UiLayer::new(vfs, &config.language_tag, size.0, generator.as_deref())
+        .context("loading the menu")?;
     // Without sound output, but with the driver list of the system as in the original.
     let drivers = opennml_audio::driver::names(&opennml_audio::driver::enumerate());
     let mut host = screenshot_host(vfs, layer, config, &audio, drivers)?;
@@ -1082,8 +1083,13 @@ impl Game {
         shell.gpu.set_gamma(config.gamma);
         // Fonts once with the width from the settings (O-58, like the original with `ScreenXSize`).
         let generator = atlas_generator(&self.vfs);
-        let layer =
-            UiLayer::new(&self.vfs, size.0, generator.as_deref()).context("loading the menu")?;
+        let layer = UiLayer::new(
+            &self.vfs,
+            &config.language_tag,
+            size.0,
+            generator.as_deref(),
+        )
+        .context("loading the menu")?;
         let opts = window_menu_options(
             MenuHost::raw_display_modes(&shell.window),
             self.audio.sound_drivers(),
@@ -1102,6 +1108,7 @@ impl Game {
                 port: net_start::host_port(None, config.net_port),
                 seed: Box::new(net_start::wall_seed),
                 listen: self.opts.net_listen,
+                language_tag: config.language_tag.clone(),
             },
             net_start::net_paths(&self.settings),
         ));
@@ -2010,7 +2017,7 @@ mod tests {
         };
         let vfs = Vfs::open_game_dir(&dir).unwrap();
         let audio = AudioEngine::open(&vfs, false);
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let config = opennml_client::settings::default_config(&vfs);
         let mut host = screenshot_host(&vfs, layer, config, &audio, Vec::new()).unwrap();
         // No location: `WriteSettings` (`OPTIONS OK`) and the program end write nothing.

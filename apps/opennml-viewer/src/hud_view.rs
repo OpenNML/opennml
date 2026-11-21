@@ -30,11 +30,12 @@ impl HudLayer {
         vfs: &Vfs,
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
+        language_tag: &str,
         screen_width: u32,
     ) -> Result<Self> {
         let generator = atlas_generator(vfs);
         Ok(Self {
-            layer: UiLayer::new(vfs, screen_width, generator.as_deref())?,
+            layer: UiLayer::new(vfs, language_tag, screen_width, generator.as_deref())?,
             renderer: UiRenderer::new(device, format),
         })
     }

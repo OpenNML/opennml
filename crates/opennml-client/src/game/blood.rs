@@ -30,10 +30,11 @@ pub fn init(enabled: bool) {
     ENABLED.store(enabled, Ordering::Relaxed);
 }
 
-/// [`init`] from the language file of the archives (program start of `opennml-game` and the viewer). If it is missing,
-/// the initial value (set) stays and a warning goes to the log.
-pub fn init_from_localisation(vfs: &opennml_rda::Vfs) {
-    match opennml_ui::assets::load_localisation(vfs) {
+/// [`init`] from the language file of the archives (program start of `opennml-game` and the viewer); `language_tag` is
+/// the `LanguageTAG` of the engine settings. If it is missing, the initial value (set) stays and a warning goes to
+/// the log.
+pub fn init_from_localisation(vfs: &opennml_rda::Vfs, language_tag: &str) {
+    match opennml_ui::assets::load_localisation(vfs, language_tag) {
         Ok(loc) => init(loc.blood_mode),
         Err(e) => log::warn!("Blood switch: language file not read, blood stays on: {e}"),
     }
@@ -90,7 +91,7 @@ mod tests {
             assert!(!pef.components.is_empty(), "{path}");
         }
         assert!(
-            opennml_ui::assets::load_localisation(&vfs)
+            opennml_ui::assets::load_localisation(&vfs, "DEU")
                 .unwrap()
                 .blood_mode
         );

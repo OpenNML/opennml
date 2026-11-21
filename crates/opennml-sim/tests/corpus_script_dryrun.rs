@@ -63,7 +63,7 @@ fn script_maps(vfs: &Vfs) -> Vec<String> {
 
 fn load_rules(vfs: &Vfs, lvl: &str) -> Rules {
     let scene = load_level(vfs, lvl).unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
-    let rules = Rules::load(vfs, &scene).unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
+    let rules = Rules::load(vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
     assert!(
         rules.scripts.errors.is_empty(),
         "{lvl}: {:?}",

@@ -113,7 +113,7 @@ fn sums(
 fn loading_screens_draw_stable() {
     let Some(dir) = corpus_game_dir() else { return };
     let vfs = Vfs::open_game_dir(dir).expect("installation cannot be opened");
-    let loc = load_localisation(&vfs).expect("localisation loads");
+    let loc = load_localisation(&vfs, "DEU").expect("localisation loads");
     let texts = Texts::load(&vfs, &loc);
     let version = game_version(&vfs).unwrap_or_else(|e| panic!("{e}"));
 

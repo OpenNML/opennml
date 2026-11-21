@@ -38,7 +38,7 @@ fn corpus() -> Option<(Vfs, Rules)> {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, LEVEL).unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     Some((vfs, rules))
 }
 
@@ -675,7 +675,7 @@ fn ability_buttons_and_filters_match_the_analysis() {
     assert_eq!(levels.len(), 21);
     for lvl in &levels {
         let scene = load_level(&vfs, lvl).unwrap();
-        let r = Rules::load(&vfs, &scene).unwrap();
+        let r = Rules::load(&vfs, &scene, "DEU").unwrap();
         for (slot, sets) in &r.level.slot_configs {
             let cost = sets.get(&555).and_then(|s| s.get(&15)).copied();
             eprintln!("{lvl}: slot {slot} value set 555 cost {cost:?}");

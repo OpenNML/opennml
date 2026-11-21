@@ -48,7 +48,7 @@ impl Match {
         let files = FsSaveFiles {
             dir: tmp.path().join("savegame"),
         };
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let config = EngineConfig {
             is_intro: false,
             ..test_config(&vfs)
@@ -142,7 +142,7 @@ impl Match {
     }
 
     fn draw(&mut self) {
-        let mut layer = UiLayer::new(&self.vfs, 1024, None).unwrap();
+        let mut layer = UiLayer::new(&self.vfs, "DEU", 1024, None).unwrap();
         let mut ctx = layer.context(&self.vfs, S1024);
         let texts = &self.host.layer.texts;
         self.session().hud_cmds(&mut ctx, texts);
@@ -506,7 +506,7 @@ fn ui_state_reports_buttons_portrait_tooltip_and_last_button() {
     assert!(!tip.text.contains("[KEYID"), "{:?}", tip.text);
     assert!(tip.text.lines().count() >= 2, "{:?}", tip.text);
     // Box: left at the screen edge, bottom edge `H - 200`, exactly the size of the drawn layout.
-    let layer = UiLayer::new(&m.vfs, 1024, None).unwrap();
+    let layer = UiLayer::new(&m.vfs, "DEU", 1024, None).unwrap();
     let layout = session
         .hud
         .tooltip

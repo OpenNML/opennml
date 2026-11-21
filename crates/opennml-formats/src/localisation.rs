@@ -245,13 +245,15 @@ pub fn parse_text_file(bytes: &[u8]) -> Option<BTreeMap<i32, String>> {
 
 /// Path of the language selection (`0x0061F1C8`, re/ui-rendering 3.1).
 const SELECT_LANGUAGE: &str = "data/txt/selectlanguage.ini";
-/// Default without language selection (German installation).
-const DEFAULT_LOCALISATION: &str = "data/txt/localisation.deu";
 
 /// Reads the `localisation.*` of the selected language (`FUN_004C9290`, re/ui-rendering 3.1): path = first
-/// non-empty line of `data/txt/selectlanguage.ini` (trimmed), otherwise `data/txt/localisation.deu`; bytes as
-/// Windows-1252. `read` returns the bytes of a game file (archive or disk) or `None`.
-pub fn load_localisation(read: &dyn Fn(&str) -> Option<Vec<u8>>) -> Result<Localisation, String> {
+/// non-empty line of `data/txt/selectlanguage.ini` (trimmed), otherwise `data/txt/localisation.` + `language_tag`
+/// (`LanguageTAG` of the engine settings, `0x004C937C`-`0x004C93A3`); bytes as Windows-1252. `read` returns the
+/// bytes of a game file (archive or disk) or `None`.
+pub fn load_localisation(
+    read: &dyn Fn(&str) -> Option<Vec<u8>>,
+    language_tag: &str,
+) -> Result<Localisation, String> {
     let path = read(SELECT_LANGUAGE)
         .and_then(|bytes| {
             decode_cp1252(&bytes)
@@ -260,7 +262,7 @@ pub fn load_localisation(read: &dyn Fn(&str) -> Option<Vec<u8>>) -> Result<Local
                 .find(|line| !line.is_empty())
                 .map(str::to_string)
         })
-        .unwrap_or_else(|| DEFAULT_LOCALISATION.to_string());
+        .unwrap_or_else(|| format!("data/txt/localisation.{language_tag}"));
     let bytes = read(&path).ok_or_else(|| format!("language file \"{path}\" unreadable"))?;
     Ok(parse_localisation(&decode_cp1252(&bytes)))
 }
@@ -534,7 +536,7 @@ mod tests {
     fn localisation_path_comes_from_selectlanguage_ini() {
         let loc_text = "TextDatei data\\txt\\x.deu\nFontName Arial\n";
         let read = reader(&[
-            ("data/txt/localisation.deu", loc_text.as_bytes().to_vec()),
+            ("data/txt/localisation.DEU", loc_text.as_bytes().to_vec()),
             (
                 "data/txt/localisation.eng",
                 b"TextDatei data\\txt\\y.eng\n".to_vec(),
@@ -544,23 +546,51 @@ mod tests {
                 b"\r\n  data\\txt\\localisation.eng \r\nsecond\r\n".to_vec(),
             ),
         ]);
-        let loc = load_localisation(&read).unwrap();
+        let loc = load_localisation(&read, "DEU").unwrap();
         assert_eq!(loc.text_files, ["data\\txt\\y.eng"]);
 
-        // Without a selection file or with an empty file: German default.
+        // Without a selection file or with an empty file: `LanguageTAG` path.
         for files in [
-            vec![("data/txt/localisation.deu", loc_text.as_bytes().to_vec())],
+            vec![("data/txt/localisation.DEU", loc_text.as_bytes().to_vec())],
             vec![
-                ("data/txt/localisation.deu", loc_text.as_bytes().to_vec()),
+                ("data/txt/localisation.DEU", loc_text.as_bytes().to_vec()),
                 ("data/txt/selectlanguage.ini", b"\r\n  \r\n".to_vec()),
             ],
         ] {
             let read = reader(&files);
             assert_eq!(
-                load_localisation(&read).unwrap().text_files,
+                load_localisation(&read, "DEU").unwrap().text_files,
                 ["data\\txt\\x.deu"]
             );
         }
+    }
+
+    #[test]
+    fn fallback_uses_the_language_tag() {
+        let seen = std::cell::RefCell::new(Vec::new());
+        let read = |path: &str| {
+            seen.borrow_mut().push(path.to_string());
+            None
+        };
+        for tag in ["ENG", "DEU"] {
+            seen.borrow_mut().clear();
+            assert!(load_localisation(&read, tag).is_err());
+            assert_eq!(
+                seen.borrow().last().map(String::as_str),
+                Some(format!("data/txt/localisation.{tag}").as_str())
+            );
+        }
+        // With a selection file its first line still wins.
+        seen.borrow_mut().clear();
+        let read = |path: &str| {
+            seen.borrow_mut().push(path.to_string());
+            (path == SELECT_LANGUAGE).then(|| b"data\\txt\\localisation.fra\n".to_vec())
+        };
+        let _ = load_localisation(&read, "ENG");
+        assert_eq!(
+            seen.borrow().last().map(String::as_str),
+            Some("data\\txt\\localisation.fra")
+        );
     }
 
     #[test]
@@ -569,12 +599,12 @@ mod tests {
             "data/txt/selectlanguage.ini",
             b"data\\txt\\doesnotexist.xyz\n".to_vec(),
         )]);
-        let err = load_localisation(&read).unwrap_err();
+        let err = load_localisation(&read, "DEU").unwrap_err();
         assert!(err.contains("doesnotexist.xyz"), "{err}");
         assert!(err.contains("unreadable"), "{err}");
         let read = reader(&[("data/other.txt", b"x".to_vec())]);
-        let err = load_localisation(&read).unwrap_err();
-        assert!(err.contains("data/txt/localisation.deu"), "{err}");
+        let err = load_localisation(&read, "DEU").unwrap_err();
+        assert!(err.contains("data/txt/localisation.DEU"), "{err}");
     }
 
     #[test]

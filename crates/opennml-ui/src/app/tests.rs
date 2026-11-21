@@ -71,7 +71,7 @@ impl World for Fixture {
 
 pub(crate) fn corpus() -> Option<Corpus> {
     let vfs = Vfs::open_game_dir(corpus_game_dir()?).expect("installation cannot be opened");
-    let loc = load_localisation(&vfs).expect("localisation loads");
+    let loc = load_localisation(&vfs, "DEU").expect("localisation loads");
     let mut assets = UiAssets::new();
     let fonts = FontBook::load(&vfs, &loc, 1280, &mut assets, None);
     let texts = Texts::load(&vfs, &loc);

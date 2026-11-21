@@ -52,7 +52,7 @@ fn terrain_grids_and_regions_match_the_original_model() {
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     for (lvl, blocked, regions, counters) in MAPS {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let mut grid = PathGrid::new(rules.map.dim_x, rules.map.dim_z);
         let mut occ = OccupancyGrid::new(rules.map.dim_x, rules.map.dim_z);
         classify_all(&mut grid, &mut occ, &rules.tile_classes);
@@ -76,7 +76,7 @@ fn start_headquarters_get_the_original_footprints() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     for (guid, rect) in [
         (1000, [36, 37, 40, 39]),
         (1300, [37, 36, 39, 40]),

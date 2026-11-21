@@ -1384,7 +1384,7 @@ pub fn launch(
         .map
         .as_deref()
         .context("--host needs --net-map <path.lvl>")?;
-    let rules = load_rules(vfs, map)?;
+    let rules = load_rules(vfs, map, &cfg.language_tag)?;
     let settings_values = NetSettings::from_config(cfg);
     // Pre-check with placeholders: map, slots and settings before anyone joins.
     let placeholders = vec![name.clone(); usize::from(args.players)];
@@ -1399,7 +1399,7 @@ pub fn launch(
     .map_err(anyhow::Error::msg)?;
     let seed = args.seed.unwrap_or_else(wall_seed);
     let port = host_port(arg, cfg.net_port);
-    let loc = load_localisation(vfs).map_err(anyhow::Error::msg)?;
+    let loc = load_localisation(vfs, &cfg.language_tag).map_err(anyhow::Error::msg)?;
     let session = session_name(cfg, &Texts::load(vfs, &loc), &name);
     let plan = HostPlan {
         map_checksum: map_checksum(vfs, map).unwrap_or(0),

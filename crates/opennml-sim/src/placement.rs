@@ -1382,7 +1382,7 @@ GUID 3602\nNAME Baum\nVALUEID 100 6 1 256\nPROPID 4\n";
         };
         let vfs = Vfs::open_game_dir(&dir).unwrap();
         let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         assert!(rules.model_boxes.contains_key(&1001));
         let setup = MatchSetup::default_for(&rules);
         let mut state = new_match(&rules, &setup).unwrap();
