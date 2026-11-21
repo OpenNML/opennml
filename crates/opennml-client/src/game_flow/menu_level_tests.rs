@@ -819,7 +819,7 @@ fn failed_load_game_keeps_the_paused_menu_level() {
     broken.extend_from_slice(b"broken");
     std::fs::write(r.files.path("broken", 0), broken).unwrap();
     // A valid header with a number after `SAVE_FORMAT`: from a newer version.
-    let mut newer = b"NMLGAME ".to_vec();
+    let mut newer = b"NMLGAME\0".to_vec();
     newer.extend_from_slice(&(crate::game_save::SAVE_FORMAT + 1).to_le_bytes());
     std::fs::write(r.files.path("newer", 0), newer).unwrap();
     for (name, text) in [
@@ -844,7 +844,8 @@ fn failed_load_game_keeps_the_paused_menu_level() {
 }
 
 /// A savegame whose map is missing here (the synthetic test world of the release files) is read but does not load:
-/// "does not match the game data", not "damaged". The same text for a `Mismatch` of the check (rules, map).
+/// "does not match the game data", not "damaged". The `Mismatch` kind of the check is covered by
+/// `save_failure_text_maps_every_kind` only.
 #[test]
 fn foreign_save_shows_mismatch() {
     let Some(mut r) = started() else {
@@ -862,9 +863,10 @@ fn foreign_save_shows_mismatch() {
     r.idle();
     assert_eq!(msgbox_id(&r), Some(SAVE_MISMATCH));
     assert!(!r.flow.running());
+    assert_eq!(r.dialogs(), ["selectprofile", "singleplayermenu", "msgbox"]);
     r.click("msgbox", "ok");
     r.idle();
-    assert!(!r.dialogs().is_empty(), "menu open again");
+    assert_eq!(r.dialogs(), ["selectprofile", "singleplayermenu"]);
 }
 
 // ---- Input and locks (re/menu-level ML.6, ML.8, ML.15 no. 5; O-441 ... O-443) ---------------------------------------
