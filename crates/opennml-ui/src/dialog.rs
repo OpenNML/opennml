@@ -645,7 +645,8 @@ pub(crate) mod tests {
             font("Credits")
         ));
         let fonts = FontBook::load(&vfs, &loc, 1280, &mut assets, None);
-        let texts = Texts::load(&vfs, &loc);
+        // German own texts, whatever the language of the machine.
+        let texts = Texts::load_with_language(&vfs, &loc, opennml_rda::GameVersion::German);
         Fixture {
             vfs,
             assets,

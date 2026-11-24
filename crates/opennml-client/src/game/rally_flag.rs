@@ -361,6 +361,7 @@ mod tests {
         let sim = crate::game::sim_host::start_sim(
             &vfs,
             &scene,
+            "DEU",
             10,
             crate::game::sim_host::testkit::default_setup,
         )

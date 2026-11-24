@@ -504,9 +504,10 @@ fn random_level_setup(random: &RandomMapRules) -> LevelSetup {
 }
 
 impl Rules {
-    /// Loads the rules for a loaded level.
-    pub fn load(vfs: &Vfs, scene: &LevelScene) -> anyhow::Result<Self> {
-        Self::build(vfs, scene, None)
+    /// Loads the rules for a loaded level. `language_tag` is the `LanguageTAG` of the engine settings; it selects
+    /// the language file for the speech lengths (`ScriptRules::load`).
+    pub fn load(vfs: &Vfs, scene: &LevelScene, language_tag: &str) -> anyhow::Result<Self> {
+        Self::build(vfs, scene, language_tag, None)
     }
 
     /// Rules of a random map without `.lvl` (`GameEngine_CreateRandomMapLevel`
@@ -520,7 +521,8 @@ impl Rules {
         scene: &LevelScene,
         random: RandomMapRules,
     ) -> anyhow::Result<Self> {
-        Self::build(vfs, scene, Some(random))
+        // A random map has no scripts, so the language file is never read.
+        Self::build(vfs, scene, "", Some(random))
     }
 
     /// Shared build of [`Rules::load`] and [`Rules::load_random`]. Every file read here goes into
@@ -530,6 +532,7 @@ impl Rules {
     fn build(
         vfs: &Vfs,
         scene: &LevelScene,
+        language_tag: &str,
         random: Option<RandomMapRules>,
     ) -> anyhow::Result<Self> {
         let (vfs, reads) = vfs.recording();
@@ -937,7 +940,7 @@ impl Rules {
         let ki = KiCatalog::load(vfs)?;
         let mut speech = Fnv64::default();
         let scripts = match &random {
-            None => ScriptRules::load(vfs, scene, &mut speech),
+            None => ScriptRules::load(vfs, scene, language_tag, &mut speech),
             // No level script; the seed text thus never forms a file path.
             Some(_) => ScriptRules::default(),
         };
@@ -1392,7 +1395,7 @@ VALUEID 100 6 1 0
         };
         let vfs = Vfs::open_game_dir(&dir).unwrap();
         let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-        let r = Rules::load(&vfs, &scene).unwrap();
+        let r = Rules::load(&vfs, &scene, "DEU").unwrap();
         use opennml_formats::bonus::*;
         assert_eq!(r.bonus.attack_bonus(ART_SWORD_PEEK), 40);
         assert_eq!(r.bonus.attack_bonus(ART_UNIT_BUILDING), -20);

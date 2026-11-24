@@ -61,7 +61,7 @@ fn menu_level_rules() -> Option<Rules> {
         .find(|p| p.contains("menülevel/") && p.ends_with(LEVEL_FILE))
         .unwrap_or_else(|| panic!("{LEVEL_FILE} not found"));
     let scene = load_level(&vfs, &lvl).unwrap();
-    Some(Rules::load(&vfs, &scene).unwrap_or_else(|e| panic!("{lvl}: {e:#}")))
+    Some(Rules::load(&vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{lvl}: {e:#}")))
 }
 
 /// Setup like `opennml_client::match_request::menu_level_setup` (`opennml-client` depends on `opennml-sim`, so

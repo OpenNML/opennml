@@ -184,6 +184,9 @@ pub struct ViewOptions {
     pub particles_quality: u8,
     /// Window width at start, by which the font of the map view is chosen.
     pub text_width: u32,
+    /// `LanguageTAG` of `Engine.ini`: selects the language file (`data/txt/localisation.<tag>`) when
+    /// `selectlanguage.ini` is missing.
+    pub language_tag: String,
     /// Aspect ratio of the projection.
     pub aspect: AspectSetting,
     /// Distance fog.
@@ -208,6 +211,7 @@ impl Default for ViewOptions {
             shadow_quality: 2,
             particles_quality: 2,
             text_width: 1280,
+            language_tag: opennml_formats::engine_ini::EngineConfig::default().language_tag,
             aspect: AspectSetting::Correct,
             fog: false,
             animate: true,

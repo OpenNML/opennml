@@ -628,7 +628,7 @@ fn read_save(path: &std::path::Path) -> GameSaveFile {
 
 /// The host ends the network match for all ([`end_for_all`]; without a reachable client from the end
 /// screen or at the program end). Each machine writes its network savegame
-/// `netz_YYYY_MM_DD_hhmm` (local time of the host) with the same simulation part, stops the game music and shows "The
+/// `<prefix>YYYY_MM_DD_hhmm` (local time of the host) with the same simulation part, stops the game music and shows "The
 /// host has ended the match. It was saved as "<name>"." as `MSGBOX` over the stopped match; "OK" is the game end
 /// `0x0E`: accounting from the own statistics, whose "Main menu" leads to the main menu.
 // QUIRK E-273: kept
@@ -641,8 +641,8 @@ fn host_end_shows_the_message_then_the_accounting() {
     n.frames_until(|n| n.steps(2) >= 10);
     end_for_all(&mut n.runs[0]);
     n.frames_until(|n| n.runs.iter().all(|r| message(r).is_some()));
-    let name = NET_CLOCK.net_end_name();
-    let expected = format!("The host has ended the match. It was saved as \"{name}\".");
+    let name = NET_CLOCK.net_end_name("net_");
+    let expected = run_text(&n.runs[0], NET_HOST_ENDED_SAVED, &[&name]);
     let files: Vec<GameSaveFile> = (0..3).map(|i| read_save(&n.save_path(i, &name))).collect();
     for (i, file) in files.iter().enumerate() {
         let run = &n.runs[i];
@@ -683,8 +683,37 @@ fn host_end_shows_the_message_then_the_accounting() {
     n.accounting_then_main_menu(0..3);
 }
 
+/// On the English edition the network savegame is called `net_YYYY_MM_DD_hhmm`: the name is valid, the file is
+/// written on every machine and reads again as a network savegame. An older `netz_…` file loads in the same run.
+// QUIRK E-268: deviation
+#[test]
+fn english_net_save_name() {
+    let Some(mut n) = NetRuns::corpus() else {
+        return;
+    };
+    n.frames_until(|n| n.steps(2) >= 10);
+    end_for_all(&mut n.runs[0]);
+    n.frames_until(|n| n.runs.iter().all(|r| message(r).is_some()));
+    let words = crate::testutil::test_words();
+    assert_eq!(words.net_save_prefix, "net_");
+    let name = NET_CLOCK.net_end_name(&words.net_save_prefix);
+    assert!(name.starts_with("net_"));
+    assert!(opennml_net::valid_save_name(&name));
+    for i in 0..3 {
+        let file = read_save(&n.save_path(i, &name));
+        assert_eq!(file.host.net.as_ref().unwrap().local_slot, i as u8);
+        // The file of an older release carries the German prefix.
+        let old = NET_CLOCK.net_end_name("netz_");
+        assert!(opennml_net::valid_save_name(&old));
+        std::fs::copy(n.save_path(i, &name), n.save_path(i, &old)).unwrap();
+        let again = read_save(&n.save_path(i, &old));
+        assert_eq!(again.sim.to_bytes(), file.sim.to_bytes(), "machine {i}");
+        assert!(again.host.net.is_some(), "machine {i}");
+    }
+}
+
 /// Abort: The host crashes (its session disappears without `Bye`). Each client writes its state after the last tick it
-/// could compute as `netz_YYYY_MM_DD_hhmm` (own local time), shows "The connection to the host was aborted. The match
+/// could compute as `<prefix>YYYY_MM_DD_hhmm` (own local time), shows "The connection to the host was aborted. The match
 /// was saved as "<name>"."; "OK" leads through the accounting to the main menu.
 // QUIRK E-273: kept
 // QUIRK E-258: deviation
@@ -696,9 +725,8 @@ fn host_crash_shows_the_abort_message_then_the_accounting() {
     n.frames_until(|n| n.steps(2) >= 10);
     n.runs[0].view.end();
     n.frames_until(|n| n.runs[1..].iter().all(|r| message(r).is_some()));
-    let name = NET_CLOCK.net_end_name();
-    let expected =
-        format!("The connection to the host was aborted. The match was saved as \"{name}\".");
+    let name = NET_CLOCK.net_end_name("net_");
+    let expected = run_text(&n.runs[1], NET_HOST_LOST_SAVED, &[&name]);
     for i in 1..3 {
         assert_eq!(
             message(&n.runs[i]).as_deref(),
@@ -755,9 +783,7 @@ fn third_desync_shows_the_stop_message() {
     }
     n.frames_until(|n| n.runs.iter().all(|r| message(r).is_some()));
     let name = NET_CLOCK.checksum_error_name();
-    let expected = format!(
-        "The match is no longer in sync (checksum error). It was stopped and saved as \"{name}\"."
-    );
+    let expected = run_text(&n.runs[0], NET_STOPPED_SAVED, &[&name]);
     for i in 0..3 {
         assert_eq!(
             message(&n.runs[i]).as_deref(),
@@ -790,8 +816,8 @@ fn host_leaving_from_the_end_screen_ends_the_match_for_all() {
     n.settle();
     n.runs[0].click("gameend_defeat", "end_defeat");
     n.frames_until(|n| n.runs.iter().all(|r| message(r).is_some()));
-    let name = NET_CLOCK.net_end_name();
-    let expected = format!("The host has ended the match. It was saved as \"{name}\".");
+    let name = NET_CLOCK.net_end_name("net_");
+    let expected = run_text(&n.runs[0], NET_HOST_ENDED_SAVED, &[&name]);
     let files: Vec<GameSaveFile> = (0..3).map(|i| read_save(&n.save_path(i, &name))).collect();
     for (i, file) in files.iter().enumerate() {
         assert_eq!(
@@ -891,7 +917,7 @@ impl NetStart {
 /// Rules of the corpus map [`super::tests::TWO_PLAYERS`] (as on the host before the start) and its active slots.
 fn two_player_rules(vfs: &Vfs) -> (Rules, Vec<u8>) {
     let load = crate::game::map::MapLoad::read(vfs, super::tests::TWO_PLAYERS).expect("map");
-    let rules = Rules::load(vfs, &load.scene).expect("rules");
+    let rules = Rules::load(vfs, &load.scene, "DEU").expect("rules");
     let mut active: Vec<u8> = rules.level.players.iter().map(|p| p.slot).collect();
     active.sort_unstable();
     active.dedup();
@@ -1203,6 +1229,7 @@ impl Lan {
                 port: LAN_PORT,
                 seed: Box::new(|| LAN_SEED),
                 listen: listens(i),
+                language_tag: "DEU".to_string(),
             };
             let transport = MemTransport::new(&net, 10 * i as u64);
             ips.push(transport.ip());
@@ -2110,6 +2137,7 @@ impl Lan {
             port: LAN_PORT,
             seed: Box::new(|| LAN_SEED),
             listen: true,
+            language_tag: "DEU".to_string(),
         };
         let transport = ByeTransport {
             inner: MemTransport::new(&self.net, 10 * i as u64),
@@ -2615,11 +2643,26 @@ fn random_map_with_other_generator_data_differs() {
 
 // --- Messages of the game data check and of a failed load (re/multiplayer-menus L.18) --------------------------------
 
-use opennml_ui::own_texts::{DATA_DIFFERS, LOAD_FAILED, ROW_DIFFERS, fill};
+use opennml_ui::own_texts::{
+    DATA_DIFFERS, LOAD_FAILED, NET_HOST_ENDED_SAVED, NET_HOST_LOST_SAVED, NET_SAVE_PREFIX,
+    NET_STOPPED_SAVED, ROW_DIFFERS, fill,
+};
 
 /// Own text `id` of machine `i`, filled with `args`.
 pub(super) fn own_text(n: &Lan, i: usize, id: i32, args: &[&str]) -> String {
-    fill(&n.runs[i].host.layer.texts.display(id), args)
+    run_text(&n.runs[i], id, args)
+}
+
+/// Own text `id` of the machine `run`, filled with `args`.
+pub(super) fn run_text(run: &Run, id: i32, args: &[&str]) -> String {
+    fill(&run.host.layer.texts.display(id), args)
+}
+
+/// Name of the network savegame at the fixed local time on the lobby machines: their cores take the prefix of the
+/// edition of the installation (`netz_` or `net_`), like the own texts of the same install.
+pub(super) fn lan_end_name(n: &Lan) -> String {
+    let prefix = own_text(n, 0, NET_SAVE_PREFIX, &[]);
+    NET_CLOCK.net_end_name(&prefix)
 }
 
 /// Host Anna and clients Bert and Carl on a map with three slots; the machines `changed` with a changed `bonus.ini`.
@@ -3261,7 +3304,7 @@ fn random_map_with_other_rules_is_rejected() {
             ..LevelInfoData::default()
         },
     };
-    let rules = net_rules(&run.vfs, &req).expect("rules of the random map");
+    let rules = net_rules(&run.vfs, &req, "DEU").expect("rules of the random map");
     assert!(rules.random_map.is_some());
     let active = crate::match_request::active_slots(&rules);
     let setup = MatchSetup {
@@ -3865,6 +3908,7 @@ fn accounting_main_menu_returns_to_start_after_the_net() {
         port: LAN_PORT,
         seed: Box::new(|| LAN_SEED),
         listen: true,
+        language_tag: "DEU".to_string(),
     };
     let transport = MemTransport::new(&n.net, 0);
     let session = NetSession::new(Box::new(transport), identity, net_paths(n.dir.path(), 1));

@@ -558,10 +558,10 @@ mod tests {
         let vfs = opennml_rda::Vfs::open_game_dir(&dir).unwrap();
         let lvl = "data/levels/multiplayer/[2players]-railroadrage.lvl";
         let scene = opennml_world::level::load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let mut req = request(4, vec![slot(-1, 999, 1, 0, 0), slot(0, 2, 0, 1, 2)]);
         req.level = lvl.into();
-        let loc = opennml_ui::assets::load_localisation(&vfs).unwrap();
+        let loc = opennml_ui::assets::load_localisation(&vfs, "DEU").unwrap();
         let texts = Texts::load(&vfs, &loc);
         let setup = to_match_setup(&req, &rules, &texts).unwrap();
         let state = opennml_sim::setup::new_match(&rules, &setup).unwrap();
@@ -675,7 +675,7 @@ mod tests {
         let vfs = opennml_rda::Vfs::open_game_dir(&dir).unwrap();
         let lvl = "data/levels/kampagne1/kamp1-1/kamp1-1.lvl";
         let scene = opennml_world::level::load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         let setup = campaign_setup(1, 55, Some("Anna".into()), &[]);
         let state = opennml_sim::setup::new_match(&rules, &setup).unwrap();
         assert_eq!(state.mode, -1);

@@ -1,0 +1,33 @@
+# Own player texts, German column. One line per text: <ID>=<text> (the text runs to the end of the line, untrimmed).
+# Lines starting with '#' and empty lines are ignored. Follows en.txt line by line;
+# only characters up to U+00FF.
+99100=Rundenraster
+99101=Original
+99102=LAN
+99103=LAN schnell
+99104=Laufzeit: %d ms
+99105=[CENTER]Die Karte der Partie fehlt auf diesem Rechner. Sie können erst mitspielen, wenn der Host eine andere Karte wählt.
+99106=[CENTER]Der Netz-Spielstand lässt sich nicht laden.
+99107=[CENTER]In diesem Spielstand ist nur noch ein Spieler im Spiel.
+99108=[CENTER]Ihr Platz in diesem Spielstand ist schon ausgeschieden.
+99109=[CENTER]Die Aufnahme lässt sich nicht abspielen.
+99110=[CENTER]Ihre Spieldaten für diese Karte weichen vom Host ab: %s. Sie können erst mitspielen, wenn die Dateien übereinstimmen.
+99111=[CENTER]Die Spieldaten von %s weichen ab: %s. Die Partie kann so nicht beginnen.
+99112=[CENTER]%s fehlt die Karte der Partie. Die Partie kann so nicht beginnen.
+99113=[CENTER]%s konnte die Partie nicht laden. Der Start wurde abgebrochen.
+99114= und %d weitere
+99115=Datei unbekannt
+99116=Die Partie läuft nicht mehr synchron (Prüfsummenfehler). Sie wurde angehalten und als "%s" gespeichert.
+99117=Die Partie läuft nicht mehr synchron (Prüfsummenfehler). Sie wurde angehalten und konnte nicht gespeichert werden.
+99118=Der Host hat die Partie beendet. Sie wurde als "%s" gespeichert.
+99119=Der Host hat die Partie beendet. Sie konnte nicht gespeichert werden.
+99120=Die Verbindung zum Host ist abgebrochen. Die Partie wurde als "%s" gespeichert.
+99121=Die Verbindung zum Host ist abgebrochen. Die Partie konnte nicht gespeichert werden.
+99122=Die Verbindung zum Host ist abgebrochen.
+99123=Die Netzpartie wurde abgebrochen: %s
+99124=Spieler
+99125=Spieler %d
+99126=netz_
+99127=[CENTER]Der Spielstand stammt aus einer anderen Version oder hat ein anderes Format.
+99128=[CENTER]Der Spielstand ist beschädigt oder nicht lesbar.
+99129=[CENTER]Der Spielstand passt nicht zu den Spieldaten dieser Installation.

@@ -2447,6 +2447,7 @@ dependencies = [
  "opennml-rda",
  "serde",
  "tempfile",
+ "windows",
 ]
 
 [[package]]

@@ -194,7 +194,7 @@ fn host_loads_a_net_save_into_lan4() {
     assert_eq!(a.session, *session);
     assert_eq!((a.free, a.total), (2, 2));
     // The same savegame via `read_net_save`: slots and checksum as in the session.
-    let check = read_net_save(&n.paths(0).net_save(SAVED), &n.runs[0].vfs).unwrap();
+    let check = read_net_save(&n.paths(0).net_save(SAVED), &n.runs[0].vfs, "DEU").unwrap();
     assert_eq!(check.seats, seats);
     assert_eq!(check.checksum, sim_checksum(&file.sim));
 }
@@ -1167,7 +1167,7 @@ fn lost_client_after_load_loses_its_slot() {
     }
 }
 
-/// If the host drops out after loading, each client writes its network savegame `netz_YYYY_MM_DD_hhmm` with the same
+/// If the host drops out after loading, each client writes its network savegame `<prefix>YYYY_MM_DD_hhmm` with the same
 /// simulation part at the tick where it stands (after the origin) and shows the abort message. The clients do not
 /// listen: without candidates no host migration.
 // QUIRK E-324: deviation
@@ -1184,7 +1184,7 @@ fn host_loss_after_load_ends_with_a_net_save() {
     n.frames_until("message on both clients", |l| {
         l.runs[1..].iter().all(|r| message(r).is_some())
     });
-    let name = NET_CLOCK.net_end_name();
+    let name = lan_end_name(&n);
     let files: Vec<GameSaveFile> = (1..3)
         .map(|i| {
             GameSaveFile::from_bytes(&std::fs::read(n.paths(i).net_save(&name)).unwrap()).unwrap()

@@ -320,20 +320,18 @@ fn is_device_name(name: &str) -> bool {
 /// Longest player name in characters after [`clean_name`].
 pub const MAX_PLAYER_NAME: usize = 32;
 
-/// Name of a player without content (empty or only whitespace and control characters).
-const FALLBACK_NAME: &str = "Spieler";
-
 /// Sanitizes a player name from the network or from the command line before it goes into `Seat.name` and `StartInfo` -
 /// it ends up in the desync report, in `report.txt` and in savegames: control characters and invisible direction and
 /// format characters (`U+200B`-`U+200F`, `U+202A`-`U+202E`, `U+2066`-`U+2069`, `U+FEFF`) become spaces, runs of
 /// whitespace one space, the edge is dropped; at most [`MAX_PLAYER_NAME`] characters.
-/// If nothing remains, the player is called "Spieler". The host sanitizes every `Hello` on acceptance
-/// (`HostCore`), the game host its own name. `[` and `]` are dropped (E-309 deviation): the original's lobby displays
+/// If nothing remains, the result is `fallback`, the name of a nameless player in the language of the caller
+/// ([`crate::LocalWords::player`]). The host sanitizes every `Hello` on acceptance (`HostCore`), the game host its own
+/// name. `[` and `]` are dropped (E-309 deviation): the original's lobby displays
 /// names with markup such as `[COLOR …]` evaluated.
-pub fn clean_name(name: &str) -> String {
+pub fn clean_name(name: &str, fallback: &str) -> String {
     let cut = clean_text(&strip_brackets(name), MAX_PLAYER_NAME);
     if cut.is_empty() {
-        FALLBACK_NAME.to_string()
+        fallback.to_string()
     } else {
         cut
     }
@@ -379,4 +377,17 @@ pub fn clean_text(text: &str, max: usize) -> String {
 fn is_hidden(c: char) -> bool {
     c.is_control()
         || matches!(c, '\u{200B}'..='\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{FEFF}')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::clean_name;
+
+    /// A name without content becomes the fallback of the caller, any other name stays.
+    #[test]
+    fn clean_name_uses_the_fallback() {
+        assert_eq!(clean_name("  \u{200B} ", "Spieler"), "Spieler");
+        assert_eq!(clean_name("", "Player"), "Player");
+        assert_eq!(clean_name("Bert", "Player"), "Bert");
+    }
 }

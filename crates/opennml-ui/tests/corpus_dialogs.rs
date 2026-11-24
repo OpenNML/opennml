@@ -21,7 +21,7 @@ fn open() -> Option<Vfs> {
 #[test]
 fn all_menu_fonts_load() {
     let Some(vfs) = open() else { return };
-    let loc = load_localisation(&vfs).expect("localisation loads");
+    let loc = load_localisation(&vfs, "DEU").expect("localisation loads");
     assert_eq!(loc.fonts.len(), 18);
     for width in [1024, 1280] {
         let mut assets = UiAssets::new();
@@ -57,7 +57,7 @@ fn all_menu_fonts_load() {
 #[test]
 fn icon_sets_and_text_font_load() {
     let Some(vfs) = open() else { return };
-    let loc = load_localisation(&vfs).unwrap();
+    let loc = load_localisation(&vfs, "DEU").unwrap();
     let mut assets = UiAssets::new();
     let book = FontBook::load(&vfs, &loc, 1024, &mut assets, None);
     for def in &loc.icons {
@@ -73,7 +73,7 @@ fn icon_sets_and_text_font_load() {
 #[test]
 fn texts_load_from_the_installation() {
     let Some(vfs) = open() else { return };
-    let loc = load_localisation(&vfs).unwrap();
+    let loc = load_localisation(&vfs, "DEU").unwrap();
     let texts = Texts::load(&vfs, &loc);
     assert_eq!(loc.text_files.len(), 6);
     let present = (0..30000).filter(|&id| texts.get(id).is_some()).count();
@@ -108,7 +108,7 @@ fn text_id(kind: &WidgetKind) -> Option<i32> {
 #[test]
 fn menu_texts_lay_out() {
     let Some(vfs) = open() else { return };
-    let loc = load_localisation(&vfs).unwrap();
+    let loc = load_localisation(&vfs, "DEU").unwrap();
     let texts = Texts::load(&vfs, &loc);
     let mut assets = UiAssets::new();
     let book = FontBook::load(&vfs, &loc, 1024, &mut assets, None);
@@ -199,7 +199,7 @@ const fn screen(width: i32, height: i32) -> Screen {
 /// Installation, language, texts and the library with `is_menu_level = false` (like the reference images).
 fn library() -> Option<(Vfs, Localisation, Texts, DialogLibrary)> {
     let vfs = open()?;
-    let loc = load_localisation(&vfs).expect("localisation loads");
+    let loc = load_localisation(&vfs, "DEU").expect("localisation loads");
     let texts = Texts::load(&vfs, &loc);
     let library = DialogLibrary::load(&vfs, &texts, false);
     Some((vfs, loc, texts, library))

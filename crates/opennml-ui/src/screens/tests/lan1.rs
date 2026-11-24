@@ -3,7 +3,7 @@
 //! `MenuApp`. The logic alone runs through [`Logic`], live through `MenuApp` with the corpus dialogs (these need
 //! `NML_GAME_DIR`).
 
-use opennml_rda::testutil::GameVersion;
+use opennml_rda::GameVersion;
 
 use super::create_game::live_game;
 use super::*;
@@ -564,14 +564,83 @@ fn own_texts_resolve_per_edition() {
             "Datei unbekannt",
             "file unknown",
         ),
+        (
+            own_texts::NET_STOPPED_SAVED,
+            99_116,
+            "Die Partie läuft nicht mehr synchron (Prüfsummenfehler). Sie wurde angehalten und als \"%s\" gespeichert.",
+            "The match is no longer in sync (checksum error). It was stopped and saved as \"%s\".",
+        ),
+        (
+            own_texts::NET_STOPPED_UNSAVED,
+            99_117,
+            "Die Partie läuft nicht mehr synchron (Prüfsummenfehler). Sie wurde angehalten und konnte nicht gespeichert werden.",
+            "The match is no longer in sync (checksum error). It was stopped and could not be saved.",
+        ),
+        (
+            own_texts::NET_HOST_ENDED_SAVED,
+            99_118,
+            "Der Host hat die Partie beendet. Sie wurde als \"%s\" gespeichert.",
+            "The host has ended the match. It was saved as \"%s\".",
+        ),
+        (
+            own_texts::NET_HOST_ENDED_UNSAVED,
+            99_119,
+            "Der Host hat die Partie beendet. Sie konnte nicht gespeichert werden.",
+            "The host has ended the match. It could not be saved.",
+        ),
+        (
+            own_texts::NET_HOST_LOST_SAVED,
+            99_120,
+            "Die Verbindung zum Host ist abgebrochen. Die Partie wurde als \"%s\" gespeichert.",
+            "The connection to the host was aborted. The match was saved as \"%s\".",
+        ),
+        (
+            own_texts::NET_HOST_LOST_UNSAVED,
+            99_121,
+            "Die Verbindung zum Host ist abgebrochen. Die Partie konnte nicht gespeichert werden.",
+            "The connection to the host was aborted. The match could not be saved.",
+        ),
+        (
+            own_texts::NET_HOST_LOST,
+            99_122,
+            "Die Verbindung zum Host ist abgebrochen.",
+            "The connection to the host was aborted.",
+        ),
+        (
+            own_texts::NET_FAILED,
+            99_123,
+            "Die Netzpartie wurde abgebrochen: %s",
+            "The network match was aborted: %s",
+        ),
+        (own_texts::PLAYER, 99_124, "Spieler", "Player"),
+        (own_texts::PLAYER_N, 99_125, "Spieler %d", "Player %d"),
+        (own_texts::NET_SAVE_PREFIX, 99_126, "netz_", "net_"),
+        (
+            own_texts::SAVE_OTHER_FORMAT,
+            99_127,
+            "[CENTER]Der Spielstand stammt aus einer anderen Version oder hat ein anderes Format.",
+            "[CENTER]The saved game is from another version or in another format.",
+        ),
+        (
+            own_texts::SAVE_DAMAGED,
+            99_128,
+            "[CENTER]Der Spielstand ist beschädigt oder nicht lesbar.",
+            "[CENTER]The saved game is damaged or cannot be read.",
+        ),
+        (
+            own_texts::SAVE_MISMATCH,
+            99_129,
+            "[CENTER]Der Spielstand passt nicht zu den Spieldaten dieser Installation.",
+            "[CENTER]The saved game does not match the game data of this installation.",
+        ),
     ];
     for (id, number, de, en) in data {
         assert_eq!(id, number);
         assert_eq!(own_texts::text(id, German), Some(de));
         assert_eq!(own_texts::text(id, English), Some(en));
     }
-    assert_eq!(own_texts::text(99_116, German), None);
-    assert_eq!(own_texts::all(English).count(), 16);
+    assert_eq!(own_texts::text(99_130, German), None);
+    assert_eq!(own_texts::all(English).count(), 30);
 
     let mut texts = Texts::from_entries(&[(99_101, "Own")]);
     texts.add_own_texts(English);

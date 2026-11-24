@@ -77,7 +77,7 @@ fn rules_for(level: &str) -> Option<Rules> {
         return None;
     }
     let scene = load_level(&vfs, level).unwrap();
-    Some(Rules::load(&vfs, &scene).unwrap_or_else(|e| panic!("{level}: {e:#}")))
+    Some(Rules::load(&vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{level}: {e:#}")))
 }
 
 /// Golden scene: `kamp1-1`, seed [`SEED`], AI on, difficulty 1, script on, 55 ms per character.

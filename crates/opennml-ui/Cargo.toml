@@ -12,5 +12,8 @@ image.workspace = true
 log.workspace = true
 serde.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = ["Win32_Globalization"] }
+
 [dev-dependencies]
 tempfile.workspace = true

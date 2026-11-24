@@ -25,7 +25,7 @@ pub use data::{
     SHOWN_FILES, compare_inputs, inputs_fit,
 };
 
-use crate::lockstep::HOST_PEER;
+use crate::lockstep::{HOST_PEER, LocalWords};
 use crate::msg::{clean_name, clean_session_name, valid_save_name};
 use crate::turn::TurnConfig;
 
@@ -284,9 +284,18 @@ pub struct LobbyBook {
     data_check: bool,
     /// The host's read recording for `session_revision` (not distributed; compared with a differing client's).
     host_inputs: Vec<DataInput>,
+    /// Name of a joining player whose name is empty after cleaning ([`Self::set_fallback`]).
+    fallback: String,
 }
 
 impl LobbyBook {
+    /// Sets the name that a joining machine with an empty name gets (the player word of the installation language,
+    /// [`crate::LocalWords::player`]). The constructors clean the name of the host with the English default: the
+    /// caller passes it already cleaned.
+    pub fn set_fallback(&mut self, fallback: &str) {
+        self.fallback = fallback.to_string();
+    }
+
     /// New state. Row 0 is the host (type 999, peer 0, Ready 0); all further rows are without a machine and not of type
     /// human. Checks player count, row count and grid. A network savegame as the map goes only through
     /// [`Self::loaded`].
@@ -311,7 +320,7 @@ impl LobbyBook {
             row.data = DataState::Equal;
             if i == 0 {
                 row.kind = KIND_HUMAN;
-                row.name = clean_name(&host_name);
+                row.name = clean_name(&host_name, &LocalWords::default().player);
                 row.peer = Some(0);
                 row.ready = false;
             } else if !(0..=4).contains(&row.kind) {
@@ -335,6 +344,7 @@ impl LobbyBook {
             state,
             data_check: false,
             host_inputs: Vec::new(),
+            fallback: LocalWords::default().player,
         }
     }
 
@@ -402,7 +412,7 @@ impl LobbyBook {
             row.data = DataState::Equal;
             if seat == host_seat {
                 row.kind = KIND_HUMAN;
-                row.name = clean_name(host_name);
+                row.name = clean_name(host_name, &LocalWords::default().player);
                 row.peer = Some(HOST_PEER);
             } else {
                 row.kind = 0;
@@ -514,7 +524,7 @@ impl LobbyBook {
         let pending = self.checking();
         let r = &mut self.state.rows[row];
         r.kind = KIND_HUMAN;
-        r.name = clean_name(name);
+        r.name = clean_name(name, &self.fallback);
         r.handicap = 0;
         r.ready = false;
         r.peer = Some(peer);
@@ -547,7 +557,7 @@ impl LobbyBook {
             return Err(format!("Slot {shown} is already occupied."));
         }
         r.kind = KIND_HUMAN;
-        r.name = clean_name(name);
+        r.name = clean_name(name, &self.fallback);
         r.ready = false;
         r.peer = Some(peer);
         self.bump();

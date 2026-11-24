@@ -106,7 +106,7 @@ fn draw_all(
     data: &CinemascopeData,
     size: Screen,
 ) -> (Vec<Drawn>, UiAssets) {
-    let loc = load_localisation(vfs).expect("localisation loads");
+    let loc = load_localisation(vfs, "DEU").expect("localisation loads");
     let mut assets = UiAssets::new();
     let fonts = FontBook::load(vfs, &loc, size.width, &mut assets, None);
     let values = FixedValues;
@@ -140,7 +140,7 @@ fn info_frame_draw_checksums_are_stable() {
     let Some(dir) = corpus_game_dir() else { return };
     let vfs = Vfs::open_game_dir(dir).expect("installation cannot be opened");
     let version = game_version(&vfs).unwrap_or_else(|e| panic!("{e}"));
-    let loc = load_localisation(&vfs).expect("localisation loads");
+    let loc = load_localisation(&vfs, "DEU").expect("localisation loads");
     let texts = Texts::load(&vfs, &loc);
     let data = CinemascopeData::load(&vfs);
     assert!(data.portraits.contains_key(&1000) && data.frames.contains_key(&101));

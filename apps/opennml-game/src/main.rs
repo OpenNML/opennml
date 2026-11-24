@@ -127,7 +127,8 @@ struct Cli {
     /// Turn raster T/V in ticks (1 <= V < T <= 40, e.g. 8/4 original, 4/2, 2/1; only with --host)
     #[arg(long, value_name = "T/V", value_parser = net_start::parse_raster, requires = "host")]
     turn_raster: Option<opennml_net::TurnConfig>,
-    /// Player name in the network (default: profile name NetName, otherwise "Spieler")
+    /// Player name in the network (default: profile name NetName, otherwise the nameless player of the edition:
+    /// "Player" or "Spieler")
     #[arg(long, value_name = "NAME", requires = "net")]
     net_name: Option<String>,
     /// Fixed seed of the network match for check runs (default: clock of the host; only with --host)
@@ -246,10 +247,10 @@ fn run(cli: &Cli, log: &LogHandle) -> Result<()> {
     let vfs = Vfs::open_game_dir(&game_dir)
         .with_context(|| format!("opening archives in {}", game_dir.display()))?;
     log_game_data(&vfs);
-    // Blood switch of the localisation (`BloodModeEnabled`, O-392): once per program, `bloodmode` toggles it.
-    opennml_client::game::blood::init_from_localisation(&vfs);
     log::info!("Settings file: {}", settings.display());
     let mut config = load_settings(&settings, &vfs);
+    // Blood switch of the localisation (`BloodModeEnabled`, O-392): once per program, `bloodmode` toggles it.
+    opennml_client::game::blood::init_from_localisation(&vfs, &config.language_tag);
     // `--host`, `--join` and the screenshot run without the menu level, only in memory; the settings file stays.
     let saved_menu_level = cli
         .skips_menu_level()

@@ -24,7 +24,7 @@ fn rules_load_for_all_multiplayer_maps() {
     let mut checksums = BTreeSet::new();
     for lvl in &levels {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
         checksums.insert(rules.checksum);
         assert_eq!(rules.targets.len(), 77, "{lvl}");
         // Economy files: menus, GUID groups, three starting resources.
@@ -80,7 +80,7 @@ fn rules_load_labels_for_all_animated_types() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let mut cache = ModelCache::new();
     let (mut animated, mut outside_old_modules) = (0, 0);
     for (&guid, model_path) in &rules.models {
@@ -165,7 +165,9 @@ fn rules_fail_without_property_or_translate_ini() {
         let tmp = tempfile::tempdir().unwrap();
         std::fs::write(tmp.path().join("nml0.rda"), build_rda(&files)).unwrap();
         let reduced = Vfs::open_game_dir(tmp.path()).unwrap();
-        Rules::load(&reduced, &scene).map(|_| ()).unwrap_err()
+        Rules::load(&reduced, &scene, "DEU")
+            .map(|_| ())
+            .unwrap_err()
     };
     let err = format!("{:#}", load_without(&[]));
     assert!(err.contains(property), "{err}");
@@ -185,7 +187,7 @@ fn wall_corner_pairs_from_the_flags_match_the_fort_cursor() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let pairs: BTreeSet<(u32, u32)> = rules
         .types
         .keys()
@@ -210,7 +212,7 @@ fn rules_know_upgrades_and_disabled_guids() {
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let rules_of = |lvl: &str| {
         let scene = load_level(&vfs, lvl).unwrap();
-        Rules::load(&vfs, &scene).unwrap_or_else(|e| panic!("{lvl}: {e:#}"))
+        Rules::load(&vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{lvl}: {e:#}"))
     };
     let exile = rules_of("data/levels/multiplayer/[4players]-exile.lvl");
     assert!(exile.is_upgrade(2800));
@@ -257,7 +259,7 @@ fn rules_know_the_heroes() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/multiplayer/[4players]-exile.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     assert_eq!(rules.heroes.len(), 38);
     for (guid, index) in [
         (1200, 0),
@@ -293,7 +295,7 @@ fn flowcontrol_targets_are_loaded_from_the_game() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, "data/levels/kampagne1/kamp1-1/kamp1-1.lvl").unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let entries = &rules.flowcontrol_targets;
     assert_eq!(entries.len(), 73);
     let ids: BTreeSet<i32> = entries.iter().map(|e| e.button_msg).collect();
@@ -332,7 +334,7 @@ fn water_tiles_count_fully_submerged_tiles() {
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let water = |lvl: &str| {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap();
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
         assert_eq!(rules.tile_count, rules.map.dim_x * rules.map.dim_z, "{lvl}");
         (rules.water_tiles, rules.tile_count)
     };
@@ -377,13 +379,13 @@ fn fixed_map_rules_checksum_matches_the_measurement() {
     ];
     for (lvl, expected) in measured {
         let scene = load_level(&vfs, lvl).unwrap();
-        let rules = Rules::load(&vfs, &scene).unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
+        let rules = Rules::load(&vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{lvl}: {e:#}"));
         assert!(rules.random_map.is_none(), "{lvl}");
         match game_version(&vfs).unwrap() {
             GameVersion::German => assert_eq!(rules.checksum, expected, "{lvl}"),
             // No measurement of the English edition: only equal on repetition.
             GameVersion::English => assert_eq!(
-                Rules::load(&vfs, &scene).unwrap().checksum,
+                Rules::load(&vfs, &scene, "DEU").unwrap().checksum,
                 rules.checksum,
                 "{lvl}"
             ),

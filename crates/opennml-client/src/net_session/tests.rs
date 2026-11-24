@@ -24,7 +24,8 @@ fn texts() -> Texts {
         text_files: vec!["data/txt/t.txt".into()],
         ..Localisation::default()
     };
-    Texts::load(&vfs, &loc)
+    // German own texts, whatever the language of the machine.
+    Texts::load_with_language(&vfs, &loc, opennml_rda::GameVersion::German)
 }
 
 // QUIRK E-300: deviation
@@ -128,7 +129,7 @@ world one
         return;
     };
     let req = request(FIXED_MAP, LevelInfoData::default());
-    let (rules, entries) = net_rules_recorded(&vfs, &req);
+    let (rules, entries) = net_rules_recorded(&vfs, &req, "DEU");
     let rules = rules.unwrap();
     let hlm = entries
         .iter()
@@ -147,7 +148,7 @@ world one
         map_checksum(&vfs, FIXED_MAP)
     );
     assert_ne!(
-        net_rules(&other, &req).map(|r| r.checksum),
+        net_rules(&other, &req, "DEU").map(|r| r.checksum),
         Ok(rules.checksum)
     );
 }
@@ -364,7 +365,7 @@ fn start_infos_clamp_the_speed_to_the_net_limit() {
 #[test]
 fn rejected_in_the_lobby_counts_as_host_gone() {
     let (dir, vfs) = crate::testutil::world();
-    let layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+    let layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
     let opts = opennml_ui::app::MenuOptions {
         start_menu: false,
         ..opennml_ui::app::MenuOptions::default()
@@ -377,6 +378,7 @@ fn rejected_in_the_lobby_counts_as_host_gone() {
         port: 2302,
         seed: Box::new(|| 1),
         listen: true,
+        language_tag: "DEU".to_string(),
     };
     let mut session = NetSession::new(
         Box::new(opennml_net::MemTransport::new(&net, 0)),
@@ -586,7 +588,7 @@ fn random_session_carries_the_seed_text() {
     d.info.players = 9;
     assert!(session_from_draft(&d, "R".into(), &vfs, raster).is_err());
     // The rows follow the number of players as with `LAN3 CREATE` (`random_slots`: open, team and color = row).
-    let rows = rows_from_draft(&random_draft("1"), s.players);
+    let rows = rows_from_draft(&random_draft("1"), s.players, "Player");
     assert_eq!(rows.len(), 3);
     assert!(
         rows.iter()
@@ -618,7 +620,7 @@ fn levelinfo_shows_the_random_seed_in_the_lobby() {
     let raster = TurnConfig::new(4, 2).unwrap();
     let session =
         session_from_draft(&random_draft("18467"), "Round".into(), &vfs, raster).expect("session");
-    let rows = rows_from_draft(&random_draft("18467"), session.players);
+    let rows = rows_from_draft(&random_draft("18467"), session.players, "Player");
     let book = LobbyBook::new(session, rows, "Anna".into()).expect("book");
     let (slots, info, settings) = lobby_draft(book.state(), &MapCatalog::default());
     assert_eq!((info.level_type, info.name.as_str()), (1, "18467"));
@@ -664,7 +666,7 @@ fn rows_from_draft_cleans_computer_names() {
         slot(1, 0, "[EMPTY]"),
         slot(2, 7, "Strange"),
     ];
-    let rows = rows_from_draft(&draft, 5);
+    let rows = rows_from_draft(&draft, 5, "Player");
     let view: Vec<(i32, &str, i32, i32)> = rows
         .iter()
         .map(|r| (r.kind, r.name.as_str(), r.team, r.color))
@@ -681,7 +683,23 @@ fn rows_from_draft_cleans_computer_names() {
     );
     assert!(rows.iter().all(|r| !r.ready && r.peer.is_none()));
     assert_eq!(rows[1].handicap, 5);
-    assert_eq!(rows_from_draft(&draft, 2).len(), 2);
+    assert_eq!(rows_from_draft(&draft, 2, "Player").len(), 2);
+    // A computer without a name gets the fallback of the edition.
+    draft.slots = vec![slot(0, 1, " ")];
+    let rows = rows_from_draft(&draft, 2, "Spieler");
+    assert_eq!(rows[1].name, "Spieler");
+}
+
+/// The words for the cores follow the edition: nameless player and start of the name of a network savegame.
+#[test]
+fn local_words_follow_the_edition() {
+    use opennml_rda::GameVersion::{English, German};
+    let words = |v| {
+        let w = local_words(v);
+        (w.player, w.net_save_prefix)
+    };
+    assert_eq!(words(German), ("Spieler".to_string(), "netz_".to_string()));
+    assert_eq!(words(English), ("Player".to_string(), "net_".to_string()));
 }
 
 // QUIRK E-307: deviation
@@ -769,9 +787,12 @@ fn recorded_inputs_cover_the_rules_files() {
         return;
     };
     let fixed = request(FIXED_MAP, LevelInfoData::default());
-    let (rules, entries) = net_rules_recorded(&vfs, &fixed);
+    let (rules, entries) = net_rules_recorded(&vfs, &fixed, "DEU");
     let rules = rules.expect("rules of the fixed map");
-    assert_eq!(rules.checksum, net_rules(&vfs, &fixed).unwrap().checksum);
+    assert_eq!(
+        rules.checksum,
+        net_rules(&vfs, &fixed, "DEU").unwrap().checksum
+    );
     for path in [
         "data/gifcon/bonus.ini",
         "data/levels/multiplayer/[2players]-tintebariver.lvl",
@@ -797,9 +818,12 @@ fn recorded_inputs_cover_the_rules_files() {
     );
 
     let random = random_request();
-    let (rules, entries) = net_rules_recorded(&vfs, &random);
+    let (rules, entries) = net_rules_recorded(&vfs, &random, "DEU");
     let rules = rules.expect("rules of the random map");
-    assert_eq!(rules.checksum, net_rules(&vfs, &random).unwrap().checksum);
+    assert_eq!(
+        rules.checksum,
+        net_rules(&vfs, &random, "DEU").unwrap().checksum
+    );
     assert!(has(&entries, "data/gifcon/randommaptypes.ini"));
     assert!(
         entries
@@ -814,7 +838,7 @@ fn changed_loose_file_changes_its_entry_and_the_checksum() {
         return;
     };
     let req = request(FIXED_MAP, LevelInfoData::default());
-    let (rules, before) = net_rules_recorded(&vfs, &req);
+    let (rules, before) = net_rules_recorded(&vfs, &req, "DEU");
     let rules = rules.unwrap();
     let mut bytes = vfs.read("data/gifcon/bonus.ini").unwrap();
     // A digit of a value, so that the file still parses.
@@ -828,7 +852,7 @@ fn changed_loose_file_changes_its_entry_and_the_checksum() {
     let disk = dir.path().join("bonus.ini");
     std::fs::write(&disk, &bytes).unwrap();
     let other = opennml_rda::testutil::with_loose_file(&vfs, "data/gifcon/bonus.ini", &disk);
-    let (changed, after) = net_rules_recorded(&other, &req);
+    let (changed, after) = net_rules_recorded(&other, &req, "DEU");
     assert_ne!(changed.unwrap().checksum, rules.checksum);
     let diff: Vec<_> = before
         .iter()
@@ -849,8 +873,8 @@ fn recorded_inputs_are_deterministic() {
         request(FIXED_MAP, LevelInfoData::default()),
         random_request(),
     ] {
-        let (_, first) = net_rules_recorded(&vfs, &req);
-        let (_, second) = net_rules_recorded(&vfs, &req);
+        let (_, first) = net_rules_recorded(&vfs, &req, "DEU");
+        let (_, second) = net_rules_recorded(&vfs, &req, "DEU");
         assert!(!first.is_empty());
         assert_eq!(first, second);
     }
@@ -932,7 +956,7 @@ impl Pair {
         client_worker: Box<dyn RulesWorker>,
     ) -> Option<Self> {
         let vfs = corpus_vfs()?;
-        let layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let dir = tempfile::tempdir().unwrap();
         let net = opennml_net::MemNet::new();
         let mut workers: Vec<Box<dyn RulesWorker>> = vec![host_worker, client_worker];
@@ -954,6 +978,7 @@ impl Pair {
                 port: 2302,
                 seed: Box::new(|| 1),
                 listen: true,
+                language_tag: "DEU".to_string(),
             };
             let transport = opennml_net::MemTransport::new(&net, 10 * i as u64);
             let mut session = NetSession::new(
@@ -1095,7 +1120,7 @@ impl Pair {
         });
         let m = &mut self.machines[1];
         let game = m.session.list.games()[0].clone();
-        m.session.join_game(&game, &mut m.app);
+        m.session.join_game(&game, &mut m.app, &self.texts);
         self.frames_until("client in the lobby", |p| {
             p.machines[1].session.phase() == NetPhase::Lobby
                 && p.host_lobby().rows[1].peer.is_some()
@@ -1147,7 +1172,7 @@ fn host_publishes_its_checksum_after_create() {
     );
     p.frames(2);
     let lobby = p.host_lobby();
-    let rules = net_rules(&p.machines[0].vfs, &p.host_request()).unwrap();
+    let rules = net_rules(&p.machines[0].vfs, &p.host_request(), "DEU").unwrap();
     assert_eq!(lobby.rules_checksum, Some(rules.checksum));
     assert_eq!(lobby.session_revision, 0);
 }
@@ -1271,7 +1296,7 @@ fn second_change_discards_the_running_check() {
     let lobby = p.host_lobby();
     assert_eq!(lobby.session_revision, second);
     assert_ne!(lobby.rules_checksum, checksum, "checksum of the new map");
-    let rules = net_rules(&p.machines[0].vfs, &p.host_request()).unwrap();
+    let rules = net_rules(&p.machines[0].vfs, &p.host_request(), "DEU").unwrap();
     assert_eq!(lobby.rules_checksum, Some(rules.checksum));
     assert!(p.host_core().can_start(), "ready flags stay (E-302)");
 }

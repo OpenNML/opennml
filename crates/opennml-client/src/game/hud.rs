@@ -1571,7 +1571,7 @@ TEXT 17110
         let vfs = opennml_rda::Vfs::open_game_dir(&dir).unwrap();
         let notices = crate::game::notices::Notices::load(&vfs);
         let hud = Hud::load(&vfs, &notices, &HudOptions::default(), SCREEN);
-        let loc = opennml_ui::assets::load_localisation(&vfs).unwrap();
+        let loc = opennml_ui::assets::load_localisation(&vfs, "DEU").unwrap();
         Some((hud, Texts::load(&vfs, &loc)))
     }
 
@@ -1723,7 +1723,7 @@ TEXT 17110
         // As in the original: the messages in the world pass (`0x00438F2A`), then the windows of the tree
         // (`0x004529A0`); the status bar begins with its rectangle without a texture.
         let (_dir, vfs) = ui_install();
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let options = HudOptions::default();
         let mut hud = loaded_hud(&vfs, &options);
         hud.handle(&[message(Some(0), 0, NO_TILE)], 0, &mut Vec::new());
@@ -1761,7 +1761,7 @@ TEXT 17110
         use opennml_ui::hud::toolbar::button::TooltipRequest;
         use opennml_ui::hud::toolbar::data::Sheet;
         let (_dir, vfs) = ui_install();
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut hud = loaded_hud(&vfs, &HudOptions::default());
         let mut data = ToolbarData::from_texts("", "");
         data.sheets = vec![Sheet::new("data/fonts/Test_15_0_0_0_0.tga", [128, 128])];
@@ -1849,7 +1849,7 @@ TEXT 17110
         use opennml_ui::hud::toolbar::button::TooltipRequest;
         use opennml_ui::hud::toolbar::data::Sheet;
         let (_dir, vfs) = ui_install();
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut hud = loaded_hud(&vfs, &HudOptions::default());
         let mut data = ToolbarData::from_texts("", "");
         data.sheets = vec![Sheet::new("data/fonts/Test_15_0_0_0_0.tga", [128, 128])];
@@ -1949,7 +1949,7 @@ TEXT 17110
         let texts = empty_texts();
         let game = SimGameText::new(&host, &texts);
         let values = Hud::status_values(&host, &texts);
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut out = Vec::new();
         hud.draw_windows(
             &mut layer.context(&vfs, SCREEN),
@@ -2019,7 +2019,7 @@ TEXT 17110
         let texts = empty_texts();
         let game = SimGameText::new(&host, &texts);
         let values = Hud::status_values(&host, &texts);
-        let mut layer = crate::ui_layer::UiLayer::new(vfs, 1280, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(vfs, "DEU", 1280, None).unwrap();
         let mut ctx = layer.context(vfs, screen);
         let size = draw::screen_size(screen);
         let layout = draw::layout(
@@ -2106,7 +2106,7 @@ TEXT 17110
             let texts = empty_texts();
             let game = SimGameText::new(&host, &texts);
             let values = Hud::status_values(&host, &texts);
-            let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1280, None).unwrap();
+            let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1280, None).unwrap();
             let mut ctx = layer.context(&vfs, SCREEN);
             let layout = draw::layout(
                 draw::screen_size(SCREEN),

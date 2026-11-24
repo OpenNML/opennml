@@ -1071,7 +1071,7 @@ mod tests {
 
     /// Host at 1024 x 768 on the small installation; the settings file lies in `home`.
     fn host(vfs: &Vfs, home: &Path, audio: &FakeAudio) -> MenuHost {
-        let layer = UiLayer::new(vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(vfs, "DEU", 1024, None).unwrap();
         let settings = home.join("OpenNML").join("Engine.ini");
         let config = load_settings(&settings, vfs);
         MenuHost::new(
@@ -1358,7 +1358,7 @@ mod tests {
 
     /// Host at 1024 x 768 with `HardwareCursor` = `hardware` on `vfs`, mouse at (100, 50).
     fn host_with_cursor(vfs: &Vfs, home: &Path, audio: &FakeAudio, hardware: bool) -> MenuHost {
-        let layer = UiLayer::new(vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(vfs, "DEU", 1024, None).unwrap();
         let settings = home.join("OpenNML").join("Engine.ini");
         let mut config = load_settings(&settings, vfs);
         config.hardware_cursor = hardware;
@@ -1763,7 +1763,7 @@ mod tests {
             start_menu: true,
             ..MenuOptions::default()
         };
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut h = MenuHost::new(&vfs, layer, config, opts, &audio, Some(settings)).unwrap();
         let PointerSprite {
             texture,
@@ -1826,7 +1826,7 @@ mod tests {
         let (_dir, vfs) = world();
         let home = tempfile::tempdir().unwrap();
         let mut audio = FakeAudio::default();
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let config = crate::testutil::test_config(&vfs);
         let mut h =
             MenuHost::new(&vfs, layer, config, MenuOptions::default(), &audio, None).unwrap();
@@ -1858,7 +1858,7 @@ mod tests {
 
     /// Host of the start sequence (`start_menu`, `IsIntro`) on the installation with a main menu, mouse in the window.
     fn start_host(vfs: &Vfs, home: &Path, audio: &FakeAudio) -> MenuHost {
-        let layer = UiLayer::new(vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(vfs, "DEU", 1024, None).unwrap();
         let settings = home.join("Engine.ini");
         let mut config = load_settings(&settings, vfs);
         config.is_intro = true;
@@ -2224,7 +2224,7 @@ mod tests {
         save_settings(&path, &config).unwrap();
         let before = std::fs::read(&path).unwrap();
         assert!(load_settings(&path, &vfs).is_menu_level);
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         config.is_menu_level = false;
         let mut run = MenuHost::new(
             &vfs,
@@ -2478,7 +2478,7 @@ mod tests {
         assert!(saves.join("autoplay").join("a.000").exists());
         assert!(beside.exists());
         // Without a settings file: nothing deleted, nothing written.
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let config = crate::testutil::test_config(&vfs);
         let mut memory =
             MenuHost::new(&vfs, layer, config, MenuOptions::default(), &audio, None).unwrap();

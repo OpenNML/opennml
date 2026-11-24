@@ -293,6 +293,26 @@ pub struct LocalTime {
     pub second: u8,
 }
 
+/// Words of the local installation that the cores need: the core does not know the texts of the edition, so the driver
+/// sets them ([`HostCore::set_words`], [`ClientCore::set_words`]). They never go on the wire.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalWords {
+    /// Name of a player whose name is empty after cleaning.
+    pub player: String,
+    /// Start of the name of a network savegame (`netz_` or `net_`).
+    pub net_save_prefix: String,
+}
+
+impl Default for LocalWords {
+    /// The English words, as long as the driver has set none.
+    fn default() -> Self {
+        Self {
+            player: "Player".to_string(),
+            net_save_prefix: "net_".to_string(),
+        }
+    }
+}
+
 impl LocalTime {
     /// Replacement as long as the driver has not set a clock: 1970-01-01 00:00:00.
     pub const FALLBACK: LocalTime = LocalTime {
@@ -304,11 +324,12 @@ impl LocalTime {
         second: 0,
     };
 
-    /// Name of the network savegame on the end or abort of the match by the host: `netz_JJJJ_MM_TT_hhmm` (at the end
-    /// local time of the host, at the abort that of the client).
-    pub fn net_end_name(&self) -> String {
+    /// Name of the network savegame on the end or abort of the match by the host: `<prefix>JJJJ_MM_TT_hhmm` (at the
+    /// end local time of the host, at the abort that of the client). `prefix` is [`LocalWords::net_save_prefix`]
+    /// (`netz_` or `net_`).
+    pub fn net_end_name(&self, prefix: &str) -> String {
         format!(
-            "netz_{:04}_{:02}_{:02}_{:02}{:02}",
+            "{prefix}{:04}_{:02}_{:02}_{:02}{:02}",
             self.year, self.month, self.day, self.hour, self.minute
         )
     }
@@ -445,6 +466,8 @@ struct ClientParts {
     successors: Vec<Successor>,
     /// Peers from a `Handover`, if one came.
     handover: Option<Vec<Peer>>,
+    /// Words of the local installation (they stay with the machine when it becomes host).
+    words: LocalWords,
 }
 
 /// Dropout command of the slot `slot`: defeat with the slot itself as sender, like `NetSession_OnClientLost`

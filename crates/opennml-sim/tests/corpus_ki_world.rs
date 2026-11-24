@@ -218,7 +218,7 @@ fn ai_slot_under_fire_scene_saves_and_loads() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, LEVEL).unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let mut setup = MatchSetup::default_for(&rules);
     setup.lobby[AI_LOBBY[0]].kind = SlotKind::Ai;
     let mut state = new_match(&rules, &setup).unwrap();
@@ -317,7 +317,7 @@ fn ki_runs_against_a_real_match_without_limits() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, LEVEL).unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let (plain, state, log, ai, issued) = run(&rules, None);
     let out = report(&log, &state, &ai, &issued);
     match std::env::var_os("NML_SHOTS_OUT") {
@@ -374,7 +374,7 @@ fn sync_started_corpus_modules_do_not_pause_the_ki() {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, LEVEL).unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap();
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap();
     let mut roots = vec![SET_LEVEL];
     for name in SYNC_STARTED {
         let ids: Vec<u32> = rules

@@ -32,7 +32,9 @@ use opennml_client::game::net_driver::{
 };
 use opennml_client::game::sim_host::SimHost;
 use opennml_client::game_flow::config_speed;
-use opennml_client::net_session::{NetPhase, NetSessionStatus, map_checksum, session_name};
+use opennml_client::net_session::{
+    NetPhase, NetSessionStatus, local_words, map_checksum, session_name,
+};
 use opennml_client::settings::savegame_dir;
 use opennml_control::{
     Command, NetDataState, NetDebugAction, NetFoundData, NetHaltName, NetLinkData, NetLobbyData,
@@ -43,14 +45,15 @@ use opennml_control::{
 use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{
     AcceptAll, ClientCore, Connecting, CoreEvent, DEFAULT_PORT, DataState, FoundGame, HaltReason,
-    Hello, HostCore, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyState, LobbyWish, Lockstep,
-    MapId, Peer, Phase, RasterStage, Seat, SessionInfo, SessionSettings, StartInfo, Transport,
-    TurnConfig, clean_name,
+    Hello, HostCore, KIND_HUMAN, Listener, LobbyBook, LobbyRow, LobbyState, LobbyWish, LocalWords,
+    Lockstep, MapId, Peer, Phase, RasterStage, Seat, SessionInfo, SessionSettings, StartInfo,
+    Transport, TurnConfig, clean_name,
 };
 use opennml_rda::Vfs;
 use opennml_sim::rules::Rules;
 use opennml_sim::setup::{MatchSetup, SlotKind, start_package};
 use opennml_ui::assets::{Texts, load_localisation};
+use opennml_ui::own_texts::language;
 use opennml_ui::profiles::name_text;
 use opennml_ui::screens::chatframe::chat_line;
 use serde_json::{Value, json};
@@ -209,11 +212,12 @@ pub fn build_id() -> &'static str {
     env!("NML_BUILD_ID")
 }
 
-/// Player name: `--net-name`, otherwise the profile name `NetName`, otherwise "Spieler"; cleaned ([`clean_name`]).
-pub fn player_name(cli: Option<&str>, cfg: &EngineConfig) -> String {
+/// Player name: `--net-name`, otherwise the profile name `NetName`, otherwise the nameless player of the edition
+/// (`fallback`); cleaned ([`clean_name`]).
+pub fn player_name(cli: Option<&str>, cfg: &EngineConfig, fallback: &str) -> String {
     match cli {
-        Some(name) => clean_name(name),
-        None => clean_name(&name_text(&cfg.net_name)),
+        Some(name) => clean_name(name, fallback),
+        None => clean_name(&name_text(&cfg.net_name), fallback),
     }
 }
 
@@ -275,6 +279,8 @@ pub struct HostPlan {
     pub raster: TurnConfig,
     /// Map checksum for the session data; 0 without a readable `.wld`.
     pub map_checksum: u64,
+    /// Words of the installation for the core (nameless player, prefix of the network savegame names).
+    pub words: LocalWords,
 }
 
 /// Start information per machine (host = peer 0, clients in row order): start package with seed and network flag,
@@ -370,6 +376,7 @@ pub fn host_core(hello: Hello, plan: &HostPlan) -> Result<HostCore, String> {
     };
     let book = LobbyBook::new(session, rows, hello.name.clone())?;
     let mut core = HostCore::new(hello, book, Box::new(AcceptAll));
+    core.set_words(plan.words.clone());
     // The host is always ready in the command-line path.
     core.lobby_wish(LobbyWish::Ready(true));
     Ok(core)
@@ -407,6 +414,8 @@ pub struct NetLaunch {
     /// Client: listens on a free port from the connection onward (`--net-no-listen` switches it off).
     listen: bool,
     paths: NetPaths,
+    /// Client: words of the installation for the core ([`Self::with_words`]); the host has them in its plan.
+    words: LocalWords,
     listener: Option<Box<dyn Listener>>,
     plan: Option<HostPlan>,
     /// Next connection number of the host (1, 2, ...).
@@ -450,6 +459,7 @@ impl NetLaunch {
             hello,
             listen: false,
             paths,
+            words: LocalWords::default(),
             listener: Some(listener),
             plan: Some(plan),
             next_peer: 1,
@@ -477,6 +487,7 @@ impl NetLaunch {
             hello,
             listen,
             paths,
+            words: LocalWords::default(),
             listener: None,
             plan: None,
             next_peer: 1,
@@ -487,6 +498,12 @@ impl NetLaunch {
             failure: None,
             note: String::new(),
         }
+    }
+
+    /// Client: the words of the installation for the core, which is created on connecting.
+    pub fn with_words(mut self, words: LocalWords) -> Self {
+        self.words = words;
+        self
     }
 
     /// Driver as long as it is not yet in the match.
@@ -559,6 +576,7 @@ impl NetLaunch {
                         self.listen,
                     );
                     let mut core = ClientCore::new(self.hello.clone());
+                    core.set_words(self.words.clone());
                     // Without a lobby dialog: ready after the first lobby state.
                     core.set_auto_ready(true);
                     let mut driver = NetDriver::client(core, link, self.paths.clone());
@@ -1352,16 +1370,12 @@ pub fn launch(
     settings: &Path,
     transport: Box<dyn Transport>,
 ) -> Result<Option<NetLaunch>> {
-    let name = player_name(args.name.as_deref(), cfg);
+    let words = local_words(language(vfs));
+    let name = player_name(args.name.as_deref(), cfg, &words.player);
     let paths = net_paths(settings);
     if let Some(addr) = args.join {
-        return Ok(Some(NetLaunch::client(
-            transport,
-            addr,
-            own_hello(vfs, &name),
-            paths,
-            args.listen,
-        )));
+        let launch = NetLaunch::client(transport, addr, own_hello(vfs, &name), paths, args.listen);
+        return Ok(Some(launch.with_words(words)));
     }
     let Some(arg) = args.host else {
         return Ok(None);
@@ -1370,7 +1384,7 @@ pub fn launch(
         .map
         .as_deref()
         .context("--host needs --net-map <path.lvl>")?;
-    let rules = load_rules(vfs, map)?;
+    let rules = load_rules(vfs, map, &cfg.language_tag)?;
     let settings_values = NetSettings::from_config(cfg);
     // Pre-check with placeholders: map, slots and settings before anyone joins.
     let placeholders = vec![name.clone(); usize::from(args.players)];
@@ -1385,7 +1399,7 @@ pub fn launch(
     .map_err(anyhow::Error::msg)?;
     let seed = args.seed.unwrap_or_else(wall_seed);
     let port = host_port(arg, cfg.net_port);
-    let loc = load_localisation(vfs).map_err(anyhow::Error::msg)?;
+    let loc = load_localisation(vfs, &cfg.language_tag).map_err(anyhow::Error::msg)?;
     let session = session_name(cfg, &Texts::load(vfs, &loc), &name);
     let plan = HostPlan {
         map_checksum: map_checksum(vfs, map).unwrap_or(0),
@@ -1397,6 +1411,7 @@ pub fn launch(
         session,
         game_speed: config_speed(cfg),
         raster: args.raster,
+        words,
     };
     let launch = NetLaunch::host(transport, port, own_hello(vfs, &name), plan, paths)
         .map_err(anyhow::Error::msg)?;

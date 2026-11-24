@@ -25,7 +25,7 @@ const LEVEL: &str = "data/levels/multiplayer/[4players]-exile.lvl";
 
 fn load_rules(vfs: &Vfs) -> Rules {
     let scene = load_level(vfs, LEVEL).unwrap();
-    Rules::load(vfs, &scene).unwrap_or_else(|e| panic!("{LEVEL}: {e:#}"))
+    Rules::load(vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{LEVEL}: {e:#}"))
 }
 
 // QUIRK E-16: kept

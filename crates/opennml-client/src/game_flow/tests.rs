@@ -119,7 +119,7 @@ impl Run {
         let files = FsSaveFiles {
             dir: saves.unwrap_or_else(|| tmp.path().join("savegame")),
         };
-        let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut config = EngineConfig {
             is_intro: false,
             ..test_config(&vfs)
@@ -662,6 +662,11 @@ fn broken_save_shows_message_and_stays_in_menu() {
         "nothing loaded, the menu music continues"
     );
     r.idle();
+    // The identifier is right, the number is not (`brok`): from another version or format.
+    assert_eq!(msgbox_id(&r), Some(SAVE_OTHER_FORMAT));
+    assert_eq!(r.dialogs(), ["singleplayermenu", "msgbox"]);
+    r.click("msgbox", "ok");
+    r.idle();
     assert_eq!(r.dialogs(), ["singleplayermenu"]);
     // With a match in the game menu: missing file, broken file, empty name, savegame with a foreign rules checksum -
     // the match stays as it was, the game menu opens again.
@@ -669,7 +674,7 @@ fn broken_save_shows_message_and_stays_in_menu() {
         return;
     };
     std::fs::create_dir_all(&r.files.dir).unwrap();
-    std::fs::write(r.files.path("broken", 0), b"NMLGAME broken").unwrap();
+    std::fs::write(r.files.path("broken", 0), b"NMLGAME\0broken").unwrap();
     r.start();
     r.until_step();
     r.key("ESCAPE");
@@ -699,6 +704,11 @@ fn broken_save_shows_message_and_stays_in_menu() {
     assert_eq!((r.view.steps(), r.view.checksum()), before);
     assert!(r.flow.running());
     assert_eq!(r.state(), 1, "the game still stands");
+    r.idle();
+    // The last load ("rules") passed `check`, which rejected the foreign rules checksum (`Mismatch`, a savegame of the
+    // wrong game data): end to end the message "does not match the game data" stands over the game menu.
+    assert_eq!(msgbox_id(&r), Some(SAVE_MISMATCH));
+    r.click("msgbox", "ok");
     r.idle();
     assert!(r.dialogs().contains(&"ingameoptions3".to_string()));
     // Deleting without a name changes nothing.
@@ -885,7 +895,7 @@ fn save_then_load_restores_checksum() {
     let files = FsSaveFiles {
         dir: tmp.path().join("savegame"),
     };
-    let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+    let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
     let config = EngineConfig {
         is_intro: false,
         ..test_config(&vfs)
@@ -2566,7 +2576,7 @@ fn escape_with_an_open_build_cursor_opens_the_menu_and_keeps_the_cursor() {
     let files = FsSaveFiles {
         dir: tmp.path().join("savegame"),
     };
-    let layer = UiLayer::new(&vfs, 1024, None).unwrap();
+    let layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
     let config = EngineConfig {
         is_intro: false,
         ..test_config(&vfs)
@@ -3597,13 +3607,13 @@ fn map_load_opens_a_random_map_with_its_state() {
     let state = load.random_state.as_ref().unwrap();
     assert_eq!(state.seed_text, "ZKB");
     assert_eq!(state.dim, 64);
-    load.start_sim(&r.vfs, 10, |rules| {
+    load.start_sim(&r.vfs, "DEU", 10, |rules| {
         assert_eq!(rules.random_map.as_ref().map(|m| &m.spec), Some(&spec));
         Ok(MatchSetup::default())
     })
     .unwrap_err();
     // A setup with the game mode of the description starts.
-    load.start_sim(&r.vfs, 10, |_| {
+    load.start_sim(&r.vfs, "DEU", 10, |_| {
         Ok(MatchSetup {
             mode: 0,
             ..MatchSetup::default()
@@ -3701,4 +3711,30 @@ fn random_map_start_failure_reopens_the_menu() {
     assert_eq!(r.view.music, ["stop", "restart"]);
     r.idle();
     assert_eq!(r.dialogs(), ["singleplayermenu"]);
+}
+
+/// The message `MSGBOX` over the menu: its text ID, `None` without a message.
+pub(super) fn msgbox_id(r: &Run) -> Option<i32> {
+    if !r.dialogs().iter().any(|d| d == "msgbox") {
+        return None;
+    }
+    r.host.app.screen_state().info_text
+}
+
+/// `save_failure_text` picks the own text by the kind of the error; without a `SaveError` the stage decides: not yet
+/// read (file, name) is damaged, read but not loadable (map, rules, start) does not match the game data.
+#[test]
+fn save_failure_text_maps_every_kind() {
+    use crate::game_save::SaveErrorKind::*;
+    use opennml_ui::own_texts::{SAVE_DAMAGED, SAVE_MISMATCH, SAVE_OTHER_FORMAT};
+    for (kind, decoded, id) in [
+        (Some(Format), false, SAVE_OTHER_FORMAT),
+        (Some(Newer), false, SAVE_OTHER_FORMAT),
+        (Some(Corrupted), true, SAVE_DAMAGED),
+        (Some(Mismatch), true, SAVE_MISMATCH),
+        (None, false, SAVE_DAMAGED),
+        (None, true, SAVE_MISMATCH),
+    ] {
+        assert_eq!(save_failure_text(kind, decoded), id, "{kind:?} {decoded}");
+    }
 }

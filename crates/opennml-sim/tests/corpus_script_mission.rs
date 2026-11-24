@@ -89,7 +89,7 @@ fn kamp1_1_runs_five_minutes_with_quests() {
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let version = game_version(&vfs).unwrap_or_else(|e| panic!("{e}"));
     let scene = load_level(&vfs, LEVEL).unwrap();
-    let rules = Rules::load(&vfs, &scene).unwrap_or_else(|e| panic!("{LEVEL}: {e:#}"));
+    let rules = Rules::load(&vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{LEVEL}: {e:#}"));
     let mut setup = MatchSetup::default_for(&rules);
     setup.seed = SEED;
     setup.ki.enabled = true;

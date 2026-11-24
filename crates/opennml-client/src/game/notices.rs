@@ -14,11 +14,13 @@ use opennml_formats::messages::{
     MESSAGES_PATH, Messages, TEXTS_PATH, decode_text_file, parse_messages, parse_text_table,
 };
 use opennml_formats::text::decode_cp1252;
+use opennml_rda::GameVersion;
 use opennml_sim::state::{SimEvent, TextArg};
 use opennml_ui::dialog::UiContext;
 use opennml_ui::draw::DrawCmd;
 use opennml_ui::hud::SCREEN_TEXT_FONT;
 use opennml_ui::hud::screen_text;
+use opennml_ui::own_texts;
 use opennml_ui::text::{LayoutParams, TextLayout, draw_runs, layout_flags, layout_text};
 
 use crate::game::sim_host::SimHost;
@@ -141,6 +143,9 @@ pub struct Notices {
     /// Standing text messages (`SimEvent::TextMessage`, headhunter), oldest first.
     pub text_lines: VecDeque<Notice>,
     pub floats: Vec<FloatingNumber>,
+    /// Own text "Player %d" of the edition for a player without a name ([`own_texts::PLAYER_N`]); empty (`Default`,
+    /// tests without a `Vfs`): the English text.
+    pub player_text: String,
 }
 
 impl Notices {
@@ -160,8 +165,21 @@ impl Notices {
             texts: read(TEXTS_PATH)
                 .map(|b| parse_text_table(&decode_text_file(&b)))
                 .unwrap_or_default(),
+            player_text: own_texts::text(own_texts::PLAYER_N, own_texts::language(vfs))
+                .unwrap_or_default()
+                .to_string(),
             ..Self::default()
         }
+    }
+
+    /// Name of the player `slot` without a name, in the language of the edition.
+    fn nameless_player(&self, slot: u8) -> String {
+        let template = if self.player_text.is_empty() {
+            own_texts::text(own_texts::PLAYER_N, GameVersion::English).unwrap_or_default()
+        } else {
+            &self.player_text
+        };
+        own_texts::fill(template, &[&slot.to_string()])
     }
 
     /// After loading or restart: show nothing anymore.
@@ -297,7 +315,7 @@ impl Notices {
 
     /// Text message `text` from `texte.deu` (`FUN_00492A40`/`FUN_00492C50`, re/headhunter-robbing 7):
     /// the `%s` replaced in order by the arguments ([`TextArg::PlayerName`] -> name of the
-    /// slot, if empty "Spieler <slot>"; [`TextArg::TypeName`] -> type name
+    /// slot, if empty "Player <slot>" in the language of the edition; [`TextArg::TypeName`] -> type name
     /// as in the window), color `0xRRGGBB` opaque, duration from the event. Without the discard rule of the
     /// display kinds; [`MAX_MESSAGES`] applies. If the text is missing, no line.
     fn show_text(
@@ -319,7 +337,7 @@ impl Notices {
                 .get(usize::from(p))
                 .map(|pl| pl.name.clone())
                 .filter(|name| !name.is_empty())
-                .unwrap_or_else(|| format!("Spieler {p}")),
+                .unwrap_or_else(|| self.nameless_player(p)),
             TextArg::TypeName(guid) => crate::game::economy::type_name(&sim.rules, guid),
         };
         let line = fill_in(template, args.iter().map(arg));
@@ -804,7 +822,7 @@ mod tests {
             (line.text.as_str(), line.color, line.until_ms),
             ("TESTTEXT Gold missing", 0xFFFF_0000, 6000.0)
         );
-        // Empty name: "Spieler <slot>" (0-based like the other messages);
+        // Empty name: "Player <slot>" (0-based like the other messages);
         // surplus `%s` stay, surplus arguments are dropped; unknown text: no
         // line.
         let message = |text, args: Vec<TextArg>| SimEvent::TextMessage {
@@ -828,7 +846,7 @@ mod tests {
         let lines: Vec<String> = n.text_message_lines(0.0).into_iter().map(|l| l.0).collect();
         assert_eq!(
             lines,
-            ["TESTTEXT Spieler 1 hires %s", "TESTTEXT Gold missing"]
+            ["TESTTEXT Player 1 hires %s", "TESTTEXT Gold missing"]
         );
         // The templates of the original carry as many `%s` as the simulation sends arguments.
         let Some(dir) = opennml_rda::testutil::corpus_game_dir() else {
@@ -842,6 +860,39 @@ mod tests {
             [marks(TEXT_NO_GOLD), marks(TEXT_HIRED), marks(TEXT_SUCCESS)],
             [Some(0), Some(2), Some(1)]
         );
+    }
+
+    /// A player without a name is shown in the language of the edition: "Player n" or "Spieler n"; without an edition
+    /// text (`Default`) the English one.
+    #[test]
+    fn player_fallback_follows_the_edition() {
+        use crate::game::testworld::hunter_host;
+        use opennml_rda::GameVersion::{English, German};
+        let host = hunter_host();
+        let event = SimEvent::TextMessage {
+            to: None,
+            text: 10002,
+            args: vec![TextArg::PlayerName(2)],
+            color: 0,
+            duration_ms: 1000,
+        };
+        let line = |player_text: String| {
+            let mut n = Notices {
+                texts: [(10002, "%s".to_string())].into_iter().collect(),
+                player_text,
+                ..Notices::default()
+            };
+            n.handle(std::slice::from_ref(&event), &host, 0.0, 0);
+            n.text_message_lines(0.0).remove(0).0
+        };
+        let own = |version| {
+            own_texts::text(own_texts::PLAYER_N, version)
+                .unwrap()
+                .to_string()
+        };
+        assert_eq!(line(own(English)), "Player 2");
+        assert_eq!(line(own(German)), "Spieler 2");
+        assert_eq!(line(String::new()), "Player 2");
     }
 
     // QUIRK D-238: kept
@@ -963,7 +1014,7 @@ mod tests {
     #[test]
     fn floats_draw_left_aligned_in_info_messages_and_fade() {
         let (_dir, vfs) = info_messages_install();
-        let mut layer = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let ctx = layer.context(
             &vfs,
             opennml_ui::coords::Screen {

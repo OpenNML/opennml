@@ -11,7 +11,7 @@ use opennml_sim::setup::start_package;
 use opennml_ui::app::MenuOptions;
 use opennml_ui::saves::{LocalStamp, SaveDir, SaveFiles};
 
-use super::tests::{KAMP1_1, Run, TEST_CLOCK, request};
+use super::tests::{KAMP1_1, Run, TEST_CLOCK, msgbox_id, request};
 use super::*;
 use crate::game::sim_host::plain_testkit;
 use crate::replay_file::{ReplayFile, ReplayHead, ReplayMeta, ReplayRecorder, replay_name};
@@ -719,14 +719,6 @@ fn play_from_menu(r: &mut Run, row: usize) {
     r.idle();
 }
 
-/// The message `MSGBOX` over the menu: its text ID, `None` without a message.
-fn message(r: &Run) -> Option<i32> {
-    if !r.dialogs().iter().any(|d| d == "msgbox") {
-        return None;
-    }
-    r.host.app.screen_state().info_text
-}
-
 /// E-331, E-333: Recording with walk commands and diplomacy, last command at tick 100, match up to 300;
 /// `LOADAUTOPLAY` -> row -> `START` plays it back. The checksum equals the match at every tick 1 ... 300, also after
 /// the end of the file at tick 100: AI and scripts recompute and continue in the replay.
@@ -1296,7 +1288,7 @@ fn broken_recording_keeps_the_menu_alive() {
         assert!(!r.flow.running(), "{name}");
         assert!(r.flow.menu_level().is_some(), "{name}: menu level running");
         assert_eq!(r.view.ends, ends, "{name}: session not ended");
-        assert_eq!(message(&r), Some(REPLAY_NOT_PLAYABLE), "{name}");
+        assert_eq!(msgbox_id(&r), Some(REPLAY_NOT_PLAYABLE), "{name}");
         assert!(r.dialogs().iter().any(|d| d == "loadautoplay"), "{name}");
         r.click("msgbox", "ok");
         r.idle();
@@ -1316,7 +1308,7 @@ fn broken_recording_keeps_the_menu_alive() {
     );
     assert!(!r.flow.running());
     assert!(r.flow.menu_level().is_none(), "menu level off");
-    assert_eq!(message(&r), Some(REPLAY_NOT_PLAYABLE));
+    assert_eq!(msgbox_id(&r), Some(REPLAY_NOT_PLAYABLE));
     assert!(r.dialogs().iter().any(|d| d == "loadautoplay"));
     // `START` restarts the menu level.
     r.click("msgbox", "ok");

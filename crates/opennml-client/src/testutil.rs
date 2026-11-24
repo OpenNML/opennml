@@ -608,7 +608,14 @@ pub(crate) fn net_host_core(
     let session =
         opennml_net::SessionInfo::plain(NET_SESSION, "multiplayer/test.lvl", players, cfg);
     let book = opennml_net::LobbyBook::open(session, &hello.name).expect("valid test session");
-    opennml_net::HostCore::new(hello, book, Box::new(opennml_net::AcceptAll))
+    let mut core = opennml_net::HostCore::new(hello, book, Box::new(opennml_net::AcceptAll));
+    core.set_words(test_words());
+    core
+}
+
+/// Words of the cores in the network tests: the English edition, whatever the language of the machine.
+pub(crate) fn test_words() -> opennml_net::LocalWords {
+    crate::net_session::local_words(opennml_rda::GameVersion::English)
 }
 
 /// Host and two clients of the network match (`testworld::net_host`, slots 0 ... 2) over a [`opennml_net::MemNet`] with
@@ -628,8 +635,10 @@ pub(crate) fn connect_net(
     for slot in 1..NET_SLOTS {
         let (h, c) = net.pair(NET_DELAYS[usize::from(slot)]);
         drivers[0].add_link(slot, Box::new(h));
+        let mut core = ClientCore::new(net_hello(&format!("Client {slot}")));
+        core.set_words(test_words());
         drivers.push(NetDriver::client(
-            ClientCore::new(net_hello(&format!("Client {slot}"))),
+            core,
             Box::new(c),
             net_paths(dir, usize::from(slot)),
         ));
@@ -731,7 +740,7 @@ impl FakeSession {
             // description (`MapLoad::open`).
             let mut load = MapLoad::open(vfs, source)?;
             let mut last = None;
-            load.start_sim(vfs, game_speed, |rules| {
+            load.start_sim(vfs, "DEU", game_speed, |rules| {
                 let setup = setup(rules)?;
                 last = Some(setup.clone());
                 Ok(setup)
@@ -822,7 +831,7 @@ impl SessionView for FakeSession {
             // generated map in the file, not `start.level` as a file.
             let mut load = MapLoad::open(vfs, &MapSource::of_save(&save))?;
             let setup = save.sim.start.setup.clone();
-            load.start_sim(vfs, save.host.game_speed, |_| Ok(setup))?;
+            load.start_sim(vfs, "DEU", save.host.game_speed, |_| Ok(setup))?;
             random_map = load.random_map.take();
             load.sim.context("rules of the map not loaded")?
         } else {

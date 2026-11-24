@@ -23,8 +23,8 @@
 //! checked ([`HostCore::start_from_lobby`]) or unchecked ([`HostCore::start`]).
 
 use super::{
-    CoreEvent, HOST_PEER, HaltReason, Inputs, LocalTime, Lockstep, PROBE_INTERVAL_MS, Peer, Phase,
-    TIMEOUT_MS, loss_command, timeout_reason,
+    CoreEvent, HOST_PEER, HaltReason, Inputs, LocalTime, LocalWords, Lockstep, PROBE_INTERVAL_MS,
+    Peer, Phase, TIMEOUT_MS, loss_command, timeout_reason,
 };
 use crate::link::LinkEvent;
 use crate::lobby::{
@@ -139,6 +139,8 @@ pub struct HostCore {
     pause_after: Option<u8>,
     /// Local time of the host from the driver ([`Self::set_clock`]); without a clock [`LocalTime::FALLBACK`].
     clock: LocalTime,
+    /// Words of the local installation ([`Self::set_words`]); the English default without a call.
+    words: LocalWords,
     /// [`Self::end`] was called: the next bundle carries `End`.
     end_wanted: bool,
     /// [`Self::hand_over`] was called: the next bundle carries the own dropout and `Handover`.
@@ -204,6 +206,7 @@ impl HostCore {
             state_id: 0,
             pause_after: None,
             clock: LocalTime::FALLBACK,
+            words: LocalWords::default(),
             end_wanted: false,
             handover_wanted: false,
             handed_over: false,
@@ -653,6 +656,18 @@ impl HostCore {
         self.clock = local;
     }
 
+    /// Sets the words of the local installation: the name of a nameless player (also in the lobby book) and the prefix
+    /// of the network savegame names. Without a call the English defaults apply ([`LocalWords::default`]).
+    pub fn set_words(&mut self, words: LocalWords) {
+        self.book.set_fallback(&words.player);
+        self.words = words;
+    }
+
+    /// The words of the local installation ([`Self::set_words`]).
+    pub fn words(&self) -> &LocalWords {
+        &self.words
+    }
+
     /// Number of desyncs of the match (several deviating ones of one turn count once).
     pub fn desyncs(&self) -> u32 {
         self.desyncs
@@ -850,7 +865,7 @@ impl HostCore {
     /// free one ([`LobbyBook::join`], rejected in a loaded lobby), with a slot claim the row of the claimed slot if the
     /// checksum is that of the savegame ([`Self::join_claim`]).
     fn on_hello(&mut self, from: Peer, mut h: Hello) {
-        h.name = clean_name(&h.name);
+        h.name = clean_name(&h.name, &self.words.player);
         if self.remote(from).is_some() {
             log::warn!("Network (host): second Hello from peer {from} discarded");
             return;
@@ -959,7 +974,7 @@ impl HostCore {
             .book
             .row_of(HOST_PEER)
             .map(|row| self.book.state().rows[usize::from(row)].name.clone())
-            .unwrap_or_else(|| clean_name(&self.own.name));
+            .unwrap_or_else(|| clean_name(&self.own.name, &self.words.player));
         self.cancel_load(name, &error);
     }
 
@@ -1245,7 +1260,7 @@ impl HostCore {
             }
         }
         if self.end_wanted {
-            let name = self.clock.net_end_name();
+            let name = self.clock.net_end_name(&self.words.net_save_prefix);
             log::info!("Network (host): end of the match in turn {turn}, savegame \"{name}\"");
             control.push(NetControl::End { name });
             if let Some(by) = pause.take() {

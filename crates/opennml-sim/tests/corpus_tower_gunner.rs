@@ -23,7 +23,7 @@ fn corpus() -> Option<Rules> {
     let dir = corpus_game_dir()?;
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, LEVEL).unwrap();
-    Some(Rules::load(&vfs, &scene).unwrap())
+    Some(Rules::load(&vfs, &scene, "DEU").unwrap())
 }
 
 fn world_pos(state: &SimState, rules: &Rules, id: opennml_sim::id::ObjectId) -> [f32; 3] {

@@ -938,7 +938,7 @@ pub(crate) mod tests {
 
         // Drawn: per dot an unrotated 2 x 2 quad +-1 px around the position, without texture, after the images.
         let (_dir, vfs) = ui_install();
-        let mut ui = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut ui = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = ui.context(&vfs, SCREEN);
         let map = minimap(64);
         let l = layout(
@@ -1074,7 +1074,7 @@ pub(crate) mod tests {
     #[test]
     fn draw_order_frame_terrain_border_dots_pings_camera_frame() {
         let (_dir, vfs) = ui_install();
-        let mut ui = crate::ui_layer::UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut ui = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         let mut ctx = ui.context(&vfs, SCREEN);
         let map = minimap(128);
         assert_eq!(map.last_layout(), None);

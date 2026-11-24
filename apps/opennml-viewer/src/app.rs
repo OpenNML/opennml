@@ -286,10 +286,11 @@ impl App {
         let missions =
             crate::config::campaign_missions(&opennml_ui::profiles::load_campaigns(&vfs));
         // Like `Notices::load` and `unit_bar::load_texts`: a missing language file only costs the texts.
-        let localisation = opennml_ui::assets::load_localisation(&vfs).unwrap_or_else(|e| {
-            log::warn!("Message texts: language file not read: {e}");
-            opennml_formats::localisation::Localisation::default()
-        });
+        let localisation = opennml_ui::assets::load_localisation(&vfs, &config.language_tag)
+            .unwrap_or_else(|e| {
+                log::warn!("Message texts: language file not read: {e}");
+                opennml_formats::localisation::Localisation::default()
+            });
         let message_texts = opennml_ui::assets::Texts::load(&vfs, &localisation);
         Ok(Self {
             audio: Some(audio),
@@ -1616,6 +1617,7 @@ impl App {
                 self.start_model.as_deref(),
                 self.clock.now_f32(),
                 self.config.shadow_quality,
+                &self.config.language_tag,
                 self.config.width,
             )?);
         }
@@ -1643,6 +1645,7 @@ impl App {
                 gpu.surface_format(),
                 vfs,
                 self.clock.now_f32(),
+                &self.config.language_tag,
                 self.config.width,
             )?);
         }
@@ -2442,6 +2445,7 @@ impl App {
                 vfs,
                 &shell.gpu.device,
                 shell.gpu.surface_format(),
+                &self.config.language_tag,
                 shell.ui_width(),
             ) {
                 Ok(layer) => self.hud_layer = Some(layer),
@@ -3257,6 +3261,7 @@ impl ApplicationHandler<ControlEvent> for App {
             };
             match DialogMenu::new(
                 vfs,
+                &self.config.language_tag,
                 &self.dialog_names,
                 // Minimized window at start: no fonts with 0 px.
                 shell.ui_width(),

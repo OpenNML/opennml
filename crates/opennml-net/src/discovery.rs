@@ -19,6 +19,7 @@ pub(crate) mod mem;
 pub(crate) mod udp;
 
 use crate::lobby::{MapId, SessionInfo};
+use crate::lockstep::LocalWords;
 use crate::msg::{
     Hello, UNKNOWN_BUILD, clean_name, clean_session_name, clean_text, valid_save_name,
 };
@@ -128,7 +129,7 @@ pub fn decode_datagram(bytes: &[u8]) -> Result<Datagram, WireError> {
     }
     Ok(match d {
         Datagram::Announce(mut a) => {
-            a.versions.name = clean_name(&a.versions.name);
+            a.versions.name = clean_name(&a.versions.name, &LocalWords::default().player);
             a.versions.edition = clean_text(&a.versions.edition, MAX_VERSION_TEXT);
             a.versions.build = clean_text(&a.versions.build, MAX_VERSION_TEXT);
             a.session.name = clean_session_name(&a.session.name);

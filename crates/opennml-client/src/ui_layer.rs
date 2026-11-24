@@ -1,5 +1,6 @@
 //! UI layer of the host (GPU-free): images ([`UiAssets`]), fonts ([`FontBook`]) and texts ([`Texts`]) of the
-//! installation, loaded according to the language file `localisation.deu` (re/ui-rendering 3.2). The renderer
+//! installation, loaded according to the language file `localisation.*` (re/ui-rendering 3.2; chosen by
+//! `selectlanguage.ini`, else `LanguageTAG`). The renderer
 //! (`opennml_render::UiRenderer`, a renderer belongs to exactly one [`UiAssets`]) lives with the host and is passed in when
 //! drawing; this way loading and draw commands run in tests without a GPU.
 //!
@@ -40,13 +41,15 @@ pub struct UiLayer {
 
 impl UiLayer {
     /// Loads language file, texts and all fonts (width `screen_width` for relative sizes, only now: O-58). Missing
-    /// atlases are created by `generator` (`None`: fallback).
+    /// atlases are created by `generator` (`None`: fallback). `language_tag` is the `LanguageTAG` of the engine
+    /// settings; it selects the language file when `selectlanguage.ini` is missing.
     pub fn new(
         vfs: &Vfs,
+        language_tag: &str,
         screen_width: u32,
         generator: Option<&dyn AtlasGenerator>,
     ) -> Result<Self> {
-        let loc = load_localisation(vfs).map_err(anyhow::Error::msg)?;
+        let loc = load_localisation(vfs, language_tag).map_err(anyhow::Error::msg)?;
         let texts = Texts::load(vfs, &loc);
         let mut assets = UiAssets::new();
         let width = i32::try_from(screen_width).unwrap_or(i32::MAX);
@@ -101,7 +104,7 @@ mod tests {
             ("data/fonts/Test_21_0_0_0_0.fnt", fnt()),
             ("data/fonts/Test_21_0_0_0_0.tga", tga(256, 256)),
         ]);
-        let mut layer = UiLayer::new(&vfs, 1024, None).unwrap();
+        let mut layer = UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
         assert_eq!(layer.texts.get(1), Some("AB"));
         let button = layer.fonts.by_name("MenuButton");
         assert_eq!(layer.fonts.font(button).px, 21, "relative 27 at width 1024");
@@ -113,6 +116,6 @@ mod tests {
         assert_eq!(ctx.screen, screen);
         // Without a language file: error instead of a crash.
         let (_empty, vfs) = install(&[]);
-        assert!(UiLayer::new(&vfs, 1024, None).is_err());
+        assert!(UiLayer::new(&vfs, "DEU", 1024, None).is_err());
     }
 }

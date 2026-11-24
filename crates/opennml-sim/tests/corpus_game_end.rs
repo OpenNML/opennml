@@ -19,7 +19,7 @@ fn rules_for(level: &str) -> Option<Rules> {
     };
     let vfs = Vfs::open_game_dir(&dir).unwrap();
     let scene = load_level(&vfs, level).unwrap();
-    Some(Rules::load(&vfs, &scene).unwrap_or_else(|e| panic!("{level}: {e:#}")))
+    Some(Rules::load(&vfs, &scene, "DEU").unwrap_or_else(|e| panic!("{level}: {e:#}")))
 }
 
 /// `n` steps without commands; the results that were set as (step, slot, result).

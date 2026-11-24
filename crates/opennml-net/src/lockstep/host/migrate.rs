@@ -187,6 +187,7 @@ impl HostCore {
             rounds.entry(c.turn).or_default().insert(HOST_PEER, c);
         }
         let mut host = HostCore::new(parts.hello, LobbyBook::frozen(state), rules);
+        host.set_words(parts.words);
         host.cfg = cfg;
         host.phase = parts.phase;
         host.remotes = remotes;
