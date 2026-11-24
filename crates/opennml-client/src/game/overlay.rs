@@ -17,7 +17,7 @@ const WHITE: u32 = 0xFFFF_FFFF;
 const YELLOW: u32 = 0xFFFF_E64D;
 const GRAY: u32 = 0xFFCC_CCCC;
 
-/// Font of the overlay: `PanelInfo` (Arial, 15 px fixed, `localisation.deu`; re/ui-rendering 3.2), atlas
+/// Font of the overlay: `PanelInfo` (Arial, 15 px fixed, `localisation.*`; re/ui-rendering 3.2), atlas
 /// `data/fonts/arial_15_0_0_0_0`.
 pub const PANEL_FONT: &str = "PanelInfo";
 

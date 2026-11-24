@@ -73,8 +73,8 @@ settings file (like the destructor of the original).
 - **Multiplayer on a LAN:** see [Network play](#network-play).
 
 The texts that the game writes into the game screen itself (own messages and rows, from `crates/opennml-ui/texts/`)
-follow the language of the installation; without a detected edition they follow the language of Windows. The windows
-of Windows (game directory, errors) are English.
+follow the language of the installation; without a detected edition they follow the language of Windows. System windows
+(game directory, error messages) are English.
 
 ### Switches
 
@@ -169,7 +169,7 @@ On the command line (without lobby):
 - Only with `--host`: `--net-map <path.lvl>`, `--net-players <N>` (2 ... 8, default 2), `--net-ai <K>` (AI slots
   after the humans, 0 ... 7), `--turn-steps <L>` (turn length, default 2 as in the original) or
   `--turn-raster <T/V>`, `--net-seed <S>` (fixed seed for check runs).
-- `--net-name <NAME>`: player name (default: profile name, otherwise "Spieler").
+- `--net-name <NAME>`: player name (default: profile name, otherwise the nameless player of the edition, "Player" or "Spieler").
 - `--net-loopback` (check runs): the host listens only on 127.0.0.1, the search also asks 127.0.0.1.
 
 ## opennml-viewer

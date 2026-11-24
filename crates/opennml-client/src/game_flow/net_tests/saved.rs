@@ -1167,7 +1167,7 @@ fn lost_client_after_load_loses_its_slot() {
     }
 }
 
-/// If the host drops out after loading, each client writes its network savegame `netz_YYYY_MM_DD_hhmm` with the same
+/// If the host drops out after loading, each client writes its network savegame `<prefix>YYYY_MM_DD_hhmm` with the same
 /// simulation part at the tick where it stands (after the origin) and shows the abort message. The clients do not
 /// listen: without candidates no host migration.
 // QUIRK E-324: deviation

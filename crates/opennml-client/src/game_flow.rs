@@ -37,7 +37,7 @@ use opennml_control::{
 use opennml_formats::engine_ini::EngineConfig;
 use opennml_net::{NetControl, StartInfo};
 use opennml_randommap::RandomMap;
-use opennml_rda::Vfs;
+use opennml_rda::{GameVersion, Vfs};
 use opennml_sim::command::{Command, CommandKind};
 use opennml_sim::game_end::{DEFEAT, VICTORY};
 use opennml_sim::rules::Rules;
@@ -1194,7 +1194,9 @@ impl GameFlow {
                 .save_name()
                 .is_some_and(|name| written.iter().any(|w| w == name));
             let text = finish.message(saved, texts);
-            log::warn!("Network: match over: {text}");
+            // The log stays English, whatever the edition.
+            let log_text = finish.message(saved, &Texts::own_only(GameVersion::English));
+            log::warn!("Network: match over: {log_text}");
             // The message carries the end.
             self.ended = true;
             self.escape = false;
@@ -2184,9 +2186,9 @@ impl GameFlow {
     }
 
     /// `0x0A` (re/ingame-menus 4, re/singleplayer-menus 6.4): read and check `savegame/<Name>.<GUID>`, load with
-    /// `default.ldg` or the `.ldg` of the level (O-139), then replace the old match; errors as in the module docs. If the
-    /// savegame does not load, the menu opens again with a message ([`save_failure_text`]), "OK" without a follow-up
-    /// command.
+    /// `default.ldg` or the `.ldg` of the level (O-139), then replace the old match; errors as in the module docs.
+    /// If the savegame does not load, the menu opens again with a message ([`save_failure_text`]), "OK" without a
+    /// follow-up command.
     fn load_game(
         &mut self,
         name: &str,

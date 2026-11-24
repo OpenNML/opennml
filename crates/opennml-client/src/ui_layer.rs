@@ -1,5 +1,6 @@
 //! UI layer of the host (GPU-free): images ([`UiAssets`]), fonts ([`FontBook`]) and texts ([`Texts`]) of the
-//! installation, loaded according to the language file `localisation.deu` (re/ui-rendering 3.2). The renderer
+//! installation, loaded according to the language file `localisation.*` (re/ui-rendering 3.2; chosen by
+//! `selectlanguage.ini`, else `LanguageTAG`). The renderer
 //! (`opennml_render::UiRenderer`, a renderer belongs to exactly one [`UiAssets`]) lives with the host and is passed in when
 //! drawing; this way loading and draw commands run in tests without a GPU.
 //!

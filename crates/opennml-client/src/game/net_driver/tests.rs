@@ -1667,7 +1667,7 @@ fn play_for(t: &mut Table, ms: u64) {
 }
 
 /// E-268: The host ends the match ([`NetDriver::end`]). All machines compute up to the execution tick of the bundle
-/// with `End`, record the network savegame `netz_YYYY_MM_DD_hhmm` (local time of the host) there and then stand
+/// with `End`, record the network savegame `<prefix>YYYY_MM_DD_hhmm` (local time of the host) there and then stand
 /// forever; the simulation parts are bit-identical, and everyone reports the end exactly once ([`NetFrame::finish`]),
 /// without failure at the clients (the `Bye` of the host after the bundle has no effect).
 // QUIRK E-268: deviation
@@ -1722,7 +1722,7 @@ fn host_end_saves_equal_states_everywhere() {
 
 /// The host crashes (all its connections cut, it no longer computes). Every client reports [`opennml_net::HOST_LOST`],
 /// computes with the bundles it has up to the execution tick of the first missing bundle, records exactly one network
-/// savegame `netz_YYYY_MM_DD_hhmm` (own local time) there and then stands forever. The state equals the state of the
+/// savegame `<prefix>YYYY_MM_DD_hhmm` (own local time) there and then stands forever. The state equals the state of the
 /// host at the same tick.
 // QUIRK E-258: deviation
 #[test]

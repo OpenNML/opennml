@@ -674,7 +674,7 @@ fn broken_save_shows_message_and_stays_in_menu() {
         return;
     };
     std::fs::create_dir_all(&r.files.dir).unwrap();
-    std::fs::write(r.files.path("broken", 0), b"NMLGAME broken").unwrap();
+    std::fs::write(r.files.path("broken", 0), b"NMLGAME\0broken").unwrap();
     r.start();
     r.until_step();
     r.key("ESCAPE");
@@ -704,6 +704,11 @@ fn broken_save_shows_message_and_stays_in_menu() {
     assert_eq!((r.view.steps(), r.view.checksum()), before);
     assert!(r.flow.running());
     assert_eq!(r.state(), 1, "the game still stands");
+    r.idle();
+    // The last load ("rules") passed `check`, which rejected the foreign rules checksum (`Mismatch`, a savegame of the
+    // wrong game data): end to end the message "does not match the game data" stands over the game menu.
+    assert_eq!(msgbox_id(&r), Some(SAVE_MISMATCH));
+    r.click("msgbox", "ok");
     r.idle();
     assert!(r.dialogs().contains(&"ingameoptions3".to_string()));
     // Deleting without a name changes nothing.

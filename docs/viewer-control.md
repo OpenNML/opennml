@@ -2198,7 +2198,7 @@ terrain, textures and light of the map script, **no objects and no simulation** 
 | `--net-players` | 2 | humans including the host (2 ... 8); the host waits for `N - 1` clients |
 | `--net-ai` | 0 | AI slots after the humans (0 ... 7), the rest closed |
 | `--turn-steps` | 2 | turn length `L` in ticks (1 ... 10) |
-| `--net-name` | profile name `NetName`, otherwise "Spieler" | player name (cleaned: no control characters, at most 32 characters) |
+| `--net-name` | profile name `NetName`, otherwise the nameless player of the edition ("Player" or "Spieler") | player name (cleaned: no control characters, at most 32 characters) |
 | `--net-seed` | clock of the host (ms since 1970, folded to `u32`) | fixed seed for check runs |
 | `--net-loopback` | off | only for check runs: the host listens on `127.0.0.1` instead of on all interfaces |
 | `--join` | - | address of the host (IPv4, `[IPv6]` or name); without a port, 2302 |
@@ -2220,7 +2220,7 @@ terrain, textures and light of the map script, **no objects and no simulation** 
   `Network: loaded, waiting for the other machines (Go)`, `Network: match running`). If the start fails (load error,
   different rules checksum, the host aborts), the program ends with an exit code.
 - If the host closes the program or window (also `quit`) in the running match, it ends in an orderly way for all: end
-  in the next bundle, all write `savegame/multiplayer/netz_YYYY_MM_DD_hhmm`; the host waits for it at most 3 s. A
+  in the next bundle, all write `savegame/multiplayer/<prefix>YYYY_MM_DD_hhmm` (`net_` or `netz_` by edition); the host waits for it at most 3 s. A
   client leaves the match with `Bye`.
 
 In the network, the following applies at the control channel:

@@ -30,6 +30,7 @@ map_explored = false       # map explored (MapExplored): fully set to "explored"
 ki_enabled = true          # start the AI of the AI slots (default on; command line --ki on|off)
 campaign_difficulty = 1    # campaign difficulty 0–2 (command line --campaign-difficulty)
 script_enabled = false     # start the level script (.abl) (default off; sim_setup script_enabled)
+language_tag = "DEU"       # Engine.ini LanguageTAG: localisation.<tag> if selectlanguage.ini is missing
 time_per_char = 55         # speaking time per character without a speech file in ms, 1–1000 (Engine.ini TimePerChar)
 # time_limit = 20           # time limit in minutes, 1–35791 (game type 2/3 victory time, game type 4 time limit; if omitted 20)
 # Lobby slots instead of nations/teams (command line --slots h,a3,h,a3), one entry per slot:

@@ -628,7 +628,7 @@ fn read_save(path: &std::path::Path) -> GameSaveFile {
 
 /// The host ends the network match for all ([`end_for_all`]; without a reachable client from the end
 /// screen or at the program end). Each machine writes its network savegame
-/// `netz_YYYY_MM_DD_hhmm` (local time of the host) with the same simulation part, stops the game music and shows "The
+/// `<prefix>YYYY_MM_DD_hhmm` (local time of the host) with the same simulation part, stops the game music and shows "The
 /// host has ended the match. It was saved as "<name>"." as `MSGBOX` over the stopped match; "OK" is the game end
 /// `0x0E`: accounting from the own statistics, whose "Main menu" leads to the main menu.
 // QUIRK E-273: kept
@@ -713,7 +713,7 @@ fn english_net_save_name() {
 }
 
 /// Abort: The host crashes (its session disappears without `Bye`). Each client writes its state after the last tick it
-/// could compute as `netz_YYYY_MM_DD_hhmm` (own local time), shows "The connection to the host was aborted. The match
+/// could compute as `<prefix>YYYY_MM_DD_hhmm` (own local time), shows "The connection to the host was aborted. The match
 /// was saved as "<name>"."; "OK" leads through the accounting to the main menu.
 // QUIRK E-273: kept
 // QUIRK E-258: deviation

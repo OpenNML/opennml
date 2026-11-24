@@ -64,7 +64,8 @@
 //! - Abort of the host (client: `Failed` after `Go`, e.g. [`opennml_net::HOST_LOST`] after `Closed`, 30 s of silence or a
 //!   protocol error): The driver immediately computes with the bundles it has, up to before the execution tick of the
 //!   first missing bundle (at most `T + V` ticks, without game time; pause and resync do not halt in this, a state
-//!   after a pause is lifted), captures the network savegame `netz_YYYY_MM_DD_hhmm` there by its own local time and
+//!   after a pause is lifted), captures the network savegame `<prefix>YYYY_MM_DD_hhmm` (`net_` or `netz_` by
+//!   edition) there by its own local time and
 //!   reports [`NetFinish::HostLost`]: clients with the same last bundle have the same state, even if one had already
 //!   computed further at the abort.
 //! - Handover by the host ([`NetDriver::hand_over`]): The old host computes until the execution tick of the bundle with
@@ -189,9 +190,9 @@ pub struct NetFrame {
 pub enum NetFinish {
     /// Third desync: stopped, network savegame `name` (`checksumerror_…`).
     Stopped { name: String },
-    /// The host has ended the match (orderly): network savegame `name` (`netz_…`), the same on all machines.
+    /// The host has ended the match (orderly): network savegame `name` (`<prefix>…`), the same on all machines.
     HostEnded { name: String },
-    /// The connection to the host broke off (abort): network savegame `name` (`netz_…`) after the last tick the
+    /// The connection to the host broke off (abort): network savegame `name` (`<prefix>…`) after the last tick the
     /// machine could compute.
     HostLost { name: String },
     /// Otherwise failed (error message), without savegame.
