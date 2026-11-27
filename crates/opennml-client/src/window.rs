@@ -12,7 +12,7 @@ use serde::Deserialize;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event_loop::{ActiveEventLoop, ControlFlow};
 use winit::monitor::MonitorHandle;
-use winit::window::{Fullscreen, Window};
+use winit::window::{Fullscreen, Window, WindowAttributes, WindowButtons};
 
 use crate::display::{
     ModeInfo, best_mode_index, monitor_for_mode_change, next_monitor, pick_monitor,
@@ -85,11 +85,37 @@ pub fn blocks_redraw(outcome: FrameOutcome) -> bool {
     matches!(outcome, FrameOutcome::Occluded | FrameOutcome::NoSurface)
 }
 
+/// Frame of the window in windowed mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WindowFrame {
+    /// Freely resizable with all buttons (viewer).
+    Resizable,
+    /// Fixed size, close and minimize only: the original's style `0x00CA8000` =
+    /// `WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX` (`MainFrame_PreCreateWindow` `0x004CB4C0`, re/renderer "Ablauf beim
+    /// Start"), no sizing border and no maximize button (game).
+    Fixed,
+}
+
+/// Window attributes for `title`, inner size `size` in logical pixels and `frame`.
+pub fn window_attributes(title: &str, size: (u32, u32), frame: WindowFrame) -> WindowAttributes {
+    let attributes = Window::default_attributes()
+        .with_title(title)
+        .with_inner_size(LogicalSize::new(size.0, size.1))
+        .with_resizable(frame == WindowFrame::Resizable);
+    match frame {
+        WindowFrame::Resizable => attributes,
+        WindowFrame::Fixed => {
+            attributes.with_enabled_buttons(WindowButtons::CLOSE | WindowButtons::MINIMIZE)
+        }
+    }
+}
+
 /// Window with GPU, window mode and monitor; created in `resumed` of the event loop.
 pub struct WindowShell {
     pub window: Arc<Window>,
     pub gpu: Gpu,
     pub mode: WindowMode,
+    pub frame: WindowFrame,
     pub monitor_index: usize,
     /// Monitor chosen by the user (valid index in the configuration/command line or F10).
     pub monitor_chosen: bool,
@@ -102,7 +128,7 @@ pub struct WindowShell {
 impl WindowShell {
     /// Creates the window (`title`, inner size `size` in logical pixels) and the GPU and chooses the monitor:
     /// `monitor`, otherwise the window's, otherwise 0. The window mode `mode` takes effect only with
-    /// [`WindowShell::apply_mode`].
+    /// [`WindowShell::apply_mode`]; `frame` decides whether the user can resize the window.
     pub fn create(
         event_loop: &ActiveEventLoop,
         title: &str,
@@ -110,10 +136,9 @@ impl WindowShell {
         backend: BackendChoice,
         monitor: Option<usize>,
         mode: WindowMode,
+        frame: WindowFrame,
     ) -> Result<Self> {
-        let attributes = Window::default_attributes()
-            .with_title(title)
-            .with_inner_size(LogicalSize::new(size.0, size.1));
+        let attributes = window_attributes(title, size, frame);
         let window = Arc::new(event_loop.create_window(attributes)?);
         // The size of the icon depends on the scaling of the monitor, which only the window knows.
         crate::app_icon::apply(&window);
@@ -130,6 +155,7 @@ impl WindowShell {
             window,
             gpu,
             mode,
+            frame,
             monitor_index,
             monitor_chosen,
             occluded: false,
@@ -315,6 +341,18 @@ mod tests {
         assert_eq!(WindowMode::Exclusive.next(), WindowMode::Windowed);
         assert_eq!("Borderless".parse(), Ok(WindowMode::Borderless));
         assert!("fullscreen".parse::<WindowMode>().is_err());
+    }
+
+    #[test]
+    fn fixed_frame_is_not_resizable_and_has_no_maximize() {
+        let fixed = window_attributes("t", (1024, 768), WindowFrame::Fixed);
+        assert!(!fixed.resizable);
+        assert!(!fixed.enabled_buttons.contains(WindowButtons::MAXIMIZE));
+        assert!(fixed.enabled_buttons.contains(WindowButtons::CLOSE));
+        assert!(fixed.enabled_buttons.contains(WindowButtons::MINIMIZE));
+        let free = window_attributes("t", (1024, 768), WindowFrame::Resizable);
+        assert!(free.resizable);
+        assert_eq!(free.enabled_buttons, WindowButtons::all());
     }
 
     #[test]

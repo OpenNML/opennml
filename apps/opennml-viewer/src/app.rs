@@ -21,7 +21,7 @@ use opennml_client::snapshot::{png_data, window_mode, window_mode_name};
 use opennml_client::ui_control::{NO_UI, execute_ui};
 use opennml_client::ui_layer::screen_of;
 use opennml_client::vk::char_of;
-use opennml_client::window::{WindowMode, WindowShell};
+use opennml_client::window::{WindowFrame, WindowMode, WindowShell};
 use opennml_control::{
     CaptureCommand, ClockState, Command, CursorState, EnvironmentState, HelloInfo, MouseButtonName,
     MusicCommand, PROTOCOL_VERSION, PlaySoundResult, RandomMapState, RecentSoundState, Request,
@@ -3244,6 +3244,7 @@ impl ApplicationHandler<ControlEvent> for App {
             self.config.backend,
             self.config.monitor,
             self.config.window_mode,
+            WindowFrame::Resizable,
         ) {
             Ok(shell) => shell,
             Err(e) => return self.fail(event_loop, e),

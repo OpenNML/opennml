@@ -44,7 +44,7 @@ use opennml_audio::engine::AudioEngine;
 use opennml_audio::volume::Category;
 use opennml_client::clock::{Clock, ClockMode};
 use opennml_client::control::ControlEvent;
-use opennml_client::display::ModeInfo;
+use opennml_client::display::{ModeInfo, best_mode_index};
 use opennml_client::frames::FrameCounter;
 use opennml_client::game::hotkeys::Hotkeys;
 use opennml_client::game::net_driver::{LEAVE_REASON, NetDriver};
@@ -62,7 +62,7 @@ use opennml_client::snapshot::png_data;
 use opennml_client::ui_control::{NO_UI, execute_ui, state_data};
 use opennml_client::ui_layer::{UiLayer, atlas_generator, screen_of};
 use opennml_client::vk::{char_of, vk_of_german, vk_of_layout};
-use opennml_client::window::{WindowMode, WindowShell};
+use opennml_client::window::{WindowFrame, WindowMode, WindowShell};
 use opennml_control::{
     Command, GAME_UI_DIALOG, HelloInfo, MouseButtonName, PROTOCOL_VERSION, Request, Response,
     UiStateData,
@@ -1058,6 +1058,7 @@ impl Game {
             BackendChoice::Auto,
             self.opts.monitor,
             self.opts.mode,
+            WindowFrame::Fixed,
         )?;
         // Size in pixels like `ScreenXSize`/`ScreenYSize` (not in logical pixels of the display scaling).
         if shell.mode == WindowMode::Windowed {
@@ -1838,8 +1839,13 @@ fn set_exclusive(shell: &WindowShell, monitor: Option<MonitorHandle>, mode: Disp
             true
         }
         None => {
+            // The caller falls back to the best mode of the monitor (`WindowShell::apply_mode`).
+            let chosen = best_mode_index(&infos).map_or_else(
+                || "none".to_owned(),
+                |i| format!("{} x {}", infos[i].width, infos[i].height),
+            );
             log::warn!(
-                "Display mode {} x {} ({} bit) is not available on the monitor; the previous one stays",
+                "Display mode {} x {} ({} bit) is not available on the monitor; falling back to {chosen} (fonts stay at the width of the settings)",
                 mode.width,
                 mode.height,
                 mode.bits
@@ -1880,6 +1886,19 @@ impl ApplicationHandler<ControlEvent> for Game {
         match event {
             // Closing the window (also Alt+F4) writes the settings (O-32).
             WindowEvent::CloseRequested => self.exit(event_loop),
+            // Windowed the size stays the one of the settings in pixels: winit would otherwise convert it to the
+            // logical size of the new scaling (O-58).
+            WindowEvent::ScaleFactorChanged {
+                mut inner_size_writer,
+                ..
+            } => {
+                if let Some(shell) = &self.shell
+                    && shell.mode == WindowMode::Windowed
+                {
+                    let (w, h) = shell.window_size();
+                    let _ = inner_size_writer.request_inner_size(PhysicalSize::new(w, h));
+                }
+            }
             WindowEvent::Resized(size) => {
                 if let Some(shell) = &mut self.shell {
                     shell.resized(size.width, size.height);
