@@ -61,7 +61,7 @@ use opennml_client::net_session::{NetIdentity, NetSession};
 use opennml_client::snapshot::png_data;
 use opennml_client::ui_control::{NO_UI, execute_ui, state_data};
 use opennml_client::ui_layer::{UiLayer, atlas_generator, screen_of};
-use opennml_client::vk::char_of;
+use opennml_client::vk::{char_of, vk_of_german, vk_of_layout};
 use opennml_client::window::{WindowMode, WindowShell};
 use opennml_control::{
     Command, GAME_UI_DIALOG, HelloInfo, MouseButtonName, PROTOCOL_VERSION, Request, Response,
@@ -1581,7 +1581,7 @@ impl Game {
         }
         let (screen, now) = (self.screen(), self.now());
         if let Some(host) = &mut self.host {
-            host.on_key(code, pressed, None, screen, now);
+            host.on_key(code, vk_of_german(code), pressed, None, screen, now);
         }
         self.map_input(&event);
     }
@@ -1925,7 +1925,7 @@ impl ApplicationHandler<ControlEvent> for Game {
                 };
                 let (screen, now) = (self.screen(), self.now());
                 if let Some(host) = &mut self.host {
-                    host.on_key(code, pressed, ch, screen, now);
+                    host.on_key(code, vk_of_layout(code), pressed, ch, screen, now);
                 }
                 self.map_input(&InputEvent::Key {
                     code,

@@ -7,7 +7,7 @@
 use anyhow::Result;
 use opennml_client::game_session::GameSession;
 use opennml_client::ui_layer::{UiLayer, atlas_generator, screen_of};
-use opennml_client::vk::HeldVk;
+use opennml_client::vk::{HeldVk, vk_of_layout};
 use opennml_rda::Vfs;
 use opennml_render::UiRenderer;
 use opennml_ui::assets::Texts;
@@ -136,7 +136,7 @@ pub fn viewer_key(code: KeyCode, shift: bool) -> bool {
 }
 
 /// Key route of the original in the viewer with `--hud`: the table of the held keys as in the host of
-/// `opennml-game` (`HeldVk`: VK of the German key layout in press order), so that chords like `CONTROL 1` arise.
+/// `opennml-game` (`HeldVk`: VK of the active key layout in press order), so that chords like `CONTROL 1` arise.
 /// It follows every key (also Ctrl and Shift of the viewer); a press on a free key ([`viewer_key`]) yields
 /// the key set of the event for `Hotkeys::resolve`. Without `--hud` nothing is passed on.
 #[derive(Debug, Default)]
@@ -160,7 +160,7 @@ impl OriginalKeys {
             self.held.begin_round();
             return None;
         }
-        self.held.press(code)?;
+        self.held.press(code, vk_of_layout(code))?;
         (dispatch && !viewer_key(code, shift)).then(|| self.held.held())
     }
 

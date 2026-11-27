@@ -3,14 +3,100 @@
 //!
 //! The original gets the VK from `WM_KEYDOWN`/`WM_SYSKEYDOWN` (`FUN_0042C1D0`). Shift, Ctrl and Alt report the general
 //! codes `0x10`/`0x11`/`0x12` there (not the left/right form); this is how names like `SHIFT N` arise (chord name
-//! `FUN_0049C340`, `opennml_ui::keys::chord_name`). winit delivers the physical key in US naming; [`vk_of`] returns the VK
-//! that Windows reports for this key with a **German** keyboard layout - the game is German and its name table fits
-//! that (`0xBB` "+", `0xBF` "#", `0xDB` sharp s, `0xDC` "GRAVE" = `^`).
+//! `FUN_0049C340`, `opennml_ui::keys::chord_name`). winit delivers the physical key in US naming. Two mappings exist:
+//!
+//! - [`vk_of_layout`] (window input): the VK that Windows reports for this key under the **active layout**, as the
+//!   original (`FUN_0042C1D0` passes `wParam` on, re/menu-system 12.7); elsewhere the German table.
+//! - [`vk_of_german`] (control channel): always the fixed German table - the game is German and its name table fits
+//!   that (`0xBB` "+", `0xBF` "#", `0xDB` sharp s, `0xDC` "GRAVE" = `^`), so test scripts run independent of the
+//!   layout of the machine.
 
 use winit::keyboard::KeyCode;
 
+/// VK of the physical key `code` under the active keyboard layout (window input, as the original's `wParam`).
+///
+/// On Windows only the layout-dependent keys (letters, main-block digits and the OEM keys) are asked of the system
+/// (scancode -> `MapVirtualKeyExW`); all others, and every key on other platforms, take [`vk_of_german`].
+pub fn vk_of_layout(code: KeyCode) -> Option<u8> {
+    #[cfg(windows)]
+    if let Some(vk) = windows_layout_vk(code) {
+        return Some(vk);
+    }
+    vk_of_german(code)
+}
+
+/// The active layout's VK of a layout-dependent key; `None` for other keys or if Windows has no VK for it.
+#[cfg(windows)]
+fn windows_layout_vk(code: KeyCode) -> Option<u8> {
+    use KeyCode as K;
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        GetKeyboardLayout, MAPVK_VSC_TO_VK, MapVirtualKeyExW,
+    };
+    use winit::keyboard::PhysicalKey;
+    use winit::platform::scancode::PhysicalKeyExtScancode;
+    let layout_key = matches!(
+        code,
+        K::KeyA
+            | K::KeyB
+            | K::KeyC
+            | K::KeyD
+            | K::KeyE
+            | K::KeyF
+            | K::KeyG
+            | K::KeyH
+            | K::KeyI
+            | K::KeyJ
+            | K::KeyK
+            | K::KeyL
+            | K::KeyM
+            | K::KeyN
+            | K::KeyO
+            | K::KeyP
+            | K::KeyQ
+            | K::KeyR
+            | K::KeyS
+            | K::KeyT
+            | K::KeyU
+            | K::KeyV
+            | K::KeyW
+            | K::KeyX
+            | K::KeyY
+            | K::KeyZ
+            | K::Digit0
+            | K::Digit1
+            | K::Digit2
+            | K::Digit3
+            | K::Digit4
+            | K::Digit5
+            | K::Digit6
+            | K::Digit7
+            | K::Digit8
+            | K::Digit9
+            | K::Semicolon
+            | K::Equal
+            | K::Comma
+            | K::Minus
+            | K::Period
+            | K::Slash
+            | K::Backquote
+            | K::BracketLeft
+            | K::Backslash
+            | K::BracketRight
+            | K::Quote
+            | K::IntlBackslash
+    );
+    if !layout_key {
+        return None;
+    }
+    // None of these keys is extended, so the scancode carries no 0xE0 prefix.
+    let scancode = PhysicalKey::Code(code).to_scancode()?;
+    // SAFETY: plain query of the calling thread's layout and a table lookup; no pointers are passed.
+    let vk = unsafe { MapVirtualKeyExW(scancode, MAPVK_VSC_TO_VK, Some(GetKeyboardLayout(0))) };
+    u8::try_from(vk).ok().filter(|&v| v != 0)
+}
+
 /// VK of the physical key `code` under the German layout; `None` for keys without a VK in the original.
-pub fn vk_of(code: KeyCode) -> Option<u8> {
+pub fn vk_of_german(code: KeyCode) -> Option<u8> {
     use KeyCode as K;
     Some(match code {
         K::Backspace => 0x08,
@@ -170,18 +256,20 @@ pub const MOUSE_RIGHT: u8 = 4;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HeldVk {
     held: Vec<u8>,
-    /// Physically held keys with a VK.
-    down: Vec<KeyCode>,
+    /// Physically held keys with the VK they were pressed with (a layout change while held keeps it).
+    down: Vec<(KeyCode, u8)>,
     /// Mouse bits ([`MOUSE_LEFT`], [`MOUSE_MIDDLE`], [`MOUSE_RIGHT`]).
     mouse: u8,
 }
 
 impl HeldVk {
-    /// Key pressed: physically held, VK into the table (if new). Returns the VK (`None`: key without a VK).
-    pub fn press(&mut self, code: KeyCode) -> Option<u8> {
-        let vk = vk_of(code)?;
-        if !self.down.contains(&code) {
-            self.down.push(code);
+    /// Key pressed with the VK `vk` of the caller ([`vk_of_layout`] or [`vk_of_german`]): physically held, VK into
+    /// the table (if new). Returns the VK (`None`: key without a VK, nothing is entered).
+    pub fn press(&mut self, code: KeyCode, vk: Option<u8>) -> Option<u8> {
+        let vk = vk?;
+        match self.down.iter_mut().find(|(c, _)| *c == code) {
+            Some(entry) => entry.1 = vk,
+            None => self.down.push((code, vk)),
         }
         if !self.held.contains(&vk) {
             self.held.push(vk);
@@ -191,12 +279,12 @@ impl HeldVk {
 
     /// Is the key `code` physically held (since [`Self::press`], until [`Self::release`] or [`Self::clear`])?
     pub fn is_down(&self, code: KeyCode) -> bool {
-        self.down.contains(&code)
+        self.down.iter().any(|&(c, _)| c == code)
     }
 
     /// Key released: only the physical state; the table follows in [`Self::begin_round`].
     pub fn release(&mut self, code: KeyCode) {
-        self.down.retain(|&c| c != code);
+        self.down.retain(|&(c, _)| c != code);
     }
 
     /// Mouse button (`bit` = [`MOUSE_LEFT`], [`MOUSE_MIDDLE`] or [`MOUSE_RIGHT`]) pressed or released.
@@ -227,7 +315,7 @@ impl HeldVk {
                 middle = mouse & MOUSE_MIDDLE != 0;
                 middle
             }
-            vk => down.iter().any(|&c| vk_of(c) == Some(vk)),
+            vk => down.iter().any(|&(_, v)| v == vk),
         });
         for (present, bit, vk) in [
             (left, MOUSE_LEFT, 1),
@@ -263,7 +351,7 @@ mod tests {
         let names = |codes: &[KeyCode]| -> Vec<&str> {
             codes
                 .iter()
-                .map(|&c| vk_name(vk_of(c).unwrap_or_else(|| panic!("{c:?} without VK"))))
+                .map(|&c| vk_name(vk_of_german(c).unwrap_or_else(|| panic!("{c:?} without VK"))))
                 .collect()
         };
         assert_eq!(
@@ -353,20 +441,26 @@ mod tests {
                 "\u{df}", "GRAVE", "#"
             ]
         );
-        assert_eq!(vk_of(KeyCode::Fn), None);
-        assert_eq!(vk_of(KeyCode::MediaPlayPause), None);
+        assert_eq!(vk_of_german(KeyCode::Fn), None);
+        assert_eq!(vk_of_german(KeyCode::MediaPlayPause), None);
     }
 
     #[test]
     fn held_keys_build_original_chords() {
         let mut held = HeldVk::default();
-        assert_eq!(held.press(KeyCode::ShiftLeft), Some(0x10));
-        assert_eq!(held.press(KeyCode::KeyN), Some(0x4E));
+        assert_eq!(
+            held.press(KeyCode::ShiftLeft, vk_of_german(KeyCode::ShiftLeft)),
+            Some(0x10)
+        );
+        assert_eq!(
+            held.press(KeyCode::KeyN, vk_of_german(KeyCode::KeyN)),
+            Some(0x4E)
+        );
         assert_eq!(held.held(), [0x10, 0x4E]);
         assert_eq!(chord_name(&held.held()), "SHIFT N");
         // Autorepeat changes nothing; add Ctrl: bucket 1 last pressed first.
-        held.press(KeyCode::ShiftLeft);
-        held.press(KeyCode::ControlLeft);
+        held.press(KeyCode::ShiftLeft, vk_of_german(KeyCode::ShiftLeft));
+        held.press(KeyCode::ControlLeft, vk_of_german(KeyCode::ControlLeft));
         assert_eq!(held.held(), [0x10, 0x4E, 0x11]);
         assert_eq!(chord_name(&held.held()), "CONTROL SHIFT N");
         // Release takes effect only at the start of the next round.
@@ -374,19 +468,46 @@ mod tests {
         assert_eq!(chord_name(&held.held()), "CONTROL SHIFT N");
         held.begin_round();
         assert_eq!(chord_name(&held.held()), "CONTROL N");
-        assert_eq!(held.press(KeyCode::Fn), None);
+        assert_eq!(held.press(KeyCode::Fn, vk_of_german(KeyCode::Fn)), None);
         held.clear();
         assert!(held.held().is_empty());
         held.begin_round();
         assert!(held.held().is_empty());
     }
 
+    #[test]
+    fn held_key_keeps_its_vk_across_a_layout_change() {
+        // US layout: the physical Z key reports 0x5A (the German table would say 0x59).
+        let mut held = HeldVk::default();
+        assert_eq!(held.press(KeyCode::KeyZ, Some(0x5A)), Some(0x5A));
+        held.begin_round();
+        assert_eq!(held.held(), [0x5A]);
+        held.release(KeyCode::KeyZ);
+        held.begin_round();
+        assert!(held.held().is_empty());
+    }
+
+    #[test]
+    fn layout_vk_falls_back_to_the_german_table_for_non_layout_keys() {
+        for code in [
+            KeyCode::Escape,
+            KeyCode::Enter,
+            KeyCode::F11,
+            KeyCode::ArrowUp,
+            KeyCode::Numpad5,
+            KeyCode::ShiftLeft,
+            KeyCode::ControlRight,
+        ] {
+            assert_eq!(vk_of_layout(code), vk_of_german(code), "{code:?}");
+        }
+    }
+
     // QUIRK O-116: kept
     #[test]
     fn left_and_right_modifiers_share_one_vk_until_both_are_up() {
         let mut held = HeldVk::default();
-        held.press(KeyCode::ShiftLeft);
-        held.press(KeyCode::ShiftRight);
+        held.press(KeyCode::ShiftLeft, vk_of_german(KeyCode::ShiftLeft));
+        held.press(KeyCode::ShiftRight, vk_of_german(KeyCode::ShiftRight));
         assert_eq!(held.held(), [0x10]);
         held.release(KeyCode::ShiftLeft);
         held.begin_round();
@@ -405,7 +526,7 @@ mod tests {
         held.set_mouse(MOUSE_LEFT, true);
         assert!(held.held().is_empty());
         held.begin_round();
-        held.press(KeyCode::Escape);
+        held.press(KeyCode::Escape, vk_of_german(KeyCode::Escape));
         assert_eq!(held.held(), [1, 0x1B]);
         assert_eq!(chord_name(&held.held()), "LBUTTON ESCAPE");
         assert!(!chord_matches(&held.held(), &escape));
@@ -417,7 +538,7 @@ mod tests {
         held.set_mouse(MOUSE_RIGHT, true);
         held.begin_round();
         assert_eq!(held.held(), [2]);
-        held.press(KeyCode::KeyA);
+        held.press(KeyCode::KeyA, vk_of_german(KeyCode::KeyA));
         assert_eq!(held.held(), [2, 0x41]);
         held.begin_round();
         assert_eq!(held.held(), [0x41, 2]);

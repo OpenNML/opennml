@@ -18,6 +18,7 @@ use crate::testutil::test_config;
 use crate::testutil::{FakeAudio, FakeSession, capture_warnings, take_warnings};
 use crate::ui_control::{execute_ui, state_data};
 use crate::ui_layer::UiLayer;
+use crate::vk::vk_of_german;
 
 pub(super) const S1024: Screen = Screen {
     width: 1024,
@@ -2308,12 +2309,14 @@ fn profile_var_updates_the_current_profile() {
 impl Run {
     /// Key via the path of the window to the menu host (`MenuHost::on_key`): press, also as auto-repeat.
     fn press(&mut self, code: winit::keyboard::KeyCode) {
-        self.host.on_key(code, true, None, S1024, self.now);
+        self.host
+            .on_key(code, vk_of_german(code), true, None, S1024, self.now);
     }
 
     /// Key released (the table follows at the beginning of the next round).
     fn release(&mut self, code: winit::keyboard::KeyCode) {
-        self.host.on_key(code, false, None, S1024, self.now);
+        self.host
+            .on_key(code, vk_of_german(code), false, None, S1024, self.now);
     }
 
     /// Left mouse button via the path of the window (`MenuHost::on_input`).

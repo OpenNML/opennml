@@ -241,10 +241,10 @@ mod tests {
 
     /// The keys of the original are in all three lists - control channel (`opennml_control::KEY_NAMES`), implementation
     /// here ([`key_code`]) and MCP (`viewer_input`, generated from `KEY_NAMES`, test `viewer_input_offers_repeat`) -
-    /// and yield the VK of the German layout (`vk_of`): main-block `+` is `BracketRight`, `-` is `Slash`.
+    /// and yield the VK of the German layout (`vk_of_german`): main-block `+` is `BracketRight`, `-` is `Slash`.
     #[test]
     fn new_key_names_are_in_all_three_lists() {
-        use crate::vk::vk_of;
+        use crate::vk::vk_of_german;
         const NEW: [(&str, u8); 23] = [
             ("Digit0", 0x30),
             ("Digit6", 0x36),
@@ -273,13 +273,13 @@ mod tests {
         for (name, vk) in NEW {
             assert!(opennml_control::KEY_NAMES.contains(&name), "{name}");
             let code = key_code(name).unwrap_or_else(|| panic!("{name} has no KeyCode"));
-            assert_eq!(vk_of(code), Some(vk), "{name}");
+            assert_eq!(vk_of_german(code), Some(vk), "{name}");
         }
         // `Equal` and `Minus` still exist (US position in the viewer); under the German layout they are the
         // acute-accent and sharp-s keys.
-        assert_eq!(key_code("Equal").and_then(vk_of), Some(0xDD));
-        assert_eq!(key_code("Minus").and_then(vk_of), Some(0xDB));
-        assert_eq!(key_code("KeyP").and_then(vk_of), Some(0x50));
+        assert_eq!(key_code("Equal").and_then(vk_of_german), Some(0xDD));
+        assert_eq!(key_code("Minus").and_then(vk_of_german), Some(0xDB));
+        assert_eq!(key_code("KeyP").and_then(vk_of_german), Some(0x50));
     }
 
     /// `key` with `repeat` presses once and then sends `repeat` repeats (O-300); without `repeat` as before.

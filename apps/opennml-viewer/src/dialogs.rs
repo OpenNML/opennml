@@ -323,12 +323,13 @@ impl DialogMenu {
     pub fn on_key(
         &mut self,
         code: KeyCode,
+        vk: Option<u8>,
         pressed: bool,
         ch: Option<u16>,
         screen: Screen,
         now: u64,
     ) {
-        self.host.on_key(code, pressed, ch, screen, now);
+        self.host.on_key(code, vk, pressed, ch, screen, now);
     }
 
     /// Focus loss: release all keys of the UI.

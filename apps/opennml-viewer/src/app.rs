@@ -20,7 +20,7 @@ use opennml_client::menu_host::MenuHost;
 use opennml_client::snapshot::{png_data, window_mode, window_mode_name};
 use opennml_client::ui_control::{NO_UI, execute_ui};
 use opennml_client::ui_layer::screen_of;
-use opennml_client::vk::char_of;
+use opennml_client::vk::{char_of, vk_of_layout};
 use opennml_client::window::{WindowMode, WindowShell};
 use opennml_control::{
     CaptureCommand, ClockState, Command, CursorState, EnvironmentState, HelloInfo, MouseButtonName,
@@ -2087,7 +2087,9 @@ impl App {
                     }
                     KeyRoute::Menu => {
                         if let Some(dialogs) = &mut self.dialogs {
-                            dialogs.menu.on_key(code, true, ch, screen, now);
+                            dialogs
+                                .menu
+                                .on_key(code, vk_of_layout(code), true, ch, screen, now);
                         }
                         true
                     }
@@ -2112,7 +2114,9 @@ impl App {
                 pressed: false,
                 ..
             } => {
-                dialogs.menu.on_key(code, false, None, screen, now);
+                dialogs
+                    .menu
+                    .on_key(code, vk_of_layout(code), false, None, screen, now);
                 // The viewer releases its key as well (`handle_input`).
                 false
             }
