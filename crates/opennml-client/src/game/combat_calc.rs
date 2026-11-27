@@ -77,6 +77,13 @@ const ICON_PASSENGER_SHIFT: f32 = 50.0;
 /// size and the same rider and occupant shift.
 const COUNTER_ICON_LIFT: f32 = 50.0;
 
+/// World height of the counter-upgrade icon over a building (`FUN_00469F60` `0x0046A091..0x0046A0BC`, D-233):
+/// `position.y + 2 * e.y + 50` with `e` = half head hull of the `.rdo` (`ObjectRenderer` vf+0x30 =
+/// `ObjectRenderer_GetBoundsHalfExtent` `0x00548370`, model at `ObjectRenderer+0x78`).
+fn counter_icon_height(position_y: f32, head_half_y: f32) -> f32 {
+    position_y + 2.0 * head_half_y + COUNTER_ICON_LIFT
+}
+
 /// Shift of the rank icon by the riding status (`FUN_0046BBE0` `0x0046BCB6..0x0046BD6C`,
 /// re/riding 7.3, C-206): `0x2000` raises by 50 in y; `0x8000` shifts locally by `(0, 0, -50)` and
 /// rotates the vector with `RotationY(yaw)` (D3DX, row vector: `x' = -50 sin(theta)`, `z' = -50 cos(theta)`).
@@ -340,13 +347,22 @@ pub fn frame_overlay(
         let Some(&top) = tops.get(&o.id) else {
             continue;
         };
-        // Walk: rider and occupant shift as with the rank icon; buildings without.
-        let shift = if o.has_module(0, false) {
-            rank_icon_offset(o.status, sim.display(o).1.y)
+        // Walk: rider and occupant shift as with the rank icon, top of the hull + 50. Building module without
+        // walk: the head height of the `.rdo` + 50 (D-233), horizontally still the center of `top`. The model
+        // is the main one at `ObjectRenderer+0x78` also under construction: the scaffold (`+0x80`) is another
+        // renderer slot, `building_shapes` describes the `.rdo` hull of the main model.
+        let shape = sim.rules.building_shapes.get(&o.guid);
+        let c = if o.has_module(0, false) {
+            top + rank_icon_offset(o.status, sim.display(o).1.y) + Vec3::Y * COUNTER_ICON_LIFT
+        } else if let (true, Some(shape)) = (o.has_module(3, false), shape) {
+            Vec3::new(
+                top.x,
+                counter_icon_height(sim.display(o).0.y, shape.half[1]),
+                top.z,
+            )
         } else {
-            Vec3::ZERO
+            top + Vec3::Y * COUNTER_ICON_LIFT
         };
-        let c = top + shift + Vec3::Y * COUNTER_ICON_LIFT;
         let corner = |x: f32, y: f32| project(view_proj, c + right * x + Vec3::Y * y, size);
         let (Some(a), Some(b)) = (corner(-ICON_HALF, -ICON_HALF), corner(ICON_HALF, ICON_HALF))
         else {
@@ -781,7 +797,7 @@ mod tests {
         // `FUN_00469F60` only in the branch "owner = local player").
         assert_eq!(icons.len(), 2, "{icons:?}");
         let centre = |r: [[f32; 2]; 2]| [(r[0][0] + r[1][0]) / 2.0, (r[0][1] + r[1][1]) / 2.0];
-        // 40 x 40 world units (4 x 4 pixels), center 50 above the top of the hull (5 pixels),
+        // 40 x 40 world units (4 x 4 pixels), unit center 50 above the top of the hull (5 pixels),
         // so 20 above the center of the rank icon.
         let unit = icons[0];
         assert!((unit[1][0] - unit[0][0] - 4.0).abs() < 1e-3, "{unit:?}");
@@ -791,15 +807,75 @@ mod tests {
             (c[0] - 100.0).abs() < 1e-3 && (c[1] - 95.0).abs() < 1e-3,
             "{c:?}"
         );
+        // The building: position.y (0) + 2 * half.y (2 * 50) + 50 = 150, i.e. 15 pixels (D-233).
         let c = centre(icons[1]);
         assert!(
-            (c[0] - 50.0).abs() < 1e-3 && (c[1] - 95.0).abs() < 1e-3,
+            (c[0] - 50.0).abs() < 1e-3 && (c[1] - 85.0).abs() < 1e-3,
             "{c:?}"
         );
         // Dead: no icon (return at the start of `0x0046BBE0`).
         set_status(&mut h, own, status::DIED);
         assert_eq!(frame(&h).counter_icons.len(), 1);
         assert_eq!(COUNTER_UPGRADE_ICON, "data/icons/counterupgrade.tga");
+    }
+
+    // QUIRK D-233: kept
+    #[test]
+    fn counter_icon_over_buildings_sits_at_head_height() {
+        // re/combat-projectiles 15.4, `FUN_00469F60` `0x0046A091`: over a building at `position.y + 2 * e.y + 50`
+        // with `e` = half head hull of the `.rdo` (`Rules::building_shapes[guid].half`), not at `top + 50`.
+        // Farm: hull y -59.7 .. 174, so `2 * e.y` = 233.7 and the icon sits 59.7 above `top + 50`.
+        let mut h = host();
+        let farm = spawn(&mut h, HQ, 0, (30, 30));
+        let unit = spawn(&mut h, COLONIST, 0, (10, 10));
+        let (min_y, max_y) = (-59.7_f32, 174.0_f32);
+        h.rules.building_shapes.get_mut(&HQ).unwrap().half = [100.0, (max_y - min_y) / 2.0, 100.0];
+        for id in [farm, unit] {
+            h.state.object_mut(id, false).unwrap().show_counter_upgrade = 1;
+        }
+        // `HasModule(3, 0)`: the building module must be enabled (it is, once construction is done).
+        h.state
+            .object_mut(farm, false)
+            .unwrap()
+            .set_module_enabled(3, true);
+        let position = |h: &SimHost, id| h.display(h.state.object(id, false).unwrap()).0;
+        let farm_pos = position(&h, farm);
+        // `top` = max.y of the whole hull above the position (render pass); x and z stay the center of `top`.
+        let tops: HashMap<ObjectId, Vec3> = [
+            (farm, farm_pos + Vec3::Y * max_y),
+            (unit, position(&h, unit) + Vec3::Y * 80.0),
+        ]
+        .into();
+        // Scale 0.001, 200 x 200: 10 world units per pixel, y down from 100.
+        let view_proj = Mat4::from_scale(Vec3::splat(0.001));
+        let icons = |h: &SimHost| {
+            frame_overlay(h, &[], None, &tops, view_proj, Vec3::X, (200, 200)).counter_icons
+        };
+        let centre_y = |r: [[f32; 2]; 2]| (r[0][1] + r[1][1]) / 2.0;
+        let world_y = |r: [[f32; 2]; 2]| (100.0 - centre_y(r)) * 10.0;
+        let shown = icons(&h);
+        assert_eq!(shown.len(), 2, "{shown:?}");
+        let (farm_icon, unit_icon) = (shown[0], shown[1]);
+        let want = farm_pos.y + (max_y - min_y) + 50.0;
+        assert!(
+            (world_y(farm_icon) - want).abs() < 1e-2,
+            "{} vs {want}",
+            world_y(farm_icon)
+        );
+        let over_top = world_y(farm_icon) - (farm_pos.y + max_y + 50.0);
+        assert!((over_top - 59.7).abs() < 1e-2, "{over_top}");
+        // A unit stays at `top + 50` ...
+        let unit_top = position(&h, unit).y + 80.0;
+        assert!((world_y(unit_icon) - (unit_top + 50.0)).abs() < 1e-2);
+        // ... and a rider at `top + 50 + 50`.
+        set_status(&mut h, unit, status::ISMOUNTED);
+        let rider = icons(&h)[1];
+        assert!((world_y(rider) - (unit_top + 100.0)).abs() < 1e-2);
+    }
+
+    #[test]
+    fn counter_icon_height_is_position_plus_head_height_plus_fifty() {
+        assert!((counter_icon_height(10.0, 116.85) - (10.0 + 233.7 + 50.0)).abs() < 1e-3);
     }
 
     #[test]
