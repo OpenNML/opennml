@@ -906,6 +906,9 @@ pub struct GameSession {
     pub net: Option<NetDriver>,
     /// Control entries, dropouts and failure of the network match for the flow ([`GameSession::take_net_frame`]).
     net_frame: NetFrame,
+    /// Offset of the network time to the program clock (`opennml-game`: the minimized phases, `NetClock`); the driver
+    /// gets `now + offset`, the same time as from the pumps of the host. 0 in the viewer.
+    net_time_offset_ms: u64,
 }
 
 /// Request of the match to the flow (`GameFlow`), which picks it up right after a key command or input
@@ -1116,7 +1119,14 @@ impl GameSession {
             generated_map: None,
             net: None,
             net_frame: NetFrame::default(),
+            net_time_offset_ms: 0,
         }
+    }
+
+    /// Sets the offset of the network time to the program clock (`NetClock::offset_ms`): the turn driver gets
+    /// `now + offset_ms` in [`GameSession::advance`], like the pumps of the host while the window is minimized (O-465).
+    pub fn set_net_time_offset(&mut self, offset_ms: u64) {
+        self.net_time_offset_ms = offset_ms;
     }
 
     /// Sets the game type of the match (`Engine+0x108`, [`GameSession::game_type`]) and tells the game UI: the corner
@@ -1702,7 +1712,8 @@ impl GameSession {
             let speed = self.sim().map_or(10, |s| s.game_speed);
             let (dt_ms, ticks) = self.clock.pause_frame(now, speed);
             self.ticks = ticks;
-            self.net_halt_step(gpu, vfs, now, audio.as_deref_mut());
+            let net_now = now.saturating_add(self.net_time_offset_ms);
+            self.net_halt_step(gpu, vfs, net_now, audio.as_deref_mut());
             self.advance_paused(vfs, dt_ms, audio);
             Vec::new()
         } else {
@@ -2423,7 +2434,7 @@ impl GameSession {
         // Beforehand the host reports its selection to the mirror of conditions 35-37 (only on change and only if the
         // script uses them).
         let selection = &self.selection.ids;
-        let now = self.clock.program_ms as u64;
+        let now = (self.clock.program_ms as u64).saturating_add(self.net_time_offset_ms);
         let (net, pending) = (&mut self.net, &mut self.net_frame);
         let step = self
             .map

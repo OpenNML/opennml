@@ -2032,46 +2032,84 @@ fn host_abort_after_loading_before_go_returns_to_the_main_menu() {
     assert_eq!(n.phase(1), NetPhase::Idle);
 }
 
-/// Only the line of the network session of machine `i` (minimized window: `GameFlow::net_pump`, no logic step).
-fn pump_only(n: &mut Lan, i: usize) {
-    let run = &mut n.runs[i];
-    let env = FlowEnv {
-        vfs: &run.vfs,
-        texts: &run.host.layer.texts,
-        files: &run.files,
-    };
-    run.flow
-        .net_pump(run.now, &mut run.host.app, &mut run.view, &env);
+use crate::clock::{Clock, NetClock};
+
+/// Minimized window of machine `i` as in `opennml-game` (`about_to_wait`): no logic step, the program clock
+/// (`Run::now`) stands; the network time comes from [`NetClock`] with the real time of the passes of the event loop, and
+/// each pass only pumps the line ([`GameFlow::net_pump`]). The other machines compute their frames at the same time.
+struct Minimized {
+    i: usize,
+    clock: Clock,
+    net: NetClock,
+    real: std::time::Instant,
 }
 
-/// The client window is minimized while the host starts: the client only pumps the line ([`GameFlow::net_pump`]),
-/// longer than [`opennml_net::TIMEOUT_MS`]. The connection stays, the start of the host arrives, but the client does
-/// not load until its next logic step ([`GameFlow::net_step`]); then both reach the match.
+impl Minimized {
+    fn new(n: &Lan, i: usize) -> Self {
+        let mut clock = Clock::new();
+        clock.advance(n.runs[i].now as f32);
+        let real = std::time::Instant::now();
+        let mut net = NetClock::default();
+        net.idle(real, &clock);
+        Self {
+            i,
+            clock,
+            net,
+            real,
+        }
+    }
+
+    /// Network time of the machine (program clock plus the minimized time).
+    fn now(&self) -> u64 {
+        self.net.now_ms(&self.clock)
+    }
+
+    /// One pass of the event loop `step_ms` of real time later.
+    fn pass(&mut self, n: &mut Lan, step_ms: u64) {
+        let frozen = n.runs[self.i].now;
+        self.real += std::time::Duration::from_millis(step_ms);
+        self.net.idle(self.real, &self.clock);
+        let t = self.now();
+        n.net.advance_to(t);
+        for (k, run) in n.runs.iter_mut().enumerate() {
+            if k != self.i {
+                run.now = t;
+                run.frame();
+            }
+        }
+        let run = &mut n.runs[self.i];
+        let env = FlowEnv {
+            vfs: &run.vfs,
+            texts: &run.host.layer.texts,
+            files: &run.files,
+        };
+        run.flow.net_pump(t, &mut run.host.app, &mut run.view, &env);
+        assert_eq!(run.now, frozen, "no logic step while minimized");
+    }
+}
+
+/// The client window is minimized while the host starts: the client only pumps the line ([`GameFlow::net_pump`]) with
+/// the network time of [`NetClock`], longer than [`opennml_net::TIMEOUT_MS`]. The connection stays, the start of the
+/// host arrives, but the client does not load until its next logic step ([`GameFlow::net_step`], with the same
+/// network time as `opennml-game` passes it).
 #[test]
 fn net_pump_answers_without_starting() {
     let Some(mut n) = lobby_pair() else {
         return;
     };
     start_from_lobby(&mut n);
-    // From now on the host computes its frames, the client only pumps the line at the same played time.
-    let pump = |n: &mut Lan, step: u64| {
-        let t = n.runs[0].now + step;
-        n.net.advance_to(t);
-        n.runs[0].now = t;
-        n.runs[0].frame();
-        n.runs[1].now = t;
-        pump_only(n, 1);
-    };
+    let mut min = Minimized::new(&n, 1);
     for _ in 0..MAX_LAN_FRAMES {
         if n.phase(1) == NetPhase::Loading {
             break;
         }
-        pump(&mut n, 16);
+        min.pass(&mut n, 16);
     }
     assert_eq!(n.phase(1), NetPhase::Loading, "start of the host arrived");
-    let arrived = n.runs[1].now;
-    while n.runs[1].now < arrived + opennml_net::TIMEOUT_MS + 2_000 {
-        pump(&mut n, 250);
+    assert!(n.runs[1].flow.net_active(), "the start needs pumping");
+    let arrived = min.now();
+    while min.now() < arrived + opennml_net::TIMEOUT_MS + 2_000 {
+        min.pass(&mut n, 250);
     }
     let client = n.session(1).driver().expect("start still waiting");
     assert_eq!(client.failure(), None, "client keeps the host");
@@ -2081,7 +2119,8 @@ fn net_pump_answers_without_starting() {
     assert!(!host.started(), "no Go without the client");
     assert!(!n.runs[1].flow.running(), "nothing loaded while minimized");
     assert!(n.runs[1].shown.is_empty(), "{:?}", n.runs[1].shown);
-    // Next logic step of the client: `take_start` loads the map.
+    // Restored, next logic step of the client: `take_start` loads the map.
+    let now = min.now();
     let run = &mut n.runs[1];
     let env = FlowEnv {
         vfs: &run.vfs,
@@ -2090,7 +2129,7 @@ fn net_pump_answers_without_starting() {
     };
     let shown = &mut run.shown;
     run.flow.net_step(
-        run.now,
+        now,
         &mut run.host.app,
         &mut run.view,
         &env,
@@ -2105,9 +2144,50 @@ fn net_pump_answers_without_starting() {
         "{:?}",
         n.runs[1].shown
     );
-    n.frames_until("Go on both", |l| {
-        (0..2).all(|i| l.phase(i) == NetPhase::Match)
+}
+
+/// `LAN1` searches in a minimized window: the program clock stands, the network time runs on ([`NetClock`]). The search
+/// keeps the game of the host listed, and once the host has closed its session the game drops out of the list after
+/// [`opennml_net::ENTRY_TTL_MS`] - with the program clock as network time it would stay forever. An idle session needs
+/// no pumping ([`GameFlow::net_active`]).
+#[test]
+fn minimized_search_keeps_its_clock() {
+    let Some(mut n) = Lan::corpus(&["Anna", "Bert"]) else {
+        return;
+    };
+    assert!(
+        !n.runs[1].flow.net_active(),
+        "idle session in the main menu"
+    );
+    n.host(0, Some("tinte"));
+    assert!(n.runs[0].flow.net_active(), "lobby of the host");
+    n.open_lan1(1);
+    n.frames_until("game in the list", |l| {
+        !l.session(1).status().games.is_empty()
     });
+    assert!(n.runs[1].flow.net_active(), "the search needs pumping");
+    let mut min = Minimized::new(&n, 1);
+    let start = min.now();
+    while min.now() < start + 10_000 {
+        min.pass(&mut n, 50);
+    }
+    assert_eq!(n.phase(1), NetPhase::Searching);
+    assert_eq!(
+        n.session(1).status().games.len(),
+        1,
+        "still listed after 10 s"
+    );
+    n.runs[0].apply(UiEffect::Net(AppCmd::CloseNet));
+    let closed = min.now();
+    while min.now() < closed + opennml_net::ENTRY_TTL_MS + 2_000 {
+        min.pass(&mut n, 50);
+    }
+    assert!(!n.runs[0].flow.net_active(), "host session closed");
+    assert!(
+        n.session(1).status().games.is_empty(),
+        "the closed game has dropped out: {:?}",
+        n.session(1).status().games
+    );
 }
 
 // ---------------------------------------------------------------------------------------------------------------

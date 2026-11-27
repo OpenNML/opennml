@@ -112,9 +112,100 @@ impl Clock {
     }
 }
 
+/// Time base of the network in `opennml-game`: the program clock ([`Clock::now_ms`]) plus the real time during which
+/// the window was minimized. Minimized there is no logic step, so the program clock stands still (no catching up after
+/// restoring either, [`MAX_FRAME_MS`]); the network keeps its own time running in that phase so that latency probes,
+/// search queries, list expiry and deadlines go on (O-465). The offset only grows, so the network time stays monotonic
+/// across minimizing and restoring. With the clock halted (control channel) no time is added.
+#[derive(Debug, Clone, Default)]
+pub struct NetClock {
+    /// Real time of all minimized phases so far, in whole milliseconds.
+    idle_ms: u64,
+    /// Real time of the previous pass of the event loop while minimized; `None` while frames are drawn.
+    idle_since: Option<Instant>,
+}
+
+impl NetClock {
+    /// A pass of the event loop while minimized at the real time `now`: the real time since the previous such pass
+    /// counts for the network (only with the clock in real time).
+    pub fn idle(&mut self, now: Instant, clock: &Clock) {
+        if let Some(last) = self.idle_since.replace(now)
+            && clock.mode() == ClockMode::Realtime
+        {
+            let ms = now.saturating_duration_since(last).as_millis();
+            self.idle_ms = self
+                .idle_ms
+                .saturating_add(u64::try_from(ms).unwrap_or(u64::MAX));
+        }
+    }
+
+    /// Frames are drawn again: the program clock runs on, the next minimized phase starts anew.
+    pub fn shown(&mut self) {
+        self.idle_since = None;
+    }
+
+    /// Real time of the minimized phases in ms, the offset of the network time to the program clock.
+    pub fn offset_ms(&self) -> u64 {
+        self.idle_ms
+    }
+
+    /// Network time in ms: the program clock in whole milliseconds plus [`Self::offset_ms`].
+    pub fn now_ms(&self, clock: &Clock) -> u64 {
+        // `as` saturates; the clock is >= 0.
+        (clock.now_ms() as u64).saturating_add(self.idle_ms)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Minimized for 40 s: the program clock stands, the network time follows the real time; after restoring the
+    /// first frame catches nothing up and the network time never goes back.
+    #[test]
+    fn net_clock_runs_while_minimized_without_moving_the_program_clock() {
+        let start = Instant::now();
+        let at = |ms: u64| start + Duration::from_millis(ms);
+        let mut clock = Clock::new();
+        let mut net = NetClock::default();
+        clock.tick(at(0));
+        let dt = clock.tick(at(16));
+        clock.advance(dt);
+        assert_eq!(net.now_ms(&clock), 16);
+        // Minimized from 20 ms on: passes every 50 ms, no frame.
+        let mut last = net.now_ms(&clock);
+        for k in 0..=800 {
+            net.idle(at(20 + 50 * k), &clock);
+            let now = net.now_ms(&clock);
+            assert!(now >= last, "monotonic");
+            last = now;
+        }
+        assert_eq!(clock.now_ms(), 16.0, "no logic step while minimized");
+        assert_eq!(net.offset_ms(), 40_000);
+        assert_eq!(net.now_ms(&clock), 40_016);
+        // Restored: the first frame gets at most `MAX_FRAME_MS`.
+        net.shown();
+        let dt = clock.tick(at(40_030));
+        assert_eq!(dt, MAX_FRAME_MS, "no catching up");
+        clock.advance(dt);
+        assert!(net.now_ms(&clock) > last, "monotonic after restoring");
+        assert_eq!(net.now_ms(&clock), 40_116);
+        // The next minimized phase starts anew (the frames in between are not counted twice).
+        net.idle(at(50_000), &clock);
+        assert_eq!(net.offset_ms(), 40_000);
+        net.idle(at(50_050), &clock);
+        assert_eq!(net.offset_ms(), 40_050);
+    }
+
+    #[test]
+    fn net_clock_adds_nothing_with_the_clock_halted() {
+        let start = Instant::now();
+        let clock = Clock::paused();
+        let mut net = NetClock::default();
+        net.idle(start, &clock);
+        net.idle(start + Duration::from_secs(5), &clock);
+        assert_eq!(net.now_ms(&clock), 0);
+    }
 
     #[test]
     fn realtime_follows_real_time_with_a_cap() {

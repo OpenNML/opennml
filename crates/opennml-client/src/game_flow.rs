@@ -1909,7 +1909,8 @@ impl GameFlow {
     /// Only the line of the network session: pump ([`NetSession::pump`]: search, connect, lobby, latency probes, state
     /// to the UI) and follow the driver of the match (`Go`, end); no start, no loading. A start that has arrived waits
     /// for the next [`Self::net_step`]. `opennml-game` calls it additionally while the window is minimized (O-465: the
-    /// original computes nothing then, the network runs on). Nothing without a network session.
+    /// original computes nothing then, the network runs on), with a `now` that keeps running with the real time
+    /// (`NetClock`) although the program clock stands. Nothing without a network session.
     pub fn net_pump(
         &mut self,
         now: u64,
@@ -1925,9 +1926,13 @@ impl GameFlow {
         net.follow_match(view.net(), running);
     }
 
-    /// A network session is there (menu path), see [`Self::set_net_session`].
+    /// The network session of the menu path has something to pump: search, connection, lobby, start or match
+    /// ([`NetSession::phase`] not `Idle`). `opennml-game` creates the session at window start; an idle one (main menu,
+    /// single player) needs no pumping, a minimized window then just waits.
     pub fn net_active(&self) -> bool {
-        self.net.is_some()
+        self.net
+            .as_ref()
+            .is_some_and(|net| net.phase() != NetPhase::Idle)
     }
 
     /// Network start (E-321): after the `Start` of the host, loads the map of the start package the same way as

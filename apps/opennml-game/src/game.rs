@@ -43,7 +43,7 @@ use std::time::Instant;
 use anyhow::{Context, Result, bail};
 use opennml_audio::engine::AudioEngine;
 use opennml_audio::volume::Category;
-use opennml_client::clock::{Clock, ClockMode};
+use opennml_client::clock::{Clock, ClockMode, NetClock};
 use opennml_client::control::ControlEvent;
 use opennml_client::display::{ModeInfo, best_mode_index};
 use opennml_client::frames::FrameCounter;
@@ -639,6 +639,8 @@ pub struct Game {
     opts: GameOptions,
     audio: AudioEngine,
     clock: Clock,
+    /// Time base of the network: program clock plus the minimized phases ([`Self::net_now`], O-465).
+    net_clock: NetClock,
     frames: FrameCounter,
     shell: Option<WindowShell>,
     host: Option<MenuHost>,
@@ -698,6 +700,7 @@ impl Game {
             opts,
             audio,
             clock,
+            net_clock: NetClock::default(),
             frames: FrameCounter::new(Instant::now()),
             shell: None,
             host: None,
@@ -857,7 +860,7 @@ impl Game {
 
     /// Pumps the network in every pass of the event loop, independent of clock mode and match.
     fn pump_net(&mut self) {
-        let now = self.now();
+        let now = self.net_now();
         if let Some(launch) = self.net.as_mut() {
             launch.pump(now);
         }
@@ -873,7 +876,7 @@ impl Game {
     /// path: pump (the host distributes the start), after the `Start` load the map, the state into the log; a failure
     /// before the start leads back to the main menu ([`NetLaunch::failure`], no program end).
     fn net_step(&mut self) {
-        let now = self.now();
+        let now = self.net_now();
         self.with_flow(|flow, app, view, env, present| flow.net_step(now, app, view, env, present));
         let Some(launch) = self.net.as_mut() else {
             return;
@@ -1004,6 +1007,19 @@ impl Game {
     fn now(&self) -> u64 {
         // `as` saturates; the clock is >= 0.
         self.clock.now_ms() as u64
+    }
+
+    /// Time of the network in whole milliseconds: [`Self::now`] plus the minimized phases ([`NetClock`]), for every
+    /// pump and the turn driver of the match ([`GameSession::set_net_time_offset`]), so that it stays one monotonic time.
+    fn net_now(&self) -> u64 {
+        self.net_clock.now_ms(&self.clock)
+    }
+
+    /// Hands the offset of the network time to the match (a new session after loading starts with 0).
+    fn sync_net_time(&mut self) {
+        if let Some(session) = self.session.as_mut() {
+            session.set_net_time_offset(self.net_clock.offset_ms());
+        }
     }
 
     /// State of the UI at the current clock (`state`, `step`, `ui_state`), with a match including the field `game`
@@ -1273,6 +1289,7 @@ impl Game {
 
     /// One frame of the match (`GameFlow::frame`: steps only while the game runs, ESC flag).
     fn step_session(&mut self, now: u64) {
+        self.sync_net_time();
         let (Some(host), Some(shell)) = (self.host.as_mut(), self.shell.as_ref()) else {
             return;
         };
@@ -1992,12 +2009,19 @@ impl ApplicationHandler<ControlEvent> for Game {
                 return;
             }
         }
-        self.pump_net();
-        // Minimized: no logic step (`redraw` does not run), only the line of the menu path (O-465); a start that has
-        // arrived loads in the next logic step.
+        // Minimized: no logic step (`redraw` does not run), the program clock stands; the network time runs on with the
+        // real time ([`NetClock`]), and besides `pump_net` only the line of the menu path is pumped (O-465). A start
+        // that has arrived loads in the next logic step.
         let minimized = self.shell.as_ref().is_some_and(WindowShell::minimized);
         if minimized {
-            let now = self.now();
+            self.net_clock.idle(Instant::now(), &self.clock);
+        } else {
+            self.net_clock.shown();
+        }
+        self.sync_net_time();
+        self.pump_net();
+        if minimized {
+            let now = self.net_now();
             self.with_flow(|flow, app, view, env, _| flow.net_pump(now, app, view, env));
         }
         let net = self.net.is_some()
