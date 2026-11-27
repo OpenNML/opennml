@@ -789,6 +789,10 @@ pub struct GameSession {
     /// [`GameSession::advance_by`], `frame_events` hands them to the bar. Plus the state of the bar commands (chosen
     /// formation).
     pub toolbar_host: ToolbarHost,
+    /// Simulation events since the last frame step of the command bar ([`GameSession::deliver_events`]); the next
+    /// step hands them to [`ToolbarHost::frame`]. A halted match without pause (game menu, diplomacy dialog) has no
+    /// step: the bar gets the events of its immediate commands with the next running frame.
+    toolbar_events: Vec<SimEvent>,
     /// Last pressed button of the bar (`GameEngine+0x4E0`, script condition 38): `BUTTONMSG`, for hero, multi-selection
     /// and occupant buttons the HID. Host state, not in the savegame; `None` at session start, restart and load
     /// (deviation from the original, O-269: the original has no initial value). Only [`GameSession::button_pressed`]
@@ -909,6 +913,23 @@ pub struct GameSession {
     /// Offset of the network time to the program clock (`opennml-game`: the minimized phases, `NetClock`); the driver
     /// gets `now + offset`, the same time as from the pumps of the host. 0 in the viewer.
     net_time_offset_ms: u64,
+}
+
+/// What only the tick path of [`GameSession::advance_by`] knows for [`GameSession::deliver_events`]; the frame without
+/// a tick passes the current selection and cinemascope, empty lists and no bar tick.
+struct StepParts {
+    /// Selection before the step: also clearing by cinemascope and lock reports `{8}` to the bar.
+    selection_before: Vec<ObjectId>,
+    /// Cinemascope before the step for the command acknowledgments (silent in the cinemascope, `0x0047BBC0`).
+    cinemascope_before: bool,
+    /// Speed changes of the turns (E-294).
+    speed_changes: Vec<SpeedChange>,
+    /// Fire sounds of the buildings (action 102).
+    fire_sounds: Vec<SoundRequest>,
+    /// Wading noises of the units.
+    movement_sounds: Vec<SoundRequest>,
+    /// Frame time for the tick of the message bar (`Hud::tick`); `None` without a tick.
+    bar_dt_ms: Option<f32>,
 }
 
 /// Request of the match to the flow (`GameFlow`), which picks it up right after a key command or input
@@ -1084,6 +1105,7 @@ impl GameSession {
             hud_enabled: true,
             hovered: None,
             toolbar_host: ToolbarHost::new(),
+            toolbar_events: Vec::new(),
             last_button: None,
             running: true,
             toolbar_previews: Vec::new(),
@@ -1652,7 +1674,9 @@ impl GameSession {
 
     /// A frame at program clock `now` (whole milliseconds): frame time since the last call, then
     /// [`GameSession::advance_by`]. Without `running` (game menu, saving, loading) only the time base is brought up to
-    /// date; in pause ([`PauseState::sim`]) only the pause step ([`GameSession::advance_paused`]). In every case, also
+    /// date; in pause ([`PauseState::sim`]) only the pause step ([`GameSession::advance_paused`]). Both frames without a
+    /// tick first deliver the events of the commands executed immediately since then
+    /// ([`GameSession::deliver_immediate_events`]). In every case, also
     /// in pause and game menu, afterwards the UI fades by the program time since the last frame
     /// ([`Self::tick_presentation`]; the first frame and a backward jump of the clock count 0). Afterwards
     /// [`GameSession::ticks`] and [`SimHost::halted`] of this frame.
@@ -1714,8 +1738,10 @@ impl GameSession {
             self.ticks = ticks;
             let net_now = now.saturating_add(self.net_time_offset_ms);
             self.net_halt_step(gpu, vfs, net_now, audio.as_deref_mut());
+            // No tick in the pause: the events of the immediate commands now, before the frame step of the bar.
+            let played = self.deliver_immediate_events(gpu, vfs, audio.as_deref_mut());
             self.advance_paused(vfs, dt_ms, audio);
-            Vec::new()
+            played
         } else {
             let frame = if hold && !run {
                 self.clock.hold_frame(now);
@@ -1730,7 +1756,9 @@ impl GameSession {
                     self.ticks = u32::try_from(self.steps() - steps_before).unwrap_or(u32::MAX);
                     played
                 }
-                None => Vec::new(),
+                // Halted match without pause (`run` false: game menu, diplomacy dialog, saving, loading): no tick
+                // either, the events of the immediate commands now.
+                None => self.deliver_immediate_events(gpu, vfs, audio),
             }
         };
         if let Some(net) = &self.net {
@@ -1787,21 +1815,13 @@ impl GameSession {
             let params = self.pick_params();
             self.map.pick_target(&params, c, self.screen)
         });
-        if let Some(sim) = self.map.sim.as_mut() {
+        // Without a tick only the events of the commands executed immediately in pause (`SimHost::execute_now`,
+        // delivered by `deliver_immediate_events` before this step): the original reports e.g. a cancel in the queue
+        // synchronously (`0x00507960` -> `NotifyUiIfSelected(0)`), so the button of a canceled UPGRADE returns even in
+        // pause (O-395, re/game-ui N.14.13).
+        let events = std::mem::take(&mut self.toolbar_events);
+        if let Some(sim) = self.map.sim.as_ref() {
             let hover = hover_target(sim, self.hovered);
-            // Without a tick only the events of the commands executed immediately in pause (`SimHost::execute_now`):
-            // the original reports e.g. a cancel in the queue synchronously (`0x00507960` -> `NotifyUiIfSelected(0)`),
-            // so the button of a canceled UPGRADE returns even in pause (O-395, re/game-ui N.14.13).
-            //
-            // After resuming, the first tick delivers the same events once more (until then they are in
-            // `state.events`). A canceled order then gives a second `{0x10, 0}`, only for a building that is selected
-            // in both frames (`rebuild_kind`). That stays without sound and without a visible change: with a single
-            // selection the second rebuild is silent and yields the same buttons (`0x00457DB0`; menu, submenu and
-            // cursor remain, D-234). The fallback to the full rebuild applies only if several objects are selected in
-            // the meantime (`shown_menu = 0`; a construction site has no queue). It then plays no selection sound,
-            // which applies only to a single selection (`0x00457A4D`), and closes at most an open cursor. The hero row
-            // rebuilds the same way twice after a creation or destruction by an immediate command.
-            let events = sim.take_immediate_events();
             self.toolbar_host
                 .frame(sim, &self.selection.ids, &events, hover);
         }
@@ -2484,99 +2504,20 @@ impl GameSession {
                 vfs,
             },
         );
-        let map = &mut self.map;
-        // Speech of the dialog lines and tip sound (`Dialog_PlaySpeech`, `FUN_00443450`, `FUN_0043E250`), once per
-        // event; nothing without a sound system.
-        if let Some(audio) = audio.as_deref_mut() {
-            speech_step(&mut self.speech, map.sim.as_ref(), &events, audio, vfs);
-        }
-        // Messages are invisible and silent in the cinemascope (`Engine+0x104`), already for the messages of this frame
-        // (O-217).
-        self.hud.messages.cinemascope = self.presentation.cinemascope;
-        // Fire sounds of the buildings (action 102) take the way of the combat sounds.
-        let fire_sounds = map.take_fire_sounds();
-        // Wading noises of the units (`SoundManager_PlayEvent3D`, re/world-display W.3.4).
-        let movement_sounds = map.take_movement_sounds();
-        // Game time of the bar before its tick of this frame: in the original the floating numbers of the step arise in
-        // the game tick and then run this `dt` with `FUN_00494A00`.
+        let parts = StepParts {
+            selection_before,
+            cinemascope_before,
+            speed_changes,
+            // Fire sounds of the buildings (action 102) take the way of the combat sounds.
+            fire_sounds: self.map.take_fire_sounds(),
+            // Wading noises of the units (`SoundManager_PlayEvent3D`, re/world-display W.3.4).
+            movement_sounds: self.map.take_movement_sounds(),
+            bar_dt_ms: Some(dt_ms),
+        };
+        // Game time of the bar before its tick of this frame (for the charge digits below, as in `deliver_events`).
         let bar_ms = self.hud.bar_ms;
-        if let Some(sim) = &map.sim {
-            // Selection changes of the step: mount with a new rider (re/riding 4.7; merging triggers no sound), end of
-            // a tent crossfade tent <-> travois (re/tents 3.3/3.5), a locomotive leaving the map
-            // (`SimEvent::Deselected`), vanished objects.
-            let before = selection_before;
-            let reselected = self.selection.apply_sim_step(
-                &events,
-                &sim.state,
-                &sim.rules,
-                |o| sim.fog_selectable(o),
-                sim.active_player,
-            );
-            // Every selection change of the step reports `{8}` to the bar (quartering, death, handover, deselecting);
-            // the selection sound is played by the branch below. The sequence of IDs is compared: even a mere
-            // reordering without new or removed objects reports `{8}` and rebuilds fully (the first object determines
-            // the menu).
-            if reselected || self.selection.ids != before {
-                self.toolbar_host.selection_changed();
-            }
-            // Credits and damage numbers (at the bar's game time), text messages (at the rendering clock) and sounds of
-            // the simulation, then the message bar: events, then its tick in game time (`GameEngine_UpdateCamera`
-            // `0x0043D19C` after `GameEngine_Update`; O-213).
-            let mut sounds = map.notices.handle(&events, sim, self.clock.now_ms, bar_ms);
-            self.hud.handle(&events, sim.active_player, &mut sounds);
-            // Speed changes of the turns on every machine (E-294).
-            post_speed_messages(&mut self.hud, &speed_changes, &mut sounds);
-            // Chat lines `0x5D` (`FUN_0042E980` when executing, before the bar's tick `FUN_00494A00`).
-            let names = &self.player_names;
-            chat::show(
-                &events,
-                sim.active_player,
-                self.size.1 as i32,
-                |slot| match names {
-                    Some(n) => n[usize::from(slot) % PLAYER_SLOTS].clone(),
-                    None => sim.state.players[usize::from(slot) % PLAYER_SLOTS]
-                        .name
-                        .clone(),
-                },
-                |slot| {
-                    opennml_world::markers::marker_argb(
-                        sim.state.players[usize::from(slot) % PLAYER_SLOTS].color,
-                    )
-                },
-                &mut self.hud.screen_texts,
-            );
-            self.hud.tick(dt_ms, sim.game_speed, &mut sounds);
-            sounds.extend(fire_sounds);
-            sounds.extend(movement_sounds);
-            // Command acknowledgments (on command execution at the start of the tick), then the selection sound of the
-            // new selection (`FUN_00457980` -> `0x0044BB60`) when the game shrinks the selection (event 8 from
-            // `GameWorld_DeselectObject` `0x004801B0`) or a tent handover has swapped it: packing up -> voice of the
-            // travois, pitching -> noise of the tent (type lock) or voice of the unit left alone (`0x0052DD20`,
-            // `0x0052DD60`, `{0x10, 0}` -> `FUN_00457DB0`). There is no separate deselect sound; at most one selection
-            // sound per step.
-            let mut voices = self
-                .voices
-                .responses(&events, sim.active_player, cinemascope_before);
-            if reselected {
-                voices.extend(self.voices.selection(
-                    &sim.state,
-                    &self.selection.ids,
-                    sim.active_player,
-                ));
-            }
-            if let Some(audio) = audio.as_deref_mut() {
-                let target = map.camera.target;
-                let height = map.scene.terrain.ground_height(target.x, target.z);
-                audio.sound.set_listener(target, height, map.camera.eye);
-                for sound in sounds {
-                    played.push(SessionEvent::Sound(sound.clone()));
-                    play_sim_sound(audio, vfs, sound);
-                }
-                for voice in voices {
-                    self.voices.play(audio, vfs, voice);
-                }
-            }
-        }
+        self.deliver_events(vfs, &events, audio.as_deref_mut(), &mut played, parts);
+        let map = &mut self.map;
         // Digits of the dynamite charges behind the messages, at the same clock (`0x004F07A0`).
         map.charge_digits(vfs, bar_ms);
         let params = map.view_params(self.size, self.view.aspect.into(), false, clock_ms);
@@ -2600,6 +2541,9 @@ impl GameSession {
             let params = self.pick_params();
             self.map.pick_target(&params, c, self.screen)
         });
+        // The events of this frame: those of the ticks, before them those of immediate commands in a halted frame
+        // since the last step of the bar (`deliver_events`).
+        let events = std::mem::take(&mut self.toolbar_events);
         if let Some(sim) = self.map.sim.as_ref() {
             let hover = hover_target(sim, self.hovered);
             self.toolbar_host
@@ -2613,6 +2557,166 @@ impl GameSession {
         self.sync_groups();
         // Fog rows of the minimap from the empty ticks of this frame, before drawing.
         self.sync_minimap();
+        played
+    }
+
+    /// The event part of a frame: [`Self::advance_by`] with the events of its ticks, the frame without a tick with
+    /// those of the immediate commands ([`Self::deliver_immediate_events`]). Speech, selection changes (`{8}` to the
+    /// bar), credits and damage numbers, text messages and the message bar, speed messages, chat lines, the message
+    /// bar's tick (only with `parts.bar_dt_ms`), sounds, command acknowledgments and selection sound; the command bar
+    /// gets the events with its next frame step ([`Self::toolbar_events`]). Camera, weather and effects stay with the
+    /// tick; what only the tick knows comes in `parts`.
+    fn deliver_events(
+        &mut self,
+        vfs: &Vfs,
+        events: &[SimEvent],
+        mut audio: Option<&mut AudioEngine>,
+        played: &mut Vec<SessionEvent>,
+        parts: StepParts,
+    ) {
+        let StepParts {
+            selection_before,
+            cinemascope_before,
+            speed_changes,
+            fire_sounds,
+            movement_sounds,
+            bar_dt_ms,
+        } = parts;
+        let map = &mut self.map;
+        // Speech of the dialog lines and tip sound (`Dialog_PlaySpeech`, `FUN_00443450`, `FUN_0043E250`), once per
+        // event; nothing without a sound system.
+        if let Some(audio) = audio.as_deref_mut() {
+            speech_step(&mut self.speech, map.sim.as_ref(), events, audio, vfs);
+        }
+        // Messages are invisible and silent in the cinemascope (`Engine+0x104`), already for the messages of this frame
+        // (O-217).
+        self.hud.messages.cinemascope = self.presentation.cinemascope;
+        // Game time of the bar before its tick of this frame: in the original the floating numbers of the step arise in
+        // the game tick and then run this `dt` with `FUN_00494A00`.
+        let bar_ms = self.hud.bar_ms;
+        if let Some(sim) = &map.sim {
+            // Selection changes of the step: mount with a new rider (re/riding 4.7; merging triggers no sound), end of
+            // a tent crossfade tent <-> travois (re/tents 3.3/3.5), a locomotive leaving the map
+            // (`SimEvent::Deselected`), vanished objects.
+            let before = selection_before;
+            let reselected = self.selection.apply_sim_step(
+                events,
+                &sim.state,
+                &sim.rules,
+                |o| sim.fog_selectable(o),
+                sim.active_player,
+            );
+            // Every selection change of the step reports `{8}` to the bar (quartering, death, handover, deselecting);
+            // the selection sound is played by the branch below. The sequence of IDs is compared: even a mere
+            // reordering without new or removed objects reports `{8}` and rebuilds fully (the first object determines
+            // the menu).
+            if reselected || self.selection.ids != before {
+                self.toolbar_host.selection_changed();
+            }
+            // Credits and damage numbers (at the bar's game time), text messages (at the rendering clock) and sounds of
+            // the simulation, then the message bar: events, then its tick in game time (`GameEngine_UpdateCamera`
+            // `0x0043D19C` after `GameEngine_Update`; O-213).
+            let mut sounds = map.notices.handle(events, sim, self.clock.now_ms, bar_ms);
+            self.hud.handle(events, sim.active_player, &mut sounds);
+            // Speed changes of the turns on every machine (E-294).
+            post_speed_messages(&mut self.hud, &speed_changes, &mut sounds);
+            // Chat lines `0x5D` (`FUN_0042E980` when executing, before the bar's tick `FUN_00494A00`).
+            let names = &self.player_names;
+            chat::show(
+                events,
+                sim.active_player,
+                self.size.1 as i32,
+                |slot| match names {
+                    Some(n) => n[usize::from(slot) % PLAYER_SLOTS].clone(),
+                    None => sim.state.players[usize::from(slot) % PLAYER_SLOTS]
+                        .name
+                        .clone(),
+                },
+                |slot| {
+                    opennml_world::markers::marker_argb(
+                        sim.state.players[usize::from(slot) % PLAYER_SLOTS].color,
+                    )
+                },
+                &mut self.hud.screen_texts,
+            );
+            // Without a tick the bar stands (`FUN_00494A00` only without pause, O-213).
+            if let Some(dt_ms) = bar_dt_ms {
+                self.hud.tick(dt_ms, sim.game_speed, &mut sounds);
+            }
+            sounds.extend(fire_sounds);
+            sounds.extend(movement_sounds);
+            // Command acknowledgments (on command execution at the start of the tick), then the selection sound of the
+            // new selection (`FUN_00457980` -> `0x0044BB60`) when the game shrinks the selection (event 8 from
+            // `GameWorld_DeselectObject` `0x004801B0`) or a tent handover has swapped it: packing up -> voice of the
+            // travois, pitching -> noise of the tent (type lock) or voice of the unit left alone (`0x0052DD20`,
+            // `0x0052DD60`, `{0x10, 0}` -> `FUN_00457DB0`). There is no separate deselect sound; at most one selection
+            // sound per step.
+            let mut voices = self
+                .voices
+                .responses(events, sim.active_player, cinemascope_before);
+            if reselected {
+                voices.extend(self.voices.selection(
+                    &sim.state,
+                    &self.selection.ids,
+                    sim.active_player,
+                ));
+            }
+            if let Some(audio) = audio {
+                let target = map.camera.target;
+                let height = map.scene.terrain.ground_height(target.x, target.z);
+                audio.sound.set_listener(target, height, map.camera.eye);
+                for sound in sounds {
+                    played.push(SessionEvent::Sound(sound.clone()));
+                    play_sim_sound(audio, vfs, sound);
+                }
+                for voice in voices {
+                    self.voices.play(audio, vfs, voice);
+                }
+            }
+        }
+        self.toolbar_events.extend_from_slice(events);
+    }
+
+    /// Frame without a tick (pause, halted match: game menu, diplomacy dialog): the events of the commands executed
+    /// immediately since then ([`SimHost::take_immediate_events`]) go at once to the map, the script presentation and
+    /// [`Self::deliver_events`], as the original reports them synchronously when executing (O-318: signal with
+    /// `SFX_SIGNAL` and ping O-321, cancel to the bar O-395, diplomacy messages). Selection and cinemascope before are
+    /// the current ones; no speed changes, no fire or wading sounds, and the message bar does not tick. The next tick
+    /// does not deliver these events again. Returns the played sounds like [`Self::advance_by`].
+    fn deliver_immediate_events(
+        &mut self,
+        gpu: &SessionGpu,
+        vfs: &Vfs,
+        mut audio: Option<&mut AudioEngine>,
+    ) -> Vec<SessionEvent> {
+        let mut played = Vec::new();
+        let Some(events) = self
+            .map
+            .sim
+            .as_mut()
+            .map(SimHost::take_immediate_events)
+            .filter(|e| !e.is_empty())
+        else {
+            return played;
+        };
+        self.map
+            .apply_sim_events(gpu.device, gpu.queue, vfs, &events);
+        let cinemascope_before = self.presentation.cinemascope;
+        let selection_before = self.selection.ids.clone();
+        for event in &events {
+            if let SimEvent::Present(p) = event {
+                self.apply_presentation_event(gpu, vfs, audio.as_deref_mut(), p, &mut played);
+            }
+        }
+        let parts = StepParts {
+            selection_before,
+            cinemascope_before,
+            speed_changes: Vec::new(),
+            fire_sounds: Vec::new(),
+            movement_sounds: Vec::new(),
+            bar_dt_ms: None,
+        };
+        self.deliver_events(vfs, &events, audio, &mut played, parts);
         played
     }
 
@@ -3103,6 +3207,7 @@ impl GameSession {
         self.hud.clear();
         self.hovered = None;
         self.toolbar_host.reset();
+        self.toolbar_events.clear();
         self.last_button = None;
         self.toolbar_previews.clear();
         self.target_decal = None;
@@ -5283,19 +5388,75 @@ TEXT 17000
         assert_eq!(&stack[..2], [(70, 101), (70, 101)]);
     }
 
-    /// In pause the command runs immediately (`execute_now`, in the log), but the event comes only with the first tick
-    /// after resuming (deviation from the original); before that no ping and no stack entry.
+    /// A sound system without an output device on the corpus: the session reports its sounds in `played` as in the
+    /// game.
+    fn silent_audio(vfs: &Vfs) -> AudioEngine {
+        AudioEngine::new(opennml_audio::db::SoundDb::load(vfs), None)
+    }
+
+    /// Number of `SFX_SIGNAL` among the sounds of a frame.
+    fn signal_sounds(played: &[SessionEvent]) -> usize {
+        played
+            .iter()
+            .filter(|SessionEvent::Sound(s)| {
+                matches!(s, SoundRequest::Event2d { name } if name == crate::game::notices::SFX_SIGNAL)
+            })
+            .count()
+    }
+
+    /// Entries with MSGID `id` in all queues of the message bar.
+    fn bar_entries(
+        session: &GameSession,
+        id: i32,
+    ) -> Vec<opennml_ui::hud::message_bar::BarMessage> {
+        let bar = &session.hud.messages;
+        (0..bar.tags().len())
+            .flat_map(|t| bar.queue(t))
+            .filter(|m| m.id == id)
+            .cloned()
+            .collect()
+    }
+
+    /// Alliance of the local slot with the other slot of the two-player match (`{0x64, p, q, 0}`, message 231 to all).
+    fn alliance_offer(session: &GameSession) -> opennml_sim::command::Command {
+        let p = session.sim().unwrap().active_player;
+        opennml_sim::command::Command {
+            player: p,
+            kind: CommandKind::Diplomacy {
+                p: i32::from(p),
+                q: i32::from((p + 1) % 2),
+                mode: 0,
+            },
+        }
+    }
+
+    /// `{0x10, 0}` among the events of the last frame step of the command bar.
+    fn silent_rebuilds(session: &GameSession) -> usize {
+        session
+            .toolbar_host
+            .frame_events
+            .iter()
+            .filter(|e| e.kind == opennml_ui::hud::HudEventKind::Rebuild && e.args == [0])
+            .count()
+    }
+
+    /// Signal in the pause (`0x0048D4D6`): the original executes the command at once (O-318) and plays `SFX_SIGNAL` 2D
+    /// and sets the ping in the same frame. The pause frame delivers the events of the immediate command without a
+    /// tick.
     // QUIRK O-321: kept
     #[test]
-    fn signal_in_pause_shows_up_after_resuming() {
+    fn signal_in_pause_plays_and_pings_in_the_same_frame() {
         use crate::game::hotkeys::HotkeyCommand as C;
         let Some((vfs, device, queue)) = corpus_gpu() else {
             return;
         };
         let gpu = gpu_of(&device, &queue);
         let mut session = toolbar_session(&gpu, &vfs);
+        let mut audio = silent_audio(&vfs);
+        session.advance(&gpu, &vfs, 1_000, true, Some(&mut audio));
         session.map.camera.target = Vec3::new(9000.0, 0.0, 13000.0);
         assert!(session.toggle_pause());
+        let steps = session.steps();
         let pending = session.sim().unwrap().pending_commands().len();
         assert!(session.run_hotkey(&C::XButton(571), 0, &vfs, None));
         assert_eq!(
@@ -5303,13 +5464,236 @@ TEXT 17000
             pending,
             "executed immediately"
         );
-        assert!(session.hud.pings.list().is_empty());
-        assert!(session.toggle_pause());
-        for _ in 0..3 {
-            session.advance_by(&gpu, &vfs, 100.0, true, None);
+        assert!(session.hud.pings.list().is_empty(), "not before the frame");
+        let played = session.advance(&gpu, &vfs, 1_016, true, Some(&mut audio));
+        assert_eq!(session.steps(), steps, "no tick in the pause");
+        assert_eq!(signal_sounds(&played), 1, "SFX_SIGNAL in the same frame");
+        let pings: Vec<_> = session
+            .hud
+            .pings
+            .list()
+            .iter()
+            .map(|p| (p.tile, p.repeats))
+            .collect();
+        assert_eq!(pings, [((70, 101), 1)]);
+        assert_eq!(session.hud.actions.tiles().front(), Some(&(70, 101)));
+    }
+
+    /// Alliance with the diplomacy dialog open (`running = false`, halted match without pause): the command runs at
+    /// once and message 231 is in the bar in the same frame (reference run D5b). The bar does not tick while the match
+    /// is halted (O-213): the entry stands.
+    #[test]
+    fn alliance_offer_with_diplomacy_open_shows_at_once() {
+        let Some((vfs, device, queue)) = corpus_gpu() else {
+            return;
+        };
+        let gpu = gpu_of(&device, &queue);
+        let mut session = start_two_players(&gpu, &vfs, &mut Vec::new()).unwrap();
+        session.advance(&gpu, &vfs, 1_000, true, None);
+        session.advance(&gpu, &vfs, 1_016, false, None);
+        assert!(session.sim().unwrap().halted, "dialog open: halted");
+        let steps = session.steps();
+        let offer = alliance_offer(&session);
+        session.sim_mut().unwrap().execute_now(offer);
+        assert!(bar_entries(&session, 231).is_empty());
+        session.advance(&gpu, &vfs, 1_032, false, None);
+        let shown = bar_entries(&session, 231);
+        assert_eq!(shown.len(), 1, "message 231 in the same frame");
+        for now in [2_000, 30_000, 60_000] {
+            session.advance(&gpu, &vfs, now, false, None);
         }
+        assert_eq!(session.steps(), steps, "no tick");
+        assert_eq!(bar_entries(&session, 231), shown, "the bar does not tick");
+    }
+
+    /// Continuation of the two cases above: after resuming, the tick no longer delivers the events of the immediate
+    /// commands. No second entry 231, no second `SFX_SIGNAL`; the `{0x10, 0}` of a cancel in the pause reaches the
+    /// command bar once (formerly a second silent rebuild with the first tick after resuming).
+    #[test]
+    fn immediate_events_are_not_delivered_twice() {
+        use opennml_formats::gifcon::button_kind as kinds;
+        let Some((vfs, device, queue)) = corpus_gpu() else {
+            return;
+        };
+        let gpu = gpu_of(&device, &queue);
+        let mut session = start_two_players(&gpu, &vfs, &mut Vec::new()).unwrap();
+        session.resize(1024, 768);
+        let mut audio = silent_audio(&vfs);
+        let local = session.sim().unwrap().active_player;
+        // An own building that trains, selected; its first MAKE type runs.
+        let (building, guid) = {
+            let sim = session.sim().unwrap();
+            sim.state.tables[usize::from(local)]
+                .objects
+                .iter()
+                .flatten()
+                .find_map(|o| {
+                    let menu = sim.rules.toolbar.menus.get(&(o.guid as i32))?;
+                    let make = menu.iter().find(|b| b.kind() == kinds::MAKE)?;
+                    Some((o.id, make.msg as u32))
+                })
+                .expect("own building that trains")
+        };
+        session.selection.ids = vec![building];
+        session.selection_changed(&vfs, None);
+        {
+            let sim = session.sim_mut().unwrap();
+            for r in 0..8 {
+                sim.state.players[usize::from(local)].set_resource(r, 100_000);
+            }
+            sim.submit(opennml_sim::command::Command {
+                player: local,
+                kind: CommandKind::EnqueueProduction { building, guid },
+            });
+        }
+        let mut now = 1_000;
+        for _ in 0..4 {
+            session.advance(&gpu, &vfs, now, true, Some(&mut audio));
+            now += 100;
+        }
+        let running = |s: &GameSession| match s
+            .sim()
+            .unwrap()
+            .state
+            .object(building, false)
+            .and_then(|o| o.module(3))
+            .map(|m| &m.kind)
+        {
+            Some(opennml_sim::module::ModuleKind::Building(b)) => b.make_guid,
+            _ => 0,
+        };
+        assert_eq!(running(&session), guid, "production runs");
+
+        // Dialog open: alliance and signal at once, delivered in the same frame.
+        session.advance(&gpu, &vfs, now, false, Some(&mut audio));
+        now += 16;
+        let offer = alliance_offer(&session);
+        let signal = opennml_sim::command::Command {
+            player: local,
+            kind: CommandKind::Signal {
+                player: i32::from(local),
+                mask: 1 << local,
+                x: 70,
+                z: 101,
+            },
+        };
+        let sim = session.sim_mut().unwrap();
+        sim.execute_now(offer);
+        sim.execute_now(signal);
+        let played = session.advance(&gpu, &vfs, now, false, Some(&mut audio));
+        now += 16;
+        assert_eq!(signal_sounds(&played), 1, "SFX_SIGNAL with the dialog open");
+        let shown = bar_entries(&session, 231);
+        assert_eq!(shown.len(), 1);
+        let ours = |s: &GameSession| {
+            bar_entries(s, 231)
+                .iter()
+                .filter(|m| m.players == shown[0].players && m.text_id == shown[0].text_id)
+                .count()
+        };
+        // Closed: the ticks bring neither the sound nor the message once more.
+        let steps = session.steps();
+        for _ in 0..4 {
+            let played = session.advance(&gpu, &vfs, now, true, Some(&mut audio));
+            now += 100;
+            assert_eq!(signal_sounds(&played), 0, "no second SFX_SIGNAL");
+        }
+        assert!(session.steps() > steps, "runs again");
+        assert_eq!(ours(&session), 1, "no second message 231");
+
+        // Pause: cancel of the running order at once, `{0x10, 0}` in the pause frame, not again after resuming.
+        assert!(session.toggle_pause());
+        session.advance(&gpu, &vfs, now, true, Some(&mut audio));
+        now += 16;
+        assert_eq!(silent_rebuilds(&session), 0);
+        session
+            .sim_mut()
+            .unwrap()
+            .execute_now(opennml_sim::command::Command {
+                player: local,
+                kind: CommandKind::CancelProduction {
+                    building,
+                    index: 0,
+                    arg: 0,
+                },
+            });
+        assert_eq!(running(&session), 0, "cancelled at once");
+        let mut rebuilds = 0;
+        for _ in 0..2 {
+            session.advance(&gpu, &vfs, now, true, Some(&mut audio));
+            now += 16;
+            rebuilds += silent_rebuilds(&session);
+        }
+        assert_eq!(rebuilds, 1, "in the pause frame");
+        assert!(session.toggle_pause());
+        let steps = session.steps();
+        for _ in 0..4 {
+            session.advance(&gpu, &vfs, now, true, Some(&mut audio));
+            now += 100;
+            rebuilds += silent_rebuilds(&session);
+        }
+        assert!(session.steps() > steps, "runs again");
+        assert_eq!(rebuilds, 1, "the tick does not deliver the cancel again");
+    }
+
+    /// The counter of the delivered events starts anew on loading (`state.events` is not in the savegame): command in
+    /// the pause, delivered, saved, loaded; the ticks afterwards bring no message, and an immediate command after loading
+    /// is delivered again (no counter beyond `state.events`).
+    #[test]
+    fn delivered_count_resets_on_load() {
+        let Some((vfs, device, queue)) = corpus_gpu() else {
+            return;
+        };
+        let gpu = gpu_of(&device, &queue);
+        let mut session = toolbar_session(&gpu, &vfs);
+        let mut audio = silent_audio(&vfs);
+        session.advance(&gpu, &vfs, 1_000, true, Some(&mut audio));
+        assert!(session.toggle_pause());
+        let offer = alliance_offer(&session);
+        session.sim_mut().unwrap().execute_now(offer);
+        session.advance(&gpu, &vfs, 1_016, true, Some(&mut audio));
+        assert_eq!(
+            bar_entries(&session, 231).len(),
+            1,
+            "delivered in the pause"
+        );
+        let sim = session.sim_mut().unwrap();
+        let save = opennml_sim::save::SaveGame::from_bytes(&sim.save().to_bytes()).unwrap();
+        sim.load(save, None);
+        session.reset_view(&gpu, &vfs);
+        assert!(bar_entries(&session, 231).is_empty());
+        if session.pause.sim {
+            assert!(session.toggle_pause());
+        }
+        let steps = session.steps();
+        let mut now = 1_100;
+        for _ in 0..4 {
+            session.advance(&gpu, &vfs, now, true, Some(&mut audio));
+            now += 100;
+        }
+        assert!(session.steps() > steps, "runs");
+        assert!(
+            bar_entries(&session, 231).is_empty(),
+            "no message after loading"
+        );
+        // Pause again: the next immediate command is delivered.
+        assert!(session.toggle_pause());
+        let local = session.sim().unwrap().active_player;
+        session
+            .sim_mut()
+            .unwrap()
+            .execute_now(opennml_sim::command::Command {
+                player: local,
+                kind: CommandKind::Signal {
+                    player: i32::from(local),
+                    mask: 1 << local,
+                    x: 70,
+                    z: 101,
+                },
+            });
+        let played = session.advance(&gpu, &vfs, now, true, Some(&mut audio));
+        assert_eq!(signal_sounds(&played), 1);
         assert_eq!(session.hud.pings.list().len(), 1);
-        assert_eq!(session.hud.pings.list()[0].tile, (70, 101));
     }
 
     /// 578 (quicksave) and 581 (load) are not known to the dispatcher (re/game-ui N.5.4): they reach the bar (last
