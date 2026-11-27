@@ -958,7 +958,7 @@ mod tests {
         assert_eq!(blasts, [Vec3::from(laid)], "explosion at the charge");
         // Two seconds each (`FLOAT_MS`), then gone.
         f.notices
-            .expire(f.now_ms, f.now_ms as i64 + crate::game::notices::FLOAT_MS);
+            .expire(f.now_ms as i64 + crate::game::notices::FLOAT_MS);
         assert!(f.notices.floats.is_empty());
     }
 

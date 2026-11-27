@@ -1683,8 +1683,9 @@ Message bar and status bar, protocol 31. Old lines stay readable (`hud` is then 
 - **Drawing:** `opennml-game` draws per frame world -> game UI -> menu -> pointer. The game UI
   (`opennml_client::game_session::GameSession::hud_cmds`) is in this order: the message bar in the world pass (`0x00438F2A`,
   per message kind the head at `POSITION`, color from the remaining time), then the game windows in the drawing order
-  of the tree (status bar, minimap, command bar, cinemascope area, tooltip), finally provisionally the text messages
-  of the headhunters at (16, 16) (`FUN_00492A40`, no message bar; position in the original not traced). The bar runs in
+  of the tree (status bar, minimap, command bar, cinemascope area, tooltip). The text messages of the headhunters are
+  screen texts of kind 1 of the message bar (`FUN_00492A40`, centered at y = H - 200, game time, also in the
+  cinemascope; quirk O-380) and lie with the world below the game UI. The bar runs in
   game time and stands still with an open game menu (quirk O-213). `screenshot` shows the same image without a pointer
   (with `pointer: true` with a pointer).
 - **`ui_state.game.hud`** (only `opennml-game` with a match; also in `state` and the response of `step`): `{"dialog",

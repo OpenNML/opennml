@@ -2613,10 +2613,17 @@ impl GameSession {
             if reselected || self.selection.ids != before {
                 self.toolbar_host.selection_changed();
             }
-            // Credits and damage numbers (at the bar's game time), text messages (at the rendering clock) and sounds of
-            // the simulation, then the message bar: events, then its tick in game time (`GameEngine_UpdateCamera`
-            // `0x0043D19C` after `GameEngine_Update`; O-213).
-            let mut sounds = map.notices.handle(events, sim, self.clock.now_ms, bar_ms);
+            // Credits and damage numbers (at the bar's game time), text messages and sounds of the simulation, then the
+            // message bar: events, then its tick in game time (`GameEngine_UpdateCamera` `0x0043D19C` after
+            // `GameEngine_Update`; O-213). The text messages (headhunter, `FUN_00492A40(1, ...)` when executing) go as
+            // screen texts of kind 1 with their filled-in text into the list, like the chat lines before the bar's tick
+            // (O-380).
+            let (mut sounds, notices) = map.notices.handle(events, sim, bar_ms);
+            for n in notices {
+                self.hud
+                    .screen_texts
+                    .push_text(n.kind, n.text, n.color, n.ms);
+            }
             self.hud.handle(events, sim.active_player, &mut sounds);
             // Speed changes of the turns on every machine (E-294).
             post_speed_messages(&mut self.hud, &speed_changes, &mut sounds);
@@ -3308,23 +3315,31 @@ impl GameSession {
     }
 
     /// Readable message lines with color: the heads of the message bar per kind in file order (game tags resolved with
-    /// `texts`, [`opennml_ui::hud::message_bar::MessageBar::lines`]), then the standing text messages at the rendering
-    /// clock. For the viewer overlay without `--hud`; drawing goes via [`GameSession::hud_cmds`].
+    /// `texts`, [`opennml_ui::hud::message_bar::MessageBar::lines`]), then the standing text messages (screen texts of
+    /// kind 1 with their own text, headhunter, O-380) in list order with the color of the last tick. For the viewer
+    /// overlay without `--hud`; drawing goes via [`GameSession::hud_cmds`] and [`GameSession::combat_cmds`].
     pub fn message_lines(&self, texts: &Texts) -> Vec<(String, u32)> {
         let mut lines = match self.sim() {
             Some(sim) => self.hud.messages.lines(&SimGameText::new(sim, texts)),
             None => Vec::new(),
         };
-        lines.extend(self.map.notices.text_message_lines(self.clock.now_ms));
+        lines.extend(
+            self.hud
+                .screen_texts
+                .entries()
+                .iter()
+                .filter(|e| e.kind == screen_text::kind::LOW)
+                .filter_map(|e| Some((e.own_text.clone()?, e.draw_color()))),
+        );
         lines
     }
 
     /// Draw commands of the game UI of a frame (after the world, before menu and pointer): messages of the world pass,
-    /// then the game windows ([`Hud::draw`]: status bar, command bar, cinemascope area, tooltip; re/campaign-ui D6.4);
-    /// finally the headhunters' text messages ([`crate::game::notices::Notices::draw_text_messages`], provisionally at
-    /// the old place, above the status bar so that they stay readable). In the cinemascope the bars hide themselves
-    /// (`{0x11, 1}`, `{0x1C, 0}`) and so do the messages (O-217). Game values and names via `texts`. Nothing without a
-    /// simulation or with [`GameSession::hud_enabled`] off. Read-only (no checksum changes).
+    /// then the game windows ([`Hud::draw`]: status bar, command bar, cinemascope area, tooltip; re/campaign-ui D6.4).
+    /// The headhunters' text messages are screen texts and draw with the world ([`GameSession::combat_cmds`]). In the
+    /// cinemascope the bars hide themselves (`{0x11, 1}`, `{0x1C, 0}`) and so do the messages (O-217). Game values and
+    /// names via `texts`. Nothing without a simulation or with [`GameSession::hud_enabled`] off. Read-only (no checksum
+    /// changes).
     pub fn hud_cmds(&self, ctx: &mut UiContext<'_>, texts: &Texts) -> Vec<DrawCmd> {
         let mut out = Vec::new();
         self.hud_cmds_into(ctx, texts, false, None, &mut out);
@@ -3383,9 +3398,6 @@ impl GameSession {
         draw_pause(ctx, out);
         self.hud
             .draw_windows(ctx, &game, &values, Some(&bar), minimap.as_ref(), out);
-        self.map
-            .notices
-            .draw_text_messages(self.clock.now_ms, ctx, out);
     }
 
     /// Data of the minimap for a frame of size `ctx.screen`, only if it is drawn: node with `IsMap` and visible
@@ -3513,14 +3525,14 @@ impl GameSession {
     /// Drawing path over the world (after [`GameSession::render`]) in one place, for window and recording of `opennml-game`
     /// (order re/campaign-ui D6.4): first the combat display with screen texts and countdown
     /// ([`GameSession::combat_cmds`], part of the world pass in the original), above it the game UI
-    /// ([`GameSession::hud_cmds`]: messages, game windows with bar and cinemascope area, tooltip, text messages;
-    /// re/game-ui 1.2), above it the scene fade ([`GameSession::fade_cmds`]) and last the info windows as first
+    /// ([`GameSession::hud_cmds`]: messages, game windows with bar and cinemascope area, tooltip; re/game-ui 1.2), above it the scene fade ([`GameSession::fade_cmds`]) and last the info windows as first
     /// children of the desktop ([`GameSession::desktop_cmds`]); game menu, dialogs and pointer follow at the host. With
     /// a visible pause ([`PauseState::shown`]) the PAUSE lettering ([`opennml_ui::hud::pause_text::draw`], text 15788) lies
     /// after the messages and before the game windows, also in the cinemascope and with the game menu open, so below
     /// cinemascope area, scene fade and info windows. The viewer takes [`GameSession::hud_cmds`] (without PAUSE),
     /// [`GameSession::fade_cmds`] and [`GameSession::desktop_cmds`] and draws the combat display itself with egui;
-    /// screen texts and countdown are missing there (a known viewer gap).
+    /// screen texts (with them the headhunter messages and chat lines) and countdown are missing there (a known viewer
+    /// gap; without `--hud` the overlay lists the headhunter messages, [`GameSession::message_lines`]).
     ///
     /// With a running selection box ([`GameSession::selection_rect`]) it lies after PAUSE and before the game windows
     /// (root `0x00449890`, re/game-ui, section "Selection box addendum"); the viewer draws its own with egui.
@@ -5319,6 +5331,105 @@ TEXT 17000
             frames += 1;
             assert!(frames < 200, "line stays");
         }
+    }
+
+    /// O-380: a headhunter message (`SimEvent::TextMessage`, `FUN_00492A40(1, ...)`) is a screen text of kind 1 with
+    /// its text already filled in, opaque green, 6000 ms of the bar's game time; it is drawn with the world, centered on
+    /// the full width at y = H - 200 (568 at 1024 x 768), also in the cinemascope, and no longer by the game UI.
+    // QUIRK O-380: kept
+    #[test]
+    fn headhunter_message_is_centered_at_h_minus_200() {
+        use opennml_sim::command::headhunter::{COLOR_GREEN, TEXT_HIRED};
+        use opennml_sim::state::TextArg;
+        use opennml_ui::hud::screen_text::{ScreenTexts, kind};
+        let Some((vfs, device, queue)) = corpus_gpu() else {
+            return;
+        };
+        let gpu = gpu_of(&device, &queue);
+        let mut session = toolbar_session(&gpu, &vfs);
+        let local = session.sim().unwrap().active_player;
+        session.sim_mut().unwrap().state.players[usize::from(local)].name = "Anna".into();
+        session
+            .map
+            .notices
+            .texts
+            .insert(TEXT_HIRED, "TESTTEXT %s hires".into());
+        let event = SimEvent::TextMessage {
+            to: None,
+            text: TEXT_HIRED,
+            args: vec![TextArg::PlayerName(local)],
+            color: COLOR_GREEN,
+            duration_ms: 6000,
+        };
+        let parts = StepParts {
+            selection_before: session.selection.ids.clone(),
+            cinemascope_before: false,
+            speed_changes: Vec::new(),
+            fire_sounds: Vec::new(),
+            movement_sounds: Vec::new(),
+            bar_dt_ms: None,
+        };
+        session.deliver_events(&vfs, &[event], None, &mut Vec::new(), parts);
+        let shown = session
+            .hud
+            .screen_texts
+            .first_of(kind::LOW)
+            .expect("kind 1")
+            .clone();
+        assert_eq!(
+            (shown.own_text.as_deref(), shown.color, shown.ms),
+            (Some("TESTTEXT Anna hires"), 0xFF00_FF00, 6000)
+        );
+        let mut layer = crate::ui_layer::UiLayer::new(&vfs, "DEU", 1024, None).unwrap();
+        let mut ctx = layer.context(&vfs, screen_of((1024, 768)));
+        let texts = ctx.texts;
+        // The same line drawn by the list alone: shadow and text in the font `InfoMessages`.
+        let mut alone = ScreenTexts::new();
+        alone.push_text(kind::LOW, "TESTTEXT Anna hires".into(), 0xFF00_FF00, 6000);
+        let mut expected = Vec::new();
+        let sim = session.sim().unwrap();
+        alone.draw(
+            &ctx,
+            &GameTags::new(&SimGameText::new(sim, texts), 0),
+            &mut expected,
+        );
+        let green: Vec<[i32; 4]> = expected
+            .iter()
+            .filter_map(|c| match *c {
+                DrawCmd::Quad {
+                    dst,
+                    color: 0xFF00_FF00,
+                    ..
+                } => Some(dst),
+                _ => None,
+            })
+            .collect();
+        let line = "TESTTEXT Anna hires";
+        assert_eq!(green.len(), line.len(), "one cell per character");
+        assert!(green.iter().all(|d| d[1] == 568), "{green:?}");
+        // Centered: the line (the advances of its characters) starts at (1024 - width) / 2, the text 2 px right of
+        // its shadow.
+        let font = ctx.fonts.font(ctx.fonts.by_name("InfoMessages"));
+        let width: i32 = line.bytes().map(|c| font.advance[usize::from(c)]).sum();
+        assert_eq!(green[0][0] - 2, (1024 - width) / 2, "width {width}");
+        let contains = |all: &[DrawCmd]| all.windows(expected.len()).any(|w| w == expected);
+        assert!(contains(&session.combat_cmds(&mut ctx)), "with the world");
+        let ui = session.hud_cmds(&mut ctx, texts);
+        assert!(
+            !ui.iter().any(|c| matches!(
+                *c,
+                DrawCmd::Quad {
+                    color: 0xFF00_FF00,
+                    ..
+                }
+            )),
+            "no longer in the game UI"
+        );
+        session.presentation.cinemascope = true;
+        assert!(
+            contains(&session.combat_cmds(&mut ctx)),
+            "in the cinemascope"
+        );
     }
 
     /// O-321: key and button 571 send with the camera target `(9000, y, 13000)` the command `{0x5C, slot, mask, 70,

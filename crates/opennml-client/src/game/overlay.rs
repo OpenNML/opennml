@@ -161,7 +161,7 @@ pub struct OverlayInfo {
     /// Account of the active player (`SimHost::account_line`); `None` without simulation.
     pub account: Option<String>,
     /// Standing messages of the active player with their color (`GameSession::message_lines`: heads of the
-    /// message bar, then the text messages); empty if the viewer draws the game UI (`--hud`).
+    /// message bar, then the text messages of the screen texts); empty if the viewer draws the game UI (`--hud`).
     pub messages: Vec<(String, u32)>,
     /// Command UI: right-click action under the mouse or build site in placement mode
     /// (`economy::action_line`, `economy::placement_line`).

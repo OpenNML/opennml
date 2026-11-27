@@ -335,7 +335,8 @@ fn draw_pointer(
 
 /// The draw commands over the world of a frame of size `size` ([`GameSession::over_world_cmds`], the same for window
 /// and capture): the combat display (health bars, rank and counter-upgrade icons; in the original step 13 of the world
-/// pass), above it messages, game windows with the cinemascope area, tooltip and text messages, the scene fade 145/146
+/// pass) with the screen texts (headhunter messages, chat lines), above it messages, game windows with the cinemascope
+/// area and tooltip, the scene fade 145/146
 /// and finally the info windows 168/213 as first children of the desktop (re/campaign-ui D6.4; the menu is drawn above
 /// by the caller). After `GameSession::render` of the same frame so that the bars sit at the upper edges of this frame.
 /// `present` calls this in every frame with a match (also in pause and game menu) with the one layer of the host: the

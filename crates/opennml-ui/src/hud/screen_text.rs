@@ -1,7 +1,7 @@
 //! Screen texts of the message bar: the list `MessageBar+0xC` with texts that fade out linearly over their whole
-//! duration. Script action `n5` enqueues a text of kind 2 (unused in the shipped data); in the original the
-//! headhunters also use the list (kind 1, O-380, in the reimplementation still `Notices`). Without simulation: the
-//! host enqueues, ticks with the game time of the message bar and draws with the world.
+//! duration. Script action `n5` enqueues a text of kind 2 (unused in the shipped data); the headhunters enqueue their
+//! filled-in messages as kind 1 with their own text (O-380, [`ScreenTexts::push_text`]). Without simulation: the host
+//! enqueues, ticks with the game time of the message bar and draws with the world.
 //!
 //! Chat lines as kind 10 (`FUN_00492B00` -> `FUN_00492340`) with their own text, own position and movement, fade-out
 //! from 1024, timer `duration/6` and wait list (`MessageBar+0x24/+0x28`, `FUN_00492960(..., 1)`, moving up
@@ -64,7 +64,7 @@ pub struct ScreenText {
     /// Kind (`+4`), see [`kind`].
     pub kind: u8,
     /// Text ID; the original copies the text when enqueuing (`FUN_0055FFE0`), the reimplementation reads it when
-    /// drawing from the same table.
+    /// drawing from the same table (0 with [`Self::own_text`]).
     pub text: i32,
     /// Base color (`+0x34`); the alpha is set by the tick.
     pub color: u32,
@@ -80,7 +80,8 @@ pub struct ScreenText {
     step: f32,
     /// Start alpha (`+0x3C`): 255, 1024 for kind 10.
     start_alpha: f32,
-    /// Own text (`+0x40`, copy when enqueuing): chat lines; otherwise `None` and the text comes from [`Self::text`].
+    /// Own text (`+0x40`, copy when enqueuing): chat lines and headhunter messages; otherwise `None` and the text comes
+    /// from [`Self::text`].
     pub own_text: Option<String>,
     /// Own position and movement (kind 10); otherwise `None` and the position follows the kind when drawing.
     pub motion: Option<Motion>,
@@ -195,6 +196,15 @@ impl ScreenTexts {
         self.enqueue(ScreenText::new(kind, text, color, ms), false);
     }
 
+    /// Screen text with its own, already filled-in text (`FUN_00492A40(kind, text, color, duration)`, which copies the
+    /// text when enqueuing; the headhunter messages with kind 1, O-380): like [`Self::push`], with the same discard
+    /// rule, position by kind and fade-out.
+    pub fn push_text(&mut self, kind: u8, text: String, color: u32, ms: i32) {
+        let mut entry = ScreenText::new(kind, 0, color, ms);
+        entry.own_text = Some(text);
+        self.enqueue(entry, false);
+    }
+
     /// Chat line `FUN_00492B00(text, color, duration)` at the screen height `height`: entry of kind 10 at
     /// ([`CHAT_X`], `height` - [`CHAT_Y_FROM_BOTTOM`]) and `FUN_00492960(entry, 1)`. If a chat line is already active
     /// (kind 10, i.e. younger than `duration/6`), the new one waits; otherwise it stands immediately. The replacement
@@ -267,9 +277,10 @@ impl ScreenTexts {
         &self.waiting
     }
 
-    /// The active chat lines (entries with their own text) in list order, for the control channel.
+    /// The active chat lines (entries with their own position, kind 10 or after its timer 0) in list order, for the
+    /// control channel.
     pub fn chat_lines(&self) -> impl Iterator<Item = &ScreenText> {
-        self.entries.iter().filter(|e| e.own_text.is_some())
+        self.entries.iter().filter(|e| e.motion.is_some())
     }
 
     /// The entries in list order.
@@ -512,6 +523,47 @@ mod tests {
         assert_eq!(texts.entries()[2].alpha, 0, "ms = 0: invisible");
         texts.tick(0);
         assert_eq!(texts.entries().len(), 2, "ms = 0 ends in the first tick");
+    }
+
+    /// O-380: the headhunter messages (`FUN_00492A40(1, text, 0x00FF00, 6000 | 3000)`) enqueue their already filled-in
+    /// text as kind 1. A second one before half the time of the first is rejected, from half the time it replaces the
+    /// first at the same place; the own text is drawn centered at y = H - 200.
+    // QUIRK O-380: kept
+    #[test]
+    fn own_text_of_kind_1_follows_the_discard_rule() {
+        let mut texts = ScreenTexts::new();
+        texts.push_text(kind::LOW, "a".into(), 0xFF00_FF00, 6_000);
+        let first = &texts.entries()[0];
+        assert_eq!(
+            (first.kind, first.own_text.as_deref(), first.alpha),
+            (kind::LOW, Some("a"), 255)
+        );
+        assert!(first.motion.is_none(), "position by kind");
+        // "a" (10 px) centered: (1024 - 10) / 2 = 507, at 768 - 200 = 568.
+        assert_eq!(
+            drawn(&texts),
+            [(507, 570, 0xFF00_0000), (509, 568, 0xFF00_FF00)]
+        );
+        texts.tick(2_000);
+        texts.push_text(kind::LOW, "b".into(), 0xFF00_FF00, 3_000);
+        assert_eq!(texts.entries().len(), 1);
+        assert_eq!(
+            texts.entries()[0].own_text.as_deref(),
+            Some("a"),
+            "2000 < 6000/2: rejected"
+        );
+        assert!(texts.waiting().is_empty(), "kind 1 does not wait");
+        texts.tick(1_000);
+        assert!(texts.entries()[0].half, "3000 >= 3000");
+        texts.push_text(kind::LOW, "b".into(), 0xFF00_FF00, 3_000);
+        let second = &texts.entries()[0];
+        assert_eq!(
+            (second.own_text.as_deref(), second.ms, second.elapsed),
+            (Some("b"), 3_000, 0),
+            "replaced at the same place"
+        );
+        assert_eq!(texts.entries().len(), 1);
+        assert_eq!(texts.chat_lines().count(), 0, "no chat line");
     }
 
     /// Position of chat line `i` (whole pixels like `ftol`).
