@@ -90,6 +90,8 @@ follow the language of the installation; without a detected edition they follow 
   at the start (if the monitor does not have it, to its best mode). `ACCEPT` in the video options changes the window
   size or the fullscreen mode, the fonts stay until the next start (as in the original); with
   `--window-mode borderless`, `ACCEPT` only has an effect in the log (the size follows the monitor).
+  The game window has the fixed size of the settings and can be neither resized nor maximized (like the original);
+  the viewer stays resizable.
 - `--monitor <n>`: monitor (0-based). `--mute`: no sound output.
 - `--no-gamma`: no gamma ramp. Otherwise `Gamma` of the settings (slider in the video options) acts as in the
   original as linear brightness on the window image; screenshots never contain it.

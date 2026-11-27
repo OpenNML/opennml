@@ -256,7 +256,8 @@ pub const MOUSE_RIGHT: u8 = 4;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HeldVk {
     held: Vec<u8>,
-    /// Physically held keys with the VK they were pressed with (a layout change while held keeps it).
+    /// Physically held keys with the VK they were pressed with. A layout change while held keeps the VK until the
+    /// next [`HeldVk::press`] of the same key (an autorepeat), which overwrites it (see there).
     down: Vec<(KeyCode, u8)>,
     /// Mouse bits ([`MOUSE_LEFT`], [`MOUSE_MIDDLE`], [`MOUSE_RIGHT`]).
     mouse: u8,
@@ -265,6 +266,10 @@ pub struct HeldVk {
 impl HeldVk {
     /// Key pressed with the VK `vk` of the caller ([`vk_of_layout`] or [`vk_of_german`]): physically held, VK into
     /// the table (if new). Returns the VK (`None`: key without a VK, nothing is entered).
+    ///
+    /// A repeated press of a held key (autorepeat) overwrites its stored VK: after a layout switch while the key is
+    /// held, the new VK replaces the old one at the next [`Self::begin_round`]. This matches the original's
+    /// `GetAsyncKeyState` sweep and leaves no stuck VK behind.
     pub fn press(&mut self, code: KeyCode, vk: Option<u8>) -> Option<u8> {
         let vk = vk?;
         match self.down.iter_mut().find(|(c, _)| *c == code) {
@@ -499,6 +504,39 @@ mod tests {
             KeyCode::ControlRight,
         ] {
             assert_eq!(vk_of_layout(code), vk_of_german(code), "{code:?}");
+        }
+    }
+
+    #[test]
+    fn autorepeat_after_a_layout_switch_replaces_the_stored_vk() {
+        let mut held = HeldVk::default();
+        held.press(KeyCode::KeyZ, Some(0x59));
+        held.press(KeyCode::KeyZ, Some(0x5A));
+        held.begin_round();
+        assert_eq!(held.held(), [0x5A]);
+        held.release(KeyCode::KeyZ);
+        held.begin_round();
+        assert!(held.held().is_empty());
+    }
+
+    /// The main-block digits have the same VK (`0x31..=0x39`) on every common layout (QWERTY, QWERTZ, Dvorak, AZERTY; the
+    /// scancode mapping ignores the shift state), so this holds whatever layout the machine has.
+    #[cfg(windows)]
+    #[test]
+    fn layout_vk_of_the_main_block_digits_is_layout_independent() {
+        let digits = [
+            KeyCode::Digit1,
+            KeyCode::Digit2,
+            KeyCode::Digit3,
+            KeyCode::Digit4,
+            KeyCode::Digit5,
+            KeyCode::Digit6,
+            KeyCode::Digit7,
+            KeyCode::Digit8,
+            KeyCode::Digit9,
+        ];
+        for (i, code) in digits.into_iter().enumerate() {
+            assert_eq!(vk_of_layout(code), Some(0x31 + i as u8), "{code:?}");
         }
     }
 

@@ -105,8 +105,8 @@ pub enum WindowFrame {
     /// Freely resizable with all buttons (viewer).
     Resizable,
     /// Fixed size, close and minimize only: the original's style `0x00CA8000` =
-    /// `WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX` (`MainFrame_PreCreateWindow` `0x004CB4C0`, re/renderer "Ablauf beim
-    /// Start"), no sizing border and no maximize button (game).
+    /// `WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX` (`MainFrame_PreCreateWindow` `0x004CB4C0`, re/renderer, section "Startup
+    /// sequence"), no sizing border and no maximize button (game).
     Fixed,
 }
 

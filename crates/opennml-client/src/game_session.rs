@@ -1674,12 +1674,11 @@ impl GameSession {
 
     /// A frame at program clock `now` (whole milliseconds): frame time since the last call, then
     /// [`GameSession::advance_by`]. Without `running` (game menu, saving, loading) only the time base is brought up to
-    /// date; in pause ([`PauseState::sim`]) only the pause step ([`GameSession::advance_paused`]). Both frames without a
-    /// tick first deliver the events of the commands executed immediately since then
-    /// ([`GameSession::deliver_immediate_events`]). In every case, also
-    /// in pause and game menu, afterwards the UI fades by the program time since the last frame
-    /// ([`Self::tick_presentation`]; the first frame and a backward jump of the clock count 0). Afterwards
-    /// [`GameSession::ticks`] and [`SimHost::halted`] of this frame.
+    /// date; in pause ([`PauseState::sim`]) only the pause step ([`GameSession::advance_paused`]). Both frames without
+    /// a tick first deliver the events of the commands executed immediately since then
+    /// ([`GameSession::deliver_immediate_events`]). In every case, also in pause and game menu, afterwards the UI fades
+    /// by the program time since the last frame ([`Self::tick_presentation`]; the first frame and a backward jump of
+    /// the clock count 0). Afterwards [`GameSession::ticks`] and [`SimHost::halted`] of this frame.
     ///
     /// In the network ([`Self::net`]) clock and ticks run with the turns independently of `running` (O-143): an open
     /// game menu does not stop the others; `running` only locks input and camera. The pause bits follow the core
@@ -3522,14 +3521,15 @@ impl GameSession {
         out
     }
 
-    /// Drawing path over the world (after [`GameSession::render`]) in one place, for window and recording of `opennml-game`
-    /// (order re/campaign-ui D6.4): first the combat display with screen texts and countdown
+    /// Drawing path over the world (after [`GameSession::render`]) in one place, for window and recording of
+    /// `opennml-game` (order re/campaign-ui D6.4): first the combat display with screen texts and countdown
     /// ([`GameSession::combat_cmds`], part of the world pass in the original), above it the game UI
-    /// ([`GameSession::hud_cmds`]: messages, game windows with bar and cinemascope area, tooltip; re/game-ui 1.2), above it the scene fade ([`GameSession::fade_cmds`]) and last the info windows as first
-    /// children of the desktop ([`GameSession::desktop_cmds`]); game menu, dialogs and pointer follow at the host. With
-    /// a visible pause ([`PauseState::shown`]) the PAUSE lettering ([`opennml_ui::hud::pause_text::draw`], text 15788) lies
-    /// after the messages and before the game windows, also in the cinemascope and with the game menu open, so below
-    /// cinemascope area, scene fade and info windows. The viewer takes [`GameSession::hud_cmds`] (without PAUSE),
+    /// ([`GameSession::hud_cmds`]: messages, game windows with bar and cinemascope area, tooltip; re/game-ui 1.2),
+    /// above it the scene fade ([`GameSession::fade_cmds`]) and last the info windows as first children of the desktop
+    /// ([`GameSession::desktop_cmds`]); game menu, dialogs and pointer follow at the host. With a visible pause
+    /// ([`PauseState::shown`]) the PAUSE lettering ([`opennml_ui::hud::pause_text::draw`], text 15788) lies after the
+    /// messages and before the game windows, also in the cinemascope and with the game menu open, so below cinemascope
+    /// area, scene fade and info windows. The viewer takes [`GameSession::hud_cmds`] (without PAUSE),
     /// [`GameSession::fade_cmds`] and [`GameSession::desktop_cmds`] and draws the combat display itself with egui;
     /// screen texts (with them the headhunter messages and chat lines) and countdown are missing there (a known viewer
     /// gap; without `--hud` the overlay lists the headhunter messages, [`GameSession::message_lines`]).
@@ -5334,8 +5334,8 @@ TEXT 17000
     }
 
     /// O-380: a headhunter message (`SimEvent::TextMessage`, `FUN_00492A40(1, ...)`) is a screen text of kind 1 with
-    /// its text already filled in, opaque green, 6000 ms of the bar's game time; it is drawn with the world, centered on
-    /// the full width at y = H - 200 (568 at 1024 x 768), also in the cinemascope, and no longer by the game UI.
+    /// its text already filled in, opaque green, 6000 ms of the bar's game time; it is drawn with the world, centered
+    /// on the full width at y = H - 200 (568 at 1024 x 768), also in the cinemascope, and no longer by the game UI.
     // QUIRK O-380: kept
     #[test]
     fn headhunter_message_is_centered_at_h_minus_200() {
@@ -5748,8 +5748,8 @@ TEXT 17000
     }
 
     /// The counter of the delivered events starts anew on loading (`state.events` is not in the savegame): command in
-    /// the pause, delivered, saved, loaded; the ticks afterwards bring no message, and an immediate command after loading
-    /// is delivered again (no counter beyond `state.events`).
+    /// the pause, delivered, saved, loaded; the ticks afterwards bring no message, and an immediate command after
+    /// loading is delivered again (no counter beyond `state.events`).
     #[test]
     fn delivered_count_resets_on_load() {
         let Some((vfs, device, queue)) = corpus_gpu() else {

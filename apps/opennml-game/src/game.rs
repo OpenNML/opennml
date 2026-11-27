@@ -336,11 +336,11 @@ fn draw_pointer(
 /// The draw commands over the world of a frame of size `size` ([`GameSession::over_world_cmds`], the same for window
 /// and capture): the combat display (health bars, rank and counter-upgrade icons; in the original step 13 of the world
 /// pass) with the screen texts (headhunter messages, chat lines), above it messages, game windows with the cinemascope
-/// area and tooltip, the scene fade 145/146
-/// and finally the info windows 168/213 as first children of the desktop (re/campaign-ui D6.4; the menu is drawn above
-/// by the caller). After `GameSession::render` of the same frame so that the bars sit at the upper edges of this frame.
-/// `present` calls this in every frame with a match (also in pause and game menu) with the one layer of the host: the
-/// info windows measure themselves in the frame of their event and keep its texture IDs.
+/// area and tooltip, the scene fade 145/146 and finally the info windows 168/213 as first children of the desktop
+/// (re/campaign-ui D6.4; the menu is drawn above by the caller). After `GameSession::render` of the same frame so that
+/// the bars sit at the upper edges of this frame. `present` calls this in every frame with a match (also in pause and
+/// game menu) with the one layer of the host: the info windows measure themselves in the frame of their event and keep
+/// its texture IDs.
 fn over_world(
     session: &GameSession,
     layer: &mut UiLayer,
@@ -1089,7 +1089,7 @@ impl Game {
         // the best mode of the monitor (`WindowShell::apply_mode`).
         let exclusive = shell.mode == WindowMode::Exclusive && {
             let monitor = event_loop.available_monitors().nth(shell.monitor_index);
-            set_exclusive(&shell, monitor, display_mode_of(&config))
+            set_exclusive(&shell, monitor, display_mode_of(&config), true)
         };
         if !exclusive {
             shell.apply_mode(event_loop);
@@ -1388,7 +1388,7 @@ impl Game {
                 let _ = shell.window.request_inner_size(PhysicalSize::new(w, h));
             }
             WindowMode::Exclusive => {
-                set_exclusive(shell, shell.window.current_monitor(), mode);
+                set_exclusive(shell, shell.window.current_monitor(), mode, false);
             }
             WindowMode::Borderless => log::info!(
                 "Display mode {} x {}: borderless: the size follows the monitor",
@@ -1834,8 +1834,14 @@ impl Game {
 }
 
 /// Fullscreen exclusive in the video mode `mode` on `monitor` ([`matching_mode`]); `false` without a monitor or
-/// without a matching mode (then the previous one stays, warning).
-fn set_exclusive(shell: &WindowShell, monitor: Option<MonitorHandle>, mode: DisplayMode) -> bool {
+/// without a matching mode (warning). At the start (`at_start`) the caller then falls back to the best mode of the
+/// monitor; on ACCEPT the previous mode stays.
+fn set_exclusive(
+    shell: &WindowShell,
+    monitor: Option<MonitorHandle>,
+    mode: DisplayMode,
+    at_start: bool,
+) -> bool {
     let Some(monitor) = monitor else {
         log::warn!("Display mode {} x {}: no monitor", mode.width, mode.height);
         return false;
@@ -1858,6 +1864,15 @@ fn set_exclusive(shell: &WindowShell, monitor: Option<MonitorHandle>, mode: Disp
             true
         }
         None => {
+            if !at_start {
+                log::warn!(
+                    "Display mode {} x {} ({} bit) is not available on the monitor; the previous mode stays",
+                    mode.width,
+                    mode.height,
+                    mode.bits
+                );
+                return false;
+            }
             // The caller falls back to the best mode of the monitor (`WindowShell::apply_mode`).
             let chosen = best_mode_index(&infos).map_or_else(
                 || "none".to_owned(),

@@ -137,7 +137,7 @@ pub fn viewer_key(code: KeyCode, shift: bool) -> bool {
 }
 
 /// Key route of the original in the viewer with `--hud`: the table of the held keys as in the host of
-/// `opennml-game` (`HeldVk`: VK of the active key layout in press order), so that chords like `CONTROL 1` arise.
+/// `opennml-game` (`HeldVk`: VK by input source (`vk_of_source`) in press order), so that chords like `CONTROL 1` arise.
 /// It follows every key (also Ctrl and Shift of the viewer); a press on a free key ([`viewer_key`]) yields
 /// the key set of the event for `Hotkeys::resolve`. Without `--hud` nothing is passed on.
 #[derive(Debug, Default)]
