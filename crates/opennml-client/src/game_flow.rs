@@ -1884,10 +1884,9 @@ impl GameFlow {
         }
     }
 
-    /// Network session per frame: pump ([`NetSession::pump`]: search, connect, lobby, state to the UI), follow the
-    /// driver of the match (`Go`, end), and for the client load the map after the `Start` of the host
-    /// ([`Self::start_net_match`]; if it fails, the session is closed). Nothing without a network session. The host
-    /// calls it in every frame after [`Self::apply_all`] (`opennml-game`, the tests in `Run::frame`).
+    /// Network session per frame: the line ([`Self::net_pump`]), and for the client load the map after the `Start` of
+    /// the host ([`Self::start_net_match`]; if it fails, the session is closed). Nothing without a network session.
+    /// The host calls it in every frame after [`Self::apply_all`] (`opennml-game`, the tests in `Run::frame`).
     pub fn net_step(
         &mut self,
         now: u64,
@@ -1896,13 +1895,8 @@ impl GameFlow {
         env: &FlowEnv,
         present: &mut dyn FnMut(&str, LoadPhase),
     ) {
-        let running = self.meta.is_some();
-        let Some(net) = self.net.as_mut() else {
-            return;
-        };
-        net.pump(now, app, env.vfs, env.texts);
-        net.follow_match(view.net(), running);
-        let Some(driver) = net.take_start() else {
+        self.net_pump(now, app, view, env);
+        let Some(driver) = self.net.as_mut().and_then(NetSession::take_start) else {
             return;
         };
         if let Err(failure) = self.start_net_match(driver, app, view, env, present)
@@ -1910,6 +1904,30 @@ impl GameFlow {
         {
             net.start_failed(failure.net);
         }
+    }
+
+    /// Only the line of the network session: pump ([`NetSession::pump`]: search, connect, lobby, latency probes, state
+    /// to the UI) and follow the driver of the match (`Go`, end); no start, no loading. A start that has arrived waits
+    /// for the next [`Self::net_step`]. `opennml-game` calls it additionally while the window is minimized (O-465: the
+    /// original computes nothing then, the network runs on). Nothing without a network session.
+    pub fn net_pump(
+        &mut self,
+        now: u64,
+        app: &mut MenuApp,
+        view: &mut dyn SessionView,
+        env: &FlowEnv,
+    ) {
+        let running = self.meta.is_some();
+        let Some(net) = self.net.as_mut() else {
+            return;
+        };
+        net.pump(now, app, env.vfs, env.texts);
+        net.follow_match(view.net(), running);
+    }
+
+    /// A network session is there (menu path), see [`Self::set_net_session`].
+    pub fn net_active(&self) -> bool {
+        self.net.is_some()
     }
 
     /// Network start (E-321): after the `Start` of the host, loads the map of the start package the same way as

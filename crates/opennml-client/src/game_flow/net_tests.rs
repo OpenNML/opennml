@@ -2032,6 +2032,84 @@ fn host_abort_after_loading_before_go_returns_to_the_main_menu() {
     assert_eq!(n.phase(1), NetPhase::Idle);
 }
 
+/// Only the line of the network session of machine `i` (minimized window: `GameFlow::net_pump`, no logic step).
+fn pump_only(n: &mut Lan, i: usize) {
+    let run = &mut n.runs[i];
+    let env = FlowEnv {
+        vfs: &run.vfs,
+        texts: &run.host.layer.texts,
+        files: &run.files,
+    };
+    run.flow
+        .net_pump(run.now, &mut run.host.app, &mut run.view, &env);
+}
+
+/// The client window is minimized while the host starts: the client only pumps the line ([`GameFlow::net_pump`]),
+/// longer than [`opennml_net::TIMEOUT_MS`]. The connection stays, the start of the host arrives, but the client does
+/// not load until its next logic step ([`GameFlow::net_step`]); then both reach the match.
+#[test]
+fn net_pump_answers_without_starting() {
+    let Some(mut n) = lobby_pair() else {
+        return;
+    };
+    start_from_lobby(&mut n);
+    // From now on the host computes its frames, the client only pumps the line at the same played time.
+    let pump = |n: &mut Lan, step: u64| {
+        let t = n.runs[0].now + step;
+        n.net.advance_to(t);
+        n.runs[0].now = t;
+        n.runs[0].frame();
+        n.runs[1].now = t;
+        pump_only(n, 1);
+    };
+    for _ in 0..MAX_LAN_FRAMES {
+        if n.phase(1) == NetPhase::Loading {
+            break;
+        }
+        pump(&mut n, 16);
+    }
+    assert_eq!(n.phase(1), NetPhase::Loading, "start of the host arrived");
+    let arrived = n.runs[1].now;
+    while n.runs[1].now < arrived + opennml_net::TIMEOUT_MS + 2_000 {
+        pump(&mut n, 250);
+    }
+    let client = n.session(1).driver().expect("start still waiting");
+    assert_eq!(client.failure(), None, "client keeps the host");
+    assert_eq!(n.phase(0), NetPhase::Loading, "host still waits for Loaded");
+    let host = n.runs[0].view.net().expect("driver of the host");
+    assert_eq!(host.failure(), None, "host keeps the client");
+    assert!(!host.started(), "no Go without the client");
+    assert!(!n.runs[1].flow.running(), "nothing loaded while minimized");
+    assert!(n.runs[1].shown.is_empty(), "{:?}", n.runs[1].shown);
+    // Next logic step of the client: `take_start` loads the map.
+    let run = &mut n.runs[1];
+    let env = FlowEnv {
+        vfs: &run.vfs,
+        texts: &run.host.layer.texts,
+        files: &run.files,
+    };
+    let shown = &mut run.shown;
+    run.flow.net_step(
+        run.now,
+        &mut run.host.app,
+        &mut run.view,
+        &env,
+        &mut |ldg, phase| shown.push((ldg.to_string(), phase.percent())),
+    );
+    assert!(n.runs[1].flow.running(), "loaded in the next net_step");
+    assert!(
+        n.runs[1]
+            .shown
+            .iter()
+            .all(|(ldg, _)| ldg == MULTIPLAYER_LDG),
+        "{:?}",
+        n.runs[1].shown
+    );
+    n.frames_until("Go on both", |l| {
+        (0..2).all(|i| l.phase(i) == NetPhase::Match)
+    });
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Map change in the network session (host: `LobbyAction::ChangeGame`; client: game data check per session revision).
 // The draft of `LAN31` is re-created here via `set_lobby_draft`, a missing or differing map via

@@ -1,6 +1,6 @@
 //! Window scaffold: window and GPU, window mode (windowed, borderless, exclusive) including monitor choice, size and
-//! frame pacing (draw continuously, wait, or try occasionally when the window is occluded). Extracted from the viewer;
-//! the window title stays with the host.
+//! frame pacing (draw continuously, wait, wake up only for the network, or try occasionally when the window is
+//! occluded). Extracted from the viewer; the window title stays with the host.
 
 use std::str::FromStr;
 use std::sync::Arc;
@@ -58,19 +58,33 @@ impl FromStr for WindowMode {
 /// report the end of the occlusion as an event.
 const OCCLUDED_PROBE: Duration = Duration::from_millis(250);
 
+/// Interval at which a minimized window with a network wakes up to pump the line ([`Pacing::NetOnly`]); well below
+/// every deadline of the protocol.
+pub const NET_PUMP_INTERVAL: Duration = Duration::from_millis(50);
+
 /// How the event loop continues after processing the events.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Pacing {
     /// Redraw continuously (`Poll`).
     Continuous,
-    /// Wait for events, do not draw (minimized or size 0).
+    /// Wait for events, do not draw (minimized or size 0, without a network).
     Wait,
     /// Occluded or without a surface: wait and only occasionally try a frame.
     Probe,
+    /// Minimized (or size 0) with a network: do not draw, but wake up every [`NET_PUMP_INTERVAL`] so that the host
+    /// pumps the line (search, lobby, keep-alive) in `about_to_wait`.
+    NetOnly,
 }
 
-pub fn pacing(minimized: bool, occluded: bool) -> Pacing {
-    if minimized {
+/// Frame pacing from the window state; `net`: the host has a network (session, connection or match). The minimized
+/// original computes nothing: the main loop `0x0042C1D0` skips `GameApp_Tick` while `MainFrame+0xD8` is set
+/// (`0x004CB6D0`; set by `MainFrame_HandleActivation` `0x004CB5D0` on minimizing), menu and match stand still. The
+/// network lives on in the threads of DirectPlay (re/multiplayer M.1.1). Here a minimized window with a network only
+/// wakes up for the line ([`Pacing::NetOnly`]), no logic step, no loading.
+pub fn pacing(minimized: bool, occluded: bool, net: bool) -> Pacing {
+    if minimized && net {
+        Pacing::NetOnly
+    } else if minimized {
         Pacing::Wait
     } else if occluded {
         Pacing::Probe
@@ -309,15 +323,18 @@ impl WindowShell {
     }
 
     /// Frame pacing after processing the events (`about_to_wait`): when minimized (or size 0), do not redraw and wait
-    /// for events instead of saturating the CPU; when occluded or without a surface, wait likewise but try a frame at
+    /// for events instead of saturating the CPU - with a network (`net`) only until the next [`NET_PUMP_INTERVAL`], so
+    /// that the host keeps pumping the line; when occluded or without a surface, wait likewise but try a frame at
     /// intervals.
-    pub fn schedule(&mut self, event_loop: &ActiveEventLoop) {
-        match pacing(self.minimized(), self.occluded) {
+    pub fn schedule(&mut self, event_loop: &ActiveEventLoop, net: bool) {
+        match pacing(self.minimized(), self.occluded, net) {
             Pacing::Continuous => {
                 event_loop.set_control_flow(ControlFlow::Poll);
                 self.window.request_redraw();
             }
             Pacing::Wait => event_loop.set_control_flow(ControlFlow::Wait),
+            Pacing::NetOnly => event_loop
+                .set_control_flow(ControlFlow::WaitUntil(Instant::now() + NET_PUMP_INTERVAL)),
             Pacing::Probe => {
                 let now = Instant::now();
                 if now >= self.next_probe {
@@ -357,10 +374,22 @@ mod tests {
 
     #[test]
     fn occluded_window_is_probed_instead_of_redrawn_continuously() {
-        assert_eq!(pacing(false, false), Pacing::Continuous);
-        assert_eq!(pacing(true, false), Pacing::Wait);
-        assert_eq!(pacing(true, true), Pacing::Wait);
-        assert_eq!(pacing(false, true), Pacing::Probe);
+        assert_eq!(pacing(false, false, false), Pacing::Continuous);
+        assert_eq!(pacing(true, false, false), Pacing::Wait);
+        assert_eq!(pacing(true, true, false), Pacing::Wait);
+        assert_eq!(pacing(false, true, false), Pacing::Probe);
+    }
+
+    /// The minimized original does not compute (no `GameApp_Tick`), the network lives on in the threads of DirectPlay;
+    /// here a minimized window with a network only wakes up for the line.
+    // QUIRK O-465: kept
+    #[test]
+    fn minimized_window_with_network_keeps_pumping() {
+        assert_eq!(pacing(true, false, true), Pacing::NetOnly);
+        assert_eq!(pacing(true, true, true), Pacing::NetOnly);
+        assert_eq!(pacing(true, false, false), Pacing::Wait);
+        assert_eq!(pacing(false, true, true), Pacing::Probe);
+        assert_eq!(pacing(false, false, true), Pacing::Continuous);
     }
 
     #[test]

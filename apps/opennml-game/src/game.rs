@@ -26,15 +26,16 @@
 //!
 //! Network play: the menu path (`LAN1`, `LAN3`, `LAN2`) runs via the `NetSession` in the flow
 //! (`GameFlow::set_net_session` at window start, with `SystemTransport`, seed from the clock [`net_start::wall_seed`]),
-//! pumped per logic step after the menu effects (`GameFlow::net_step`). The command-line path ([`NetLaunch`], without a
-//! lobby dialog) pumps in every pass of the event loop, also without a match and before `Go`. As soon as the `Start` of
-//! the host is there, the logic step loads the map (`GameFlow::start_net_match`); until `Go` the input is locked in the
-//! command-line path (window and control channel), in the menu path only while loading; a failure before the start
-//! leads back to the main menu. In the network the control channel rejects `pause` and `step` (the turns and the lobby
-//! run in real time) as well as `sim_command`/`sim_result` for foreign slots; `ui_*` are free in search and lobby
-//! ([`net_start::net_guard`]); `net_*` is answered by [`net_start::run_net`]. If the host closes the program or the
-//! window in the running match, it hands it over to a client; without a reachable client it ends in an orderly way for
-//! all ([`Game::net_closing`]).
+//! pumped per logic step after the menu effects (`GameFlow::net_step`); while the window is minimized (no logic step)
+//! only its line is pumped in every pass of the event loop (`GameFlow::net_pump`, O-465), and the loop wakes up every
+//! `NET_PUMP_INTERVAL`. The command-line path ([`NetLaunch`], without a lobby dialog) pumps in every pass of the event
+//! loop, also without a match and before `Go`. As soon as the `Start` of the host is there, the logic step loads the
+//! map (`GameFlow::start_net_match`); until `Go` the input is locked in the command-line path (window and control
+//! channel), in the menu path only while loading; a failure before the start leads back to the main menu. In the
+//! network the control channel rejects `pause` and `step` (the turns and the lobby run in real time) as well as
+//! `sim_command`/`sim_result` for foreign slots; `ui_*` are free in search and lobby ([`net_start::net_guard`]);
+//! `net_*` is answered by [`net_start::run_net`]. If the host closes the program or the window in the running match,
+//! it hands it over to a client; without a reachable client it ends in an orderly way for all ([`Game::net_closing`]).
 
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -1992,8 +1993,18 @@ impl ApplicationHandler<ControlEvent> for Game {
             }
         }
         self.pump_net();
+        // Minimized: no logic step (`redraw` does not run), only the line of the menu path (O-465); a start that has
+        // arrived loads in the next logic step.
+        let minimized = self.shell.as_ref().is_some_and(WindowShell::minimized);
+        if minimized {
+            let now = self.now();
+            self.with_flow(|flow, app, view, env, _| flow.net_pump(now, app, view, env));
+        }
+        let net = self.net.is_some()
+            || self.session.as_ref().is_some_and(|s| s.net.is_some())
+            || self.flow.net_active();
         if let Some(shell) = &mut self.shell {
-            shell.schedule(event_loop);
+            shell.schedule(event_loop, net);
         }
     }
 }

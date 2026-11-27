@@ -3430,7 +3430,8 @@ impl ApplicationHandler<ControlEvent> for App {
             return event_loop.exit();
         }
         if let Some(shell) = &mut self.shell {
-            shell.schedule(event_loop);
+            // The viewer has no network.
+            shell.schedule(event_loop, false);
         }
     }
 }
