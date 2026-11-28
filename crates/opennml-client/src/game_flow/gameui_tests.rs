@@ -773,7 +773,8 @@ fn cancelled_upgrade_returns_to_the_toolbar() {
 /// Also in the pause a cancelled upgrade appears again in the next frame. The cancel runs there at once
 /// (`SimHost::execute_now`, O-318), without a tick; the pause frame gives the bar the events of the immediate command
 /// (`SimHost::take_immediate_events`). Original: `0x00507960` calls `NotifyUiIfSelected(0)` synchronously, the bar is
-/// operable in the pause (re/game-ui N.4). After resuming the button stays.
+/// operable in the pause (re/game-ui N.4). After resuming the button stays, and the ticks do not deliver the cancel a
+/// second time (no second `{0x10, 0}`).
 // QUIRK O-395: kept
 #[test]
 fn cancelled_upgrade_returns_to_the_toolbar_in_the_pause() {
@@ -826,8 +827,22 @@ fn cancelled_upgrade_returns_to_the_toolbar_in_the_pause() {
         "cancelled in the pause: button back in the next frame"
     );
 
-    // Resume: the tick delivers the event once more (second silent rebuild), the button stays.
+    // Resume: the first tick no longer delivers the cancel (no second silent rebuild), the button stays.
     assert!(m.session.as_mut().unwrap().toggle_pause());
+    for _ in 0..40 {
+        if m.session().steps() > steps {
+            break;
+        }
+        m.frame();
+        assert!(
+            !m.session()
+                .toolbar_host
+                .frame_events
+                .iter()
+                .any(|e| e.kind == opennml_ui::hud::HudEventKind::Rebuild && e.args == [0]),
+            "no second {{0x10, 0}}"
+        );
+    }
     pause(&mut m);
     assert!(m.session().steps() > steps, "runs again");
     assert!(shown(&m), "after resuming");

@@ -10,6 +10,7 @@ use opennml_ui::own_texts::{SAVE_DAMAGED, SAVE_MISMATCH, SAVE_OTHER_FORMAT};
 use super::tests::{Run, S1024, msgbox_id};
 use super::*;
 use crate::ui_control::state_data;
+use crate::vk::vk_of_german;
 
 /// Path of the menu level as the flow leads it (`LEVELBACKGROUND` from `start.dlg`, normalized).
 const LEVEL: &str = "data/levels/menülevel/menü2.lvl";
@@ -883,7 +884,8 @@ fn window(r: &mut Run, ev: InputEvent) {
 
 /// A physical key through the path of the window (`MenuHost::on_key`, then `GameFlow::input`), without a frame.
 fn window_key(r: &mut Run, code: winit::keyboard::KeyCode, pressed: bool) {
-    r.host.on_key(code, pressed, None, S1024, r.now);
+    r.host
+        .on_key(code, vk_of_german(code), pressed, None, S1024, r.now);
     let ev = InputEvent::Key {
         code,
         pressed,
@@ -1086,6 +1088,7 @@ fn snapshot_requests_a_hardcopy_in_the_menu_level() {
     assert!(!r.flow.take_hardcopy(), "once per request");
     r.host.on_key(
         winit::keyboard::KeyCode::PrintScreen,
+        Some(0x2C),
         false,
         None,
         S1024,

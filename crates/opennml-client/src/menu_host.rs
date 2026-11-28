@@ -58,7 +58,7 @@ use crate::save_files::FsSaveFiles;
 use crate::settings::{load_profiles, profiles_path, save_profiles, save_settings, savegame_dir};
 use crate::ui_layer::UiLayer;
 use crate::video::{VideoFile, VideoOpener, open_bink};
-use crate::vk::{HeldVk, MOUSE_LEFT, MOUSE_MIDDLE, MOUSE_RIGHT};
+use crate::vk::{HeldVk, MOUSE_LEFT, MOUSE_MIDDLE, MOUSE_RIGHT, vk_of_german};
 
 /// Sound of the menu UI: the calls its effects need. [`AudioEngine`] implements them; tests use a fake.
 pub trait MenuAudio {
@@ -703,12 +703,13 @@ impl MenuHost {
                 self.app.input(input, screen, now);
             }
             InputEvent::Key { code, pressed, .. } => {
-                self.on_key(*code, *pressed, None, screen, now)
+                self.on_key(*code, vk_of_german(*code), *pressed, None, screen, now)
             }
         }
     }
 
-    /// Key with a character (`ch` from `vk::char_of(KeyEvent::text)`): pressing (also auto-repeat) enters the VK and
+    /// Key with the VK `vk` (window input: `vk::vk_of_layout`, control channel: `vk::vk_of_german`) and a character
+    /// (`ch` from `vk::char_of(KeyEvent::text)`): pressing (also auto-repeat) enters the VK and
     /// sends a key event with the whole table and the character (`FUN_00414B70`, re/menu-system 12.7); releasing only
     /// notes the physical state, the table follows at the start of the next round ([`HeldVk::begin_round`] at the end
     /// of [`Self::frame_cmds`]). A key without a VK in the reimplementation does not count as held; without a
@@ -717,6 +718,7 @@ impl MenuHost {
     pub fn on_key(
         &mut self,
         code: KeyCode,
+        vk: Option<u8>,
         pressed: bool,
         ch: Option<u16>,
         screen: Screen,
@@ -728,7 +730,7 @@ impl MenuHost {
             // If the press did arrive (other systems), its event was already there.
             if code == KeyCode::PrintScreen
                 && !self.held.is_down(code)
-                && self.held.press(code).is_some()
+                && self.held.press(code, vk).is_some()
             {
                 self.app.input(
                     UiInput::Key {
@@ -742,7 +744,7 @@ impl MenuHost {
             self.held.release(code);
             return;
         }
-        if self.held.press(code).is_none() && ch.is_none() {
+        if self.held.press(code, vk).is_none() && ch.is_none() {
             return;
         }
         self.app.input(
@@ -1685,20 +1687,55 @@ mod tests {
         };
         // Shift held, then N with a character: the input field (focus) takes "N"; the umlaut a (0xE4) as cp1252.
         h.on_input(&key(KeyCode::ShiftLeft, true), S1024, now);
-        h.on_key(KeyCode::KeyN, true, Some(u16::from(b'N')), S1024, now);
+        h.on_key(
+            KeyCode::KeyN,
+            vk_of_german(KeyCode::KeyN),
+            true,
+            Some(u16::from(b'N')),
+            S1024,
+            now,
+        );
         assert_eq!(h.held.held(), [0x10, 0x4E]);
         h.on_input(&key(KeyCode::KeyN, false), S1024, now);
         h.on_input(&key(KeyCode::ShiftLeft, false), S1024, now);
-        h.on_key(KeyCode::Quote, true, Some(0xE4), S1024, now);
-        h.on_key(KeyCode::Quote, false, None, S1024, now);
+        h.on_key(
+            KeyCode::Quote,
+            vk_of_german(KeyCode::Quote),
+            true,
+            Some(0xE4),
+            S1024,
+            now,
+        );
+        h.on_key(
+            KeyCode::Quote,
+            vk_of_german(KeyCode::Quote),
+            false,
+            None,
+            S1024,
+            now,
+        );
         // Release happens only at the start of the next round (after the frame).
         assert_eq!(h.held.held(), [0x10, 0x4E, 0xDE]);
         h.frame_cmds(&vfs, S1024, now);
         assert!(h.held.held().is_empty());
         assert_eq!(name(&h, now).as_deref(), Some("N\u{e4}"));
         // Key without a VK and without a character: nothing; focus loss releases everything.
-        h.on_key(KeyCode::Fn, true, None, S1024, now);
-        h.on_key(KeyCode::KeyA, true, Some(u16::from(b'a')), S1024, now);
+        h.on_key(
+            KeyCode::Fn,
+            vk_of_german(KeyCode::Fn),
+            true,
+            None,
+            S1024,
+            now,
+        );
+        h.on_key(
+            KeyCode::KeyA,
+            vk_of_german(KeyCode::KeyA),
+            true,
+            Some(u16::from(b'a')),
+            S1024,
+            now,
+        );
         h.release_keys();
         assert!(h.held.held().is_empty());
         h.frame_cmds(&vfs, S1024, now);
@@ -1719,16 +1756,44 @@ mod tests {
         // In the frame of the press VK 1 is still missing, from the next one on it stands before ESC (no ESC
         // broadcast, O-14/O-116).
         h.on_input(&left(true), S1024, 0);
-        h.on_key(KeyCode::Escape, true, None, S1024, 0);
+        h.on_key(
+            KeyCode::Escape,
+            vk_of_german(KeyCode::Escape),
+            true,
+            None,
+            S1024,
+            0,
+        );
         assert_eq!(h.held.held(), [0x1B]);
-        h.on_key(KeyCode::Escape, false, None, S1024, 0);
+        h.on_key(
+            KeyCode::Escape,
+            vk_of_german(KeyCode::Escape),
+            false,
+            None,
+            S1024,
+            0,
+        );
         h.frame_cmds(&vfs, S1024, 0);
-        h.on_key(KeyCode::Escape, true, None, S1024, 16);
+        h.on_key(
+            KeyCode::Escape,
+            vk_of_german(KeyCode::Escape),
+            true,
+            None,
+            S1024,
+            16,
+        );
         assert_eq!(
             opennml_ui::keys::chord_name(&h.held.held()),
             "LBUTTON ESCAPE"
         );
-        h.on_key(KeyCode::Escape, false, None, S1024, 16);
+        h.on_key(
+            KeyCode::Escape,
+            vk_of_german(KeyCode::Escape),
+            false,
+            None,
+            S1024,
+            16,
+        );
         h.on_input(&left(false), S1024, 16);
         h.frame_cmds(&vfs, S1024, 16);
         assert!(h.held.held().is_empty());
@@ -1782,8 +1847,22 @@ mod tests {
         let mut videos = Vec::new();
         while audio.menu.file.is_none() && now < 60_000 {
             if h.app.video_frame(now) == Some(2) {
-                h.on_key(KeyCode::KeyX, true, Some(u16::from(b'x')), S1024, now);
-                h.on_key(KeyCode::KeyX, false, None, S1024, now);
+                h.on_key(
+                    KeyCode::KeyX,
+                    vk_of_german(KeyCode::KeyX),
+                    true,
+                    Some(u16::from(b'x')),
+                    S1024,
+                    now,
+                );
+                h.on_key(
+                    KeyCode::KeyX,
+                    vk_of_german(KeyCode::KeyX),
+                    false,
+                    None,
+                    S1024,
+                    now,
+                );
             }
             h.frame_cmds(&vfs, S1024, now);
             h.apply_effects(&mut audio, &vfs);
@@ -2147,8 +2226,22 @@ mod tests {
         let mut now = 0;
         while !h.app.menu().open_names().contains(&"start".to_string()) {
             if now == 48 {
-                h.on_key(KeyCode::KeyX, true, Some(u16::from(b'x')), S1024, now);
-                h.on_key(KeyCode::KeyX, false, None, S1024, now);
+                h.on_key(
+                    KeyCode::KeyX,
+                    vk_of_german(KeyCode::KeyX),
+                    true,
+                    Some(u16::from(b'x')),
+                    S1024,
+                    now,
+                );
+                h.on_key(
+                    KeyCode::KeyX,
+                    vk_of_german(KeyCode::KeyX),
+                    false,
+                    None,
+                    S1024,
+                    now,
+                );
             }
             run(&mut h, &mut audio, &vfs, now);
             if h.app.video().is_some() {
@@ -2383,8 +2476,22 @@ mod tests {
             "profilename",
         );
         for c in "Anna".chars() {
-            h.on_key(KeyCode::KeyA, true, Some(c as u16), S1024, now);
-            h.on_key(KeyCode::KeyA, false, None, S1024, now);
+            h.on_key(
+                KeyCode::KeyA,
+                vk_of_german(KeyCode::KeyA),
+                true,
+                Some(c as u16),
+                S1024,
+                now,
+            );
+            h.on_key(
+                KeyCode::KeyA,
+                vk_of_german(KeyCode::KeyA),
+                false,
+                None,
+                S1024,
+                now,
+            );
         }
         settle(&mut h, &mut audio, &vfs, &mut now);
         click_at(

@@ -1,6 +1,6 @@
 //! Window scaffold: window and GPU, window mode (windowed, borderless, exclusive) including monitor choice, size and
-//! frame pacing (draw continuously, wait, or try occasionally when the window is occluded). Extracted from the viewer;
-//! the window title stays with the host.
+//! frame pacing (draw continuously, wait, wake up only for the network, or try occasionally when the window is
+//! occluded). Extracted from the viewer; the window title stays with the host.
 
 use std::str::FromStr;
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use serde::Deserialize;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event_loop::{ActiveEventLoop, ControlFlow};
 use winit::monitor::MonitorHandle;
-use winit::window::{Fullscreen, Window};
+use winit::window::{Fullscreen, Window, WindowAttributes, WindowButtons};
 
 use crate::display::{
     ModeInfo, best_mode_index, monitor_for_mode_change, next_monitor, pick_monitor,
@@ -58,19 +58,33 @@ impl FromStr for WindowMode {
 /// report the end of the occlusion as an event.
 const OCCLUDED_PROBE: Duration = Duration::from_millis(250);
 
+/// Interval at which a minimized window with a network wakes up to pump the line ([`Pacing::NetOnly`]); well below
+/// every deadline of the protocol.
+pub const NET_PUMP_INTERVAL: Duration = Duration::from_millis(50);
+
 /// How the event loop continues after processing the events.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Pacing {
     /// Redraw continuously (`Poll`).
     Continuous,
-    /// Wait for events, do not draw (minimized or size 0).
+    /// Wait for events, do not draw (minimized or size 0, without a network).
     Wait,
     /// Occluded or without a surface: wait and only occasionally try a frame.
     Probe,
+    /// Minimized (or size 0) with a network: do not draw, but wake up every [`NET_PUMP_INTERVAL`] so that the host
+    /// pumps the line (search, lobby, keep-alive) in `about_to_wait`.
+    NetOnly,
 }
 
-pub fn pacing(minimized: bool, occluded: bool) -> Pacing {
-    if minimized {
+/// Frame pacing from the window state; `net`: the host has a network (session, connection or match). The minimized
+/// original computes nothing: the main loop `0x0042C1D0` skips `GameApp_Tick` while `MainFrame+0xD8` is set
+/// (`0x004CB6D0`; set by `MainFrame_HandleActivation` `0x004CB5D0` on minimizing), menu and match stand still. The
+/// network lives on in the threads of DirectPlay (re/multiplayer M.1.1). Here a minimized window with a network only
+/// wakes up for the line ([`Pacing::NetOnly`]), no logic step, no loading.
+pub fn pacing(minimized: bool, occluded: bool, net: bool) -> Pacing {
+    if minimized && net {
+        Pacing::NetOnly
+    } else if minimized {
         Pacing::Wait
     } else if occluded {
         Pacing::Probe
@@ -85,11 +99,37 @@ pub fn blocks_redraw(outcome: FrameOutcome) -> bool {
     matches!(outcome, FrameOutcome::Occluded | FrameOutcome::NoSurface)
 }
 
+/// Frame of the window in windowed mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WindowFrame {
+    /// Freely resizable with all buttons (viewer).
+    Resizable,
+    /// Fixed size, close and minimize only: the original's style `0x00CA8000` =
+    /// `WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX` (`MainFrame_PreCreateWindow` `0x004CB4C0`, re/renderer, section "Startup
+    /// sequence"), no sizing border and no maximize button (game).
+    Fixed,
+}
+
+/// Window attributes for `title`, inner size `size` in logical pixels and `frame`.
+pub fn window_attributes(title: &str, size: (u32, u32), frame: WindowFrame) -> WindowAttributes {
+    let attributes = Window::default_attributes()
+        .with_title(title)
+        .with_inner_size(LogicalSize::new(size.0, size.1))
+        .with_resizable(frame == WindowFrame::Resizable);
+    match frame {
+        WindowFrame::Resizable => attributes,
+        WindowFrame::Fixed => {
+            attributes.with_enabled_buttons(WindowButtons::CLOSE | WindowButtons::MINIMIZE)
+        }
+    }
+}
+
 /// Window with GPU, window mode and monitor; created in `resumed` of the event loop.
 pub struct WindowShell {
     pub window: Arc<Window>,
     pub gpu: Gpu,
     pub mode: WindowMode,
+    pub frame: WindowFrame,
     pub monitor_index: usize,
     /// Monitor chosen by the user (valid index in the configuration/command line or F10).
     pub monitor_chosen: bool,
@@ -102,7 +142,7 @@ pub struct WindowShell {
 impl WindowShell {
     /// Creates the window (`title`, inner size `size` in logical pixels) and the GPU and chooses the monitor:
     /// `monitor`, otherwise the window's, otherwise 0. The window mode `mode` takes effect only with
-    /// [`WindowShell::apply_mode`].
+    /// [`WindowShell::apply_mode`]; `frame` decides whether the user can resize the window.
     pub fn create(
         event_loop: &ActiveEventLoop,
         title: &str,
@@ -110,10 +150,9 @@ impl WindowShell {
         backend: BackendChoice,
         monitor: Option<usize>,
         mode: WindowMode,
+        frame: WindowFrame,
     ) -> Result<Self> {
-        let attributes = Window::default_attributes()
-            .with_title(title)
-            .with_inner_size(LogicalSize::new(size.0, size.1));
+        let attributes = window_attributes(title, size, frame);
         let window = Arc::new(event_loop.create_window(attributes)?);
         // The size of the icon depends on the scaling of the monitor, which only the window knows.
         crate::app_icon::apply(&window);
@@ -130,6 +169,7 @@ impl WindowShell {
             window,
             gpu,
             mode,
+            frame,
             monitor_index,
             monitor_chosen,
             occluded: false,
@@ -283,15 +323,18 @@ impl WindowShell {
     }
 
     /// Frame pacing after processing the events (`about_to_wait`): when minimized (or size 0), do not redraw and wait
-    /// for events instead of saturating the CPU; when occluded or without a surface, wait likewise but try a frame at
+    /// for events instead of saturating the CPU - with a network (`net`) only until the next [`NET_PUMP_INTERVAL`], so
+    /// that the host keeps pumping the line; when occluded or without a surface, wait likewise but try a frame at
     /// intervals.
-    pub fn schedule(&mut self, event_loop: &ActiveEventLoop) {
-        match pacing(self.minimized(), self.occluded) {
+    pub fn schedule(&mut self, event_loop: &ActiveEventLoop, net: bool) {
+        match pacing(self.minimized(), self.occluded, net) {
             Pacing::Continuous => {
                 event_loop.set_control_flow(ControlFlow::Poll);
                 self.window.request_redraw();
             }
             Pacing::Wait => event_loop.set_control_flow(ControlFlow::Wait),
+            Pacing::NetOnly => event_loop
+                .set_control_flow(ControlFlow::WaitUntil(Instant::now() + NET_PUMP_INTERVAL)),
             Pacing::Probe => {
                 let now = Instant::now();
                 if now >= self.next_probe {
@@ -318,11 +361,35 @@ mod tests {
     }
 
     #[test]
+    fn fixed_frame_is_not_resizable_and_has_no_maximize() {
+        let fixed = window_attributes("t", (1024, 768), WindowFrame::Fixed);
+        assert!(!fixed.resizable);
+        assert!(!fixed.enabled_buttons.contains(WindowButtons::MAXIMIZE));
+        assert!(fixed.enabled_buttons.contains(WindowButtons::CLOSE));
+        assert!(fixed.enabled_buttons.contains(WindowButtons::MINIMIZE));
+        let free = window_attributes("t", (1024, 768), WindowFrame::Resizable);
+        assert!(free.resizable);
+        assert_eq!(free.enabled_buttons, WindowButtons::all());
+    }
+
+    #[test]
     fn occluded_window_is_probed_instead_of_redrawn_continuously() {
-        assert_eq!(pacing(false, false), Pacing::Continuous);
-        assert_eq!(pacing(true, false), Pacing::Wait);
-        assert_eq!(pacing(true, true), Pacing::Wait);
-        assert_eq!(pacing(false, true), Pacing::Probe);
+        assert_eq!(pacing(false, false, false), Pacing::Continuous);
+        assert_eq!(pacing(true, false, false), Pacing::Wait);
+        assert_eq!(pacing(true, true, false), Pacing::Wait);
+        assert_eq!(pacing(false, true, false), Pacing::Probe);
+    }
+
+    /// The minimized original does not compute (no `GameApp_Tick`), the network lives on in the threads of DirectPlay;
+    /// here a minimized window with a network only wakes up for the line.
+    // QUIRK O-465: kept
+    #[test]
+    fn minimized_window_with_network_keeps_pumping() {
+        assert_eq!(pacing(true, false, true), Pacing::NetOnly);
+        assert_eq!(pacing(true, true, true), Pacing::NetOnly);
+        assert_eq!(pacing(true, false, false), Pacing::Wait);
+        assert_eq!(pacing(false, true, true), Pacing::Probe);
+        assert_eq!(pacing(false, false, true), Pacing::Continuous);
     }
 
     #[test]

@@ -348,9 +348,9 @@ fn cancelled_upgrade_returns_to_the_bar() {
 }
 
 /// In the pause (`halted`) the cancel takes effect at once (`execute_now`, O-318), without a tick. The pause frame
-/// fetches the events of the immediate command (`take_immediate_events`, like `GameSession::advance_paused`); from that
-/// `{0x10, 0}` results instead of `{0x10, 3}`, the button is back in the same frame. A second pause frame does not
-/// rebuild again; the first tick after resuming delivers the event again (second silent rebuild, without effect).
+/// fetches the events of the immediate command (`take_immediate_events`, like `GameSession::advance_frame` without a
+/// tick); from that `{0x10, 0}` results instead of `{0x10, 3}`, the button is back in the same frame. A second pause
+/// frame does not rebuild again, and the first tick after resuming no longer delivers the event (no second rebuild).
 // QUIRK O-395: kept
 #[test]
 fn cancelled_upgrade_returns_to_the_bar_in_the_pause() {
@@ -395,17 +395,18 @@ fn cancelled_upgrade_returns_to_the_bar_in_the_pause() {
     );
     assert!(paused(&mut sim, &mut th, &mut bar).is_empty(), "only once");
 
-    // Resume: the tick delivers the event once more, the button stays; the buffer is empty afterwards.
+    // Resume: the tick leaves out the delivered event, no second rebuild; the button stays.
     sim.halted = false;
     let events = sim.step_once();
     assert!(
-        events
+        !events
             .iter()
-            .any(|e| matches!(e, SimEvent::ProductionCancelled { building } if *building == hq))
+            .any(|e| matches!(e, SimEvent::ProductionCancelled { .. })),
+        "delivered in the pause"
     );
     let ev = th.frame(&sim, &sel, &events, 0).to_vec();
     feed(&mut bar, &mut sim, &sel, &ev);
-    assert_eq!(rebuilds(&ev), [0]);
+    assert!(rebuilds(&ev).is_empty(), "{ev:?}");
     assert!(normal_msgs(&bar).contains(&(RESEARCH as i32)));
     assert!(sim.take_immediate_events().is_empty());
 }

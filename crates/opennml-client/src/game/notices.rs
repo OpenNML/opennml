@@ -2,11 +2,12 @@
 //! deliverer (`0x00493030`), text messages with arguments (`FUN_00492A40`/`FUN_00492C50`,
 //! headhunter) and the event sounds; plus the tables `messages.ini` and `texte.deu`.
 //! The message bar (`MessageBar_ShowMessage` `0x00494A60`) lives in
-//! [`crate::game::hud::Hud`]. Text messages run on the rendering clock, the floating numbers on the game time of the
-//! message bar ([`crate::game::hud::Hud::bar_ms`]); both stand still while the clock is stopped, so that screenshots
-//! are repeatable. Without GPU (testable).
+//! [`crate::game::hud::Hud`]. The text messages only get their `%s` filled in here ([`TextNotice`]); the host enqueues
+//! them as screen texts of kind 1 of the message bar (`opennml_ui::hud::screen_text::ScreenTexts`, O-380). The
+//! floating numbers run on the game time of the message bar ([`crate::game::hud::Hud::bar_ms`]) and stand still while
+//! the clock is stopped, so that screenshots are repeatable. Without GPU (testable).
 
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::BTreeMap;
 
 use crate::game::overlay::OverlayLine;
 use glam::{Mat4, Vec3};
@@ -21,17 +22,10 @@ use opennml_ui::draw::DrawCmd;
 use opennml_ui::hud::SCREEN_TEXT_FONT;
 use opennml_ui::hud::screen_text;
 use opennml_ui::own_texts;
-use opennml_ui::text::{LayoutParams, TextLayout, draw_runs, layout_flags, layout_text};
+use opennml_ui::text::{LayoutParams, TextLayout, draw_runs, layout_text};
 
 use crate::game::sim_host::SimHost;
 
-/// Font of the text messages (`InfoMessages`, the font of the message bar; re/ui-rendering 3.1).
-pub const TEXT_MESSAGE_FONT: &str = "InfoMessages";
-/// Position of the first text message in pixels (provisional, [`Notices::draw_text_messages`]).
-pub const TEXT_MESSAGE_AT: [i32; 2] = [16, 16];
-
-/// At most this many text messages at the same time (the oldest drops out).
-pub const MAX_MESSAGES: usize = 3;
 /// Lifetime of a floating number in ms of message bar game time (`0x00492520`, last argument 2000).
 pub const FLOAT_MS: i64 = 2000;
 /// Rising speed of the number in world units per ms (`{0, 0.1, 0}`).
@@ -42,8 +36,6 @@ pub const FLOAT_HEIGHT: f32 = 120.0;
 pub const DAMAGE_COLOR: u32 = 0xDC_0000;
 /// Height of the damage number above the world position of the target (`target + 200` in y, re/special-attacks 3.6).
 pub const DAMAGE_HEIGHT: f32 = 200.0;
-/// Display kind of the text messages from [`SimEvent::TextMessage`] (not a `messages.ini` kind).
-pub const TEXT_TAG: &str = "TEXT";
 /// Flags of the 2D event sound (`0x00552FB0(name, 0x14, 1, 0)`, re/headhunter-robbing 7).
 pub const EVENT_2D_FLAGS: u32 = 0x14;
 /// Sound of script action 7 and of signal `0x5C` (`FUN_0043EBE0` `0x0043EC10`, `0x0048D4D6`), as a 2D event
@@ -52,18 +44,17 @@ pub const SFX_SIGNAL: &str = "SFX_SIGNAL";
 /// Color of the number per resource kind 0 gold, 1 wood, 2 food (`0x005155E0`), otherwise `0xFF`.
 pub const CREDIT_COLORS: [u32; 3] = [0xFF_FF00, 0x00_FF00, 0xF6_94C0];
 
-/// One line of a text message.
+/// A text message with its `%s` already filled in (`FUN_00492A40` copies the text when enqueuing), for the screen
+/// texts of the message bar (`ScreenTexts::push_text`).
 #[derive(Debug, Clone, PartialEq)]
-pub struct Notice {
-    /// Text number in `texte.deu`.
-    pub id: i32,
-    /// Always [`TEXT_TAG`].
-    pub tag: String,
+pub struct TextNotice {
+    /// Kind of the screen text (`opennml_ui::hud::screen_text::kind`): always 1 (`LOW`, O-380).
+    pub kind: u8,
     pub text: String,
-    /// ARGB, opaque.
+    /// ARGB, opaque (`0xFF000000 | rgb`).
     pub color: u32,
-    /// Clock time until which it stays.
-    pub until_ms: f64,
+    /// Duration in ms of the bar's game time.
+    pub ms: i32,
 }
 
 /// A floating credit.
@@ -140,8 +131,6 @@ pub struct Notices {
     pub messages: Messages,
     /// `texte.deu`.
     pub texts: BTreeMap<i32, String>,
-    /// Standing text messages (`SimEvent::TextMessage`, headhunter), oldest first.
-    pub text_lines: VecDeque<Notice>,
     pub floats: Vec<FloatingNumber>,
     /// Own text "Player %d" of the edition for a player without a name ([`own_texts::PLAYER_N`]); empty (`Default`,
     /// tests without a `Vfs`): the English text.
@@ -184,7 +173,6 @@ impl Notices {
 
     /// After loading or restart: show nothing anymore.
     pub fn clear(&mut self) {
-        self.text_lines.clear();
         self.floats.clear();
     }
 
@@ -194,21 +182,21 @@ impl Notices {
         self.texts.get(&def.text_id()?).map(String::as_str)
     }
 
-    /// Events of a logic step at clock time `now_ms` of the rendering (text messages) and `bar_ms` of the game time
-    /// of the message bar (floating numbers, [`crate::game::hud::Hud::bar_ms`] before the bar's tick of this frame,
-    /// as the original queues the number in the game tick and `FUN_00494A00` then ticks it with `dt`): text messages
-    /// only for their receiver, credits only above own objects on ground that is currently seen; returns the
-    /// sounds to play. The message bar (`PlayerMessage`, `UnderAttack`, `TributeSent`,
+    /// Events of a logic step at `bar_ms` of the game time of the message bar (floating numbers,
+    /// [`crate::game::hud::Hud::bar_ms`] before the bar's tick of this frame, as the original queues the number in the
+    /// game tick and `FUN_00494A00` then ticks it with `dt`): credits only above own objects on ground that is
+    /// currently seen; returns the sounds to play and the text messages for their receiver, filled in, in event order
+    /// (the host enqueues them as screen texts). The message bar (`PlayerMessage`, `UnderAttack`, `TributeSent`,
     /// `CounterUpgradeStarted`) is served by [`crate::game::hud::Hud::handle`].
     pub fn handle(
         &mut self,
         events: &[SimEvent],
         sim: &SimHost,
-        now_ms: f64,
         bar_ms: i64,
-    ) -> Vec<SoundRequest> {
-        self.expire(now_ms, bar_ms);
+    ) -> (Vec<SoundRequest>, Vec<TextNotice>) {
+        self.expire(bar_ms);
         let mut sounds = Vec::new();
+        let mut notices = Vec::new();
         for event in events {
             match *event {
                 SimEvent::Sound3d {
@@ -281,7 +269,7 @@ impl Notices {
                     color,
                     duration_ms,
                 } if to.is_none_or(|p| p == sim.active_player) => {
-                    self.show_text(text, args, color, duration_ms, sim, now_ms);
+                    notices.extend(self.show_text(text, args, color, duration_ms, sim));
                 }
                 // `0x00552FB0(name, 0x14, 1, 0)` for every viewer (re/headhunter-robbing 7).
                 SimEvent::Sound2d { ref name } => {
@@ -310,26 +298,23 @@ impl Notices {
                 _ => {}
             }
         }
-        sounds
+        (sounds, notices)
     }
 
     /// Text message `text` from `texte.deu` (`FUN_00492A40`/`FUN_00492C50`, re/headhunter-robbing 7):
     /// the `%s` replaced in order by the arguments ([`TextArg::PlayerName`] -> name of the
     /// slot, if empty "Player <slot>" in the language of the edition; [`TextArg::TypeName`] -> type name
-    /// as in the window), color `0xRRGGBB` opaque, duration from the event. Without the discard rule of the
-    /// display kinds; [`MAX_MESSAGES`] applies. If the text is missing, no line.
+    /// as in the window), color `0xRRGGBB` opaque, duration from the event, screen text kind 1 (centered at
+    /// y = H - 200, O-380; the discard rule applies when enqueuing). If the text is missing, no message.
     fn show_text(
-        &mut self,
+        &self,
         text: i32,
         args: &[TextArg],
         color: u32,
         duration_ms: i32,
         sim: &SimHost,
-        now_ms: f64,
-    ) {
-        let Some(template) = self.texts.get(&text) else {
-            return;
-        };
+    ) -> Option<TextNotice> {
+        let template = self.texts.get(&text)?;
         let arg = |a: &TextArg| match *a {
             TextArg::PlayerName(p) => sim
                 .state
@@ -340,17 +325,12 @@ impl Notices {
                 .unwrap_or_else(|| self.nameless_player(p)),
             TextArg::TypeName(guid) => crate::game::economy::type_name(&sim.rules, guid),
         };
-        let line = fill_in(template, args.iter().map(arg));
-        self.text_lines.push_back(Notice {
-            id: text,
-            tag: TEXT_TAG.into(),
-            text: line,
+        Some(TextNotice {
+            kind: screen_text::kind::LOW,
+            text: fill_in(template, args.iter().map(arg)),
             color: 0xFF00_0000 | color,
-            until_ms: now_ms + f64::from(duration_ms),
-        });
-        while self.text_lines.len() > MAX_MESSAGES {
-            self.text_lines.pop_front();
-        }
+            ms: duration_ms,
+        })
     }
 
     /// Floating number from outside (`0x00493030`, e.g. the digits of the dynamite charge from
@@ -377,45 +357,9 @@ impl Notices {
         });
     }
 
-    /// Remove expired text messages (rendering clock `now_ms`) and numbers (game time of the bar `bar_ms`, gone from
-    /// `t >= 2000` like the tick `FUN_004925D0`).
-    pub fn expire(&mut self, now_ms: f64, bar_ms: i64) {
-        self.text_lines.retain(|n| now_ms < n.until_ms);
+    /// Remove expired numbers (game time of the bar `bar_ms`, gone from `t >= 2000` like the tick `FUN_004925D0`).
+    pub fn expire(&mut self, bar_ms: i64) {
         self.floats.retain(|f| bar_ms - f.start_bar_ms < FLOAT_MS);
-    }
-
-    /// Lines of the standing text messages (oldest first); the message bar is provided by
-    /// [`crate::game::hud::Hud`].
-    pub fn text_message_lines(&self, now_ms: f64) -> Vec<(String, u32)> {
-        self.text_lines
-            .iter()
-            .filter(|n| now_ms < n.until_ms)
-            .map(|n| (n.text.clone(), n.color))
-            .collect()
-    }
-
-    /// The standing text messages as draw commands (headhunter, `FUN_00492A40`): one line per message in its
-    /// color, one below the other from [`TEXT_MESSAGE_AT`], with shadow, font [`TEXT_MESSAGE_FONT`]. Provisional: the
-    /// original handles these messages as screen text kind 1 of the message bar (centered at y = H - 200, font
-    /// `InfoMessages`, game time; `opennml_ui::hud::screen_text::ScreenTexts`, re/campaign-ui D6.12, O-380); the switch is
-    /// still pending. Until then the provisional message line of `opennml-game` stays in place.
-    pub fn draw_text_messages(&self, now_ms: f64, ctx: &UiContext<'_>, out: &mut Vec<DrawCmd>) {
-        let lines = self.text_message_lines(now_ms);
-        if lines.is_empty() {
-            return;
-        }
-        let mut layout = TextLayout::default();
-        let font = ctx.fonts.by_name(TEXT_MESSAGE_FONT);
-        for (text, color) in &lines {
-            let params = LayoutParams {
-                flags: layout_flags::START_FONT | layout_flags::START_COLOR,
-                width: ctx.screen.width,
-                font,
-                color: *color,
-            };
-            layout_text(text, &params, ctx.fonts, &mut layout);
-        }
-        draw_runs(&layout, TEXT_MESSAGE_AT, true, None, ctx.fonts, out);
     }
 
     /// Floating numbers of a frame at their pixels at game time `bar_ms` of the message bar
@@ -621,7 +565,6 @@ mod tests {
         n.handle(
             &[credit(foreign, 1), credit(own, 1), credit(own, 7)],
             &host,
-            500.0,
             500,
         );
         assert_eq!(n.floats.len(), 2);
@@ -646,7 +589,7 @@ mod tests {
         assert_eq!(start[0].color, 0xFF00_FF00);
         assert_eq!(later[0].color, 0x7F00_FF00);
         assert!(at(500 + FLOAT_MS).is_empty());
-        n.expire(0.0, 500 + FLOAT_MS);
+        n.expire(500 + FLOAT_MS);
         assert!(n.floats.is_empty());
     }
 
@@ -654,13 +597,12 @@ mod tests {
     fn object_sounds_are_actions_of_the_type_or_sound_guids() {
         let (host, own, _) = host();
         let mut n = notices();
-        let sounds = n.handle(
+        let (sounds, _) = n.handle(
             &[SimEvent::Sound {
                 object: own,
                 sound: 0x69,
             }],
             &host,
-            0.0,
             0,
         );
         let o = host.state.object(own, false).unwrap();
@@ -681,7 +623,7 @@ mod tests {
     fn combat_sounds_pass_through_and_attacks_belong_to_the_hud() {
         let (host, own, _) = host();
         let mut n = notices();
-        let sounds = n.handle(
+        let (sounds, shown) = n.handle(
             &[
                 SimEvent::Sound3d {
                     object: own,
@@ -706,7 +648,6 @@ mod tests {
                 },
             ],
             &host,
-            0.0,
             0,
         );
         assert_eq!(
@@ -720,7 +661,7 @@ mod tests {
             },]
         );
         assert!(
-            n.text_lines.is_empty(),
+            shown.is_empty(),
             "attack messages are shown by the message bar (`Hud::handle`)"
         );
     }
@@ -764,7 +705,7 @@ mod tests {
         // `%s`, green, 6000 ms.
         let mut n = hunter_notices();
         host.active_player = 1;
-        let sounds = n.handle(&events, &host, 1000.0, 1000);
+        let (sounds, shown) = n.handle(&events, &host, 1000);
         let events_2d: Vec<&SoundRequest> = sounds
             .iter()
             .filter(|s| matches!(s, SoundRequest::Event2d { .. }))
@@ -776,13 +717,12 @@ mod tests {
             }]
         );
         assert_eq!(
-            n.text_lines.iter().cloned().collect::<Vec<_>>(),
-            [Notice {
-                id: TEXT_HIRED,
-                tag: TEXT_TAG.into(),
+            shown,
+            [TextNotice {
+                kind: screen_text::kind::LOW,
                 text: "TESTTEXT Anna hires Kopfgeldjaeger_SID".into(),
                 color: 0xFF00_FF00,
-                until_ms: 7000.0,
+                ms: 6000,
             }]
         );
         // C-310, display part: the hunter (slot 8) carries the color of the building.
@@ -812,15 +752,20 @@ mod tests {
         )));
         host.active_player = 1;
         let mut other = hunter_notices();
-        other.handle(&events, &host, 2000.0, 2000);
-        assert!(other.text_lines.is_empty(), "slot 1 does not pay");
+        let (_, shown) = other.handle(&events, &host, 2000);
+        assert!(shown.is_empty(), "slot 1 does not pay");
         host.active_player = 0;
         let mut payer = hunter_notices();
-        payer.handle(&events, &host, 2000.0, 2000);
-        let line = payer.text_lines.back().expect("message for the payer");
+        let (_, shown) = payer.handle(&events, &host, 2000);
+        let line = shown.last().expect("message for the payer");
         assert_eq!(
-            (line.text.as_str(), line.color, line.until_ms),
-            ("TESTTEXT Gold missing", 0xFFFF_0000, 6000.0)
+            (line.kind, line.text.as_str(), line.color, line.ms),
+            (
+                screen_text::kind::LOW,
+                "TESTTEXT Gold missing",
+                0xFFFF_0000,
+                4000
+            )
         );
         // Empty name: "Player <slot>" (0-based like the other messages);
         // surplus `%s` stay, surplus arguments are dropped; unknown text: no
@@ -833,17 +778,16 @@ mod tests {
             duration_ms: 3000,
         };
         let mut n = hunter_notices();
-        n.handle(
+        let (_, shown) = n.handle(
             &[
                 message(TEXT_HIRED, vec![TextArg::PlayerName(1)]),
                 message(TEXT_NO_GOLD, vec![TextArg::TypeName(4100)]),
                 message(4711, Vec::new()),
             ],
             &host,
-            0.0,
             0,
         );
-        let lines: Vec<String> = n.text_message_lines(0.0).into_iter().map(|l| l.0).collect();
+        let lines: Vec<String> = shown.into_iter().map(|l| l.text).collect();
         assert_eq!(
             lines,
             ["TESTTEXT Player 1 hires %s", "TESTTEXT Gold missing"]
@@ -882,8 +826,10 @@ mod tests {
                 player_text,
                 ..Notices::default()
             };
-            n.handle(std::slice::from_ref(&event), &host, 0.0, 0);
-            n.text_message_lines(0.0).remove(0).0
+            n.handle(std::slice::from_ref(&event), &host, 0)
+                .1
+                .remove(0)
+                .text
         };
         let own = |version| {
             own_texts::text(own_texts::PLAYER_N, version)
@@ -901,12 +847,11 @@ mod tests {
         let (host, _, _) = host();
         let mut n = Notices::default();
         // For every viewer (`0x00552FB0(name, 0x14, 1, 0)`, re/headhunter-robbing 7).
-        let sounds = n.handle(
+        let (sounds, _) = n.handle(
             &[SimEvent::Sound2d {
                 name: "SFX_HEADHUNTERSUCCESS".into(),
             }],
             &host,
-            0.0,
             0,
         );
         assert_eq!(
@@ -936,13 +881,13 @@ mod tests {
             amount: 20,
             kind: 1,
         }];
-        n.handle(&credited, &host, 0.0, 0);
+        n.handle(&credited, &host, 0);
         assert!(
             n.float_lines(Mat4::IDENTITY, (800, 600), 0).is_empty(),
             "no number in fog"
         );
         opennml_sim::fog::reveal_map(&mut host.state, -1);
-        n.handle(&credited, &host, 0.0, 0);
+        n.handle(&credited, &host, 0);
         assert_eq!(n.floats.len(), 1);
     }
 
@@ -965,7 +910,7 @@ mod tests {
                 start_bar_ms: 1500,
             }]
         );
-        n.expire(0.0, 1500 + FLOAT_MS);
+        n.expire(1500 + FLOAT_MS);
         assert!(n.floats.is_empty(), "gone after two seconds");
     }
 
@@ -1111,7 +1056,7 @@ mod tests {
         let number = |object, points| SimEvent::DamageNumber { object, points };
         // Occluded victim (fog): no number.
         host.state.fog = opennml_sim::fog::Fog::new(host.rules.map.dim_x, host.rules.map.dim_z);
-        n.handle(&[number(foreign, -30)], &host, 0.0, 0);
+        n.handle(&[number(foreign, -30)], &host, 0);
         assert!(n.floats.is_empty(), "no number in fog");
         // Visible: red, 200 above the object, also above a foreign one (no owner filter), with
         // the value of the return of `0x27F`.
@@ -1123,7 +1068,6 @@ mod tests {
                 number(ObjectId::NONE, -5),
             ],
             &host,
-            500.0,
             500,
         );
         assert_eq!(n.floats.len(), 2, "a missing object shows nothing");

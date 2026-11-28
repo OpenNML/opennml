@@ -6,8 +6,9 @@
 
 use anyhow::Result;
 use opennml_client::game_session::GameSession;
+use opennml_client::keys::InputSource;
 use opennml_client::ui_layer::{UiLayer, atlas_generator, screen_of};
-use opennml_client::vk::HeldVk;
+use opennml_client::vk::{HeldVk, vk_of_german, vk_of_layout};
 use opennml_rda::Vfs;
 use opennml_render::UiRenderer;
 use opennml_ui::assets::Texts;
@@ -136,12 +137,21 @@ pub fn viewer_key(code: KeyCode, shift: bool) -> bool {
 }
 
 /// Key route of the original in the viewer with `--hud`: the table of the held keys as in the host of
-/// `opennml-game` (`HeldVk`: VK of the German key layout in press order), so that chords like `CONTROL 1` arise.
+/// `opennml-game` (`HeldVk`: VK by input source (`vk_of_source`) in press order), so that chords like `CONTROL 1` arise.
 /// It follows every key (also Ctrl and Shift of the viewer); a press on a free key ([`viewer_key`]) yields
 /// the key set of the event for `Hotkeys::resolve`. Without `--hud` nothing is passed on.
 #[derive(Debug, Default)]
 pub struct OriginalKeys {
     held: HeldVk,
+}
+
+/// VK of a key by input source (decision 9.4): the user input follows the active layout like the original, the
+/// control channel keeps the fixed German table so that test scripts run independent of the machine layout.
+pub fn vk_of_source(source: InputSource, code: KeyCode) -> Option<u8> {
+    match source {
+        InputSource::User => vk_of_layout(code),
+        InputSource::Control => vk_of_german(code),
+    }
 }
 
 impl OriginalKeys {
@@ -152,6 +162,7 @@ impl OriginalKeys {
         &mut self,
         dispatch: bool,
         code: KeyCode,
+        vk: Option<u8>,
         pressed: bool,
         shift: bool,
     ) -> Option<Vec<u8>> {
@@ -160,7 +171,7 @@ impl OriginalKeys {
             self.held.begin_round();
             return None;
         }
-        self.held.press(code)?;
+        self.held.press(code, vk)?;
         (dispatch && !viewer_key(code, shift)).then(|| self.held.held())
     }
 
@@ -224,6 +235,17 @@ mod tests {
         assert!(!apply_hud(&mut config, false, false, false));
         assert!(!config.hud);
     }
+    /// The control channel keeps the German table on every machine (decision 9.4): Z is `0x59` there, Y `0x5A`.
+    #[test]
+    fn control_source_keys_use_the_german_table() {
+        use winit::keyboard::KeyCode as K;
+
+        assert_eq!(vk_of_source(InputSource::Control, K::KeyZ), Some(0x59));
+        assert_eq!(vk_of_source(InputSource::Control, K::KeyY), Some(0x5A));
+        let mut keys = OriginalKeys::default();
+        let vk = vk_of_source(InputSource::Control, K::KeyZ);
+        assert_eq!(keys.key(true, K::KeyZ, vk, true, false), Some(vec![0x59]));
+    }
 
     /// With `--hud` the keys without a viewer binding go as the key set of the event into the key route
     /// (`Hotkeys::resolve`, then `GameSession::run_hotkey`); Ctrl and Shift belong to the viewer, but are in
@@ -236,28 +258,58 @@ mod tests {
         use winit::keyboard::KeyCode as K;
 
         let mut keys = OriginalKeys::default();
-        assert_eq!(keys.key(true, K::ControlLeft, true, false), None);
         assert_eq!(
-            keys.key(true, K::Digit1, true, false),
+            keys.key(
+                true,
+                K::ControlLeft,
+                vk_of_german(K::ControlLeft),
+                true,
+                false
+            ),
+            None
+        );
+        assert_eq!(
+            keys.key(true, K::Digit1, vk_of_german(K::Digit1), true, false),
             Some(vec![0x11, 0x31])
         );
         assert_eq!(
-            keys.key(true, K::Digit1, true, false),
+            keys.key(true, K::Digit1, vk_of_german(K::Digit1), true, false),
             Some(vec![0x11, 0x31]),
             "repeat"
         );
-        assert_eq!(keys.key(true, K::Digit1, false, false), None);
-        assert_eq!(keys.key(true, K::ControlLeft, false, false), None);
         assert_eq!(
-            keys.key(true, K::BracketRight, true, false),
+            keys.key(true, K::Digit1, vk_of_german(K::Digit1), false, false),
+            None
+        );
+        assert_eq!(
+            keys.key(
+                true,
+                K::ControlLeft,
+                vk_of_german(K::ControlLeft),
+                false,
+                false
+            ),
+            None
+        );
+        assert_eq!(
+            keys.key(
+                true,
+                K::BracketRight,
+                vk_of_german(K::BracketRight),
+                true,
+                false
+            ),
             Some(vec![0xBB])
         );
         assert_eq!(
-            keys.key(true, K::Pause, true, false),
+            keys.key(true, K::Pause, vk_of_german(K::Pause), true, false),
             Some(vec![0xBB, 0x13])
         );
         keys.clear();
-        assert_eq!(keys.key(true, K::Digit0, true, false), Some(vec![0x30]));
+        assert_eq!(
+            keys.key(true, K::Digit0, vk_of_german(K::Digit0), true, false),
+            Some(vec![0x30])
+        );
 
         // The same resolution as in `opennml-game`: binding before `keys.ini`.
         let hotkeys = Hotkeys {
@@ -312,8 +364,16 @@ mod tests {
 
         let mut keys = OriginalKeys::default();
         for code in [K::Digit1, K::BracketRight, K::Pause, K::KeyU, K::Tab] {
-            assert_eq!(keys.key(false, code, true, false), None, "{code:?}");
-            assert_eq!(keys.key(false, code, false, false), None, "{code:?}");
+            assert_eq!(
+                keys.key(false, code, vk_of_german(code), true, false),
+                None,
+                "{code:?}"
+            );
+            assert_eq!(
+                keys.key(false, code, vk_of_german(code), false, false),
+                None,
+                "{code:?}"
+            );
         }
         for code in [
             K::Escape,
@@ -347,13 +407,20 @@ mod tests {
             K::ControlLeft,
         ] {
             assert!(viewer_key(code, false), "{code:?}");
-            assert_eq!(keys.key(true, code, true, false), None, "{code:?}");
-            keys.key(true, code, false, false);
+            assert_eq!(
+                keys.key(true, code, vk_of_german(code), true, false),
+                None,
+                "{code:?}"
+            );
+            keys.key(true, code, vk_of_german(code), false, false);
         }
         // Shift + 1...5 is the stance of the viewer, the digit alone the group of the original.
         assert!(viewer_key(K::Digit3, true));
         assert!(!viewer_key(K::Digit3, false));
         assert!(!viewer_key(K::Digit6, true));
-        assert_eq!(keys.key(true, K::Digit3, true, true), None);
+        assert_eq!(
+            keys.key(true, K::Digit3, vk_of_german(K::Digit3), true, true),
+            None
+        );
     }
 }

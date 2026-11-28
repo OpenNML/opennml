@@ -353,10 +353,11 @@ pub struct SimHost {
     /// `GameSession::advance` per frame and when toggling the pause, the fake of the tests likewise; the viewer leaves
     /// it out (its time stands still only for checking, commands wait there for the next step).
     pub halted: bool,
-    /// Events of the immediately executed commands ([`Self::execute_now`]) since the last tick that the pause frame
-    /// has not yet fetched ([`Self::take_immediate_events`]). They also stay in `state.events` and come out once more
-    /// with the next tick; the tick therefore empties this buffer.
-    immediate_events: Vec<SimEvent>,
+    /// Number of events at the beginning of `state.events` that the frame without a tick has already fetched
+    /// ([`Self::take_immediate_events`]). Between two ticks `state.events` holds only the events of the immediately
+    /// executed commands ([`Self::execute_now`]); the fetched ones are a prefix, which the next tick leaves out of its
+    /// result ([`Self::step_with`]).
+    delivered_events: usize,
     /// Commands for the next tick boundary.
     pending: Vec<Command>,
     /// Turn mode: the host computes ticks only via [`Self::advance_rounds`] with the commands of the turn bundles.
@@ -504,7 +505,7 @@ impl SimHost {
             carry_ms: 0.0,
             game_speed,
             halted: false,
-            immediate_events: Vec::new(),
+            delivered_events: 0,
             pending: Vec::new(),
             net: false,
             net_host: false,
@@ -832,14 +833,15 @@ impl SimHost {
     /// the command enters the log with the current step, **before** the commands still waiting (which the next tick
     /// books afterwards): the replay executes it first at the beginning of this step, with the same state as here.
     /// The checksum of the step is updated; events (messages, `PlayerResult`) stay in the state and come out with
-    /// the next tick, as in the replay.
+    /// the next tick, as in the replay, unless the frame without a tick has fetched them before.
     ///
     /// On the checksum history: the entry for step S then shows the state **after** the immediate command, a replay
     /// of the log at S still the state **before** (the command takes effect there only at the beginning of the
     /// transition S -> S+1). Both are equal again from S+1.
     ///
-    /// The host additionally remembers the new events for the pause frame ([`Self::take_immediate_events`]): the
-    /// original reports an abort to the bar synchronously (`0x00507960` -> `NotifyUiIfSelected(0)`), also in the pause.
+    /// A frame without a tick (pause, halted match) fetches the new events at once ([`Self::take_immediate_events`]):
+    /// the original reports them synchronously when executing, e.g. an abort to the bar (`0x00507960` ->
+    /// `NotifyUiIfSelected(0)`) and a signal with sound and ping (`0x0048D4D6`), also in the pause.
     ///
     /// In turn mode there is no immediate execution: the command goes into the next turn contribution (otherwise
     /// the machines would diverge). In replay mode only the giving up of the view slot.
@@ -857,11 +859,8 @@ impl SimHost {
                 command: command.clone(),
             });
         }
-        let before = self.state.events.len();
         let mut sim = opennml_sim::sim::Sim::new(&mut self.state, &self.rules);
         opennml_sim::command::execute(&mut sim, &command, true);
-        self.immediate_events
-            .extend_from_slice(&self.state.events[before..]);
         // The original checks the fog memories every frame, also without a tick (`0x0047E560`); the immediate command
         // may change objects, so check again right away (as after every step).
         self.update_memories();
@@ -876,10 +875,14 @@ impl SimHost {
     }
 
     /// Fetches the events of the immediately executed commands since the last tick that nobody has fetched yet
-    /// (caller: the pause frame of the command bar, [`crate::game_session::GameSession::advance_paused`]). Without a
-    /// pause the next tick delivers them from `state.events`; the tick empties the buffer.
+    /// (caller: the frame without a tick, [`crate::game_session::GameSession::advance`] in pause and halted match).
+    /// Between two ticks `state.events` holds only events of immediate commands, the fetched ones are a prefix: the
+    /// host remembers their number, and the next tick leaves them out of its result. What nobody fetches comes out
+    /// with the next tick.
     pub fn take_immediate_events(&mut self) -> Vec<SimEvent> {
-        std::mem::take(&mut self.immediate_events)
+        let from = self.delivered_events.min(self.state.events.len());
+        self.delivered_events = self.state.events.len();
+        self.state.events[from..].to_vec()
     }
 
     /// Commands that wait for the next tick boundary (not yet executed).
@@ -1047,8 +1050,6 @@ impl SimHost {
             .chain(&self.state.tick_groups[1])
             .filter_map(|&id| Some((id, self.state.object(id, false)?.world_pos)))
             .collect();
-        // The events of immediate commands are still in `state.events` and come out with this tick.
-        self.immediate_events.clear();
         let now = self.state.steps;
         if self.log_open() {
             self.log.extend(commands.iter().map(|c| RecordedCommand {
@@ -1067,7 +1068,7 @@ impl SimHost {
         }
         // Idle tick of the fog cycle (`fog_step` sets -1 -> -2): in the original this branch calls the minimap.
         let fog_idle = self.state.fog.processed == -1;
-        let events = step(&mut self.state, &self.rules, &commands);
+        let mut events = step(&mut self.state, &self.rules, &commands);
         self.fog_idle_ticks = self.fog_idle_ticks.wrapping_add(u32::from(fog_idle));
         // New objects (also new IDs after a change of owner) get their fog memory; the memories are
         // checked after that in every step ([`Self::update_memories`]).
@@ -1113,6 +1114,11 @@ impl SimHost {
         self.record_messages(now, &events);
         self.record_attack_points(&events);
         self.track_shown_heights();
+        // The events of the immediate commands since the last tick are at the beginning (the tick takes `state.events`
+        // only at its end). The host has processed all of them above; the caller does not get the ones already
+        // fetched without a tick ([`Self::take_immediate_events`]) a second time.
+        let delivered = std::mem::take(&mut self.delivered_events).min(events.len());
+        events.drain(..delivered);
         events
     }
 
@@ -1760,7 +1766,7 @@ impl SimHost {
         self.shown_heights.clear();
         self.pending.clear();
         self.mirror_sent = None;
-        self.immediate_events.clear();
+        self.delivered_events = 0;
         self.log.clear();
         self.hashes.clear();
         self.carry_ms = 0.0;

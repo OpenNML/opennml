@@ -21,7 +21,7 @@ use opennml_client::snapshot::{png_data, window_mode, window_mode_name};
 use opennml_client::ui_control::{NO_UI, execute_ui};
 use opennml_client::ui_layer::screen_of;
 use opennml_client::vk::char_of;
-use opennml_client::window::{WindowMode, WindowShell};
+use opennml_client::window::{WindowFrame, WindowMode, WindowShell};
 use opennml_control::{
     CaptureCommand, ClockState, Command, CursorState, EnvironmentState, HelloInfo, MouseButtonName,
     MusicCommand, PROTOCOL_VERSION, PlaySoundResult, RandomMapState, RecentSoundState, Request,
@@ -40,7 +40,7 @@ use crate::config::{Config, MAX_SHADOW_QUALITY, Mission, apply_config, match_set
 use crate::debug_ui::{DebugView, EguiLayer};
 use crate::dialogs::{self, DialogLayer, DialogMenu, KeyRoute};
 use crate::effect_browser::EffectBrowser;
-use crate::hud_view::{self, HudLayer, OriginalKeys};
+use crate::hud_view::{self, HudLayer, OriginalKeys, vk_of_source};
 use crate::snapshot::{
     aspect_name, audio_state, camera_state, capture_data, clock_mode_name, describe_object,
     effect_state, free_camera_state, object_state, record_recent_sound, shadow_state, weather_kind,
@@ -1978,7 +1978,7 @@ impl App {
                 if !repeat {
                     self.key_pressed(event_loop, code);
                 }
-                self.original_key(code, true);
+                self.original_key(source, code, true);
             }
             InputEvent::Key {
                 code,
@@ -1986,7 +1986,7 @@ impl App {
                 ..
             } => {
                 self.keys.release(source, code);
-                self.original_key(code, false);
+                self.original_key(source, code, false);
             }
             InputEvent::CursorMoved { x, y } => {
                 if let Some((old_x, old_y)) = self.cursor {
@@ -2087,7 +2087,14 @@ impl App {
                     }
                     KeyRoute::Menu => {
                         if let Some(dialogs) = &mut self.dialogs {
-                            dialogs.menu.on_key(code, true, ch, screen, now);
+                            dialogs.menu.on_key(
+                                code,
+                                vk_of_source(source, code),
+                                true,
+                                ch,
+                                screen,
+                                now,
+                            );
                         }
                         true
                     }
@@ -2112,7 +2119,9 @@ impl App {
                 pressed: false,
                 ..
             } => {
-                dialogs.menu.on_key(code, false, None, screen, now);
+                dialogs
+                    .menu
+                    .on_key(code, vk_of_source(source, code), false, None, screen, now);
                 // The viewer releases its key as well (`handle_input`).
                 false
             }
@@ -2330,11 +2339,14 @@ impl App {
     /// does the pause of the original (`togglepause`): the viewer advances the match with `advance_by`, which
     /// does not evaluate the pause bits (its pause is the virtual clock). Without `--hud` everything stays as
     /// before.
-    fn original_key(&mut self, code: KeyCode, pressed: bool) {
+    fn original_key(&mut self, source: InputSource, code: KeyCode, pressed: bool) {
         let shift =
             self.keys.contains(KeyCode::ShiftLeft) || self.keys.contains(KeyCode::ShiftRight);
         let dispatch = self.config.hud && self.view == ViewMode::Map && self.session.is_some();
-        let Some(held) = self.original_keys.key(dispatch, code, pressed, shift) else {
+        let Some(held) =
+            self.original_keys
+                .key(dispatch, code, vk_of_source(source, code), pressed, shift)
+        else {
             return;
         };
         self.sync_session();
@@ -3232,6 +3244,7 @@ impl ApplicationHandler<ControlEvent> for App {
             self.config.backend,
             self.config.monitor,
             self.config.window_mode,
+            WindowFrame::Resizable,
         ) {
             Ok(shell) => shell,
             Err(e) => return self.fail(event_loop, e),
@@ -3417,7 +3430,8 @@ impl ApplicationHandler<ControlEvent> for App {
             return event_loop.exit();
         }
         if let Some(shell) = &mut self.shell {
-            shell.schedule(event_loop);
+            // The viewer has no network.
+            shell.schedule(event_loop, false);
         }
     }
 }

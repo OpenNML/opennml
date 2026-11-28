@@ -26,15 +26,16 @@
 //!
 //! Network play: the menu path (`LAN1`, `LAN3`, `LAN2`) runs via the `NetSession` in the flow
 //! (`GameFlow::set_net_session` at window start, with `SystemTransport`, seed from the clock [`net_start::wall_seed`]),
-//! pumped per logic step after the menu effects (`GameFlow::net_step`). The command-line path ([`NetLaunch`], without a
-//! lobby dialog) pumps in every pass of the event loop, also without a match and before `Go`. As soon as the `Start` of
-//! the host is there, the logic step loads the map (`GameFlow::start_net_match`); until `Go` the input is locked in the
-//! command-line path (window and control channel), in the menu path only while loading; a failure before the start
-//! leads back to the main menu. In the network the control channel rejects `pause` and `step` (the turns and the lobby
-//! run in real time) as well as `sim_command`/`sim_result` for foreign slots; `ui_*` are free in search and lobby
-//! ([`net_start::net_guard`]); `net_*` is answered by [`net_start::run_net`]. If the host closes the program or the
-//! window in the running match, it hands it over to a client; without a reachable client it ends in an orderly way for
-//! all ([`Game::net_closing`]).
+//! pumped per logic step after the menu effects (`GameFlow::net_step`); while the window is minimized (no logic step)
+//! only its line is pumped in every pass of the event loop (`GameFlow::net_pump`, O-465), and the loop wakes up every
+//! `NET_PUMP_INTERVAL`. The command-line path ([`NetLaunch`], without a lobby dialog) pumps in every pass of the event
+//! loop, also without a match and before `Go`. As soon as the `Start` of the host is there, the logic step loads the
+//! map (`GameFlow::start_net_match`); until `Go` the input is locked in the command-line path (window and control
+//! channel), in the menu path only while loading; a failure before the start leads back to the main menu. In the
+//! network the control channel rejects `pause` and `step` (the turns and the lobby run in real time) as well as
+//! `sim_command`/`sim_result` for foreign slots; `ui_*` are free in search and lobby ([`net_start::net_guard`]);
+//! `net_*` is answered by [`net_start::run_net`]. If the host closes the program or the window in the running match,
+//! it hands it over to a client; without a reachable client it ends in an orderly way for all ([`Game::net_closing`]).
 
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -42,9 +43,9 @@ use std::time::Instant;
 use anyhow::{Context, Result, bail};
 use opennml_audio::engine::AudioEngine;
 use opennml_audio::volume::Category;
-use opennml_client::clock::{Clock, ClockMode};
+use opennml_client::clock::{Clock, ClockMode, NetClock};
 use opennml_client::control::ControlEvent;
-use opennml_client::display::ModeInfo;
+use opennml_client::display::{ModeInfo, best_mode_index};
 use opennml_client::frames::FrameCounter;
 use opennml_client::game::hotkeys::Hotkeys;
 use opennml_client::game::net_driver::{LEAVE_REASON, NetDriver};
@@ -61,8 +62,8 @@ use opennml_client::net_session::{NetIdentity, NetSession};
 use opennml_client::snapshot::png_data;
 use opennml_client::ui_control::{NO_UI, execute_ui, state_data};
 use opennml_client::ui_layer::{UiLayer, atlas_generator, screen_of};
-use opennml_client::vk::char_of;
-use opennml_client::window::{WindowMode, WindowShell};
+use opennml_client::vk::{char_of, vk_of_german, vk_of_layout};
+use opennml_client::window::{WindowFrame, WindowMode, WindowShell};
 use opennml_control::{
     Command, GAME_UI_DIALOG, HelloInfo, MouseButtonName, PROTOCOL_VERSION, Request, Response,
     UiStateData,
@@ -334,11 +335,12 @@ fn draw_pointer(
 
 /// The draw commands over the world of a frame of size `size` ([`GameSession::over_world_cmds`], the same for window
 /// and capture): the combat display (health bars, rank and counter-upgrade icons; in the original step 13 of the world
-/// pass), above it messages, game windows with the cinemascope area, tooltip and text messages, the scene fade 145/146
-/// and finally the info windows 168/213 as first children of the desktop (re/campaign-ui D6.4; the menu is drawn above
-/// by the caller). After `GameSession::render` of the same frame so that the bars sit at the upper edges of this frame.
-/// `present` calls this in every frame with a match (also in pause and game menu) with the one layer of the host: the
-/// info windows measure themselves in the frame of their event and keep its texture IDs.
+/// pass) with the screen texts (headhunter messages, chat lines), above it messages, game windows with the cinemascope
+/// area and tooltip, the scene fade 145/146 and finally the info windows 168/213 as first children of the desktop
+/// (re/campaign-ui D6.4; the menu is drawn above by the caller). After `GameSession::render` of the same frame so that
+/// the bars sit at the upper edges of this frame. `present` calls this in every frame with a match (also in pause and
+/// game menu) with the one layer of the host: the info windows measure themselves in the frame of their event and keep
+/// its texture IDs.
 fn over_world(
     session: &GameSession,
     layer: &mut UiLayer,
@@ -638,6 +640,8 @@ pub struct Game {
     opts: GameOptions,
     audio: AudioEngine,
     clock: Clock,
+    /// Time base of the network: program clock plus the minimized phases ([`Self::net_now`], O-465).
+    net_clock: NetClock,
     frames: FrameCounter,
     shell: Option<WindowShell>,
     host: Option<MenuHost>,
@@ -697,6 +701,7 @@ impl Game {
             opts,
             audio,
             clock,
+            net_clock: NetClock::default(),
             frames: FrameCounter::new(Instant::now()),
             shell: None,
             host: None,
@@ -856,7 +861,7 @@ impl Game {
 
     /// Pumps the network in every pass of the event loop, independent of clock mode and match.
     fn pump_net(&mut self) {
-        let now = self.now();
+        let now = self.net_now();
         if let Some(launch) = self.net.as_mut() {
             launch.pump(now);
         }
@@ -872,7 +877,7 @@ impl Game {
     /// path: pump (the host distributes the start), after the `Start` load the map, the state into the log; a failure
     /// before the start leads back to the main menu ([`NetLaunch::failure`], no program end).
     fn net_step(&mut self) {
-        let now = self.now();
+        let now = self.net_now();
         self.with_flow(|flow, app, view, env, present| flow.net_step(now, app, view, env, present));
         let Some(launch) = self.net.as_mut() else {
             return;
@@ -1005,6 +1010,19 @@ impl Game {
         self.clock.now_ms() as u64
     }
 
+    /// Time of the network in whole milliseconds: [`Self::now`] plus the minimized phases ([`NetClock`]), for every
+    /// pump and the turn driver of the match ([`GameSession::set_net_time_offset`]), so that it stays one monotonic time.
+    fn net_now(&self) -> u64 {
+        self.net_clock.now_ms(&self.clock)
+    }
+
+    /// Hands the offset of the network time to the match (a new session after loading starts with 0).
+    fn sync_net_time(&mut self) {
+        if let Some(session) = self.session.as_mut() {
+            session.set_net_time_offset(self.net_clock.offset_ms());
+        }
+    }
+
     /// State of the UI at the current clock (`state`, `step`, `ui_state`), with a match including the field `game`
     /// (`GameFlow::game_data`).
     fn ui_state(&self) -> Result<UiStateData, String> {
@@ -1058,6 +1076,7 @@ impl Game {
             BackendChoice::Auto,
             self.opts.monitor,
             self.opts.mode,
+            WindowFrame::Fixed,
         )?;
         // Size in pixels like `ScreenXSize`/`ScreenYSize` (not in logical pixels of the display scaling).
         if shell.mode == WindowMode::Windowed {
@@ -1070,7 +1089,7 @@ impl Game {
         // the best mode of the monitor (`WindowShell::apply_mode`).
         let exclusive = shell.mode == WindowMode::Exclusive && {
             let monitor = event_loop.available_monitors().nth(shell.monitor_index);
-            set_exclusive(&shell, monitor, display_mode_of(&config))
+            set_exclusive(&shell, monitor, display_mode_of(&config), true)
         };
         if !exclusive {
             shell.apply_mode(event_loop);
@@ -1271,6 +1290,7 @@ impl Game {
 
     /// One frame of the match (`GameFlow::frame`: steps only while the game runs, ESC flag).
     fn step_session(&mut self, now: u64) {
+        self.sync_net_time();
         let (Some(host), Some(shell)) = (self.host.as_mut(), self.shell.as_ref()) else {
             return;
         };
@@ -1368,7 +1388,7 @@ impl Game {
                 let _ = shell.window.request_inner_size(PhysicalSize::new(w, h));
             }
             WindowMode::Exclusive => {
-                set_exclusive(shell, shell.window.current_monitor(), mode);
+                set_exclusive(shell, shell.window.current_monitor(), mode, false);
             }
             WindowMode::Borderless => log::info!(
                 "Display mode {} x {}: borderless: the size follows the monitor",
@@ -1581,7 +1601,7 @@ impl Game {
         }
         let (screen, now) = (self.screen(), self.now());
         if let Some(host) = &mut self.host {
-            host.on_key(code, pressed, None, screen, now);
+            host.on_key(code, vk_of_german(code), pressed, None, screen, now);
         }
         self.map_input(&event);
     }
@@ -1814,8 +1834,14 @@ impl Game {
 }
 
 /// Fullscreen exclusive in the video mode `mode` on `monitor` ([`matching_mode`]); `false` without a monitor or
-/// without a matching mode (then the previous one stays, warning).
-fn set_exclusive(shell: &WindowShell, monitor: Option<MonitorHandle>, mode: DisplayMode) -> bool {
+/// without a matching mode (warning). At the start (`at_start`) the caller then falls back to the best mode of the
+/// monitor; on ACCEPT the previous mode stays.
+fn set_exclusive(
+    shell: &WindowShell,
+    monitor: Option<MonitorHandle>,
+    mode: DisplayMode,
+    at_start: bool,
+) -> bool {
     let Some(monitor) = monitor else {
         log::warn!("Display mode {} x {}: no monitor", mode.width, mode.height);
         return false;
@@ -1838,8 +1864,22 @@ fn set_exclusive(shell: &WindowShell, monitor: Option<MonitorHandle>, mode: Disp
             true
         }
         None => {
+            if !at_start {
+                log::warn!(
+                    "Display mode {} x {} ({} bit) is not available on the monitor; the previous mode stays",
+                    mode.width,
+                    mode.height,
+                    mode.bits
+                );
+                return false;
+            }
+            // The caller falls back to the best mode of the monitor (`WindowShell::apply_mode`).
+            let chosen = best_mode_index(&infos).map_or_else(
+                || "none".to_owned(),
+                |i| format!("{} x {}", infos[i].width, infos[i].height),
+            );
             log::warn!(
-                "Display mode {} x {} ({} bit) is not available on the monitor; the previous one stays",
+                "Display mode {} x {} ({} bit) is not available on the monitor; falling back to {chosen} (fonts stay at the width of the settings)",
                 mode.width,
                 mode.height,
                 mode.bits
@@ -1880,6 +1920,19 @@ impl ApplicationHandler<ControlEvent> for Game {
         match event {
             // Closing the window (also Alt+F4) writes the settings (O-32).
             WindowEvent::CloseRequested => self.exit(event_loop),
+            // Windowed the size stays the one of the settings in pixels: winit would otherwise convert it to the
+            // logical size of the new scaling (O-58).
+            WindowEvent::ScaleFactorChanged {
+                mut inner_size_writer,
+                ..
+            } => {
+                if let Some(shell) = &self.shell
+                    && shell.mode == WindowMode::Windowed
+                {
+                    let (w, h) = shell.window_size();
+                    let _ = inner_size_writer.request_inner_size(PhysicalSize::new(w, h));
+                }
+            }
             WindowEvent::Resized(size) => {
                 if let Some(shell) = &mut self.shell {
                     shell.resized(size.width, size.height);
@@ -1925,7 +1978,7 @@ impl ApplicationHandler<ControlEvent> for Game {
                 };
                 let (screen, now) = (self.screen(), self.now());
                 if let Some(host) = &mut self.host {
-                    host.on_key(code, pressed, ch, screen, now);
+                    host.on_key(code, vk_of_layout(code), pressed, ch, screen, now);
                 }
                 self.map_input(&InputEvent::Key {
                     code,
@@ -1972,9 +2025,26 @@ impl ApplicationHandler<ControlEvent> for Game {
                 return;
             }
         }
+        // Minimized: no logic step (`redraw` does not run), the program clock stands; the network time runs on with the
+        // real time ([`NetClock`]), and besides `pump_net` only the line of the menu path is pumped (O-465). A start
+        // that has arrived loads in the next logic step.
+        let minimized = self.shell.as_ref().is_some_and(WindowShell::minimized);
+        if minimized {
+            self.net_clock.idle(Instant::now(), &self.clock);
+        } else {
+            self.net_clock.shown();
+        }
+        self.sync_net_time();
         self.pump_net();
+        if minimized {
+            let now = self.net_now();
+            self.with_flow(|flow, app, view, env, _| flow.net_pump(now, app, view, env));
+        }
+        let net = self.net.is_some()
+            || self.session.as_ref().is_some_and(|s| s.net.is_some())
+            || self.flow.net_active();
         if let Some(shell) = &mut self.shell {
-            shell.schedule(event_loop);
+            shell.schedule(event_loop, net);
         }
     }
 }

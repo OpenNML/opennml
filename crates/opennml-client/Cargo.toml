@@ -32,6 +32,10 @@ serde_json.workspace = true
 wgpu.workspace = true
 winit.workspace = true
 
+[target.'cfg(windows)'.dependencies]
+# Active keyboard layout for the window input (`vk::vk_of_layout`); `HKL` lives in the same module.
+windows = { workspace = true, features = ["Win32_UI_Input_KeyboardAndMouse"] }
+
 [features]
 # Test kits of the game modules (`game::testworld`, `game::sim_host::testkit` ...) for the viewer's tests.
 testkit = []
